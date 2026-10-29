@@ -1,0 +1,79 @@
+package com.rickeal.liquidharness.core.model
+
+import kotlin.math.ceil
+
+/**
+ * 无网络条件下的 token 估算。
+ *
+ * **它只在两个地方被允许当权威值**：
+ * 1. 发送前的预算判断（必须先判断才能决定要不要压缩 —— 那时还没有 provider 回报）；
+ * 2. provider 未回报 usage 时的兜底（结果标 `estimated = true`）。
+ *
+ * 其余场合一律以 provider 回报为准：旧仓 KDoc 自陈「折中的方向是系统性低估中文 2~3 倍」，
+ * 而 API 路径下 token 直接等于钱（00-brief A5 的 `RunTokenLedger` 改判依据）。
+ *
+ * 启发式口径：
+ * - CJK 字符（汉字 / 假名 / 全角标点）≈ 1 token/字；
+ * - 其余字符 ≈ 4 字符/token（英文 + 代码的平均值，代码比英文更省）；
+ * - 每条消息固定 +4 token 的协议开销（role / 分隔符），照抄 OpenAI 的公开口径。
+ */
+object TokenEstimator {
+
+    /** 英文/代码的字符- token 比。改这个数字前先看 `RunTokenLedger` 的校准 warn。 */
+    private const val CHARS_PER_TOKEN_ASCII = 4.0
+
+    /** 每条消息的协议开销。 */
+    private const val PER_MESSAGE_OVERHEAD = 4
+
+    fun estimate(text: String): Int {
+        if (text.isEmpty()) return 0
+        var cjk = 0
+        var other = 0
+        var i = 0
+        while (i < text.length) {
+            val cp = text.codePointAt(i)
+            if (isCjk(cp)) cjk++ else other++
+            i += Character.charCount(cp)
+        }
+        val asciiTokens = ceil(other / CHARS_PER_TOKEN_ASCII).toInt()
+        return (cjk + asciiTokens).coerceAtLeast(1)
+    }
+
+    /**
+     * 估算一组消息的总 prompt token。
+     *
+     * 工具调用的 `argumentsJson` 与工具结果文本都计入 —— 它们同样是发出去的字节。
+     */
+    fun estimateMessages(messages: List<ChatMessage>): Int {
+        var total = 0
+        for (message in messages) {
+            total += PER_MESSAGE_OVERHEAD
+            total += estimate(message.text)
+            for (call in message.toolCalls) {
+                total += estimate(call.name)
+                total += estimate(call.argumentsJson)
+            }
+            for (result in message.toolResults) {
+                total += estimate(result.output)
+            }
+        }
+        return total
+    }
+
+    /**
+     * CJK 判定：汉字、假名、谚文、CJK 标点、全角形式。
+     *
+     * 刻意用码点区间而不是正则：正则在这里每字符一次匹配，压缩判定是热路径。
+     */
+    private fun isCjk(cp: Int): Boolean = when (cp) {
+        in 0x3000..0x303F -> true   // CJK 标点
+        in 0x3040..0x30FF -> true   // 平假名 / 片假名
+        in 0x3400..0x4DBF -> true   // 扩展 A
+        in 0x4E00..0x9FFF -> true   // 基本区
+        in 0xAC00..0xD7AF -> true   // 谚文音节
+        in 0xF900..0xFAFF -> true   // 兼容汉字
+        in 0xFF00..0xFFEF -> true   // 全角形式
+        in 0x20000..0x2FA1F -> true // 扩展 B~F
+        else -> false
+    }
+}

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 远程引擎 / MCP 传输需要出网；端侧推理本身零数据外发 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Application 子类只持有 AppContainer（手写 DI）；不在字段初始化期取系统服务
+         （旧仓 W78 的 NPE 打死进程事故）。 -->
+    <application
+        android:name=".LiquidHarnessApplication"
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.LiquidHarness">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.LiquidHarness"
+            android:windowSoftInputMode="adjustResize">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

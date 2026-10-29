@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 纯逻辑模块：错误文案以英文常量形式存在于代码中，由 :app 映射为本地化文案 -->
+</resources>

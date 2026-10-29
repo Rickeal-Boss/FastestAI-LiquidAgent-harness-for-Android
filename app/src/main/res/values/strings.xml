@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 骨架阶段只有一条：产品名待方案席确认后可改（改这里即可，不散落在代码里） -->
+    <string name="app_name">LiquidHarness</string>
+</resources>

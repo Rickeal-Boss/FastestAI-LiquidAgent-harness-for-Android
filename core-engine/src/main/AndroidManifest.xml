@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 纯逻辑模块：不声明组件、不申请权限（网络权限由 :app 统一声明）。 -->
+</manifest>

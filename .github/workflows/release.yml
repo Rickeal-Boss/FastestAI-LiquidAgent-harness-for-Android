@@ -1,0 +1,575 @@
+name: Release
+
+# =============================================================================
+# LiquidAgent harness-v2 发布流水线（签名轨）
+#
+# 核心约定（改之前先读完，尤其是第 2 条的分叉语义）：
+#
+#   1. 【触发面刻意窄】只有 push tag `v*` 与 workflow_dispatch。
+#      **不要把开发分支加进本文件的 push.branches** —— 本轨带签名密钥、跑 R8 +
+#      AAB，代价高；签名双轨按需手动 dispatch 即可，不占常规 CI 配额。
+#      常规 PR / push 门禁走 build.yml（零密钥快速轨）。
+#      注：tag 推送没有 changed-files 概念 ⇒ 不设 paths 过滤（设了也不生效）。
+#
+#   2. 【缺密钥时按 ref 类型分叉】这是本文件唯一容易改错的地方：
+#        · 分支 / workflow_dispatch ⇒ 打 notice 并降级为 debug 签名包，**不失败**
+#          （「我自己要个能装的包」的合理形态）。
+#        · **tag 推送 ⇒ 硬失败**（`::error::` + exit 1），判据在
+#          `Gate tag release on signing secrets`，这是**唯一门禁点**。
+#          理由：debug 签名的 APK 无法上架、也无法与将来的正式包无缝升级 ——
+#          用户必须卸载重装、历史会话一起丢。分支上是「临时自用包」，tag 上是
+#          「对外发布」，同一个降级在两个场景里的后果完全不同。把「绿 + debug 包」
+#          当发布成功是最坏的一种静默事故（流水线绿、Release 页挂着不可升级的包，
+#          而没人会去看签名）。
+#      ⚠️ 别在别处复制这份判据 —— 两处判据 = 两处会漂移。
+#
+#   3. 【密钥名是本仓的，不是旧仓的】四个 secret：
+#        KEYSTORE_BASE64       keystore 文件的 base64（`openssl base64 -A -in xxx.p12`）
+#        KEYSTORE_PASSWORD     密钥库口令
+#        KEY_ALIAS             密钥别名
+#        KEY_PASSWORD          ⚠️ PKCS12 必须等于 KEYSTORE_PASSWORD
+#      旧仓用的是 SIGNING_* 前缀。**名字写错不会报错，只会静默退回 debug 签名** ——
+#      所以下面有 apksigner 断言「证书 DN 不是 CN=Android Debug」兜底。
+#
+#   4. 【PKCS12 口径】PKCS12 不支持「store 口令 ≠ key 口令」：keytool 生成时会忽略
+#      -keypass，Java 取 key 时若两个口令不同直接抛 UnrecoverableKeyException。
+#      故本文件在解码后显式断言 KEY_PASSWORD == KEYSTORE_PASSWORD，并把 keystore
+#      真正打开一次（keytool -list）确认非空、别名存在、是 PrivateKeyEntry ——
+#      只校验「文件非空」是不够的：base64 截断会解出一个合法的空壳 zip/文件。
+#
+#   5. 【签名方案契约 —— 由 app 模块的 build.gradle.kts 实现，本文件只传参数】
+#      · 本文件只传四个 -P：signing.storeFile / signing.storePassword /
+#        signing.keyAlias / signing.keyPassword。app 模块据此建 signingConfig。
+#      · app 模块里**只写 enableV3Signing = true**，**不要**同时写 enableV2Signing：
+#        AGP 9 按 minSdk 选「最低可用方案」而非叠加，写 v2 会被直接忽略
+#        （实测：v2/v3 都写 true ⇒ v2=false v3=true）。
+#      · 因此下面的校验是「v2 或 v3 至少命中一个」，不是 AND —— 写成 AND 会把
+#        正确构建判红。
+# =============================================================================
+
+on:
+  # 手动触发：产出 APK/AAB 并上传 artifact，但**不会**创建 GitHub Release
+  # （Release 需要一个真实 tag 作为锚点，分支上没有）。
+  workflow_dispatch:
+  push:
+    # 只有 tag。**不要加 branches**（见文件头约定 1）。
+    tags:
+      - 'v*'
+
+# 创建 Release 需要写权限；其余步骤只读。
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # tag 发布不可取消（取消 = 发布中断）；分支 dispatch 可取消。
+  # group 已按 ref 分隔，tag 与分支天然不同组。
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+env:
+  JAVA_VERSION: '21'
+  JAVA_DISTRIBUTION: 'temurin'
+  GRADLE_JVM_ARGS: '-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8'
+  # ---------------------------------------------------------------------------
+  # 【硬约束·用户下达】applicationId = com.rickeal.liquidharness，debug 变体带
+  # .debug 后缀（与旧 App 同机共存）。必须与 app/build.gradle.kts 的
+  # applicationId / applicationIdSuffix 一致；旧仓是 com.rickeal.agent，别抄。
+  # ---------------------------------------------------------------------------
+  APP_PACKAGE: 'com.rickeal.liquidharness'
+  APP_PACKAGE_DEBUG: 'com.rickeal.liquidharness.debug'
+
+jobs:
+  release:
+    name: Build & (optionally) sign release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Bootstrap Android SDK and accept licenses
+        # 与 build.yml 同款：许可未接受会让 AGP 自动下载 platform 直接失败。
+        run: |
+          sdk_root="${ANDROID_HOME:-}"
+          if [ -z "$sdk_root" ] || [ ! -d "$sdk_root" ]; then
+            for candidate in "$HOME/android-sdk" "/usr/local/lib/android/sdk" "$HOME/Android/Sdk" "/opt/android-sdk"; do
+              if [ -d "$candidate" ]; then sdk_root="$candidate"; break; fi
+            done
+          fi
+          if [ -z "$sdk_root" ]; then sdk_root="$HOME/android-sdk"; fi
+
+          echo "ANDROID_HOME=$sdk_root" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$sdk_root" >> "$GITHUB_ENV"
+          echo "::notice::Android SDK root = $sdk_root"
+
+          mkdir -p "$sdk_root/licenses"
+          printf '%s\n%s\n' \
+            '24333f8a63b6825ea9c5514f83c2829b004d1fee' \
+            '8933bad161af4178b1185d1a37fbf41ea5269c55' \
+            > "$sdk_root/licenses/android-sdk-license"
+          printf '%s\n' '84831b9409646a7e0bab842799117058b6a3a0a6' \
+            > "$sdk_root/licenses/android-sdk-preview-license"
+          printf '%s\n' 'd975f751698a77b662f1254ddbeed3901e976f5a' \
+            > "$sdk_root/licenses/intel-android-extra-license"
+          printf '%s\n' '601085b94cd77f0b54ff86406957099beebea79f5' \
+            > "$sdk_root/licenses/android-googletv-license"
+
+          if [ -x "$sdk_root/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$sdk_root/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          fi
+          ls -la "$sdk_root/licenses" || true
+
+      - name: Install CI Gradle properties
+        run: |
+          mkdir -p "$HOME/.gradle"
+          if [ -f .github/ci-gradle.properties ]; then
+            cat .github/ci-gradle.properties > "$HOME/.gradle/gradle.properties"
+            echo "::group::Effective CI gradle.properties"
+            cat "$HOME/.gradle/gradle.properties"
+            echo "::endgroup::"
+          else
+            echo "::warning::.github/ci-gradle.properties not found, using project defaults"
+          fi
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          # 与 build.yml 同版本（= wrapper distributionUrl 的 9.7.1）。
+          # 引号必需，否则 YAML 把 9.7.1 当非法数字。
+          gradle-version: '9.7.1'
+          # CI 不执行 wrapper，wrapper jar 的校验和校验只是额外失败面。
+          validate-wrappers: false
+          cache-cleanup: on-success
+          add-job-summary: 'on-failure'
+
+      - name: Toolchain diagnostics
+        run: |
+          echo "::group::java -version"
+          java -version 2>&1 || true
+          echo "::endgroup::"
+          if ! command -v gradle > /dev/null 2>&1; then
+            echo "::error::'gradle' is not on PATH — gradle/actions/setup-gradle failed to install it. Check the 'Set up Gradle' step logs and the gradle-version input."
+            exit 1
+          fi
+          echo "GRADLE_CMD=gradle" >> "$GITHUB_ENV"
+          gradle --version
+          echo "::group::awk implementation"
+          awk -W version 2>&1 | head -n 1 || awk --version 2>&1 | head -n 1 || echo "awk version unknown"
+          echo "::endgroup::"
+
+      # -------------------------------------------------------------------
+      # 密钥探测：secrets 上下文在步骤 if 表达式里并不可靠（未配置的 secret
+      # 会求值成空串但行为随上下文变化），故用 shell 把探测结果写进 step outputs，
+      # 后续步骤只认 outputs。
+      # ⚠️ 本步**只探测、不判定**。tag 上缺密钥的硬失败在
+      #    `Gate tag release on signing secrets`（唯一门禁点，见文件头约定 2）。
+      # -------------------------------------------------------------------
+      - name: Detect signing secrets
+        id: signing
+        env:
+          KS_B64: ${{ secrets.KEYSTORE_BASE64 }}
+          KS_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KS_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "${KS_B64:-}" ] && [ -n "${KS_PASSWORD:-}" ] && [ -n "${KS_ALIAS:-}" ] && [ -n "${KS_KEY_PASSWORD:-}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Signing secrets detected — release APK/AAB will be signed."
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Signing secrets NOT configured (KEYSTORE_BASE64 / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD). 分支/dispatch 上降级为 debug 包；tag 推送会在 'Gate tag release on signing secrets' 硬失败。"
+          fi
+
+      # -------------------------------------------------------------------
+      # tag 上缺密钥 ⇒ 硬失败。这是**唯一**门禁点（见文件头约定 2）。
+      # 行为核实：workflow_dispatch 的 ref 是分支 ⇒ startsWith(refs/tags/v) 不成立
+      # ⇒ 本步骤 skipped，这正是期望行为（分支上允许降级出 debug 包）。
+      # -------------------------------------------------------------------
+      - name: Gate tag release on signing secrets
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          if [ "${{ steps.signing.outputs.available }}" != "true" ]; then
+            echo "::error::Tag push requires the four signing secrets (KEYSTORE_BASE64 / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD) but they are missing/incomplete. A debug-signed artifact is not a release — refusing to publish."
+            exit 1
+          fi
+
+      - name: Verify Gradle project skeleton
+        # 开荒期显式前置断言：settings 文件不在 = 构建脚本还没落地，不是环境问题。
+        run: |
+          if [ ! -f settings.gradle.kts ] && [ ! -f settings.gradle ]; then
+            echo "::error::仓库根没有 settings.gradle.kts —— Gradle 工程骨架尚未落地。这不是环境问题。"
+            ls -la
+            exit 1
+          fi
+
+      # -------------------------------------------------------------------
+      # 保底产物：**分支 / dispatch** 上无论有没有密钥都要有一个能装的 APK。
+      # tag 上缺密钥走不到这里（前面的 Gate 已硬失败）。
+      # -------------------------------------------------------------------
+      - name: Assemble debug APK (fallback artifact)
+        id: assemble_debug
+        run: |
+          "$GRADLE_CMD" \
+            --no-daemon \
+            --stacktrace \
+            "-Dorg.gradle.jvmargs=${GRADLE_JVM_ARGS}" \
+            :app:assembleDebug
+
+      - name: Verify debug APK applicationId
+        # debug 保底包也必须带 .debug 后缀 —— 它和正式包同机共存的前提就在这里；
+        # 后缀丢了 Gradle 不会报错，只会在设备上把正式包覆盖掉（用户数据一起没）。
+        run: |
+          apk_path="$(find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          if [ -z "$apk_path" ]; then
+            echo "::error::assembleDebug reported success but no debug APK found"
+            exit 1
+          fi
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/android-sdk}}"
+          aapt2_bin="$(ls -d "$sdk_root"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -n 1 || true)"
+          if [ -z "$aapt2_bin" ] || [ ! -x "$aapt2_bin" ]; then
+            echo "::error::aapt2 not found under $sdk_root/build-tools/*/ — cannot verify applicationId."
+            exit 1
+          fi
+          pkg="$("$aapt2_bin" dump packagename "$apk_path" 2>/dev/null | tr -d '\r' | head -n 1)"
+          echo "::notice::debug applicationId = $pkg"
+          if [ "$pkg" != "$APP_PACKAGE_DEBUG" ]; then
+            echo "::error::debug APK 的 applicationId 是 '$pkg'，期望 '$APP_PACKAGE_DEBUG'。缺 .debug 后缀会与正式包同机覆盖，破坏共存约束。"
+            exit 1
+          fi
+          echo "::notice::debug applicationId 门禁通过"
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: liquidagent-debug-${{ github.ref_name }}
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      # -------------------------------------------------------------------
+      # 解码并**真正打开**keystore
+      # -------------------------------------------------------------------
+      - name: Decode and validate keystore
+        id: keystore
+        if: steps.signing.outputs.available == 'true'
+        env:
+          KS_B64: ${{ secrets.KEYSTORE_BASE64 }}
+          KS_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KS_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          # 【PKCS12 口径】见文件头约定 4。口令不相等时 Java 取 key 会抛
+          # UnrecoverableKeyException —— 在这里提前硬失败，给出可读原因，
+          # 而不是让人对着 keystore 栈去猜。
+          if [ "$KS_PASSWORD" != "$KS_KEY_PASSWORD" ]; then
+            echo "::error::KEY_PASSWORD 必须等于 KEYSTORE_PASSWORD（PKCS12 不支持独立 key 口令；不相等时取 key 抛 UnrecoverableKeyException）。若将来改用 JKS 才可放宽本条。"
+            exit 1
+          fi
+
+          ks_path="${RUNNER_TEMP}/liquidagent-release.p12"
+          # 清掉可能残留的旧文件，避免 decode 失败时沿用上一轮内容（假绿）
+          rm -f "$ks_path"
+          printf '%s' "$KS_B64" | base64 -d > "$ks_path" 2>/dev/null || {
+            echo "::error::base64 解码 KEYSTORE_BASE64 失败 —— 确认值是单行无换行（openssl base64 -A）。"
+            exit 1
+          }
+          if [ ! -s "$ks_path" ]; then
+            echo "::error::Decoded keystore is empty; check KEYSTORE_BASE64"
+            exit 1
+          fi
+          echo "::notice::Decoded keystore: $(wc -c < "$ks_path") bytes at $ks_path"
+
+          # 真正打开一次：非空 ≠ 可解。截断的 base64 会解出一个合法但无用的文件。
+          # -storepass:env 让口令从环境变量读，不进命令行 / 日志。
+          kt_log="${RUNNER_TEMP}/keytool-list.log"
+          if ! keytool -list -keystore "$ks_path" -storetype PKCS12 \
+                 -storepass:env KS_PASSWORD -alias "$KS_ALIAS" > "$kt_log" 2>&1; then
+            echo "::error::keytool 无法用 KEYSTORE_PASSWORD / KEY_ALIAS 打开 keystore —— 口令错、别名错、或文件不是合法 PKCS12。"
+            cat "$kt_log"
+            exit 1
+          fi
+          cat "$kt_log"
+          if ! grep -qi 'PrivateKeyEntry' "$kt_log"; then
+            echo "::error::别名 '$KS_ALIAS' 存在但不是 PrivateKeyEntry —— 无法用于 APK 签名。"
+            cat "$kt_log"
+            exit 1
+          fi
+          echo "::notice::keystore OK — alias '$KS_ALIAS' is a PrivateKeyEntry."
+          echo "path=$ks_path" >> "$GITHUB_OUTPUT"
+
+      # -------------------------------------------------------------------
+      # 签名构建：四个 -P 是 workflow ↔ app 模块的契约（见文件头约定 5）
+      # -------------------------------------------------------------------
+      - name: Assemble release APK
+        id: assemble_release
+        if: steps.signing.outputs.available == 'true'
+        env:
+          KS_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KS_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          "$GRADLE_CMD" \
+            --no-daemon \
+            --stacktrace \
+            "-Dorg.gradle.jvmargs=${GRADLE_JVM_ARGS}" \
+            -Psigning.storeFile="${{ steps.keystore.outputs.path }}" \
+            -Psigning.storePassword="${KS_PASSWORD}" \
+            -Psigning.keyAlias="${KS_ALIAS}" \
+            -Psigning.keyPassword="${KS_KEY_PASSWORD}" \
+            :app:assembleRelease
+
+      - name: Assemble release AAB
+        # 真的跑一次 bundleRelease 让 AAB 成为实际产物（Play 上架所需）。
+        # 反例：只声明 path: bundle/release/*.aab 而从不跑 bundleRelease，
+        # 那个 glob 永远匹配不到文件，又被 if-no-files-found: warn 掩盖 —— AAB 是空话。
+        id: assemble_bundle
+        if: steps.signing.outputs.available == 'true'
+        env:
+          KS_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KS_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          "$GRADLE_CMD" \
+            --no-daemon \
+            --stacktrace \
+            "-Dorg.gradle.jvmargs=${GRADLE_JVM_ARGS}" \
+            -Psigning.storeFile="${{ steps.keystore.outputs.path }}" \
+            -Psigning.storePassword="${KS_PASSWORD}" \
+            -Psigning.keyAlias="${KS_ALIAS}" \
+            -Psigning.keyPassword="${KS_KEY_PASSWORD}" \
+            :app:bundleRelease
+
+      - name: Verify release APK signature
+        # 光「产出一个 APK」不等于「签对了」。两个断言：
+        #   ① 证书 DN 不是 CN=Android Debug —— 否则说明 signing.* 没传到 Gradle，
+        #      构建悄悄退回了 debug 签名配置。这正是「有密钥却仍出 debug 包」
+        #      最容易被漏掉的失败模式。
+        #   ② v2 或 v3 **至少命中一个**（不是 AND，见文件头约定 5）。
+        id: verify_signature
+        if: steps.assemble_release.outcome == 'success'
+        run: |
+          apk_path="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          if [ -z "$apk_path" ]; then
+            echo "::error::assembleRelease reported success but no release APK found"
+            exit 1
+          fi
+          echo "::notice::Verifying: $apk_path"
+
+          # 找不到 apksigner 就**直接红**，不要 warning + exit 0：
+          # 「守卫悄悄跳过」= 守卫不存在，这条断言会永远显示 success，
+          # 而它本来要防的 debug 签名问题照样溜过去。
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/android-sdk}}"
+          apksigner_bin="$(ls -d "$sdk_root"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n 1 || true)"
+          if [ -z "$apksigner_bin" ] || [ ! -x "$apksigner_bin" ]; then
+            apksigner_bin="$(find /usr/local/lib/android/sdk "$HOME" -maxdepth 4 -type f -name apksigner -path '*build-tools*' 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          if [ -z "$apksigner_bin" ] || [ ! -x "$apksigner_bin" ]; then
+            echo "::error::apksigner not found under $sdk_root/build-tools/*/ — cannot verify the release signature. Listing what IS there:"
+            ls -la "$sdk_root" 2>/dev/null || true
+            ls -la "$sdk_root/build-tools" 2>/dev/null || true
+            exit 1
+          fi
+          echo "::notice::apksigner: $apksigner_bin"
+
+          log_file="${RUNNER_TEMP}/apksigner-verify.log"
+          "$apksigner_bin" verify --verbose --print-certs "$apk_path" > "$log_file" 2>&1 || true
+          cat "$log_file"
+
+          if grep -q "CN=Android Debug" "$log_file"; then
+            echo "::error::Release APK is signed with the DEBUG key. signing.* properties did not reach Gradle (检查 app 模块是否真的读了 -Psigning.storeFile/storePassword/keyAlias/keyPassword)。"
+            exit 1
+          fi
+
+          v2_ok="$(grep -cE 'Verified using v2 scheme .*: true' "$log_file" || true)"
+          v3_ok="$(grep -cE 'Verified using v3 scheme .*: true' "$log_file" || true)"
+          if [ "$v2_ok" -eq 0 ] && [ "$v3_ok" -eq 0 ]; then
+            echo "::error::APK 既没有 v2 也没有 v3 签名 —— 签名未生效（或签名方案在未来又变了）。"
+            cat "$log_file"
+            exit 1
+          fi
+          echo "::notice::签名方案命中：v2=$([ "$v2_ok" -gt 0 ] && echo yes || echo no) v3=$([ "$v3_ok" -gt 0 ] && echo yes || echo no)（AGP 9 按 minSdk 选最低方案，v3-only 属正常）"
+
+      - name: Verify release APK applicationId
+        # 正式包的 applicationId 必须是 **无后缀** 的 com.rickeal.liquidharness。
+        # 这条与「签名不是 debug 证书」同等重要但更隐蔽：applicationIdSuffix 若被
+        # 误配到 release 变体，包能装能跑、签名也对，只有「用户装了正式版却与
+        # 自己的 debug 版共存/或反之覆盖」时才暴露 —— 发布后才发现代价极大。
+        id: verify_pkg
+        if: steps.assemble_release.outcome == 'success'
+        run: |
+          apk_path="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          if [ -z "$apk_path" ]; then
+            echo "::error::assembleRelease reported success but no release APK found"
+            exit 1
+          fi
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/android-sdk}}"
+          aapt2_bin="$(ls -d "$sdk_root"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -n 1 || true)"
+          if [ -z "$aapt2_bin" ] || [ ! -x "$aapt2_bin" ]; then
+            echo "::error::aapt2 not found under $sdk_root/build-tools/*/ — cannot verify applicationId."
+            exit 1
+          fi
+          pkg="$("$aapt2_bin" dump packagename "$apk_path" 2>/dev/null | tr -d '\r' | head -n 1)"
+          echo "::notice::release applicationId = $pkg"
+          if [ "$pkg" != "$APP_PACKAGE" ]; then
+            echo "::error::release APK 的 applicationId 是 '$pkg'，期望 '$APP_PACKAGE'（用户硬约束；带 .debug 后缀或沿用旧仓 com.rickeal.agent 都是错的）。检查 app/build.gradle.kts 的 applicationId / applicationIdSuffix。"
+            exit 1
+          fi
+          echo "::notice::release applicationId 门禁通过：$pkg"
+
+      - name: Verify release AAB signature
+        # APK 与 AAB 在同一 Gradle 进程内共用 signingConfig，但「共用」是推断不是
+        # 断言 —— 用 keytool 直接解 AAB 内的证书断言非 debug 证书。
+        # 注意证书条目名不固定：META-INF/<别名派生>.(RSA|DSA|EC)，故枚举而非硬编码 CERT.RSA。
+        if: steps.assemble_bundle.outcome == 'success'
+        run: |
+          aab_path="$(find app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' | head -n 1)"
+          if [ -z "$aab_path" ]; then
+            echo "::error::bundleRelease reported success but no release AAB found"
+            exit 1
+          fi
+          echo "::notice::Verifying AAB: $aab_path"
+          cert_entry="$(unzip -Z1 "$aab_path" 2>/dev/null | grep -E '^META-INF/.*\.(RSA|DSA|EC)$' | head -n 1 || true)"
+          if [ -z "$cert_entry" ]; then
+            echo "::error::AAB 内未找到任何 META-INF/*.(RSA|DSA|EC) 证书条目 —— 未签名或签名形态变化。META-INF 清单："
+            unzip -Z1 "$aab_path" 2>/dev/null | grep '^META-INF/' | head -20
+            exit 1
+          fi
+          echo "::notice::Certificate entry: $cert_entry"
+          unzip -p "$aab_path" "$cert_entry" > "${RUNNER_TEMP}/aab-cert.bin"
+          cert_log="${RUNNER_TEMP}/aab-cert.log"
+          keytool -printcert -file "${RUNNER_TEMP}/aab-cert.bin" > "$cert_log" 2>&1 || {
+            echo "::error::keytool 无法解析 AAB 证书"; cat "$cert_log"; exit 1;
+          }
+          cat "$cert_log"
+          if grep -q "CN=Android Debug" "$cert_log"; then
+            echo "::error::Release AAB is signed with the DEBUG key."
+            exit 1
+          fi
+          echo "::notice::Release AAB verified: signed with a non-debug certificate."
+
+      - name: Report artifact sizes to job summary
+        if: steps.assemble_release.outcome == 'success'
+        run: |
+          {
+            echo "## Artifact sizes"
+            echo ""
+            echo "| File | Size |"
+            echo "|---|---|"
+            for f in \
+              app/build/outputs/apk/debug/*.apk \
+              app/build/outputs/apk/release/*.apk \
+              app/build/outputs/bundle/release/*.aab \
+              app/build/outputs/mapping/release/mapping.txt; do
+              if [ -f "$f" ]; then
+                printf '| `%s` | %s |\n' "$f" "$(du -h "$f" | cut -f1)"
+              fi
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release APK / AAB
+        if: steps.assemble_release.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: liquidagent-release-apk-${{ github.ref_name }}
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+          retention-days: 90
+          # 不用 warn：warn 会把「AAB 从未生成」掩盖成静默成功。
+          if-no-files-found: error
+
+      - name: Upload R8 mapping
+        # mapping 是崩溃还原专用，单独一个 artifact，别混进装包用的那份。
+        if: steps.assemble_release.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: liquidagent-release-mapping-${{ github.ref_name }}
+          path: |
+            app/build/outputs/mapping/release/mapping.txt
+            app/build/outputs/mapping/release/configuration.txt
+          retention-days: 90
+          if-no-files-found: error
+
+      # -------------------------------------------------------------------
+      # 发布：仅在 tag 推送 + 签名构建成功时创建 GitHub Release
+      # （tag 缺密钥已在前面的 Gate 硬失败，走不到这里；保留该条件是为了
+      #  「分支上永不建 Release」这条独立语义。）
+      # -------------------------------------------------------------------
+      - name: Publish GitHub Release
+        if: |
+          startsWith(github.ref, 'refs/tags/v') &&
+          steps.assemble_release.outcome == 'success'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: LiquidAgent ${{ github.ref_name }}
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+            app/build/outputs/mapping/release/mapping.txt
+
+      - name: Upload failure reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-reports-${{ github.ref_name }}
+          path: |
+            **/build/reports/**
+            **/build/test-results/**
+            **/build/outputs/logs/**
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          echo "::group::JDK"
+          java -version 2>&1 || true
+          echo "::endgroup::"
+          echo "::group::SDK build-tools"
+          ls "$ANDROID_HOME/build-tools" 2>/dev/null || true
+          echo "::endgroup::"
+          echo "::group::signing state"
+          echo "signing secrets available: ${{ steps.signing.outputs.available }}"
+          echo "keystore decoded: ${{ steps.keystore.outcome }}"
+          echo "::endgroup::"
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "## LiquidAgent release"
+            echo ""
+            echo "| Item | Value |"
+            echo "|---|---|"
+            echo "| Ref | \`${GITHUB_REF}\` |"
+            echo "| applicationId | \`${APP_PACKAGE}\`（debug 变体 = \`${APP_PACKAGE_DEBUG}\`） |"
+            echo "| Debug APK | ${{ steps.assemble_debug.outcome || 'n/a' }} |"
+            echo "| Signing secrets | ${{ steps.signing.outputs.available }} |"
+            echo "| Signed release APK | ${{ steps.assemble_release.outcome || 'skipped' }} |"
+            echo "| Signed release AAB | ${{ steps.assemble_bundle.outcome || 'skipped' }} |"
+            echo "| Signature verified (non-debug, v2-or-v3) | ${{ steps.verify_signature.outcome || 'skipped' }} |"
+            echo ""
+            echo "R8 还原栈所需：artifact \`liquidagent-release-mapping-${GITHUB_REF_NAME}\` 内含 \`mapping.txt\` / \`configuration.txt\`。"
+            echo ""
+            if [ "${{ steps.signing.outputs.available }}" != "true" ]; then
+              if [ "${{ github.ref_type }}" = "tag" ]; then
+                echo "> ⚠️ **Tag push without the four signing secrets** — \`Gate tag release on signing secrets\` fails **by design**（文件头约定 2）：debug 签名产物不是发布物（无法上架、无法原地升级）。预期本 job 为红，且不会装配 debug APK（Gate 在装配之前）。"
+              else
+                echo "> Signing secrets not configured — 只产出了 debug APK。"
+                echo "> 配好 \`KEYSTORE_BASE64\` / \`KEYSTORE_PASSWORD\` / \`KEY_ALIAS\` / \`KEY_PASSWORD\` 即可启用签名发布。"
+              fi
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

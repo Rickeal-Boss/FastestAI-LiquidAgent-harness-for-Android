@@ -1,0 +1,730 @@
+name: Build
+
+# =============================================================================
+# LiquidAgent harness-v2 主构建流水线（零密钥轨）
+#
+# 设计约束 —— 每条都是旧仓 CI 实摔出来的，改动前先读完再动手：
+#
+#   1. 【零密钥】本工作流**不得**引用任何 secret。debug 构建必须无凭据可跑通；
+#      签名只在 release.yml 里用，且密钥名是
+#      KEYSTORE_BASE64 / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD
+#      —— **不是** 旧仓的 SIGNING_* 前缀。名字用错 ⇒ 签名静默退回 debug 包。
+#
+#   2. 【新建 / 切换开发分支的第一件事 = 回到本文件核对 `on.push.branches`】
+#      分支不在列表里 ⇒ 该分支上的推送 **0 run**，而 0 run 看起来和「构建通过」
+#      一模一样。旧仓有整整两个波次的推送因为这条没做而从未触发过 CI。
+#      核对判据：`gh run list --branch <分支>` 里能看到本次提交的 run；
+#      「没有 run」≠「绿的」。
+#
+#   3. pull_request.branches 用通配 '**'，不枚举：枚举列表每新建一个分支就漏
+#      一次，维护成本高于通配的一次性代价。
+#
+#   4. paths-ignore 挡住纯文档改动（docs/ 与任意 *.md）⇒ docs-only 推送不占 CI
+#      配额，省掉「文档要攒着一起推」的人工 workaround。
+#      ⚠️ 若将来把本流水线设为分支保护的 required check，纯文档 PR 会因
+#      「无 check 运行」而永久 pending —— 启用 required check 前先处理这一点。
+#
+#   5. lint 是**独立并行 job**，不串进 assemble 关键路径：串进去会让出包关键路径
+#      多 3~6 分钟，且「编译失败」和「lint 新增问题」两类信号混在同一个 job 里。
+#
+#   6. 三个 job 的工具链完全同源（JDK 21 temurin / Gradle 9.7.1 via
+#      gradle/actions/setup-gradle / 同一份 .github/ci-gradle.properties），
+#      Gradle User Home 缓存 key 前缀一致 ⇒ 三个 job 互相命中，不产生第二套缓存。
+#
+#   7. 【绝不下载模型】CI 只产出 APK/AAR；端侧模型权重由用户自行导入，任何
+#      *.litertlm / *.task 都不进 CI（>2GB，且属用户资产）。
+# =============================================================================
+
+on:
+  push:
+    # 【纪律】新增长期开发分支时必须回来补这一行，否则该分支推送 0 run。
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  pull_request:
+    # 通配：见文件头约束 3。paths-ignore 口径与 push 保持一致。
+    branches: ['**']
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  workflow_dispatch:
+    inputs:
+      gradle_task:
+        description: '要执行的 Gradle 任务（模块级验证用，默认 :app:assembleDebug）'
+        required: false
+        default: ':app:assembleDebug'
+        type: string
+        # 开荒期 :app 可能还不存在，此时可手动指定例如 ":core-model:assembleDebug"
+        # 先验证单个模块。输入会过白名单校验（见 Resolve gradle task 步骤）。
+
+# 最小权限：主构建只读代码
+permissions:
+  contents: read
+
+# 同一 ref 上的重复触发只保留最新一次；PR 上取消在途任务，main 上不取消以保证
+# 每个提交都有可追溯的 run。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  JAVA_VERSION: '21'
+  JAVA_DISTRIBUTION: 'temurin'
+  # 与 .github/ci-gradle.properties 的 org.gradle.jvmargs 保持一致；
+  # 命令行 -D 优先级最高，属双保险。
+  GRADLE_JVM_ARGS: '-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8'
+  ARTIFACT_RETENTION_DAYS: '30'
+  # ---------------------------------------------------------------------------
+  # 【硬约束·用户下达】applicationId = com.rickeal.liquidharness，debug 变体带
+  # .debug 后缀，用于与旧 App 同机共存。
+  # 这两个值必须与 app/build.gradle.kts 的 applicationId / applicationIdSuffix 一致；
+  # 改了 app 侧就必须同步改这里 —— 不一致正是下面 applicationId 门禁要报的错，
+  # 不要为了让 CI 变绿去放宽判据。
+  # ⚠️ 旧仓是 com.rickeal.agent，别从那抄。
+  # ---------------------------------------------------------------------------
+  APP_PACKAGE: 'com.rickeal.liquidharness'
+  APP_PACKAGE_DEBUG: 'com.rickeal.liquidharness.debug'
+
+jobs:
+  # ===========================================================================
+  # Job 1：出 debug 包
+  # ===========================================================================
+  assemble-debug:
+    name: Assemble Debug (JDK ${{ matrix.java-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    strategy:
+      # 开荒阶段不要在第一个组合失败时立刻放弃其余组合，但也不要无限重试
+      fail-fast: false
+      matrix:
+        java-version: ['21']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ matrix.java-version }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ matrix.java-version }}
+          # 故意不开 cache: gradle —— Gradle 缓存统一交给下面的
+          # gradle/actions/setup-gradle，避免两套缓存互相污染。
+
+      - name: Bootstrap Android SDK and accept licenses
+        # AGP 会在需要时自动下载 platform / build-tools（android.builder.sdkDownload=true），
+        # 但「许可证未接受」会让下载直接失败 —— 所以必须预先把许可哈希写好。
+        # 这一步漏了，报错形态是「Failed to install the following Android SDK
+        # packages ... licenses have not been accepted」，很容易被误读成网络问题。
+        run: |
+          sdk_root="${ANDROID_HOME:-}"
+          if [ -z "$sdk_root" ] || [ ! -d "$sdk_root" ]; then
+            for candidate in "$HOME/android-sdk" "/usr/local/lib/android/sdk" "$HOME/Android/Sdk" "/opt/android-sdk"; do
+              if [ -d "$candidate" ]; then sdk_root="$candidate"; break; fi
+            done
+          fi
+          if [ -z "$sdk_root" ]; then sdk_root="$HOME/android-sdk"; fi
+
+          echo "ANDROID_HOME=$sdk_root" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$sdk_root" >> "$GITHUB_ENV"
+          echo "::notice::Android SDK root = $sdk_root"
+
+          mkdir -p "$sdk_root/licenses"
+          printf '%s\n%s\n' \
+            '24333f8a63b6825ea9c5514f83c2829b004d1fee' \
+            '8933bad161af4178b1185d1a37fbf41ea5269c55' \
+            > "$sdk_root/licenses/android-sdk-license"
+          printf '%s\n' '84831b9409646a7e0bab842799117058b6a3a0a6' \
+            > "$sdk_root/licenses/android-sdk-preview-license"
+          printf '%s\n' 'd975f751698a77b662f1254ddbeed3901e976f5a' \
+            > "$sdk_root/licenses/intel-android-extra-license"
+          printf '%s\n' '601085b94cd77f0b54ff86406957099beebea79f5' \
+            > "$sdk_root/licenses/android-googletv-license"
+
+          # 镜像里若带 cmdline-tools，再跑一次官方 license 流程做兜底
+          if [ -x "$sdk_root/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$sdk_root/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          fi
+          ls -la "$sdk_root/licenses" || true
+
+      - name: Install CI Gradle properties
+        # 用户级 ~/.gradle/gradle.properties 优先级高于项目内 gradle.properties。
+        # 该文件只放「CI 环境行为」开关，不覆盖项目依赖 / SDK 版本决策。
+        run: |
+          mkdir -p "$HOME/.gradle"
+          if [ -f .github/ci-gradle.properties ]; then
+            cat .github/ci-gradle.properties > "$HOME/.gradle/gradle.properties"
+            echo "::group::Effective CI gradle.properties"
+            cat "$HOME/.gradle/gradle.properties"
+            echo "::endgroup::"
+          else
+            echo "::warning::.github/ci-gradle.properties not found, using project defaults"
+          fi
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          # 版本必须与 gradle/wrapper/gradle-wrapper.properties 的
+          # distributionUrl 一致（当前 9.7.1）；引号必需，否则 YAML 会把
+          # 9.7.1 当成非法数字。
+          gradle-version: '9.7.1'
+          # 该 action 默认校验 gradle-wrapper.jar 的已知校验和。CI 不执行
+          # wrapper（见下个步骤），这个校验只是额外失败面，显式关掉。
+          validate-wrappers: false
+          # v6 起缓存清理参数叫 cache-cleanup（v3/v4 叫 gradle-home-cache-cleanup）。
+          # on-success = 仅在成功时清理，失败后保留依赖以便排查。
+          cache-cleanup: on-success
+          add-job-summary: 'on-failure'
+
+      - name: Toolchain diagnostics
+        # 先单独回显工具链，这样「Gradle 装不起来 / JDK 不对」和「源码编译失败」
+        # 不会混在同一段日志里。awk 实现也回显 —— 守卫脚本若用 awk，方言差异
+        # （mawk / gawk / busybox）会直接改变判据行为。
+        run: |
+          echo "::group::java -version"
+          java -version 2>&1 || true
+          echo "::endgroup::"
+          echo "::group::gradle --version"
+          if ! command -v gradle > /dev/null 2>&1; then
+            echo "::error::'gradle' is not on PATH — gradle/actions/setup-gradle failed to install it. Check the 'Set up Gradle' step logs and the gradle-version input."
+            exit 1
+          fi
+          gradle --version
+          echo "::endgroup::"
+          echo "::group::awk implementation"
+          awk -W version 2>&1 | head -n 1 || awk --version 2>&1 | head -n 1 || echo "awk version unknown"
+          echo "::endgroup::"
+          echo "::group::wrapper pin (仓库钉住的 Gradle 版本)"
+          # CI 走 setup-gradle 装的 gradle（不执行 wrapper，少一个 jar/网络失败面），
+          # 所以这里回显 wrapper 的 distributionUrl 来证明两者版本一致；本地
+          # scripts/localbuild.sh 走的是 ./gradlew。
+          grep -E '^distributionUrl' gradle/wrapper/gradle-wrapper.properties 2>/dev/null || echo "no wrapper properties"
+          echo "::endgroup::"
+          echo "GRADLE_CMD=gradle" >> "$GITHUB_ENV"
+
+      - name: Verify Gradle project skeleton
+        # 新仓开荒期的显式前置断言：settings.gradle.kts 不在 = 构建脚本还没落地。
+        # 没有这一步，失败形态是 Gradle 那句含糊的
+        # 「Directory '...' does not contain a Gradle build」，容易被当成环境问题。
+        run: |
+          if [ ! -f settings.gradle.kts ] && [ ! -f settings.gradle ]; then
+            echo "::error::仓库根没有 settings.gradle.kts —— Gradle 工程骨架尚未落地（本仓开荒期由 app 模块侧提供）。这不是环境问题。"
+            ls -la
+            exit 1
+          fi
+          echo "::notice::settings file: $(ls settings.gradle.kts settings.gradle 2>/dev/null | head -n 1)"
+
+      - name: Resolve gradle task
+        # dispatch input 会被插值进 shell ⇒ 白名单校验，只允许 Gradle 任务名字符集，
+        # 避免 "; curl ..." 这类注入。
+        run: |
+          task="${{ inputs.gradle_task }}"
+          if [ -z "$task" ]; then task=":app:assembleDebug"; fi
+          case "$task" in
+            *[!A-Za-z0-9_:.\-]* )
+              echo "::error::Invalid gradle_task: '$task'. Only [A-Za-z0-9_:.-] is allowed."
+              exit 1 ;;
+          esac
+          echo "GRADLE_TASK=$task" >> "$GITHUB_ENV"
+          echo "::notice::Gradle task: $task"
+
+      - name: Run Gradle task
+        id: assemble
+        # 只做编译/打包，不拉任何模型权重（见文件头约束 7）。
+        run: |
+          "$GRADLE_CMD" \
+            --no-daemon \
+            --stacktrace \
+            "-Dorg.gradle.jvmargs=${GRADLE_JVM_ARGS}" \
+            "$GRADLE_TASK"
+
+      - name: Locate build output
+        id: apk
+        if: success()
+        run: |
+          # library 模块产出 .aar 不是 .apk，故「没找到 APK」本身不算错；
+          # 只有默认任务（:app:assembleDebug）没产出 APK 才是真失败 ——
+          # 那说明 assemble 报绿但产物缺失。
+          apk_path="$(find . -path ./.git -prune -o -type f -name '*.apk' -print 2>/dev/null | head -n 1 || true)"
+          if [ -n "$apk_path" ]; then
+            echo "path=$apk_path" >> "$GITHUB_OUTPUT"
+            echo "::notice::Built APK: $apk_path ($(du -h "$apk_path" | cut -f1))"
+          elif [ "$GRADLE_TASK" = ":app:assembleDebug" ]; then
+            echo "::error::Task :app:assembleDebug succeeded but no .apk was produced"
+            find . -path ./.git -prune -o -type d -name outputs -print 2>/dev/null | head -n 20 || true
+            exit 1
+          else
+            echo "::notice::Task $GRADLE_TASK produced no APK (library modules output .aar) — nothing to upload."
+          fi
+
+      - name: Verify APK applicationId
+        # 门禁意义（用户硬约束）：applicationId 必须是 com.rickeal.liquidharness，
+        # debug 变体必须是 .debug 后缀 —— 后者丢了会与 release 包在设备上互相覆盖，
+        # 直接破坏「新旧 App 同机共存」这个前提，而 Gradle 侧不会有任何报错。
+        # 用 aapt2（AGP 本来就用它，必在 build-tools 里）；找不到就硬失败 ——
+        # 「守卫悄悄跳过」= 守卫不存在。
+        if: success() && steps.apk.outputs.path != ''
+        env:
+          APK_PATH: ${{ steps.apk.outputs.path }}
+        run: |
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/android-sdk}}"
+          aapt2_bin="$(ls -d "$sdk_root"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -n 1 || true)"
+          if [ -z "$aapt2_bin" ] || [ ! -x "$aapt2_bin" ]; then
+            echo "::error::aapt2 not found under $sdk_root/build-tools/*/ — cannot verify applicationId."
+            ls -la "$sdk_root/build-tools" 2>/dev/null || true
+            exit 1
+          fi
+
+          pkg="$("$aapt2_bin" dump packagename "$APK_PATH" 2>/dev/null | tr -d '\r' | head -n 1)"
+          if [ -z "$pkg" ]; then
+            echo "::error::aapt2 无法读出 APK 的包名（$APK_PATH）—— 文件损坏或不是合法 APK。"
+            exit 1
+          fi
+          echo "::notice::applicationId = $pkg （task: $GRADLE_TASK）"
+
+          # 按任务名判期望值：debug 类任务要求 .debug 后缀，其余要求无后缀。
+          case "$GRADLE_TASK" in
+            *[Dd]ebug*)
+              if [ "$pkg" != "$APP_PACKAGE_DEBUG" ]; then
+                echo "::error::debug APK 的 applicationId 是 '$pkg'，期望 '$APP_PACKAGE_DEBUG'。debug 必须带 .debug 后缀，否则会与正式包在设备上互相覆盖（用户要求两者同机共存）。检查 app/build.gradle.kts 的 applicationIdSuffix。"
+                exit 1
+              fi
+              ;;
+            *)
+              if [ "$pkg" != "$APP_PACKAGE" ]; then
+                echo "::error::APK 的 applicationId 是 '$pkg'，期望 '$APP_PACKAGE'（用户硬约束，旧仓的 com.rickeal.agent 不可沿用）。"
+                exit 1
+              fi
+              ;;
+          esac
+          echo "::notice::applicationId 门禁通过：$pkg"
+
+      - name: Upload APK
+        if: success() && steps.apk.outputs.path != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: liquidagent-debug-${{ github.sha }}
+          path: "**/build/outputs/apk/**/*.apk"
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload module AARs
+        # 模块级验证（如 :core-model:assembleDebug）时把 .aar 也留档供人工检查
+        if: success() && steps.apk.outputs.path == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: liquidagent-aars-${{ github.sha }}
+          path: "**/build/outputs/aar/*.aar"
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload failure reports
+        # 失败时把 gradle 报告与测试结果一并留档 —— 只贴日志片段不足以定位。
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-reports-${{ github.sha }}
+          path: |
+            **/build/reports/**
+            **/build/test-results/**
+            **/build/outputs/logs/**
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          echo "::group::JDK"
+          java -version 2>&1 || true
+          echo "::endgroup::"
+          echo "::group::SDK"
+          ls "$ANDROID_HOME" 2>/dev/null | head -n 30 || true
+          ls "$ANDROID_HOME/platforms" 2>/dev/null || true
+          ls "$ANDROID_HOME/build-tools" 2>/dev/null || true
+          echo "::endgroup::"
+          echo "::group::Workspace build dirs"
+          find . -path ./.git -prune -o -type d -name build -print 2>/dev/null | head -n 20 || true
+          echo "::endgroup::"
+          echo "See the 'build-reports-' artifact for full Gradle reports."
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "## LiquidAgent build"
+            echo ""
+            echo "| Item | Value |"
+            echo "|---|---|"
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| Ref | \`${GITHUB_REF}\` |"
+            echo "| JDK | ${{ matrix.java-version }} (${{ env.JAVA_DISTRIBUTION }}) |"
+            echo "| Gradle | 9.7.1 (setup-gradle) |"
+            echo "| Task | \`${GRADLE_TASK}\` |"
+            echo ""
+            if [ "${{ steps.assemble.outcome }}" = "success" ]; then
+              echo "**Result:** build succeeded (artifact retention ${{ env.ARTIFACT_RETENTION_DAYS }} days)."
+            else
+              echo "**Result:** FAILED — 先看 \`build-reports-\` artifact 与 Annotations 面板。"
+              echo ""
+              echo "> 排障顺序：① 先 \`grep -A20 '^\\* What went wrong'\`（Gradle 的真实失败点在"
+              echo "> 那一行，栈顶往往是插件初始化噪音）；② 再确认失败是不是**既有基线**"
+              echo "> 而非本波引入（对比同分支上一个绿 run 的同一任务）。"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ===========================================================================
+  # Job 2：JVM 全量单测门禁
+  #
+  # 走 scripts/fulltest.sh 而不是裸 `gradle test`，理由是裸命令的三个缺口：
+  #   ① 不清 test-results ⇒ task UP-TO-DATE 时会汇总**陈旧 XML** 判绿（假全量）；
+  #   ② 只认 gradle 的「N tests completed」= 残缺口径（fail-fast 下没跑到的模块
+  #      一个用例都不计入）；
+  #   ③ tests=0 时裸命令照样绿 —— 「空跑」被当成「通过」是最坏的假绿。
+  # 脚本内部把这三条都判红（含 TEST-*.xml mtime 新鲜度断言）。
+  # ===========================================================================
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Bootstrap Android SDK and accept licenses
+        # 即使只跑 JVM 单测，AGP 在 configuration 阶段也需要 SDK 可用；
+        # 「许可证未接受」会让 SDK 自动下载失败，故与 Build job 同款预处理。
+        run: |
+          sdk_root="${ANDROID_HOME:-}"
+          if [ -z "$sdk_root" ] || [ ! -d "$sdk_root" ]; then
+            for candidate in "$HOME/android-sdk" "/usr/local/lib/android/sdk" "$HOME/Android/Sdk" "/opt/android-sdk"; do
+              if [ -d "$candidate" ]; then sdk_root="$candidate"; break; fi
+            done
+          fi
+          if [ -z "$sdk_root" ]; then sdk_root="$HOME/android-sdk"; fi
+
+          echo "ANDROID_HOME=$sdk_root" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$sdk_root" >> "$GITHUB_ENV"
+          echo "::notice::Android SDK root = $sdk_root"
+
+          mkdir -p "$sdk_root/licenses"
+          printf '%s\n%s\n' \
+            '24333f8a63b6825ea9c5514f83c2829b004d1fee' \
+            '8933bad161af4178b1185d1a37fbf41ea5269c55' \
+            > "$sdk_root/licenses/android-sdk-license"
+          printf '%s\n' '84831b9409646a7e0bab842799117058b6a3a0a6' \
+            > "$sdk_root/licenses/android-sdk-preview-license"
+          printf '%s\n' 'd975f751698a77b662f1254ddbeed3901e976f5a' \
+            > "$sdk_root/licenses/intel-android-extra-license"
+          printf '%s\n' '601085b94cd77f0b54ff86406957099beebea79f5' \
+            > "$sdk_root/licenses/android-googletv-license"
+
+          if [ -x "$sdk_root/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$sdk_root/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          fi
+          ls -la "$sdk_root/licenses" || true
+
+      - name: Install CI Gradle properties
+        run: |
+          mkdir -p "$HOME/.gradle"
+          if [ -f .github/ci-gradle.properties ]; then
+            cat .github/ci-gradle.properties > "$HOME/.gradle/gradle.properties"
+            echo "::group::Effective CI gradle.properties"
+            cat "$HOME/.gradle/gradle.properties"
+            echo "::endgroup::"
+          else
+            echo "::warning::.github/ci-gradle.properties not found, using project defaults"
+          fi
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          # 与 Build / Lint job 同版本同参数：缓存 key 前缀一致，互相命中。
+          gradle-version: '9.7.1'
+          validate-wrappers: false
+          cache-cleanup: on-success
+          add-job-summary: 'on-failure'
+
+      - name: Toolchain diagnostics
+        run: |
+          echo "::group::java -version"
+          java -version 2>&1 || true
+          echo "::endgroup::"
+          echo "::group::gradle --version"
+          if ! command -v gradle > /dev/null 2>&1; then
+            echo "::error::'gradle' is not on PATH — gradle/actions/setup-gradle failed to install it."
+            exit 1
+          fi
+          gradle --version
+          echo "::endgroup::"
+          echo "::group::awk implementation"
+          awk -W version 2>&1 | head -n 1 || awk --version 2>&1 | head -n 1 || echo "awk version unknown"
+          echo "::endgroup::"
+          echo "::group::wrapper pin (仓库钉住的 Gradle 版本)"
+          grep -E '^distributionUrl' gradle/wrapper/gradle-wrapper.properties 2>/dev/null || echo "no wrapper properties"
+          echo "::endgroup::"
+
+      - name: Run unit tests (aggregate + real XML counts)
+        # 固定口径 = scripts/fulltest.sh：内部 `test --continue`（禁 fail-fast
+        # 残缺口径）+ 先清 test-results + 汇总真实 XML 用例数 + tests=0 判红。
+        # 启动器：仓内 gradlew 若没有可执行位（Git 的 100644 模式），脚本会回退到
+        # PATH 上的 gradle —— 正是 setup-gradle 装的 9.7.1，同 GRADLE_USER_HOME，
+        # 与 Build job 同一个启动器，不是另一套环境。
+        # GRADLE_OPTS 透传本 job 的 JVM 参数（脚本不认 GRADLE_JVM_ARGS，但 gradlew
+        # 启动器读 GRADLE_OPTS）。
+        run: |
+          if [ ! -f scripts/fulltest.sh ]; then
+            echo "::error::scripts/fulltest.sh 缺失 —— 单测门禁口径（--continue / XML 真实计数 / tests=0 判红）全部失效，拒绝降级为裸 gradle test。"
+            exit 1
+          fi
+          export GRADLE_OPTS="-Dorg.gradle.jvmargs=${GRADLE_JVM_ARGS}"
+          bash scripts/fulltest.sh
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports-${{ github.sha }}
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
+            **/build/reports/**
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          echo "::group::JDK"
+          java -version 2>&1 || true
+          echo "::endgroup::"
+          echo "::group::test-results dirs"
+          find . -path ./.git -prune -o -type d -name test-results -print 2>/dev/null | head -n 20 || true
+          find . -path ./.git -prune -o -type f -name 'TEST-*.xml' -print 2>/dev/null | head -n 20 || true
+          echo "::endgroup::"
+          echo "::group::orphan gradle daemons"
+          ps -ef | grep -i '[G]radleDaemon' || echo "none"
+          echo "::endgroup::"
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "## Unit tests"
+            echo ""
+            echo "| Item | Value |"
+            echo "|---|---|"
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| Launcher | scripts/fulltest.sh (fixed \`test --continue\`) |"
+            echo ""
+            echo "> 口径：汇总 \`**/build/test-results/**/TEST-*.xml\` 的 tests/failures/errors/skipped，"
+            echo "> **不采信** gradle 的「N tests completed」（fail-fast 下的残缺口径）。"
+            echo "> \`tests=0\` 判红 —— 空跑不等于通过。"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ===========================================================================
+  # Job 3：lint 门禁（独立并行，不挤占构建关键路径）
+  #
+  # 首轮允许 baseline（app/lint-baseline.xml），但**报告先行**：
+  #   第一轮 —— 本 job 的 \`Upload lint baseline\` artifact 拿到 lint 自己生成的
+  #             app/lint-baseline.xml（⛔ 不要手工从 lint-results XML 合成：
+  #             报告里的 file 属性是 CI 绝对路径，形态与 baseline 不一致，猜错
+  #             就是门禁失效），提交进仓库。
+  #   第二轮 —— 提交基线后由 app 模块把 lint{} 翻成 abortOnError=true
+  #             （+ warningAsErrors，只翻 abortOnError 门禁面太窄），本 job 转硬门禁。
+  # 维护纪律：baseline 只许**缩**（修掉存量 ⇒ 删条目），绝不许涨（regen 把新问题
+  # 冻进 baseline = 僵尸豁免）。
+  # ⚠️ 教训：lint 步骤带 continue-on-error 时，「CI 双绿」**不等于**「lint 通过」——
+  #    失败只红 step 不红 job。判定 lint 真实状态必须读 \`lint-reports-\` artifact。
+  # ===========================================================================
+  lint:
+    name: Lint (baseline gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Bootstrap Android SDK and accept licenses
+        # lint 需要 android.jar（compileSdk 对应 platform）与 AAPT2。
+        run: |
+          sdk_root="${ANDROID_HOME:-}"
+          if [ -z "$sdk_root" ] || [ ! -d "$sdk_root" ]; then
+            for candidate in "$HOME/android-sdk" "/usr/local/lib/android/sdk" "$HOME/Android/Sdk" "/opt/android-sdk"; do
+              if [ -d "$candidate" ]; then sdk_root="$candidate"; break; fi
+            done
+          fi
+          if [ -z "$sdk_root" ]; then sdk_root="$HOME/android-sdk"; fi
+
+          echo "ANDROID_HOME=$sdk_root" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$sdk_root" >> "$GITHUB_ENV"
+          echo "::notice::Android SDK root = $sdk_root"
+
+          mkdir -p "$sdk_root/licenses"
+          printf '%s\n%s\n' \
+            '24333f8a63b6825ea9c5514f83c2829b004d1fee' \
+            '8933bad161af4178b1185d1a37fbf41ea5269c55' \
+            > "$sdk_root/licenses/android-sdk-license"
+          printf '%s\n' '84831b9409646a7e0bab842799117058b6a3a0a6' \
+            > "$sdk_root/licenses/android-sdk-preview-license"
+          printf '%s\n' 'd975f751698a77b662f1254ddbeed3901e976f5a' \
+            > "$sdk_root/licenses/intel-android-extra-license"
+          printf '%s\n' '601085b94cd77f0b54ff86406957099beebea79f5' \
+            > "$sdk_root/licenses/android-googletv-license"
+
+          if [ -x "$sdk_root/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$sdk_root/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          fi
+          ls -la "$sdk_root/licenses" || true
+
+      - name: Install CI Gradle properties
+        run: |
+          mkdir -p "$HOME/.gradle"
+          if [ -f .github/ci-gradle.properties ]; then
+            cat .github/ci-gradle.properties > "$HOME/.gradle/gradle.properties"
+            echo "::group::Effective CI gradle.properties"
+            cat "$HOME/.gradle/gradle.properties"
+            echo "::endgroup::"
+          else
+            echo "::warning::.github/ci-gradle.properties not found, using project defaults"
+          fi
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '9.7.1'
+          validate-wrappers: false
+          cache-cleanup: on-success
+          add-job-summary: 'on-failure'
+
+      - name: Toolchain diagnostics
+        run: |
+          echo "::group::java -version"
+          java -version 2>&1 || true
+          echo "::endgroup::"
+          if ! command -v gradle > /dev/null 2>&1; then
+            echo "::error::'gradle' is not on PATH — gradle/actions/setup-gradle failed to install it."
+            exit 1
+          fi
+          gradle --version
+
+      - name: Run Android Lint
+        # :app:lintDebug 单次调用覆盖 :app 及其全部 library 依赖的源码
+        # （前提：app 模块 lint{} 里 checkDependencies=true），不必每个模块各跑一遍
+        # ——后者并行展开会成倍拉高 runner 占用。不加 --continue：单任务无此语义。
+        # 首轮 baseline 尚未提交时，lint 会以
+        # 「Aborting build since new baseline file was created」失败 —— 这是 lint 的
+        # 设计行为（生成基线后强制中止，逼你提交基线再重跑），不是缺陷。
+        run: |
+          gradle \
+            --no-daemon \
+            --stacktrace \
+            "-Dorg.gradle.jvmargs=${GRADLE_JVM_ARGS}" \
+            :app:lintDebug
+
+      - name: Regenerate lint baseline if missing
+        # 兜底：某些 AGP/lint 版本只在 updateLintBaseline 任务里写 baseline，普通
+        # :app:lintDebug 不落盘。⚠️ 本步是**诊断性兜底不是门禁**（门禁是上面那步），
+        # 故保留 continue-on-error + `|| true`：只在异常态才真正执行，不让
+        # 「修不了基线」这一件事把整条流水线的信号淹没。
+        id: regen
+        if: always()
+        continue-on-error: true
+        run: |
+          if [ -f app/lint-baseline.xml ]; then
+            echo "::notice::app/lint-baseline.xml 已存在，跳过兜底再生。"
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "::warning::lint 未落盘 baseline，尝试 :app:updateLintBaseline 兜底再生"
+          gradle \
+            --no-daemon \
+            --stacktrace \
+            "-Dorg.gradle.jvmargs=${GRADLE_JVM_ARGS}" \
+            :app:updateLintBaseline || true
+          echo "skipped=false" >> "$GITHUB_OUTPUT"
+
+      - name: Locate lint baseline
+        id: baseline
+        if: always()
+        run: |
+          path="$(find . -path ./.git -prune -o -type f -name 'lint-baseline.xml' -print 2>/dev/null | head -n 1 || true)"
+          if [ -n "$path" ]; then
+            echo "path=$path" >> "$GITHUB_OUTPUT"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::group::lint-baseline.xml ($path)"
+            echo "bytes: $(wc -c < "$path") / issue 条目: $(grep -c '<issue' "$path" || true)"
+            head -n 25 "$path" || true
+            echo "::endgroup::"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::未找到 app/lint-baseline.xml —— 首轮需要用 'Upload lint baseline' artifact 取回并提交；若已有基线，检查 :app:lintDebug 是否真的跑了。"
+          fi
+
+      - name: Upload lint baseline
+        # 首轮的唯一目的：把 lint 自己生成的 baseline 回传，提交进仓库。
+        if: always() && steps.baseline.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-baseline-${{ github.sha }}
+          path: ${{ steps.baseline.outputs.path }}
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload lint reports
+        # 报告无论红绿都上传：供与基线核对「存量是否被完整吸收」。
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-reports-${{ github.sha }}
+          path: |
+            **/build/reports/lint-results-*.html
+            **/build/reports/lint-results-*.xml
+            **/build/reports/**
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Write job summary
+        # 所有分支都有兜底，本步自身绝不失败（不能让 summary 反过来打红 job）。
+        if: always()
+        run: |
+          {
+            echo "## Android Lint (baseline gate)"
+            echo ""
+            echo "| Item | Value |"
+            echo "|---|---|"
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| Baseline | ${{ steps.baseline.outputs.exists }} |"
+            echo ""
+            xml="$(find . -path ./.git -prune -o -type f -name 'lint-results-debug.xml' -print 2>/dev/null | head -n 1 || true)"
+            if [ -n "$xml" ] && [ -f "$xml" ]; then
+              count="$(sed -n 's/.*issues[^>]*count="\([0-9]*\)".*/\1/p' "$xml" | head -n 1)"
+              echo "Issues found: **${count:-0}** —— 完整报告见 artifact \`lint-reports-\`。"
+            else
+              echo "未找到 lint XML 报告 —— 检查上方 \`Run Android Lint\` 日志。"
+            fi
+            echo ""
+            echo "> 🔴 判定 lint 是否真的通过，**必须读 \`lint-reports-\` artifact**（真实 issue 集），"
+            echo "> 不能只看 job 颜色。baseline 只许缩不许涨。"
+          } >> "$GITHUB_STEP_SUMMARY"

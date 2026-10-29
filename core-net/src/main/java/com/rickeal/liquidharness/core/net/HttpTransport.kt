@@ -1,0 +1,147 @@
+package com.rickeal.liquidharness.core.net
+
+import okhttp3.Call
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import java.io.Closeable
+import java.io.IOException
+import java.io.InputStream
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+
+/**
+ * 一条已经建立（响应头已到）的 SSE 流。
+ *
+ * 为什么把 [statusCode] 暴露出来而不是在非 2xx 时抛异常：
+ * 「401 / 429 / 5xx」在引擎侧要分成**不同的错误类**（改配置 / 退避重试 / 重试），
+ * 而分类需要状态码与 `Retry-After`。在传输层抛异常就把这些信息变成了字符串。
+ *
+ * [close] 幂等：`response.close()` + `call.cancel()` 都包了 `runCatching`，
+ * 且用 [closed] 挡住重复执行 —— 取消路径上「关两次」是常态（collect 取消 + finally）。
+ */
+class SseStream internal constructor(
+    private val call: Call,
+    private val response: Response,
+) : Closeable {
+
+    private val closed = AtomicBoolean(false)
+
+    val statusCode: Int get() = response.code
+
+    val isSuccessful: Boolean get() = response.isSuccessful
+
+    val contentType: String? get() = response.header("Content-Type")
+
+    /**
+     * `Retry-After` 折算成毫秒。支持秒数与 HTTP-date 两种形态（RFC 9110），
+     * 上限 [MAX_RETRY_AFTER_MILLIS]（60s）—— 服务端要求等一小时时，
+     * 我们应该报错让用户决定，而不是静默挂住 UI。
+     */
+    val retryAfterMillis: Long? get() = parseRetryAfter(response.header("Retry-After"))
+
+    /** 原始字节流。**不要**用 `charStream()`：那会在 chunk 边界上做解码，中文会被切坏。 */
+    fun byteStream(): InputStream = response.body?.byteStream() ?: throw IOException("empty response body")
+
+    /** 错误响应体，截断到 [limit]。用于把服务端的 400 原因带给用户（已过 SecretRedactor）。 */
+    fun errorBodyText(limit: Int = ERROR_BODY_LIMIT): String {
+        val body = response.body ?: return ""
+        return runCatching { body.string().take(limit) }.getOrDefault("")
+    }
+
+    /** 取消在途请求。`stop()` 走这里 —— 只关响应体不会让阻塞中的 read 立刻返回。 */
+    fun cancel() {
+        runCatching { call.cancel() }
+    }
+
+    override fun close() {
+        if (!closed.compareAndSet(false, true)) return
+        runCatching { response.close() }
+        runCatching { call.cancel() }
+    }
+
+    private fun parseRetryAfter(raw: String?): Long? {
+        if (raw.isNullOrBlank()) return null
+        val trimmed = raw.trim()
+        trimmed.toLongOrNull()?.let { seconds ->
+            return (seconds * 1000L).coerceIn(0L, MAX_RETRY_AFTER_MILLIS)
+        }
+        return runCatching {
+            val target = ZonedDateTime.parse(trimmed, DateTimeFormatter.RFC_1123_DATE_TIME)
+                .toInstant()
+                .toEpochMilli()
+            (target - System.currentTimeMillis()).coerceIn(0L, MAX_RETRY_AFTER_MILLIS)
+        }.getOrNull()
+    }
+
+    companion object {
+        private const val ERROR_BODY_LIMIT = 512
+        const val MAX_RETRY_AFTER_MILLIS: Long = 60_000L
+    }
+}
+
+/**
+ * HTTP 传输层。**全仓唯一**允许发 HTTP 的地方（守卫 N1）。
+ *
+ * 三个超时的取值理由（照抄旧仓真机验证过的结论，数字改了但推理不变）：
+ * - `connectTimeout = 15s`：真机弱网下 DNS + TLS 握手超过 15s 基本可判死；
+ * - `readTimeout = 60s`：**必须有限**。正常 SSE 会持续有数据（内容 / 心跳 / 空行），
+ *   60 秒一个字节都没有 = 连接已死。设 0（永不超时）会让 `read()` 永久阻塞，
+ *   UI 表现为「一直转圈、不报错、点停止也没用」（ColorOS 灭屏冻结是这种现场的常客）；
+ * - `callTimeout = 0`：一次长回答本身可能很久，总时长由内核的墙钟闸门管，
+ *   传输层不该二次裁决。
+ *
+ * `retryOnConnectionFailure = false`：OkHttp 默认会**静默重试**一次。那会让
+ * `RetryPolicy` 的退避与日志对不上（用户看到 2 次重试，实际打了 3 次），
+ * 也绕过了「已 emit TextDelta 就不许重试」的内核判定。重试权收归一处。
+ */
+class HttpTransport(
+    private val client: OkHttpClient = defaultClient(),
+) {
+
+    /**
+     * POST 并等待响应头。
+     *
+     * **阻塞**调用（OkHttp `execute()`），必须跑在 IO 调度器上。
+     * 非 2xx 不抛异常 —— 返回带 [SseStream.statusCode] 的流，由引擎分类。
+     *
+     * @param headers 已经是最终形态（含 `Authorization`），本层不注入任何凭据。
+     */
+    fun post(url: String, headers: Map<String, String>, body: String): SseStream {
+        val builder = Request.Builder()
+            .url(url)
+            .post(body.toRequestBody(JSON_MEDIA_TYPE))
+        for ((name, value) in headers) builder.addHeader(name, value)
+        val call = streamingClient().newCall(builder.build())
+        return SseStream(call, call.execute())
+    }
+
+    /**
+     * 每次请求派生一个 client：只有「流式请求」需要 60s readTimeout，
+     * 其它用途（如 MCP 的单次 JSON 调用）要的是别的值。
+     * OkHttp 的 `newBuilder()` 共享连接池与线程池，派生成本很低。
+     */
+    private fun streamingClient(): OkHttpClient = client.newBuilder()
+        .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .callTimeout(0, TimeUnit.MILLISECONDS)
+        .build()
+
+    companion object {
+        const val CONNECT_TIMEOUT_SECONDS: Long = 15L
+        const val READ_TIMEOUT_SECONDS: Long = 60L
+
+        private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+
+        fun defaultClient(): OkHttpClient = OkHttpClient.Builder()
+            .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .callTimeout(0, TimeUnit.MILLISECONDS)
+            .retryOnConnectionFailure(false)
+            .build()
+    }
+}

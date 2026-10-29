@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_title">LiquidHarness</string>
+    <string name="chat_subtitle_empty">未配置端点</string>
+    <string name="chat_input_hint">发消息…</string>
+    <string name="chat_action_send">发送</string>
+    <string name="chat_action_stop">停止</string>
+    <string name="chat_empty_title">先配一个端点</string>
+    <string name="chat_empty_body">在设置里填 baseUrl、模型名和 API Key，然后回来开始对话。</string>
+    <string name="chat_empty_action">去设置</string>
+    <string name="chat_error_no_endpoint">还没有配置端点。请先在设置里添加一个。</string>
+    <string name="chat_error_generic">本次请求失败：%1$s</string>
+    <string name="chat_reasoning_label">思考过程</string>
+    <string name="chat_settings">设置</string>
+</resources>

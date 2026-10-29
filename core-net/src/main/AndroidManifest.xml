@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 骨架阶段不声明任何组件与权限；业务实现落地时再按需补充 -->
+</manifest>

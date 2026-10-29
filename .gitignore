@@ -1,0 +1,33 @@
+# ---- Gradle / Android ----
+.gradle/
+build/
+*/build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.iml
+.idea/
+
+# ---- 产物 ----
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+*.log
+*.hprof
+lint-results*.xml
+lint-baseline.xml.bak
+
+# ---- 密钥：绝不入库 ----
+*.p12
+*.jks
+*.keystore
+keystore.properties
+secrets.properties
+*.env
+
+# ---- 本机脚本 ----
+*.bat.local
+*.sh.local

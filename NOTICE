@@ -1,0 +1,42 @@
+FastestAI LiquidHarness
+Copyright 2026 Rickeal-Boss
+
+This product is derived from LiquidAgent (https://github.com/Rickeal-Boss),
+Copyright 2025 Rickeal-Boss, licensed under the Apache License, Version 2.0.
+
+--------------------------------------------------------------------------------
+Third-party notices
+--------------------------------------------------------------------------------
+
+AndroidLiquidGlass
+  https://github.com/Kyant0/AndroidLiquidGlass
+  Copyright 2025 Kyant0
+  Licensed under the Apache License, Version 2.0
+
+  The files under core-design/ (liquid-glass engine primitives: backdrop
+  recording, lens refraction, interactive highlight, damped drag animation,
+  shaders) are ported from the above project and carry the original copyright
+  headers. Material grading, typography adaptation and business components are
+  original additions built on top of it.
+
+OkHttp
+  https://square.github.io/okhttp/
+  Copyright 2019 Square, Inc.
+  Licensed under the Apache License, Version 2.0
+
+  Used as the HTTP transport in :core-net. Server-Sent Events framing is
+  implemented in this repository (no third-party SSE library).
+
+KotlinX Serialization / Coroutines
+  Copyright 2010-2026 JetBrains s.r.o. and Kotlin Programming Language
+  contributors. Licensed under the Apache License, Version 2.0.
+
+--------------------------------------------------------------------------------
+License scope of referenced designs
+--------------------------------------------------------------------------------
+
+This repository studies the architecture of several agent harnesses for design
+inspiration only. No source code is copied from any project licensed under
+LGPL, AGPL, GPL or any other copyleft license. Structural ideas (tool-loop
+shape, approval gating, progressive disclosure) are re-implemented from
+scratch with original wording and original code.

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+      纯 Compose 应用，不引 AppCompat / Material Components，
+      因此直接继承平台主题 android:Theme.Material.Light.NoActionBar。
+
+      Compose 侧的颜色/排版由 :core-design 的 Theme 接管，这里只负责
+      「无 ActionBar + 浅色窗口底色」——骨架阶段不写死深色，等 core-design
+      的 Liquid Glass 主题落地后再定冷启动那一帧的取值。
+    -->
+    <style name="Theme.LiquidHarness" parent="android:Theme.Material.Light.NoActionBar" />
+
+</resources>

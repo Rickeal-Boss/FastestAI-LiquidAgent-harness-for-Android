@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">设置</string>
+    <string name="settings_section_endpoints">端点</string>
+    <string name="settings_add_endpoint">添加端点</string>
+    <string name="settings_edit_endpoint">编辑端点</string>
+    <string name="settings_endpoint_name">名称</string>
+    <string name="settings_endpoint_base_url">Base URL</string>
+    <string name="settings_endpoint_model">模型 ID</string>
+    <string name="settings_endpoint_key">API Key</string>
+    <string name="settings_endpoint_key_kept">已保存；留空则沿用现有密钥</string>
+    <string name="settings_endpoint_context">上下文窗口（token）</string>
+    <string name="settings_endpoint_private">允许本地/内网地址</string>
+    <string name="settings_action_save">保存</string>
+    <string name="settings_action_test">测试连接</string>
+    <string name="settings_action_delete">删除</string>
+    <string name="settings_action_cancel">取消</string>
+    <string name="settings_action_set_active">设为当前</string>
+    <string name="settings_active_badge">当前</string>
+    <string name="settings_test_ok">连接正常（%1$d ms）</string>
+    <string name="settings_test_fail">连接失败：%1$s</string>
+    <string name="settings_testing">正在测试…</string>
+    <string name="settings_required_hint">名称、Base URL、模型 ID 不能为空</string>
+    <string name="settings_empty">还没有端点</string>
+</resources>
