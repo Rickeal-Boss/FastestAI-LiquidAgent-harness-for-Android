@@ -51,6 +51,34 @@
 - 真机：`_j2env/sdk/platform-tools/adb.exe`（PATH 里没有 adb）。设备 OPPO PDRM00 / Android 13（SDK 33）。
   `adb install` 必须 `MSYS_NO_PATHCONV=1` 且源路径用 `D:/...`；读设备二进制用 `adb exec-out`。
 
+### 🔴 安装前必须唤醒设备（2026-10-29 实测）
+
+**灭屏状态下 `pm install-commit` 会永久挂起**（无输出、无退出码），`adb install` 直接返回
+-1。根因不是 adb 参数，而是 ColorOS 在灭屏后把**安装服务一起冻住** —— 与已知的
+「灭屏 ~10s cgroup 冻结」同源。
+
+正确姿势：
+
+```bash
+A=_j2env/sdk/platform-tools/adb.exe
+$A shell input keyevent KEYCODE_WAKEUP
+MSYS_NO_PATHCONV=1 $A exec-out screencap -p > /tmp/s.png   # 确认不是全黑
+# 再走 install-create / install-write / install-commit 三步
+```
+
+判据：截图非全黑 **且** 能读到桌面或应用界面。只做 `KEYCODE_WAKEUP` 不够 ——
+AOD 状态下屏幕仍可能是黑的。
+
+### 安装三步法（比 `adb install` 可诊断）
+
+```bash
+S=$(MSYS_NO_PATHCONV=1 $A shell pm install-create -r -t -S <bytes> | grep -o '\[[0-9]*\]' | tr -d '[]')
+MSYS_NO_PATHCONV=1 $A shell pm install-write -S <bytes> $S base /data/local/tmp/x.apk
+MSYS_NO_PATHCONV=1 $A shell pm install-commit $S     # 成功输出 "Success"
+```
+
+分步做的好处：挂起时能立刻定位是「写」还是「提交」卡住，而 `adb install` 只给一个 -1。
+
 ---
 
 ## 四、模块边界（编译能过 ≠ 架构没坏）
