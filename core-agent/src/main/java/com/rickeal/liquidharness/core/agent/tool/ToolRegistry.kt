@@ -34,7 +34,7 @@ class ToolRegistry {
         val name = tool.spec.name
         val previous = tools.put(name, tool)
         if (previous != null && previous.spec.source != tool.spec.source) {
-            AgentLogStore.error("内置工具「$name」覆盖了来源不同的已注册工具，请确认装配顺序")
+            AgentLogStore.error("builtin tool overwrote a tool from another source: " + name + " (check wiring order)")
         }
         return RegisterResult.Ok(name, replaced = previous != null)
     }
@@ -54,8 +54,9 @@ class ToolRegistry {
         val existing = tools[name]
         if (existing != null) {
             AgentLogStore.error(
-                "拒绝注册第三方工具「$name」：同名工具已存在（来源=${existing.spec.source}），" +
-                    "不允许覆盖（防名字抢注）"
+                "refused to register contributed tool " + name +
+                    ": name already taken by source=" + existing.spec.source +
+                    " (no overwrite: name squatting guard)"
             )
             return RegisterResult.RejectedDuplicate(name, existing.spec.source)
         }
