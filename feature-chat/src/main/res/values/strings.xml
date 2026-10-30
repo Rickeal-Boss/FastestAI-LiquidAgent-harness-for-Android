@@ -27,7 +27,10 @@
     <string name="chat_error_no_endpoint">还没有配置端点。请先在设置里添加一个。</string>
     <string name="chat_error_generic">本次请求失败：%1$s</string>
     <string name="chat_approval_title">工具「%1$s」请求授权</string>
-    <string name="chat_approval_hint">本仓尚未接通审批回传通道，本次调用不会执行。</string>
+    <string name="chat_approval_hint">允许后该工具会立即执行；「本会话允许相同调用」会记住同工具同参数，之后不再询问。</string>
+    <string name="chat_approval_allow_once">允许一次</string>
+    <string name="chat_approval_allow_session">本会话允许相同调用</string>
+    <string name="chat_approval_deny">拒绝</string>
     <string name="chat_termination_breaker">（已被安全熔断）</string>
     <string name="chat_termination_gate">（请等当前回复结束后再发送）</string>
     <string name="chat_termination_max_rounds">（达到轮次上限）</string>

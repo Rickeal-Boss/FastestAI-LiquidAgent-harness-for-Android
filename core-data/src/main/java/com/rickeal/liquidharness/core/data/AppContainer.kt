@@ -1,7 +1,11 @@
 package com.rickeal.liquidharness.core.data
 
+import android.content.ClipboardManager
 import android.content.Context
 import com.rickeal.liquidharness.core.agent.AgentRunner
+import com.rickeal.liquidharness.core.agent.tool.ToolContext
+import com.rickeal.liquidharness.core.agent.tool.ToolRegistry
+import com.rickeal.liquidharness.core.agent.tool.registerBuiltins
 import com.rickeal.liquidharness.core.engine.RemoteLlmEngine
 import com.rickeal.liquidharness.core.engine.SecretProvider
 import com.rickeal.liquidharness.core.engine.provider.OpenAiCompatibleAdapter
@@ -83,16 +87,57 @@ class AppContainer(context: Context) {
     }
 
     /**
+     * 内置工具面（6 个）。**惰性**装配，理由见下方 `getSystemService` 那段。
+     *
+     * 沙箱根 = `filesDir/harness/workspace`（与 [dataDir] 同源，便于整目录导出 / 清理）。
+     *
+     * ## 🔴 `getSystemService()` 绝不能出现在字段初始化期
+     *
+     * 旧仓真实事故（W78 P0）：Service 字段在初始化期调 `getSystemService()` 抛 NPE，
+     * 直接把进程打死 —— 因为本类在 `Application.onCreate` 里构造，构造期任何异常都是
+     * 启动即崩，而三层闸门全绿（编译过、单测过、lint 过，没有一条判据在 Application
+     * 构造期跑过）。所以这里用 `by lazy`：`getSystemService` 只在「第一次真的要跑
+     * run」时求值，构造期不碰任何系统服务。
+     *
+     * 同理沙箱目录的 `mkdirs()` 也放在 lazy 里；它失败不抛（返回值忽略）——
+     * 工具自己会在读写时给出明确错误，比在 DI 装配期崩掉可诊断得多。
+     */
+    private val tools: ToolRegistry by lazy {
+        val workspace = File(dataDir, "workspace")
+        workspace.mkdirs()
+        val toolContext = ToolContext(
+            sandboxDir = workspace,
+            appContext = appContext,
+            clipboard = appContext.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager,
+        )
+        // 注册结果在此处无处分支：内置工具装进空注册表，`register` 唯一可失败的路径是
+        // 「跨来源同名覆盖」，而那条只存在于 `registerContributed`（内置路径恒为 Ok）。
+        // 显式丢弃而不是包一层假处理 —— 让返回值在这里被真正读过一遍再放掉。
+        ToolRegistry().also { registerBuiltins(it, toolContext) }
+    }
+
+    /**
      * 内核门面：**按 endpointId 缓存**。
      *
      * 缓存是互斥语义的前提，不是性能优化：`runMutex` 在实例里，
      * 每次 new 就等于每次换一把锁（见类头的事故说明）。
      * `getOrPut` 在 `ConcurrentMap` 上是 putIfAbsent 语义，并发首建也只会有一个赢家。
+     *
+     * ## 端点不支持工具时给**空注册表**，不是 null
+     *
+     * 模型看到的工具清单直接来自注册表：`supportsTools=false` 的端点若仍拿到那 6 个工具，
+     * 模型会去调一个协议层根本发不出去的调用（adapter 会整段丢掉 tool 字段），
+     * 用户看到的是「模型反复说要用工具但什么都没发生」。空注册表 = 工具面不存在。
      */
     private val runners = ConcurrentHashMap<String, AgentRunner>()
 
     fun agentRunnerFor(endpoint: RemoteEndpoint): AgentRunner =
-        runners.getOrPut(endpoint.id) { AgentRunner(RemoteEngineBridge(engineFor(endpoint))) }
+        runners.getOrPut(endpoint.id) {
+            AgentRunner(
+                engine = RemoteEngineBridge(engineFor(endpoint)),
+                tools = if (endpoint.supportsTools) tools else ToolRegistry(),
+            )
+        }
 
     suspend fun activeEndpoint(): RemoteEndpoint? {
         val id = settings.activeEndpointId.first() ?: return null

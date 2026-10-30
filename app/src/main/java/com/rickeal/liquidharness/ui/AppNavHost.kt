@@ -105,6 +105,8 @@ private fun ChatRoute(
         onStop = viewModel::stop,
         onOpenSettings = onOpenSettings,
         onDismissError = viewModel::dismissError,
+        // 授权卡的三个键：裁决经 CompletableDeferred 回传给内核（见 resolveApproval）。
+        onResolveApproval = viewModel::resolveApproval,
         onOpenDrawer = onOpenDrawer,
         onNewConversation = viewModel::newConversation,
     )

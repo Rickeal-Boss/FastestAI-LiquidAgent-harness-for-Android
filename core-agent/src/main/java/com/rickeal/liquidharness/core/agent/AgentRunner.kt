@@ -1,5 +1,6 @@
 package com.rickeal.liquidharness.core.agent
 
+import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
 import com.rickeal.liquidharness.core.agent.engine.LlmEngine
 import com.rickeal.liquidharness.core.agent.loop.RunState
 import com.rickeal.liquidharness.core.agent.loop.RunTermination
@@ -13,10 +14,12 @@ import com.rickeal.liquidharness.core.model.TerminationReason
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -85,10 +88,16 @@ class AgentRunner(
     /**
      * 开一次 run。冷流：`collect` 才真正开始（不 collect 不花钱，与引擎契约一致）。
      *
+     * [approval] 按 run 传入（不进构造参数，理由见 `ToolApprovalHandler` 的 KDoc）；
+     * `null` ⇒ 需要审批的工具一律拒绝（fail-closed）。
+     *
+     * `.buffer(BUFFERED)`：收集方退后台时 `send` 会挂起，突发事件（工具批）会被卡住。
+     * 缓冲吸收突发，配合 `ToolApprovalFlow` 的投递超时一起兜「审批卡发不出去」。
+     *
      * 终态事件由 [TurnLoop] 内部经 [RunTermination] 发出；本类只在**异常与取消路径**补发，
      * 因此正常路径不会出现两条 `Finished`。
      */
-    fun run(request: AgentRequest): Flow<AgentEvent> = channelFlow {
+    fun run(request: AgentRequest, approval: ToolApprovalHandler? = null): Flow<AgentEvent> = channelFlow {
         if (!runMutex.tryLock()) {
             // fail-closed：并发请求明确拒绝，不排队（见类头 KDoc）。
             send(AgentEvent.Failed(message = BUSY_MESSAGE, terminatedBy = TerminationReason.GateRejected))
@@ -102,6 +111,7 @@ class AgentRunner(
             engine = engine,
             tools = tools,
             state = state,
+            approval = approval,
             emit = { event -> send(event) },
         )
         busyState.value = true
@@ -119,7 +129,7 @@ class AgentRunner(
             busyState.value = false
             runMutex.unlock()
         }
-    }
+    }.buffer(Channel.BUFFERED)
 
     /**
      * 循环体。异常分类只做三件事：取消标记 / 失败事件 / 让出。

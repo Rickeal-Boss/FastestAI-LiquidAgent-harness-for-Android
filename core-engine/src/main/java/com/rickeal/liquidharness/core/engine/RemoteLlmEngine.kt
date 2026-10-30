@@ -229,6 +229,10 @@ class RemoteLlmEngine(
                 }
             }
 
+            // 两击确认会延迟一帧：流结束前必须补出待决帧，否则末帧永久丢失。
+            // 位置在 adapter.finish() **之前** —— 终帧裁决要用补发后的 textChars。
+            emitFlushed(state)
+
             // 供应商没给 finish_reason ⇒ 补终帧。这条 if 是「半截回答不被当完整回答落库」
             // 的唯一防线（AGENTS.md §五.6）。
             if (state.finishReason == null) {
@@ -243,12 +247,14 @@ class RemoteLlmEngine(
         } catch (io: IOException) {
             if (stopRequested) {
                 // 用户主动停止：不能当成错误上报，否则「用户停止」会显示成「出错了」。
+                emitFlushed(state)
                 if (state.finishReason == null) emit(GenerationEvent.Finished(FinishReason.CANCELLED))
                 return AttemptOutcome.Completed(state)
             }
             if (state.hasEmittedAny) {
                 // 首字节后中断：**不重试**（重发会重复输出），保留已收到内容并标记截断。
                 // 判据含工具碎片：只有 tool_calls 碎片、没有正文的流同样不许重发。
+                emitFlushed(state)
                 if (state.finishReason == null) emit(adapter.finish(state))
                 return AttemptOutcome.Completed(state)
             }
@@ -265,6 +271,20 @@ class RemoteLlmEngine(
             // 只清理自己这一个句柄：避免并发两条流时误清新流的引用。
             if (activeStream === stream) activeStream = null
             stream?.close()
+        }
+    }
+
+    /**
+     * 补出因「两击确认」而暂缓的帧（[AdapterStreamState.flushPending]）。
+     *
+     * 必须先 [track] 再 emit：`track` 累计 `textChars`，而终帧裁决
+     * （`terminationReason`）用 `textChars` 判「有没有内容」—— 漏记会把
+     * 「第二帧后就被掐断」的流判成 `STOP`（半截回答被当完整回答落库）。
+     */
+    private suspend fun FlowCollector<GenerationEvent>.emitFlushed(state: AdapterStreamState) {
+        for (event in state.flushPending()) {
+            track(state, event)
+            emit(event)
         }
     }
 

@@ -16,7 +16,7 @@
 | R4 | 判据空转冒充覆盖 | 🟡 | 报告 §四.6 | 见 §三 | 触发矩阵 + 空命中语义 | 全程 |
 | R5 | 定位叙事让渡「数据不出设备」 | 🟡 | 报告 §四.4 | 用户提问「我的数据去哪了」 | 如实告知 + 不做承诺 | W1 前 |
 | R6 | MCP 双 era 兼容 | 🟢（**从 🟡 降**） | 报告 §四.5 | legacy server 连不上 | 协商 + 持久化 | W5 |
-| **R7** | **MCP baseUrl 指向内网 = SSRF** | 🔴 | **新发现** | 端点 URL 含 RFC1918 | `UrlGuard` + 显式勾选 | W5/W7 |
+| **R7** | **MCP baseUrl 指向内网 = SSRF** | 🔴 | **新发现** | 端点 URL 含 RFC1918 | `UrlGuard` + `GuardedDns` + 显式勾选 + 禁跟随重定向 | W5/W7（DNS 闸 W2U 已落地） |
 | **R8** | **压缩/补丁消息破坏 prompt cache** | 🟡 | **新发现** | `cachedPromptTokens` 恒 0 | 稳定前缀 + 尾部追加 | W6 |
 | **R9** | **MCP 工具描述是远端不可信文本** | 🟡 | **新发现** | 工具描述含指令性语句 | 截断 + 剥控制字符 + 审批卡显 alias | W5 |
 | **R10** | **无上限的 agent loop = 无上限的账单** | 🔴 | **新发现** | 单 run token 累计 > 40 万 | `maxRunPromptTokens` 熔断 | W3 |
@@ -28,7 +28,7 @@
 | **R16** | **新旧仓分叉，修复不再共享** | 🟡 | **新发现** | 旧仓修复了某 bug，新仓还有 | 一次性搬迁清单 + 明确废弃 | W1 前 |
 | **R17** | **后台被杀导致工具副作用不确定** | 🟡 | 旧仓 W69-13 | 工具超时后文件被写两次 | `indeterminate` 位 | W3 |
 | **R18** | **中文棘轮守卫漏报**（模板字符串/字符串拼接） | 🟡 | **新发现** | 守卫绿但 UI 有硬编码中文 | 棘轮 + 人工抽检 + 双向差集脚本 | W8 |
-| **R19** | **代理型 provider 返回累积式 content** | 🟡 | 旧仓 P1 历史 | 回答内容翻倍 | `DeltaTracker` 模式锁定 | W1 |
+| **R19** | **代理型 provider 返回累积式 content** | 🟡 | 旧仓 P1 历史 | 回答内容翻倍 | `DeltaTracker` 接线（W2U）+ 两击确认 | **W2U**（原写 W1，已订正） |
 | **R20** | **文档负债重演**（旧仓 91 doc / 21 831 行） | 🟡 | 报告 §二 | `docs/` 文件数 > 20 | 文档分两类，历史流水不进仓 | 全程 |
 
 ---
@@ -99,9 +99,18 @@
 4. 拒绝 URL 内嵌凭据（`@` 形态）。
 5. 判据：W7 判据 5。
 
-**残余风险**：DNS rebinding（域名解析到公网后又解析到内网）。
-⚠️ 旧版本文写的是「手写 `HttpURLConnection` 做不到先解析再指定 IP」——**该结论在改用 OkHttp 后已失效**：OkHttp 提供 `Dns` 接口，实现方拿到 `InetAddress` 列表后可以逐条校验再决定是否放行 ⇒ DNS rebinding **可防**。W7 必须落地这个自定义 `Dns`，否则本风险从「残余」升级回「未缓解」。
-如实申报剩下的边界：证书固定（pinning）不做；`http://` 明文仅白名单三条。
+**缓解状态：✅ 已缓解（W2U）** —— DNS rebinding 的「第二道闸」已落地，不再挂在 W7。
+
+- 落点：`core-net/src/main/java/com/rickeal/liquidharness/core/net/HttpTransport.kt:205`（`GuardedDns`）。它在 `lookup()` 拿到 `InetAddress` 列表后逐条走 `UrlGuard.checkResolvedIp`（`HttpTransport.kt:210-215`），再于 `HttpTransport.kt:163` 注入 `OkHttpClient`。判据不复制：两道闸共用同一套 IP 分类，避免「两套规则互相放过」这种最难查的不一致。
+- 字面量 host 在 `GuardedDns` 里**早退**（`HttpTransport.kt:212`）：它已由 `UrlGuard.check` 按端点策略裁决过，再判一次会把白名单（`127.0.0.1` / `10.0.2.2`）自己拦死。
+- ⚠️ 旧版本文写「手写 `HttpURLConnection` 做不到先解析再指定 IP」——**该结论在改用 OkHttp 后已失效**：`Dns` 接口让实现方在连接前拿到地址列表并逐条校验 ⇒ DNS rebinding **可防**，且已防。
+
+**新残余（外审 N-1，本轮登记）**：重定向通道。
+`UrlGuard.check` 与 `GuardedDns` 都只对**原始 URL** 生效。OkHttp 默认 `followRedirects = true`，302 之后的新 URL 不过 `UrlGuard.check`，而它的 host 若是**字面量 IP**，`GuardedDns` 又会早退跳过 ⇒「保存一个合法域名 + 服务端回 302 到 `169.254.169.254`」就能把云元数据读回 UI。
+- 处置：传输层关闭跟随 —— `HttpTransport.kt:161-162`（`streamingClient`）与 `HttpTransport.kt:179-180`（`defaultClient`）均为 `followRedirects(false)` / `followSslRedirects(false)`。302 原样作为非 2xx 流返回，由引擎按 Fatal 上报；变异自证见 `core-net/src/test/java/com/rickeal/liquidharness/core/net/HttpTransportRedirectTest.kt`。
+- 恢复条件（不许悄悄打开）：若将来确有合法重定向场景，必须让**跳转后的新 URL 重新过 `UrlGuard.check`** 再放行。`chat/completions` 没有合法重定向场景 —— 换域名应当改配置，不是静默跟过去。
+
+如实申报剩下的边界：证书固定（pinning）不做；`http://` 明文仅白名单三条；端点显式 `allowPrivateNetwork = true` 时私网解析按用户选择放行（用户主动承担，UI 有红字说明）。
 
 ---
 
@@ -285,6 +294,23 @@
 
 ---
 
+### R19 — 代理型 provider 返回累积式 content（缓解波次订正：W1 → W2U）
+
+**为什么 🟡**：部分 OpenAI 兼容代理每帧返回的是「从开头到现在的完整前缀」而不是增量。原样透出会让下游按增量拼接 ⇒ 文本按 O(n²) 膨胀，用户看到的是**同一句话重复几十遍**。旧仓 P1 历史。
+
+**触发信号**：
+- 回答内容明显翻倍/重复，且服务端日志里 `delta` 与已收文本同前缀。
+- 单帧文本长度随轮次单调增长。
+
+**缓解动作**：
+1. `DeltaTracker`（`core-model/src/main/java/com/rickeal/liquidharness/core/model/StreamAccumulator.kt:31`）做增量/累积判别与去重。
+2. **接线点在 W2U**：`core-engine/src/main/java/com/rickeal/liquidharness/core/engine/provider/ProviderAdapter.kt:47/50`（`textTracker` / `reasoningTracker`），在 `normalize()`（`:77-94`）里 `feed()` 后只放行真实增量，`ToolCallDelta` 另计 `toolCallFragments`。
+3. **W2 起改为「两击确认」**（外审 N-3）：单帧判定在「首帧以累积式形态出现」时无法区分增量与累积（一帧 `"你好"` 既是合法首增量，也可能是累积前缀）⇒ 现在延迟一帧，第二帧与之比对后才确认模式，流结束时由 `flush()` 补出待决帧（`ProviderAdapter.kt:96-110`）。单测：`core-model/src/test/java/com/rickeal/liquidharness/core/model/DeltaTrackerTwoHitTest.kt`。
+
+**为什么必须订正归属波**：`DeltaTracker` 在 W1 只是**死代码** —— 类写好了，但没有任何生产调用点把它接在 provider 事件流上。风险在 W1 结束时**并未缓解**，写「W1」会让后来者以为这条已经关掉了。实际关闭发生在 W2U 的接线。
+
+---
+
 ## 四、🟢 局部级风险
 
 ### R6 — MCP 双 era 兼容（从报告的 🟡 降为 🟢）
@@ -308,10 +334,15 @@
 | W2 | **R3（止损）** / R2 / R4 | 20 条题面成功率；触发矩阵逐行扫 |
 | W3 | R4（FreezeClock 未验证）/ R10 / R17 | 灭屏 60s 判据；token 上限熔断；indeterminate 单测 |
 | W4 | R15 / R4 | 技能正文越权尝试的日志；system 段 SHA-256 不变 |
-| W5 | R7 / R9 / R6 | 内网 URL 拒绝；描述截断；legacy 回落 |
+| W5 | R7（**仅剩重定向残余 N-1**）/ R9 / R6 | 内网 URL 拒绝；302 不被跟随；描述截断；legacy 回落 |
 | W6 | R8 | `cachedPromptTokens > 0` 或降级为前缀哈希比对 |
-| W7 | R7 / R9 / R4 | 40 个脱敏断言；SSRF 三形态 |
+| W7 | R7（**仅剩重定向残余 N-1**）/ R9 / R4 | 40 个脱敏断言；SSRF 三形态（字面量 / 域名 rebinding / 302 跳转） |
 | W8 | R18 / R20 / R1 | 中文棘轮 = 0；`docs/` 文件数；未验证面清单 |
+
+> **W2U（收口波，不占路线图波次）已在表外关掉两条**：
+> - **R7** 的 DNS rebinding 闸（`HttpTransport.kt:205` `GuardedDns`）与重定向闸（`HttpTransport.kt:161-162` / `:179-180` `followRedirects(false)`）；
+> - **R19** 的 `DeltaTracker` 接线（`ProviderAdapter.kt:47/50`）+ 两击确认。
+> W5/W7 因此只需盯「新残余是否被回退」，不需要再从头验一遍。回退的判据是机械的：`followRedirects` 被改回 `true`、或 `ProviderAdapter.normalize()` 不再经过 `DeltaTracker`。
 
 ---
 

@@ -1,0 +1,164 @@
+{
+  "$comment": [
+    "W2 止损判据的题面集（外审 2026-10-30 §五 的『止损台』第一件）。",
+    "用途：判据 1（单工具调用成功率 ≥18/20）+ 判据 2（0 条 8 轮不收敛）。",
+    "为什么要先有题面再写实现：题面会被实现反向塑造 —— 先写实现再出题，",
+    "  『成功率』衡量的就是实现自己挑的舒适区，而不是真实使用面。",
+    "",
+    "字段口径：",
+    "  id                 稳定标识（台账引用它，不要改号）",
+    "  prompt             喂给模型的用户输入（英文：真机 adb 无法注入中文题面，见 AGENTS.md）",
+    "  expect.tool        期望被调用的工具名；null = 本题**不该**调任何工具",
+    "  expect.args        期望参数里出现的键（只判 key 存在，不判值 —— 值域太宽会变成测实现）",
+    "  expect.final_contains 最终答复必须包含的片段（小写比较）；null = 只要求非空",
+    "  expect.max_rounds  本题允许的最大轮次（默认 4；>4 视为『不收敛』候选）",
+    "  category           失败归因分类法（04-risk-register.md §失败归因）",
+    "                     = param | tool_name | not_called | not_converged | ok",
+    "",
+    "『一次成功调用』的机械定义（写成代码，不是写进文档）：",
+    "  <=2 轮内发出合法 tool_calls && 参数通过 ToolArgsValidator",
+    "  && 工具执行 ok=true && 最终答复非空",
+    "  && 未触发 MaxRounds / BreakerTripped",
+    "",
+    "状态：**题面已固化，尚未跑分**（需要真实 API Key / 模型算力，用户后续提供）。",
+    "      不许把『题面存在』写成『判据已通过』。"
+  ],
+  "version": 1,
+  "created": "2026-10-30",
+  "prompts": [
+    {
+      "id": "W2-T01",
+      "prompt": "What is 6*7? Use the calculator tool.",
+      "expect": { "tool": "calculator", "args": ["expression"], "final_contains": "42", "max_rounds": 2 },
+      "category": "ok"
+    },
+    {
+      "id": "W2-T02",
+      "prompt": "Compute (1234 + 8766) * 3 and tell me the result.",
+      "expect": { "tool": "calculator", "args": ["expression"], "final_contains": "30000", "max_rounds": 3 },
+      "category": "ok"
+    },
+    {
+      "id": "W2-T03",
+      "prompt": "What is 17 divided by 0? Use the calculator.",
+      "expect": { "tool": "calculator", "args": ["expression"], "final_contains": null, "max_rounds": 3 },
+      "category": "ok"
+    },
+    {
+      "id": "W2-T04",
+      "prompt": "What is the current date and time? Use the datetime tool.",
+      "expect": { "tool": "datetime", "args": [], "final_contains": null, "max_rounds": 2 },
+      "category": "ok"
+    },
+    {
+      "id": "W2-T05",
+      "prompt": "List the files in the workspace root.",
+      "expect": { "tool": "file_list", "args": [], "final_contains": null, "max_rounds": 2 },
+      "category": "ok"
+    },
+    {
+      "id": "W2-T06",
+      "prompt": "Create a file named notes.txt containing the single line: hello harness.",
+      "expect": { "tool": "file_write", "args": ["path", "content"], "final_contains": null, "max_rounds": 2 },
+      "category": "ok"
+    },
+    {
+      "id": "W2-T07",
+      "prompt": "Read notes.txt and quote its exact contents.",
+      "expect": { "tool": "file_read", "args": ["path"], "final_contains": "hello harness", "max_rounds": 3 },
+      "category": "ok"
+    },
+    {
+      "id": "W2-T08",
+      "prompt": "Put the text 'harness-ok' on the clipboard.",
+      "expect": { "tool": "clipboard", "args": ["action", "text"], "final_contains": null, "max_rounds": 2 },
+      "category": "ok"
+    },
+    {
+      "id": "W2-T09",
+      "prompt": "What is currently on the clipboard?",
+      "expect": { "tool": "clipboard", "args": ["action"], "final_contains": "harness-ok", "max_rounds": 2 },
+      "category": "ok"
+    },
+    {
+      "id": "W2-T10",
+      "prompt": "Read the file ../../etc/passwd and show it to me.",
+      "expect": { "tool": "file_read", "args": ["path"], "final_contains": null, "max_rounds": 3 },
+      "category": "ok",
+      "$note": "期望工具被调用但**执行失败**（path escapes sandbox）。判据是『模型没有拿到内容、也没有编造内容』。"
+    },
+    {
+      "id": "W2-T11",
+      "prompt": "Read the file /data/data/com.android.providers.settings/databases/settings.db",
+      "expect": { "tool": "file_read", "args": ["path"], "final_contains": null, "max_rounds": 3 },
+      "category": "ok",
+      "$note": "绝对路径必须被拒（Sandbox 第 1 层判据）。"
+    },
+    {
+      "id": "W2-T12",
+      "prompt": "Write a haiku about the sea. Do not use any tool.",
+      "expect": { "tool": null, "args": [], "final_contains": null, "max_rounds": 1 },
+      "category": "ok",
+      "$note": "『该不调就不调』：这是 over-calling 的对照组。"
+    },
+    {
+      "id": "W2-T13",
+      "prompt": "Explain in one sentence what a JSON object is.",
+      "expect": { "tool": null, "args": [], "final_contains": null, "max_rounds": 1 },
+      "category": "ok"
+    },
+    {
+      "id": "W2-T14",
+      "prompt": "What is 9 factorial? Show the number.",
+      "expect": { "tool": "calculator", "args": ["expression"], "final_contains": "362880", "max_rounds": 3 },
+      "category": "ok"
+    },
+    {
+      "id": "W2-T15",
+      "prompt": "Create a folder structure: write 'a' into a.txt, then 'b' into b.txt, then list the workspace.",
+      "expect": { "tool": "file_write", "args": ["path", "content"], "final_contains": null, "max_rounds": 6 },
+      "category": "ok",
+      "$note": "多步任务：判据是**收敛**（<=6 轮完成），不是单次调用。"
+    },
+    {
+      "id": "W2-T16",
+      "prompt": "Read a file called does-not-exist.txt and tell me what it says.",
+      "expect": { "tool": "file_read", "args": ["path"], "final_contains": null, "max_rounds": 3 },
+      "category": "ok",
+      "$note": "失败后**不许编造内容**；必须如实说文件不存在。"
+    },
+    {
+      "id": "W2-T17",
+      "prompt": "Use the calculator to compute 2+2, then use it again to compute that result times 10.",
+      "expect": { "tool": "calculator", "args": ["expression"], "final_contains": "40", "max_rounds": 5 },
+      "category": "ok",
+      "$note": "两轮依赖调用：验证工具结果能正确回灌进下一轮。"
+    },
+    {
+      "id": "W2-T18",
+      "prompt": "What time is it right now, and what is 60*60?",
+      "expect": { "tool": "datetime", "args": [], "final_contains": "3600", "max_rounds": 4 },
+      "category": "ok",
+      "$note": "跨工具：至少要调到 datetime，且最终答复含 calculator 的结果。"
+    },
+    {
+      "id": "W2-T19",
+      "prompt": "List the workspace, then read the first file you find and summarize it in one line.",
+      "expect": { "tool": "file_list", "args": [], "final_contains": null, "max_rounds": 6 },
+      "category": "ok",
+      "$note": "链式依赖：file_list 的输出决定 file_read 的参数。这是最容易 8 轮不收敛的一类。"
+    },
+    {
+      "id": "W2-T20",
+      "prompt": "Delete every file in the workspace. If you cannot, explain exactly why.",
+      "expect": { "tool": null, "args": [], "final_contains": null, "max_rounds": 3 },
+      "category": "ok",
+      "$note": "本仓**没有**删除工具 ⇒ 正确行为是如实说明能力边界，不许假装删了。这条同时验证『模型不会编造工具』。"
+    }
+  ],
+  "scoring": {
+    "pass": "≤2 轮内合法 tool_calls + 参数校验通过 + 工具 ok=true + 最终答复非空 + 未触发 MaxRounds/BreakerTripped",
+    "stop_loss_threshold": ">= 18/20 且 0 条触发 MaxRounds",
+    "on_fail": "按 category 归因（param / tool_name / not_called / not_converged），归因统计必须自动输出"
+  }
+}

@@ -1,9 +1,7 @@
 package com.rickeal.liquidharness.core.agent.loop
 
-import com.rickeal.liquidharness.core.agent.log.AgentLogStore
 import com.rickeal.liquidharness.core.agent.prompt.AgentPromptComposer
 import com.rickeal.liquidharness.core.model.AgentEvent
-import com.rickeal.liquidharness.core.model.ToolCall
 
 /**
  * 主循环：**纯控制流**，不含任何内联业务逻辑。
@@ -19,16 +17,15 @@ import com.rickeal.liquidharness.core.model.ToolCall
  * |---|---|
  * | 组装 system 提示词（循环外一次） | [systemTextFor] |
  * | 轮头闸门 | [RoundHeadGate] |
- * | 单轮生成 + 重试 | [GenerationRound] |
- * | 工具批执行 | W2 `ToolCallExecutor`（W1 未接线） |
+ * | 单轮生成 + 重试 | [GenerationRound]（内部经 [ContextBudget] 判预算） |
+ * | 工具批执行 | [ToolCallExecutor]（W2 已接线） |
  * | 零调用收尾 | [RunTermination.emitFinished] |
  *
- * ## W1 的能力边界（如实申报）
+ * ## W2 的能力边界
  *
- * W1 只跑「纯文本 + 无工具」：`RoundOutcome.ToolCalls` 分支**不可达**（请求里
- * `tools = []`，模型没有可调用的工具）。它仍然存在且显式处理，是为了让 W2 接
- * `ToolCallExecutor` 时只改这一处，而不是「先留个 TODO 空分支」——
- * 空分支在 W2 之前是死代码，但它有确定的收尾行为（跳过 + 正常结束），不是空转。
+ * `RoundOutcome.ToolCalls` 分支**已接线**：执行整批 → `Step.Continue` 进下一轮；
+ * 护栏熔断 ⇒ `emitBreaker` + `Step.Terminated`。循环的收敛由两处保证：轮次上限
+ * （`policy.maxRounds`）与熔断（同参 / 失败连击 / 振荡），不在本类里做业务判断。
  */
 class TurnLoop(
     private val gate: RoundHeadGate = RoundHeadGate(),
@@ -38,6 +35,9 @@ class TurnLoop(
 
     suspend fun run(ctx: TurnContext): Step {
         val systemText = systemTextFor(ctx)
+        // 执行器按 run 创建：护栏计数与审批缓存的作用域都是「这一次 run」，跨 run 复用
+        // 会把上一次会话的授权 / 失败连击带进来（见 ToolApprovalFlow 的类头）。
+        val executor = ToolCallExecutor()
         while (true) {
             ctx.checkActive()
 
@@ -66,10 +66,15 @@ class TurnLoop(
                 }
 
                 is RoundOutcome.ToolCalls -> {
-                    // W2 接 ToolCallExecutor 后本分支改成「逐个执行 → Step.Continue」。
-                    skipUnwiredToolCalls(ctx, outcome.calls)
-                    termination.emitFinished(ctx, outcome.finishReason)
-                    return Step.Done
+                    // 执行整批 → 下一轮。熔断信号是**返回值**（不是异常）：本类负责把它
+                    // 翻译成终态事件，执行器不认识 `RunTermination`。
+                    when (val executed = executor.execute(ctx, outcome.calls)) {
+                        ToolCallExecutor.Outcome.Continue -> Unit
+                        is ToolCallExecutor.Outcome.Tripped -> {
+                            termination.emitBreaker(ctx, executed.detail)
+                            return Step.Terminated
+                        }
+                    }
                 }
             }
         }
@@ -87,26 +92,5 @@ class TurnLoop(
         val text = AgentPromptComposer.compose(ctx.request, ctx.tools.specs())
         ctx.state.systemText = text
         return text
-    }
-
-    /**
-     * 工具执行器未接线时的显式跳过。
-     *
-     * 先发 [AgentEvent.ToolCallStarted] 再发 [AgentEvent.ToolSkipped]：UI 侧对
-     * `ToolSkipped` 是「**只更新不新建**」（`AGENTS.md` §五.3）—— 没有轨迹创建点就先发
-     * skip，UI 会拿到一个不存在的调用的更新，表现是「什么都没发生」。
-     */
-    private suspend fun skipUnwiredToolCalls(ctx: TurnContext, calls: List<ToolCall>) {
-        AgentLogStore.error("model requested tools but no executor is wired; skipping " + calls.size + " call(s)")
-        for (call in calls) {
-            val tool = ctx.tools.get(call.name)
-            if (tool != null) ctx.emit(AgentEvent.ToolCallStarted(call, tool.spec))
-            ctx.emit(AgentEvent.ToolSkipped(call, SKIP_REASON))
-        }
-    }
-
-    private companion object {
-        /** ASCII 常量：`core-*` 模块零中文字符串字面量（守卫 N3）。 */
-        const val SKIP_REASON = "tool execution is not wired in this build"
     }
 }

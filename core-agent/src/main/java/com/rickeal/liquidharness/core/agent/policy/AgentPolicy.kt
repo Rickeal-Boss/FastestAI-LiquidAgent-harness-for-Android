@@ -30,6 +30,32 @@ data class AgentPolicy(
     /** 写类工具输出截断上限（回执类，几百字符足够）。 */
     val maxWriteToolOutputChars: Int = 2_000,
 
+    /**
+     * 同一工具**连续**失败多少次触发熔断（`ToolExecutionGuard` 的 `failureStreakLimit`）。
+     *
+     * 4 = 旧仓 `DEFAULT_FAILURE_STREAK_LIMIT`。低于 3 会把「换参重试」误杀（模型常常
+     * 第一次参数写错、第二次就好）；高于 5 会让一轮 run 白烧 5 次调用费。
+     */
+    val maxConsecutiveToolFailures: Int = 4,
+
+    /**
+     * 审批卡等待上限。超时按 [com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision.Deny]
+     * 处理（只拒这一个工具，**不终止 run**）。
+     *
+     * 5 分钟：用户可能正在开会 / 切走了应用，卡不能无限等（否则 run 永远挂着、token 账不停）；
+     * 也不该太短（30s 会让用户来不及读完参数就超时）。
+     */
+    val approvalTimeoutMillis: Long = 300_000L,
+
+    /**
+     * 审批卡**事件本身**的投递上限。
+     *
+     * 存在理由（外审点名的协程陷阱）：`AgentRunner` 的 emit 是 `channelFlow.send`，
+     * 收集方退后台后 send 会挂起 ⇒ 卡发不出去、只能干等 [approvalTimeoutMillis]。
+     * 5s 内投递不出去就按拒绝处理（fail-closed，绝不静默放行）。
+     */
+    val approvalEmitTimeoutMillis: Long = 5_000L,
+
     /** 是否自动放行 dangerous 工具。**默认 false = fail-closed**（旧仓同）。 */
     val autoApproveDangerous: Boolean = false,
 

@@ -177,7 +177,7 @@ class TurnLoopTest {
     }
 
     @Test
-    fun toolCallsAreSkippedWithTrajectoryWhenNoExecutorIsWired() {
+    fun toolCallToAnUnregisteredToolIsSkippedAndTheLoopContinues() {
         val events = mutableListOf<AgentEvent>()
         val engine = FakeEngine(
             scripts = listOf(
@@ -185,6 +185,8 @@ class TurnLoopTest {
                     GenerationEvent.ToolCallDelta(0, "c1", "file_read", "{}"),
                     GenerationEvent.Finished(FinishReason.TOOL_CALLS),
                 ),
+                // W2 起工具批执行完是「进下一轮」，不是直接收尾：第二轮才是终点。
+                FakeEngine.textOnly("done"),
             ),
         )
         val ctx = context(engine, events)
@@ -193,7 +195,8 @@ class TurnLoopTest {
 
         assertEquals(Step.Done, step)
         assertEquals(1, events.count { it is AgentEvent.ToolSkipped })
-        // W1 未接线工具执行器：跳过必须留 error 证据，不许静默少一次调用。
+        // 注册表里没有 file_read ⇒ 没有 spec ⇒ 没有轨迹创建点 ⇒ 只能发 skip，不许发 result。
         assertTrue(events.none { it is AgentEvent.ToolResultReceived })
+        assertEquals("done", events.filterIsInstance<AgentEvent.Finished>().single().text)
     }
 }

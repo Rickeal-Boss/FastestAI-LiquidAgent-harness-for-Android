@@ -92,6 +92,28 @@ class AdapterStreamState {
 
         else -> event
     }
+
+    /**
+     * 流结束时补出两条通道的待决帧。
+     *
+     * [DeltaTracker] 的「两击确认」会延迟一帧：第二帧若是歧义帧（以首帧为前缀，
+     * 但还看不出是累积式还是增量式），本帧暂不 emit。流恰好在那里结束
+     * （短回答、`[DONE]` 紧跟第二帧、连接被掐断）时不补发就会**永久丢字**。
+     *
+     * 返回的事件顺序固定「正文 → 思考」：两条通道互不相干，顺序只影响 UI 里
+     * 两段的相对落位，固定顺序便于测试断言。没有待决帧时返回空列表。
+     *
+     * 调用点必须**早于** [ProviderAdapter.finish]：终帧裁决用 `textChars`
+     * 判「有没有内容」，补发的字符要先记进 [track]。
+     */
+    fun flushPending(): List<GenerationEvent> {
+        val events = ArrayList<GenerationEvent>(2)
+        val text = textTracker.flush()
+        if (text.isNotEmpty()) events.add(GenerationEvent.TextDelta(text))
+        val reasoning = reasoningTracker.flush()
+        if (reasoning.isNotEmpty()) events.add(GenerationEvent.ReasoningDelta(reasoning))
+        return events
+    }
 }
 
 /**

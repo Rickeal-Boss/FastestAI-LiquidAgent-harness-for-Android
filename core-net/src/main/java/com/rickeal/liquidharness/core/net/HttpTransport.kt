@@ -115,6 +115,9 @@ class HttpTransport(
      * @param allowPrivateNetwork 端点是否显式允许内网。默认 `false` = fail-closed：
      *   域名解析出来的私网地址会被 [GuardedDns] 拒掉（DNS rebinding 的第二道闸）。
      *   字面量 IP 的裁决在 [UrlGuard.check]（请求前），这里不重复判。
+     *
+     * 重定向**不跟随**（见 [streamingClient]）：302 会原样作为 [SseStream.statusCode] 返回，
+     * 由引擎按 Fatal 上报。
      */
     fun post(
         url: String,
@@ -136,12 +139,27 @@ class HttpTransport(
      * OkHttp 的 `newBuilder()` 共享连接池与线程池，派生成本很低。
      *
      * DNS 校验在这里注入而不是在 [post] 里手动解析：`Dns` 是 OkHttp 唯一的
-     * 「主机名 → 地址」入口，覆盖 HTTP/2、连接复用重解析与重定向后的目标。
+     * 「主机名 → 地址」入口，覆盖 HTTP/2 与连接复用时的重解析。
+     *
+     * ## 为什么必须关掉重定向（外审 P1）
+     *
+     * OkHttp 默认 `followRedirects` / `followSslRedirects` 都是 `true`。跟随重定向会
+     * 让 [UrlGuard.check] 与 [GuardedDns] 之间出现一个洞：两道闸都只对**原始 URL**
+     * 生效，302 之后的新 URL 不过 `UrlGuard.check`，而它的 host 若是字面量 IP，
+     * `GuardedDns` 又会早退跳过 —— 于是「保存一个合法域名 + 服务端回 302 到
+     * `169.254.169.254`」就能把云元数据读回 UI。
+     *
+     * `chat/completions` 没有合法的重定向场景：换域名应当改配置，而不是静默跟过去。
+     * 关掉之后 302 会作为非 2xx 流返回，由引擎按 Fatal 上报 —— 顺带消灭
+     * 「重定向后 SSE 只收到半截」这类脏状态（跨主机重定向会重发请求体，
+     * 部分代理此时只回一段普通 JSON）。
      */
     private fun streamingClient(allowPrivateNetwork: Boolean): OkHttpClient = client.newBuilder()
         .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .callTimeout(0, TimeUnit.MILLISECONDS)
+        .followRedirects(false)
+        .followSslRedirects(false)
         .dns(GuardedDns(allowPrivateNetwork, client.dns))
         .build()
 
@@ -156,6 +174,10 @@ class HttpTransport(
             .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .callTimeout(0, TimeUnit.MILLISECONDS)
             .retryOnConnectionFailure(false)
+            // 与 streamingClient 同一策略：非流式调用（MCP 单次 JSON）同样不需要重定向，
+            // 跟随会让第二道 DNS 闸对跳转后的目标失效。
+            .followRedirects(false)
+            .followSslRedirects(false)
             .build()
     }
 }
@@ -175,6 +197,10 @@ class HttpTransport(
  *
  * 残余风险（如实登记）：域名 rebinding 到 loopback 时本类收紧为拒绝（`allowLoopback = false`），
  * 但端点显式 `allowPrivateNetwork = true` 时仍会放行 —— 那是用户主动承担的风险。
+ *
+ * 重定向通道已由传输层 `followRedirects(false)` / `followSslRedirects(false)` 关闭
+ * （见 [HttpTransport.streamingClient]），所以上面的字面量早退**只对原始 URL 成立**：
+ * 不存在「302 之后的新 URL 既不过 [UrlGuard.check] 又被本类跳过」的窗口。
  */
 internal class GuardedDns(
     private val allowPrivateNetwork: Boolean,

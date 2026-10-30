@@ -19,6 +19,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision
+import com.rickeal.liquidharness.core.design.GlassButton
 import com.rickeal.liquidharness.core.design.GlassCard
 import com.rickeal.liquidharness.core.design.GlassIconButton
 import com.rickeal.liquidharness.core.design.GlassMaterial
@@ -40,6 +42,7 @@ import com.rickeal.liquidharness.core.model.TerminationReason
 internal fun ChatStatusColumn(
     state: ChatUiState,
     onDismissError: () -> Unit,
+    onDecision: (ToolApprovalDecision) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val tokens = LocalGlassTokens.current
@@ -49,7 +52,7 @@ internal fun ChatStatusColumn(
     ) {
         val approval = state.pendingApproval
         if (approval != null) {
-            ApprovalCard(approval = approval)
+            ApprovalCard(approval = approval, onDecision = onDecision)
         }
         val error = state.errorMessage
         if (error != null) {
@@ -68,15 +71,24 @@ internal fun ChatStatusColumn(
 }
 
 /**
- * 工具授权提示卡。
+ * 工具授权卡：**三个键**，一一对应内核的三种裁决。
  *
- * ⚠️ **只有「告知」，没有「授权 / 拒绝」两个键**：本仓内核尚无审批回传通道
- * （`AgentEvent.ApprovalRequested` 已定义，但没有把裁决送回 `TurnLoop` 的入口，
- * 见 `ChatUiState.PendingApproval` 的 KDoc）。按钮点了不会有任何效果，
- * 所以宁可不画 —— 等 `ToolApprovalGate` 落地时，这里补两个 `GlassButton` 即可。
+ * - 允许一次 ⇒ [ToolApprovalDecision.AllowOnce]：只放行这一次；
+ * - 本会话允许相同调用 ⇒ [ToolApprovalDecision.AllowForSession]：内核按「同工具 + 同参数
+ *   指纹」记进会话级缓存，后续相同调用不再弹卡；
+ * - 拒绝 ⇒ [ToolApprovalDecision.Deny]：只拒**这一个工具**，run 继续 —— 模型会收到一条
+ *   ok=false 的结果，有机会改用别的办法。它不是「停止整轮」，所以不叫「取消」。
+ *
+ * ⚠️ 本卡此前只有告知、没有按钮，KDoc 写的理由是「本仓内核尚无审批回传通道，
+ * 按钮点了不会有任何效果，所以宁可不画」。那句话**已过期**：通道是
+ * `ToolApprovalHandler`（按 run 传给 `AgentRunner.run`），裁决经
+ * `ChatViewModel.resolveApproval` 用 `CompletableDeferred` 回传，三个键都有真实效果。
  */
 @Composable
-private fun ApprovalCard(approval: PendingApproval) {
+private fun ApprovalCard(
+    approval: PendingApproval,
+    onDecision: (ToolApprovalDecision) -> Unit,
+) {
     val colors = LocalGlassColors.current
     val tokens = LocalGlassTokens.current
     GlassCard(
@@ -108,6 +120,30 @@ private fun ApprovalCard(approval: PendingApproval) {
                 text = stringResource(R.string.chat_approval_hint),
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.onGlassMuted,
+            )
+            Spacer(modifier = Modifier.height(tokens.gapMd))
+            // 两行而不是一行三个：卡片内宽约 280dp，三枚胶囊按钮横排会把中文标签
+            // 挤成省略号（GlassButton 是 maxLines=1）。允许 / 拒绝并排，会话级授权独占一行。
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(tokens.gapSm),
+            ) {
+                GlassButton(
+                    text = stringResource(R.string.chat_approval_allow_once),
+                    onClick = { onDecision(ToolApprovalDecision.AllowOnce) },
+                    modifier = Modifier.weight(1f),
+                )
+                GlassButton(
+                    text = stringResource(R.string.chat_approval_deny),
+                    onClick = { onDecision(ToolApprovalDecision.Deny) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(modifier = Modifier.height(tokens.gapSm))
+            GlassButton(
+                text = stringResource(R.string.chat_approval_allow_session),
+                onClick = { onDecision(ToolApprovalDecision.AllowForSession) },
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }

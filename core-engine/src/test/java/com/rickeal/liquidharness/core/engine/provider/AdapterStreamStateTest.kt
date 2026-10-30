@@ -14,7 +14,12 @@ import kotlin.test.assertTrue
  */
 class AdapterStreamStateTest {
 
-    /** 累积式：第二帧是「从开头到现在的全文」⇒ 只放行后缀。 */
+    /**
+     * 累积式：第二帧是「从开头到现在的全文」⇒ 只放行后缀。
+     *
+     * 判定改成「两击确认」后，第二帧是**歧义帧**（增量流也可能以首帧开头），
+     * 暂缓一帧；第三帧仍以第二帧为前缀才确认累积式，并一次补出后缀。
+     */
     @Test
     fun cumulativeFramesEmitOnlyTheNewSuffix() {
         val state = AdapterStreamState()
@@ -23,12 +28,11 @@ class AdapterStreamStateTest {
             GenerationEvent.TextDelta("ab"),
             state.normalize(GenerationEvent.TextDelta("ab")),
         )
+        assertNull(state.normalize(GenerationEvent.TextDelta("abcd")))
         assertEquals(
             GenerationEvent.TextDelta("cd"),
             state.normalize(GenerationEvent.TextDelta("abcd")),
         )
-        // 重复帧（服务端重发同一前缀）⇒ 不产生事件。
-        assertNull(state.normalize(GenerationEvent.TextDelta("abcd")))
         assertEquals("abcd", state.textTracker.text)
     }
 
@@ -55,6 +59,8 @@ class AdapterStreamStateTest {
 
         state.normalize(GenerationEvent.TextDelta("ab"))
         state.normalize(GenerationEvent.ReasoningDelta("ab"))
+        // 思考通道的第二帧同样是歧义帧，要第三帧才确认累积式。
+        assertNull(state.normalize(GenerationEvent.ReasoningDelta("abcd")))
         assertEquals(
             GenerationEvent.ReasoningDelta("cd"),
             state.normalize(GenerationEvent.ReasoningDelta("abcd")),
@@ -62,6 +68,34 @@ class AdapterStreamStateTest {
 
         assertEquals("ab", state.textTracker.text)
         assertEquals("abcd", state.reasoningTracker.text)
+    }
+
+    /**
+     * 流在歧义帧处结束：`flushPending()` 必须补出两条通道的待决帧。
+     *
+     * 不补发的后果是**末帧永久丢失**（短回答 / `[DONE]` 紧跟第二帧）。
+     */
+    @Test
+    fun flushPendingEmitsWithheldFrames() {
+        val state = AdapterStreamState()
+        state.normalize(GenerationEvent.TextDelta("哈"))
+        state.normalize(GenerationEvent.TextDelta("哈哈"))
+        state.normalize(GenerationEvent.ReasoningDelta("想"))
+        state.normalize(GenerationEvent.ReasoningDelta("想想"))
+
+        val flushed = state.flushPending()
+
+        assertEquals(
+            listOf(
+                GenerationEvent.TextDelta("哈哈"),
+                GenerationEvent.ReasoningDelta("想想"),
+            ),
+            flushed,
+        )
+        assertEquals("哈哈哈", state.textTracker.text)
+        assertEquals("想想想", state.reasoningTracker.text)
+        // 幂等：补过之后没有待决帧。
+        assertTrue(state.flushPending().isEmpty())
     }
 
     /**

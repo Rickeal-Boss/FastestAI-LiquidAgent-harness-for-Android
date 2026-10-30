@@ -6,12 +6,17 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +24,7 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -116,6 +122,14 @@ fun GlassScaffold(
     val overlay = LocalBottomBarOverlay.current
     // 顶部页签条占位（W89，横屏手机）：整列下移，见 LocalTopBarOverlay KDoc。
     val topOverlay = LocalTopBarOverlay.current
+    // 键盘可见性：只服务 snackbar 槽位（状态卡不能被 IME 盖住，见下方 Box 的注释）。
+    // 必须先把 WindowInsets 实例取出来，再在 derivedStateOf 的普通 lambda 里读 getBottom
+    // —— `WindowInsets.ime` 是 @Composable @ReadOnlyComposable，直接放进 lambda 会编不过。
+    val density = LocalDensity.current
+    val imeInsets = WindowInsets.ime
+    val imeVisible by remember(imeInsets, density) {
+        derivedStateOf { imeInsets.getBottom(density) > 0 }
+    }
     CompositionLocalProvider(
         LocalBackdrop provides layerBackdrop,
     ) {
@@ -157,7 +171,15 @@ fun GlassScaffold(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 104.dp + overlay),
+                    // 键盘弹起时状态卡必须跟着上浮（2026-10-30 真机实测缺陷）：
+                    // 原先只有 `padding(bottom = 104.dp + overlay)`，而 104+84dp 的落点
+                    // 在键盘区域**之内** ⇒ 错误卡被 IME 完全盖住。真机现场：发送一个
+                    // 会 302 的请求，uiautomator 里能读到「本次请求失败：…(HTTP 302)」，
+                    // 但截图上一个字都看不见 —— 用户会以为「点了发送什么都没发生」。
+                    // 键盘可见时改垫 12dp（贴在键盘上沿），不再叠加页签占位：
+                    // 页签此时已被键盘完全遮住，再垫 84dp 只会让卡片飘在半空。
+                    .padding(bottom = if (imeVisible) 12.dp else 104.dp + overlay)
+                    .imePadding(),
             ) {
                 snackbarHost()
             }

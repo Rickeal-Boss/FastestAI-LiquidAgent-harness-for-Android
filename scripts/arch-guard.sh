@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# arch-guard.sh — LiquidAgent harness-v2 架构守卫（18 条，表驱动）
+# arch-guard.sh — LiquidAgent harness-v2 架构守卫（23 条判据，表驱动）
 #
 # 用法：
-#   bash scripts/arch-guard.sh            # 跑全部 18 条
+#   bash scripts/arch-guard.sh            # 跑全部 23 条判据
 #   bash scripts/arch-guard.sh --verbose  # 额外回显每条扫了多少文件
 #   bash scripts/arch-guard.sh --help
 #
@@ -48,7 +48,7 @@
 #      全仓逐条告警 = 没有告警。
 #
 # -----------------------------------------------------------------------------
-# 退出码：0 = 18 条全 OK；1 = 有 VIOLATION 或 SELF_FAULT（两者都判红）
+# 退出码：0 = 23 条全 OK；1 = 有 VIOLATION 或 SELF_FAULT（两者都判红）
 # =============================================================================
 set -uo pipefail
 
@@ -700,13 +700,21 @@ g14() {
 }
 
 # =============================================================================
-# G15 声明面（INTERNET 权限 + 明文流量关闭）
+# G15 声明面（INTERNET 权限 + 明文流量关闭 + 禁备份）
 # =============================================================================
+# G15c 的理由：`android:allowBackup` 默认为 **true**，一旦被谁「顺手」改成 true
+# 或整条删掉，Auto Backup 会把应用私有目录整体带走 —— 其中就有
+# EndpointSecretStore 的 Keystore 信封密文与端点清单（含 baseUrl）。
+# 密文在**同机型**上仍可被同一 Keystore 解开，等于把凭据连同它要访问的地址一起
+# 打包给云端/换机通道。这不是推演：旧仓 gallery#1325 的真实事故就是备份恢复了
+# 一份本不该离开设备的配置。默认值 true ⇒ 必须显式钉成 false，且必须由守卫看着。
 g15() {
   guard_present "G15a" "INTERNET 权限" \
     'android\.permission\.INTERNET' "$APP_MANIFEST"
   guard_present "G15b" "禁明文流量" \
     'android:usesCleartextTraffic="false"' "$APP_MANIFEST"
+  guard_present "G15c" "禁备份" \
+    'android:allowBackup="false"' "$APP_MANIFEST"
 }
 
 # =============================================================================
@@ -857,7 +865,7 @@ g18() {
 # =============================================================================
 # 主流程
 # =============================================================================
-echo "================ arch-guard（18 条） ================"
+echo "================ arch-guard（23 条） ================"
 echo "root = $ROOT"
 hr
 g1; g2; g3; g4; g5; g6; g7; g8; g9

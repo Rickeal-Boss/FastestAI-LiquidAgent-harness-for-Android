@@ -68,10 +68,14 @@ data class StreamingState(
 /**
  * 一次等待用户裁决的工具调用。
  *
- * 只承载**展示所需**的字段：本仓内核尚无审批回传通道（`AgentEvent.ApprovalRequested`
- * 已定义，但没有把裁决送回 `TurnLoop` 的入口），所以这里刻意不放旧仓的
- * `CompletableDeferred<ToolApprovalDecision>` —— 放一个永远没人 complete 的句柄
- * 比不显示这张卡更误导。
+ * 只承载**展示所需**的字段；裁决句柄（`CompletableDeferred<ToolApprovalDecision>`）
+ * **刻意不放在这里**，而是留在 [ChatViewModel] 的私有字段 —— 状态对象会被复制、
+ * 进 Compose 快照、被日志打印，把一个挂起句柄塞进来既泄漏又没有任何展示价值。
+ *
+ * 历史：W2U 时本 KDoc 写的是「本仓内核尚无审批回传通道，放一个永远没人 complete
+ * 的句柄比不显示这张卡更误导」。**W2 已把通道接通**（`AgentRunner.run(request, approval)`
+ * → `TurnContext.approval` → `ToolApprovalFlow`），那条判断的前提不再成立，
+ * 已按现状改写 —— 过期注释在本仓等同于错误注释。
  */
 @Immutable
 data class PendingApproval(

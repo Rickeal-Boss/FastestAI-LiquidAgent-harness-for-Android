@@ -1,18 +1,26 @@
 package com.rickeal.liquidharness.feature.chat
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision
 import com.rickeal.liquidharness.core.design.GlassScaffold
+import com.rickeal.liquidharness.core.design.LocalBottomBarOverlay
 import com.rickeal.liquidharness.core.design.LocalGlassColors
 
 /**
@@ -26,6 +34,8 @@ import com.rickeal.liquidharness.core.design.LocalGlassColors
  *
  * @param onNewConversation 非空才渲染「新对话」入口。null = 宿主不提供该能力
  *   （`app` 尚未接线时保持 null，顶栏只留设置键，不留一个点了没反应的图标）。
+ * @param onResolveApproval 授权卡上的三个键：允许一次 / 本会话允许相同调用 / 拒绝。
+ *   直接透传给 ViewModel —— 裁决的语义与回传通道都在内核侧，本屏只负责把点击送出去。
  */
 @Composable
 fun ChatScreen(
@@ -35,6 +45,7 @@ fun ChatScreen(
     onStop: () -> Unit,
     onOpenSettings: () -> Unit,
     onDismissError: () -> Unit,
+    onResolveApproval: (ToolApprovalDecision) -> Unit,
     modifier: Modifier = Modifier,
     onNewConversation: (() -> Unit)? = null,
     onOpenDrawer: (() -> Unit)? = null,
@@ -54,11 +65,30 @@ fun ChatScreen(
             )
         },
         bottomBar = {
-            // 键盘 / 导航栏内边距挂在整列上：上下文条与用量行要跟着输入框一起被顶上去，
-            // 只给输入框加会让它们被键盘盖住。
+            // 悬浮页签占位（2026-10-30 真机实测回归修复）：
+            // app 层的 GlassNavBar 是 NavHost 的**兄弟悬浮层**（叠在内容之上，见
+            // AppScaffold.ShellContent），而 GlassScaffold 的 bottomBar 槽位不做任何
+            // 让位 —— 不给这里加 padding，输入栏会整个压在玻璃页签底下。
+            // 真机现场：竖屏下对话页 uiautomator 里 EditText 节点数为 0，横屏（Top 形态、
+            // overlay=0dp）同一屏正常 —— 即「被页签遮住」而不是「没渲染」。
+            // 旧仓同一处有这段 padding（`ChatScreen.kt:262` 的「输入框会整个压进页签区」），
+            // W2U 原样搬入时漏了。
+            //
+            // 键盘弹出时页签已被 IME 完全盖住 ⇒ 不再垫 overlay，否则输入栏被
+            // navigationBarsPadding/imePadding 顶上去之后又多出一份 84dp 的空隙。
+            // `WindowInsets.ime` 是 @Composable @ReadOnlyComposable 取值，必须先取出
+            // 实例再在 derivedStateOf 的普通 lambda 里读 getBottom（旧仓 Wave 51 F1）。
+            val density = LocalDensity.current
+            val imeInsets = WindowInsets.ime
+            val imeVisible by remember(imeInsets, density) {
+                derivedStateOf { imeInsets.getBottom(density) > 0 }
+            }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    // 顺序不可换：先让出悬浮页签，再让出系统导航区 / 键盘。
+                    // 反过来会让 overlay 的 84dp 叠在 nav 区之上，输入栏离底边多出一截。
+                    .padding(bottom = if (imeVisible) 0.dp else LocalBottomBarOverlay.current)
                     .navigationBarsPadding()
                     .imePadding(),
             ) {
@@ -89,7 +119,11 @@ fun ChatScreen(
             }
         },
         snackbarHost = {
-            ChatStatusColumn(state = state, onDismissError = onDismissError)
+            ChatStatusColumn(
+                state = state,
+                onDismissError = onDismissError,
+                onDecision = onResolveApproval,
+            )
         },
     ) { _ ->
         // GlassScaffold 的 padding 只带「悬浮页签占位」；本屏没有页签，

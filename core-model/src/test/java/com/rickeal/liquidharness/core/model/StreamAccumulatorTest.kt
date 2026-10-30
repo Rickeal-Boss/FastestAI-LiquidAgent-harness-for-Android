@@ -133,12 +133,15 @@ class StreamAccumulatorTest {
         assertTrue(accumulator.toGeneration().failed?.retryable == true)
     }
 
-    /** DeltaTracker 的判定是显式的：两帧之后必须能说出「累积式还是增量式」。 */
+    /** DeltaTracker 的判定是显式的：确认之后必须能说出「累积式还是增量式」。 */
     @Test
     fun deltaTrackerReportsDetectedMode() {
         val cumulative = DeltaTracker()
         cumulative.feed("ab")
         cumulative.feed("abcd")
+        // 第二帧只是歧义帧（增量流也可能恰好以首帧开头），要第三帧才确认。
+        assertNull(cumulative.isCumulative)
+        cumulative.feed("abcdef")
         assertEquals(true, cumulative.isCumulative)
 
         val incremental = DeltaTracker()
@@ -166,16 +169,20 @@ class StreamAccumulatorTest {
      *
      * 回归用例（外审 P0-2）：旧实现在该分支 `buffer.setLength(0); buffer.append(frame)`，
      * tracker.text 只剩最后一帧，而下游按「旧文 + 本帧」拼接 ⇒ 两处文本永久发散。
+     *
+     * 注意期望值是 `ababcdXY` 而不是 `abcdXY`：两击确认把第二帧判成了**增量帧**
+     * （第三帧不满足前缀关系 ⇒ 整条流是增量式），所以三帧都要计入全文，
+     * 这正是「不丢字」的正确形态。
      */
     @Test
     fun cumulativeModeKeepsEarlierTextWhenPrefixBreaks() {
         val tracker = DeltaTracker()
         assertEquals("ab", tracker.feed("ab"))
-        assertEquals("cd", tracker.feed("abcd"))
-        // 前缀被破坏：整帧当新增，但**已有全文必须保留**。
-        assertEquals("XY", tracker.feed("XY"))
+        // 第二帧歧义，暂缓输出；第三帧判成增量式后与第二帧一起补出。
+        assertEquals("", tracker.feed("abcd"))
+        assertEquals("abcdXY", tracker.feed("XY"))
 
-        assertEquals("abcdXY", tracker.text)
+        assertEquals("ababcdXY", tracker.text)
         assertEquals(false, tracker.isCumulative)
     }
 }

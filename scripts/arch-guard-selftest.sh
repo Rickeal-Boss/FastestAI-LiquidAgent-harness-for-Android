@@ -13,8 +13,10 @@
 #   ② 目标守卫从 OK 变成 VIOLATION/SELF_FAULT（红）；
 #   ③ 该守卫的**输出区段里出现本次注入的证据**（文件:行 或 注入的行内容）。
 #      ⚠️ ③ 是必须的：只看「ID 变红」无法区分「红的正是这次变异」和「它本来就红」。
-#      本仓当前 G1/G6/G11/G16/G18 在真实树上就是红的（树正在被并行修），没有 ③
-#      的话这些 case 会变成恒真的装饰。
+#      本仓在 8186db9 时点 G1/G6/G11/G16/G18 在真实树上就是红的（树正在被并行修），
+#      没有 ③ 的话这些 case 会变成恒真的装饰。
+#      Verified as of 2026-10-30（baeb574 之后）：真实树 23 条全绿，但这不改变 ③ 的
+#      必要性 —— 守卫「今天红」只是巧合证据，「注入后必须红」才是判据。
 #
 # -----------------------------------------------------------------------------
 # 与 docs/02-roadmap.md §5.2 纪律 5 的关系
@@ -32,8 +34,8 @@
 #                    个变异落在不同文件/不同守卫的判据域），证据串按守卫区段隔离，
 #                    归因强度与逐条跑等价，但耗时是 1/N。
 #                    理由：本仓在 Windows/Git Bash 上一次 arch-guard 实测 50~220s
-#                    （进程创建开销），22 条逐条跑 = 20 分钟起步 ⇒ 必然没人跑。
-#   --per-case      每条变异一棵独立临时树 + 一次 arch-guard（22 次）。最严格，适合
+#                    （进程创建开销），23 条逐条跑 = 20 分钟起步 ⇒ 必然没人跑。
+#   --per-case      每条变异一棵独立临时树 + 一次 arch-guard（23 次）。最严格，适合
 #                    夜间/本地深度验证。CI 用默认 batch。
 #
 #   其他参数：
@@ -85,10 +87,10 @@ START_EPOCH="$(date +%s)"
 # =============================================================================
 # case 表：id|一句话说明|变异函数|期望证据（空 = 由变异函数动态写入 $EV_DIR/<id>）
 #
-# 覆盖口径 = arch-guard.sh 实际产出的**全部 22 个 ID**：
-#   G1 G1b G2 G3 G4a G4b G5a G5b G6 G7 G8 G9 G10 G11 G12 G13 G14 G15a G15b G16 G17 G18
-#   （roadmap 说「18 条」，但 G1/G4/G5/G15 各拆了 a/b 子判据 —— 子判据是独立的
-#     断言，必须各自自证，否则拆出来的那一半会变成没人看的分支。）
+# 覆盖口径 = arch-guard.sh 实际产出的**全部 23 个 ID**：
+#   G1 G1b G2 G3 G4a G4b G5a G5b G6 G7 G8 G9 G10 G11 G12 G13 G14 G15a G15b G15c G16 G17 G18
+#   （G1/G4/G5/G15 各拆了 a/b/c 子判据 —— 子判据是独立的断言，必须各自自证，
+#     否则拆出来的那一半会变成没人看的分支。故「G 编号」数 ≠ 判据数。）
 # =============================================================================
 CASES=(
   "G1|网络栈收口：core-model 里 import okhttp3（只许在 core-net）|m_g1|__SelftestG1.kt:3:import okhttp3.OkHttpClient"
@@ -110,6 +112,7 @@ CASES=(
   "G14|lint baseline 只缩：baseline 里再加一条 issue|m_g14|"
   "G15a|INTERNET 权限：从 manifest 删掉该权限|m_g15a|缺少必需声明：android\\.permission\\.INTERNET"
   "G15b|禁明文流量：从 manifest 删掉 usesCleartextTraffic=false|m_g15b|缺少必需声明：android:usesCleartextTraffic=\"false\""
+  "G15c|禁备份：把 manifest 的 allowBackup=false 改成 true|m_g15c|缺少必需声明：android:allowBackup=\"false\"  （文件：app/src/main/AndroidManifest.xml）"
   "G16|中文硬编码棘轮：core-model 里写死一句中文文案|m_g16|__SelftestG16.kt:3:val selftestCjk = \"自证中文字面量\""
   "G17|禁密钥字段：@Serializable 类里加 val apiKey|m_g17|__SelftestG17.kt:7  @Serializable 类内出现密钥字段: apiKey"
   "G18|引擎调用点收口：core-model 里调 engine.generate(|m_g18|__SelftestG18.kt:3:fun selftestDrive(engine: Any) { engine.generate(1) }"
@@ -384,6 +387,21 @@ m_g15a() {
 
 m_g15b() {
   drop_line "$1" "$APP_MANIFEST" 'android:usesCleartextTraffic="false"'
+}
+
+# G15c 的变异必须是**改值**而不是删行：allowBackup 的默认值就是 true，
+# 「删掉这一行」与「写成 true」对系统是同一个后果，但对 grep 型守卫是两种形态。
+# 这里选「改 true」—— 它同时覆盖了「守卫是否钉的是 false 这个值」，
+# 而「删行」已被 G15a/G15b 两个 case 证过同类形态。
+m_g15c() {
+  local abs="$1/$APP_MANIFEST" content
+  [ -f "$abs" ] || return 1
+  grep -q 'android:allowBackup="false"' "$abs" 2>/dev/null || return 1
+  content="$(sed 's/android:allowBackup="false"/android:allowBackup="true"/' "$abs")" || return 1
+  printf '%s\n' "$content" > "$abs" || return 1
+  # 变异必须真的生效（三条判据的第 ① 条），否则红/绿都无从归因
+  grep -q 'android:allowBackup="true"' "$abs" 2>/dev/null || return 1
+  return 0
 }
 
 m_g16() {

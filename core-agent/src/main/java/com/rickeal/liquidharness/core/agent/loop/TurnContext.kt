@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.core.agent.loop
 
 import com.rickeal.liquidharness.core.agent.AgentRequest
+import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
 import com.rickeal.liquidharness.core.agent.engine.LlmEngine
 import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.agent.tool.ToolRegistry
@@ -41,6 +42,15 @@ class TurnContext(
     val tools: ToolRegistry,
     /** 可变运行状态（轮次 / token / 已收文本 / 取消标记）。 */
     val state: RunState,
+    /**
+     * 审批通道。**按 run 传入**（[com.rickeal.liquidharness.core.agent.AgentRunner.run] 的参数），
+     * 不进任何长生命周期对象 —— `AgentRunner` 按端点缓存，持有 UI 回调等于持有 Activity
+     * （与 `ToolContext` 的「绝不持有 Activity」同款泄漏面）。
+     *
+     * `null` = **本 run 没有审批通道** ⇒ 需要审批的工具一律拒绝（fail-closed，见 `ToolApprovalFlow`）。
+     * 这条默认值让 W1 的既有调用点（含单测）不需要改动就能编译。
+     */
+    val approval: ToolApprovalHandler? = null,
     /** 事件出口。**内核发出的每一个 AgentEvent 都必须经过它**，便于单测断言序列。 */
     val emit: suspend (AgentEvent) -> Unit,
 ) {

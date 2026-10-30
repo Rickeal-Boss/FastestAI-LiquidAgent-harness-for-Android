@@ -1,13 +1,12 @@
 package com.rickeal.liquidharness.core.agent.loop
 
-import com.rickeal.liquidharness.core.agent.context.sanitizeForProvider
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
 import com.rickeal.liquidharness.core.model.AgentEvent
 import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.FinishReason
 import com.rickeal.liquidharness.core.model.GenerationEvent
 import com.rickeal.liquidharness.core.model.GenerationRequest
-import com.rickeal.liquidharness.core.model.Role
+import com.rickeal.liquidharness.core.model.TokenEstimator
 import com.rickeal.liquidharness.core.model.ToolCall
 import com.rickeal.liquidharness.core.model.ToolCallFragmentTracker
 import kotlinx.coroutines.CancellationException
@@ -40,6 +39,7 @@ class GenerationRound(
     private val maxRetries: Int = 1,
     private val backoff: suspend (attempt: Int) -> Unit = { attempt -> delay(500L * attempt) },
     private val termination: RunTermination = RunTermination(),
+    private val budget: ContextBudget = ContextBudget(),
 ) {
 
     /** 跑完一轮。**保证返回时已 emit 终态事件**（`Terminated` 分支内已 emit `Failed`）。 */
@@ -85,19 +85,15 @@ class GenerationRound(
     }
 
     /**
-     * 组装本轮的请求消息：`system` 固定在最前（**id 稳定派生**），其后是工作副本。
+     * 组装本轮的请求消息：**委托 [ContextBudget.prepare]**。
      *
-     * - `system` 的 id 用 `sys:<runId>` 而不是 `newId()`：每轮生成复用同一个 id，
-     *   保证前缀字节稳定（旧仓 `ContextCompressor.kt:159-166` 的补丁消息用稳定派生 id
-     *   是同一手法，但动机变了：那边是引擎水印去重，这边是保住 prompt cache）。
-     * - 空消息在发送前过滤：部分端点遇到空 content 直接 400（`ChatMessage.isEmpty` 的 KDoc）。
-     * - [sanitizeForProvider] 每次都过：工具组配对是 400 的直接原因，不能只在压缩后过。
+     * 为什么不在这里自己拼：预算判断必须看**全量**（`system + working`），而 system 是
+     * 每轮临时拼在最前的、不在工作副本里。散落在两处拼装就会出现「预算只算 working」
+     * 的系统性低估（外审点名的缺陷）。system 的稳定派生 id、空消息过滤、sanitize 的时机
+     * 也都在那边一处收口。
      */
-    private fun buildMessages(ctx: TurnContext, systemText: String): List<ChatMessage> {
-        val system = ChatMessage(id = "sys:" + ctx.state.runId, role = Role.SYSTEM, text = systemText)
-        val body = ctx.state.working().filterNot { it.isEmpty }
-        return sanitizeForProvider(listOf(system) + body)
-    }
+    private suspend fun buildMessages(ctx: TurnContext, systemText: String): List<ChatMessage> =
+        budget.prepare(ctx, systemText)
 
     /** 单次尝试。**所有流式事件在这里转发**，事件顺序即 provider 的到达顺序。 */
     private suspend fun attemptOnce(
@@ -116,6 +112,7 @@ class GenerationRound(
             // 同一 run 同一轮的重试共用一个值（attempt 不进 key），便于服务端日志关联。
             idempotencyKey = ctx.request.endpoint.id + "#" + ctx.state.runId + "#" + ctx.state.round,
         )
+        val promptBefore = ctx.state.promptTokens
         try {
             ctx.engine.generate(request).collect { event ->
                 ctx.checkActive()
@@ -144,6 +141,7 @@ class GenerationRound(
                     is GenerationEvent.Failed -> failure = event
                 }
             }
+            recordEstimatedUsage(ctx, messages, promptBefore)
         } catch (c: CancellationException) {
             // 挂起点必须前置：`runCatching` / `catch (t: Throwable)` 吞掉它会让 Job
             // 从 cancelled 变 completed（AGENTS.md §五.4，旧仓真实事故）。
@@ -162,6 +160,22 @@ class GenerationRound(
         val produced = fragments.snapshot()
         val reason = finished ?: truncationFallback(ctx, produced.isNotEmpty())
         return Attempt.Completed(reason, produced)
+    }
+
+    /**
+     * provider 未回报 usage 时的估算兜底。
+     *
+     * 只在「本轮**确实发了请求**（`promptTokens` 没有增长）」时记一次：
+     * [RunState.recordEstimatedPrompt] 是**累加**，每轮都记会把同一条历史重复计进账本，
+     * `maxRunPromptTokens` 门控会提前误触发 —— 那是「钱没花完但 run 被停」的假熔断。
+     *
+     * 每次尝试（含重试）各记一次是对的：每一次尝试都是一次真实请求。
+     */
+    private fun recordEstimatedUsage(ctx: TurnContext, messages: List<ChatMessage>, promptBefore: Int) {
+        if (ctx.state.promptTokens != promptBefore) return
+        val estimated = TokenEstimator.estimateMessages(messages)
+        ctx.state.recordEstimatedPrompt(estimated)
+        AgentLogStore.warn("provider reported no usage; estimated prompt tokens: " + estimated)
     }
 
     /**

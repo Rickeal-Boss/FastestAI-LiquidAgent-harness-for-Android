@@ -161,7 +161,7 @@ build.gradle.kts (root)    统一 compileSdk 36 / minSdk 31 / JVM target 17
 | 文件 | 内容 |
 |---|---|
 | `scripts/arch-guard.sh` | W1 版：12 条（见 §五），每条带 selftest case |
-| `scripts/arch-guard-selftest.sh` | 12 个 case，跑完 < 60s（旧仓 93 case 跑 52 分钟，不可接受） |
+| `scripts/arch-guard-selftest.sh` | W1 版：12 个 case（现为 23 个，见 §5.2），batch 模式跑完 < 60s（旧仓 93 case 跑 52 分钟，不可接受） |
 | `scripts/fulltest.sh` | 全模块单测 + 汇总口径（`grep -rnE "^\s*@Test\b"`） |
 | `.github/workflows/ci.yml` | assembleDebug + test + arch-guard + lint + 密钥扫描 |
 
@@ -221,7 +221,7 @@ build.gradle.kts (root)    统一 compileSdk 36 / minSdk 31 / JVM target 17
 | `:feature-chat` | 对话页 UI 原样搬：顶栏 / 玻璃气泡 / 流式光标 / 思考折叠块 / 工具轨迹组 / 上下文占用条 / 输入栏 / 错误卡 | 旧仓 `ChatScreen` / `ChatMessageList` / `ChatInputBar` / `ToolTraceGroup` / `ChatContextMeter` |
 | `:app` | 外壳：竖屏底栏 / 横屏顶部条 / 中间档 rail、抽屉、转场；设置页玻璃化 | 旧仓 `LiquidAgentApp` / `ConversationDrawer` / `SettingsScreen` |
 | `:core-net` | `UrlGuard` 换 `HttpUrl` 同源解析、拒 `userInfo`、连接后 IP 校验（`GuardedDns`）；`HttpTransport` 支持 `allowPrivateNetwork` | 外审 P1-3 + R7 |
-| `:app` 声明面 | `usesCleartextTraffic=false` + `network_security_config.xml`（仅 `10.0.2.2` / `127.0.0.1` / `localhost` 允许明文） | 外审 P0-1 G15b |
+| `:app` 声明面 | `usesCleartextTraffic=false` + `network_security_config.xml`（仅 `10.0.2.2` / `127.0.0.1` / `localhost` 允许明文）+ `allowBackup=false`（G15c，备份会带走 Keystore 密文与端点清单） | 外审 P0-1 G15b / gallery#1325 G15c |
 | `:core-data` | 保存端点时 `UrlGuard.requireAllowed`；密钥写失败上抛；`hasSecret` 回写；`EndpointProbe` 收紧（HTML-200 不再判通过）；runner 按 endpointId 缓存 | 外审 P0-4 / P1-2 / P1-5 |
 | `:core-engine` | 引擎层接 `DeltaTracker`（累积式 provider 不再翻倍）；工具碎片计入「已 emit」；TOOL 多结果展开成 N 条线上消息 | 外审 P0-2 / P0-3 / P1-4 |
 | `:core-agent` | 思考通道计入「空输出」判定（两层口径同源） | 外审 P0-2（第二份报告） |
@@ -247,6 +247,7 @@ build.gradle.kts (root)    统一 compileSdk 36 / minSdk 31 / JVM target 17
 
 CI run `41051392490` 五个 job 全绿：Assemble Debug / Unit tests（`@Test` 228 = `EXPECTED_TESTS`）/
 Lint / Secret scan / **Arch guard（22 守卫 0 违规 + selftest 22/22 PASS）**。
+（上面的 22 是该 run 在 `baeb574` 时点的真实条数，是**证据记录**，不改写；加 G15c 后当前为 23 条 / selftest 23 个 case。）
 
 | # | 结论 | 证据 |
 |---|---|---|
@@ -323,7 +324,7 @@ Lint / Secret scan / **Arch guard（22 守卫 0 违规 + selftest 22/22 PASS）*
 | 9 | 工具输出截断 | 单测：READ 工具返回 50KB | 截断到 16000 字符，`truncated=true` |
 | 10 | 真机端到端 | 真机 | 「读 sandbox/notes.txt 并总结」⇒ 弹卡 → 批准 → 结果回灌 → 有总结 |
 | 11 | 单测数量 | fulltest | `@Test` ≥ **130** |
-| 12 | 守卫 | arch-guard | 14 条全绿（W1 的 12 条 + G10/G11） |
+| 12 | 守卫 | arch-guard | **23 条全绿**（`bash scripts/arch-guard.sh` 实跑 `OK=23 VIOLATION=0 SELF_FAULT=0`；W2 当时的口径是 14 条，后续波次陆续加满，见 §六） |
 
 ### 🔴 止损判据（未达标不得进 W3）
 
@@ -339,6 +340,37 @@ Lint / Secret scan / **Arch guard（22 守卫 0 违规 + selftest 22/22 PASS）*
 | 模型把工具参数写成自然语言 | `ToolArgsValidator` 大量失败 | 先在 W2 内加一次「参数错误后带错误信息重试一次」的宽容路径，仍失败则记入 W6 |
 | 审批卡阻塞主循环导致 ANR | 真机弹卡后 UI 卡 | 审批等待必须挂起协程而非阻塞线程；超时 5 分钟自动拒绝 |
 | 压缩后模型失忆 | 用户反馈「忘了前面说的」 | 压缩日志已记录条数变化，先看日志再改策略 |
+
+### 状态（2026-10-30，W2 落地）
+
+本地实测：`:app:assembleDebug` 通过；`fulltest` **tests=349 failures=0 errors=0 skipped=0（11/11 模块）**；
+`arch-guard` **OK=23 VIOLATION=0 SELF_FAULT=0**；`arch-guard-selftest` **23/23 PASS（117s）**。
+
+| # | 结论 | 证据 |
+|---|---|---|
+| 3 / 4 / 7 / 8 / 9 | ✅ | `ToolApprovalFlowTest` / `ToolCallExecutorTest` / `ToolExecutionGuardTest` / `ToolResultCommitTest` |
+| 5 / 6 | ✅ | `ToolResultCommitTest`（MODEL+TOOL 配对、callId 一一对应）+ `ContextCompressorTest`（切点回溯宿主） |
+| 10 | ✅ **真机** | OPPO PDRM00：`file_write` ⇒ 弹审批卡（三按钮）⇒ 允许一次 ⇒ `files/harness/workspace/notes.txt` 内容 = `hello harness` ⇒ 结果回灌（第二轮 msgs=6）⇒ 出最终答复 |
+| 11 | ✅ | `@Test` **349**（≥130），`build.yml` 的 `EXPECTED_TESTS` 已同步 349 |
+| 12 | ✅ | 23 条守卫（W2U 22 + G15c） |
+| 1 / 2 | ⚠️ **未跑** | 题面已固化在 `scripts/fixtures/w2-tool-prompts.json`（20 条 + 机械成功判定 + 归因分类），**但需要真实模型算力**，当前环境无 API Key ⇒ 不得记为通过 |
+
+**本波顺带修掉的两条真机缺陷（CI 抓不到，只有真机看得出）**：
+
+1. `ChatScreen` 的 bottomBar 漏了 `LocalBottomBarOverlay` 让位 ⇒ 竖屏下输入栏被悬浮页签**整个盖住**
+   （uiautomator 里 EditText 节点数为 0；横屏 Top 形态 overlay=0 则正常）。旧仓同一处有这段 padding，
+   W2U 原样搬入时漏了。
+2. `GlassScaffold` 的 snackbar 槽只有 `padding(bottom = 104.dp + overlay)`，落点在键盘区**之内**
+   ⇒ 错误卡被 IME 完全盖住。真机现场：发送一个会 302 的请求，节点树里读得到
+   「本次请求失败：…(HTTP 302)」，截图上一个字都看不见。已改为键盘可见时垫 12dp + `imePadding()`。
+
+**W2 的 `run(request, approval)` 注入点已按外审建议落地**：审批 handler 按 **run** 传入、
+不进按 endpointId 缓存的长生命周期 `AgentRunner`、不进 `@Serializable` 的 `AgentRequest`，
+转发进 `TurnContext` 第 6 个字段。
+
+> 一处**已登记的口径缺口**：`ToolApprovalFlow` 的 `ToolApprovalCache` 实例随 run 创建
+> ⇒ 「本会话允许相同调用」的作用域实际是**一次 run**，不是一次会话。会话级装配需要
+> `AppContainer` 持有 cache 并注入，排在 W2-2。
 
 ---
 
@@ -500,7 +532,11 @@ Lint / Secret scan / **Arch guard（22 守卫 0 违规 + selftest 22/22 PASS）*
 | 隔离 | `core-*` 的单测不得触 Android API（`SecretCipher` 用 fake） | 保证 JVM 可跑 |
 | 无设备 | 任何单测不得连真机（旧仓 W73-04 P0 事故：测试把夹具推进真机 datastore 导致崩溃循环） | 知识库 §5 |
 
-### 5.2 架构守卫（18 条，表驱动）
+### 5.2 架构守卫（23 条判据，表驱动）
+
+> **条数以 `bash scripts/arch-guard.sh` 的实跑输出（`OK=nn`）为准。** 本文档里任何数字若与之不符，以脚本为准。
+> 加这句话的原因：2026-10-30 外审抓到本节标题写「18 条」、W2 判据 12 写「14 条」、实跑却是 22 条 —— 三处不一致，且没有任何一处是「权威源」。守卫条数只能有一个真值源，就是脚本自己数出来的那个数。
+> 计数口径：`G1`/`G4`/`G5`/`G15` 四个编号各拆成 a/b/c 子判据（`G1`+`G1b`、`G4a`+`G4b`、`G5a`+`G5b`、`G15a`+`G15b`+`G15c` = 9 条），其余 14 个编号各 1 条 ⇒ **9 + 14 = 23**。子判据是独立断言，必须各自有 selftest case。
 
 | # | 名称 | 判据 | 旧仓来源 |
 |---|---|---|---|
@@ -518,7 +554,7 @@ Lint / Secret scan / **Arch guard（22 守卫 0 违规 + selftest 22/22 PASS）*
 | G12 | `AgentRunner` 门面 | `AgentRunner.kt` ≤ 200 行 | 旧仓 #31（阈值 2900→200） |
 | G13 | 测试方法形态 | `@Test` 方法返回 void；反引号名无 JVM 非法字符 | 旧仓 #15 |
 | G14 | lint baseline 只缩 | baseline 行数 ≤ 冻结值 | 旧仓 #14 |
-| G15 | 声明面 | `INTERNET` 权限必须存在；`usesCleartextTraffic=false` | 旧仓 #7/#7b |
+| G15 | 声明面 | `INTERNET` 权限必须存在；`usesCleartextTraffic=false`；`allowBackup=false`（备份会带走 Keystore 密文与端点清单） | 旧仓 #7/#7b |
 | G16 | **中文硬编码棘轮** | main 源集含中文的字符串字面量数 ≤ 基线（W1 起为 0，只许不增） | 新建（A9） |
 | G17 | **`@Serializable` 禁密钥字段** | `core-model` 的 `@Serializable data class` 内不得有 `apiKey`/`secret`/`password`/`token` 字段名（白名单：`maxOutputTokens` 等含 token 的计数名） | 新建（A7） |
 | G18 | **引擎调用点收口** | `LlmEngine.generate(` 的调用点只允许在 `core-agent/loop/` | 新建（A3） |
@@ -561,3 +597,7 @@ jobs:
 | W6 | 18 | 380 | +G14（lint baseline 只缩）、+G15（声明面） |
 | W7 | 18 | 440 | — |
 | W8 | 18 | 500 | — |
+
+> ⚠️ 上表是**每波结束时的历史序列**（W1 落地 12 条、W6 计划到 18 条），不要拿它当现状。
+> **截至 W2U（2026-10-30）实际 23 条判据**：`G1/G4/G5/G15` 各拆了子判据（G1b、G4a/G4b、G5a/G5b、G15a/G15b/G15c），另加 W2U 补的 G15c（禁备份）。
+> 历史值保持原样是为了能回溯「哪一波加了哪条」；现状只认 `bash scripts/arch-guard.sh` 的 `OK=` 输出。
