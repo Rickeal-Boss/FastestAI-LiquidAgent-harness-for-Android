@@ -133,8 +133,10 @@ class RemoteLlmEngine(
         var attempt = 0
         var emittedContent = false
         while (true) {
-            val outcome = runAttempt(url, headers, body)
-            emittedContent = emittedContent || outcome.state.textChars > 0
+            val outcome = runAttempt(url, headers, body, target.allowPrivateNetwork)
+            // 「已 emit 过内容」的判据必须含工具碎片：工具优先的模型只吐 tool_calls 时
+            // textChars 恒 0，只看它就会把「已吐过碎片的流」判成可重试（外审 P0-3）。
+            emittedContent = emittedContent || outcome.state.hasEmittedAny
             when (outcome) {
                 is AttemptOutcome.Completed -> return@flow
                 is AttemptOutcome.Fatal -> {
@@ -189,11 +191,14 @@ class RemoteLlmEngine(
         url: String,
         headers: Map<String, String>,
         body: String,
+        allowPrivateNetwork: Boolean,
     ): AttemptOutcome {
         val state = AdapterStreamState()
         var stream: SseStream? = null
         try {
-            stream = transport.post(url, headers, body)
+            // 把端点的内网许可透传给传输层：`GuardedDns` 用它决定解析出的私网 IP 是否放行
+            // （DNS rebinding 的第二道闸；第一道是 generate() 里的 UrlGuard.check）。
+            stream = transport.post(url, headers, body, allowPrivateNetwork)
             activeStream = stream
 
             if (!stream.isSuccessful) {
@@ -215,8 +220,11 @@ class RemoteLlmEngine(
                         break
                     }
                     for (generationEvent in adapter.decodeEvent(event)) {
-                        track(state, generationEvent)
-                        emit(generationEvent)
+                        // 先归一化再 emit：累积式 provider 的重复帧在这里被吸收，
+                        // 下游（内核 / UI）只会看到真实增量（R19 的接线点）。
+                        val normalized = state.normalize(generationEvent) ?: continue
+                        track(state, normalized)
+                        emit(normalized)
                     }
                 }
             }
@@ -238,8 +246,9 @@ class RemoteLlmEngine(
                 if (state.finishReason == null) emit(GenerationEvent.Finished(FinishReason.CANCELLED))
                 return AttemptOutcome.Completed(state)
             }
-            if (state.textChars > 0) {
+            if (state.hasEmittedAny) {
                 // 首字节后中断：**不重试**（重发会重复输出），保留已收到内容并标记截断。
+                // 判据含工具碎片：只有 tool_calls 碎片、没有正文的流同样不许重发。
                 if (state.finishReason == null) emit(adapter.finish(state))
                 return AttemptOutcome.Completed(state)
             }

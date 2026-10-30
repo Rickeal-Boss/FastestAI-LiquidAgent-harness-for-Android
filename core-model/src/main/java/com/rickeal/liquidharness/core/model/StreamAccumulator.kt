@@ -43,16 +43,22 @@ class DeltaTracker {
         frames++
         val mode = cumulative ?: detect(frame, current)
         return if (mode) {
-            val appended = if (frame.length >= current.length && frame.startsWith(current)) {
-                frame.substring(current.length)
+            if (frame.length >= current.length && frame.startsWith(current)) {
+                val appended = frame.substring(current.length)
+                buffer.setLength(0)
+                buffer.append(frame)
+                appended
             } else {
-                // 前缀关系被破坏（服务端重排 / 换模板）：整帧当新增，宁可多一段也不丢内容。
+                // 前缀关系被破坏（服务端重排 / 换模板）：切回增量语义，整帧当新增。
+                //
+                // ⚠️ 这里**不能** `buffer.setLength(0); buffer.append(frame)`：
+                // 那会把此前累积的全文丢掉，而下游按「旧文 + 本帧」拼接 ⇒
+                // tracker.text 与下游文本从这一帧起永久发散（旧仓遗留缺陷，
+                // 外审 P0-2 实测指出）。正确动作是把本帧**追加**到已有 buffer。
                 cumulative = false
+                buffer.append(frame)
                 frame
             }
-            buffer.setLength(0)
-            buffer.append(frame)
-            appended
         } else {
             buffer.append(frame)
             frame

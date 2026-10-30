@@ -27,12 +27,21 @@ name: Build
 #   5. lint 是**独立并行 job**，不串进 assemble 关键路径：串进去会让出包关键路径
 #      多 3~6 分钟，且「编译失败」和「lint 新增问题」两类信号混在同一个 job 里。
 #
-#   6. 三个 job 的工具链完全同源（JDK 21 temurin / Gradle 9.7.1 via
-#      gradle/actions/setup-gradle / 同一份 .github/ci-gradle.properties），
-#      Gradle User Home 缓存 key 前缀一致 ⇒ 三个 job 互相命中，不产生第二套缓存。
+#   6. 需要 Gradle 的三个 job（assemble-debug / unit-tests / lint）工具链完全同源
+#      （JDK 21 temurin / Gradle 9.7.1 via gradle/actions/setup-gradle / 同一份
+#      .github/ci-gradle.properties），Gradle User Home 缓存 key 前缀一致 ⇒ 互相命中，
+#      不产生第二套缓存。arch-guard / secret-scan 两个 job **不装 JDK、不装 Gradle**
+#      —— 它们是纯 shell / 纯二进制的门禁，装工具链只会让它们在「Gradle 装不起来」
+#      时跟着红，把两类失败混成一个信号。
 #
 #   7. 【绝不下载模型】CI 只产出 APK/AAR；端侧模型权重由用户自行导入，任何
 #      *.litertlm / *.task 都不进 CI（>2GB，且属用户资产）。
+#
+#   8. 【门禁必须能判红】本文件里的每个 job 都必须是**不可绕过**的硬门禁：
+#      不加 continue-on-error、不写 `|| true`（唯一的例外是 lint 的 baseline 兜底
+#      再生步骤，它已被显式标注为「诊断性兜底不是门禁」）。
+#      判据不是「job 存在」，而是「注入一处违规后 job 会红」—— arch-guard job 里的
+#      arch-guard-selftest.sh 就是这条纪律的机器化执行（变异自证）。
 # =============================================================================
 
 on:
@@ -85,6 +94,18 @@ env:
   # ---------------------------------------------------------------------------
   APP_PACKAGE: 'com.rickeal.liquidharness'
   APP_PACKAGE_DEBUG: 'com.rickeal.liquidharness.debug'
+
+  # ---------------------------------------------------------------------------
+  # 【单测基线】docs/02-roadmap.md §5.1：「build.yml 的 EXPECTED_TESTS ↔ 实际
+  # `grep -rnE "^\s*@Test\b" --include=*.kt .` 数，**双向相等**」。
+  #
+  # 纪律（旧仓守卫 #26 就是因为写成宽松的 `>=` 而形同虚设）：
+  #   · 任何新增 / 删除 @Test 的提交，必须**在同一次提交里**改这个数。
+  #   · 只许改这一个常量，不许把判据放宽成区间 / 百分比 / `>=`。
+  #   · CI 因此判红时，先看 job 里打印的「@Test 分布（按文件）」，判断是「加了测试
+  #     没同步常量」还是「测试被删/被注释/被漏扫」—— 两种根因的话术不同。
+  # ---------------------------------------------------------------------------
+  EXPECTED_TESTS: '228'
 
 jobs:
   # ===========================================================================
@@ -397,6 +418,46 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Reconcile EXPECTED_TESTS with real @Test count
+        # 【双向对账】roadmap §5.1 的「基线同步」判据，落在 CI 里而不是文档里。
+        # 三个必须做对的点：
+        #   ① 用 `^\s*@Test\b` 而不是裸 `@Test`：KDoc 里引用 `@Test` 会多算
+        #      （知识库 §5 的实测）。
+        #   ② 排除 build/.gradle/.kotlin/.git：KSP/AGP 生成目录里的 .kt 会把数算大。
+        #      本步在 gradle 之前执行，CI 上这些目录还不存在，但**本地**重跑时存在 ——
+        #      口径必须在两种状态下一致，否则「本地绿 / CI 红」变成玄学。
+        #   ③ 两个方向分别给话术：actual > expected = 加了测试没同步常量；
+        #      actual < expected = 测试被删 / 被注释 / 被漏扫。只报「不相等」会把
+        #      两种根因混成一句，排障时间全花在猜方向。
+        # 不设 `>=` 容差：容差一开，这个门禁就退化成「有测试就行」的装饰。
+        run: |
+          set -uo pipefail
+          expected="$EXPECTED_TESTS"
+          count_tests() {
+            grep -rnE '^\s*@Test\b' --include=*.kt \
+              --exclude-dir=build --exclude-dir=.gradle \
+              --exclude-dir=.kotlin --exclude-dir=.git \
+              . 2>/dev/null | wc -l | tr -d ' '
+          }
+          actual="$(count_tests)"
+          echo "EXPECTED_TESTS=$expected  actual=$actual"
+          if [ "$actual" = "$expected" ]; then
+            echo "::notice::@Test 对账通过：$actual 个（EXPECTED_TESTS=$expected）"
+            exit 0
+          fi
+          echo "::group::@Test 分布（按文件）"
+          grep -rnE '^\s*@Test\b' --include=*.kt \
+            --exclude-dir=build --exclude-dir=.gradle \
+            --exclude-dir=.kotlin --exclude-dir=.git \
+            . 2>/dev/null | sed 's/:.*//' | sort | uniq -c | sort -rn || true
+          echo "::endgroup::"
+          if [ "$actual" -gt "$expected" ]; then
+            echo "::error::实际 @Test 数 $actual > EXPECTED_TESTS=$expected —— 新增测试必须在同一次提交里把 build.yml 的 EXPECTED_TESTS 改大"
+          else
+            echo "::error::实际 @Test 数 $actual < EXPECTED_TESTS=$expected —— 有测试被删/被注释/被漏扫；若确为删除，同一次提交里把常量改小"
+          fi
+          exit 1
+
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
@@ -535,7 +596,152 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ===========================================================================
-  # Job 3：lint 门禁（独立并行，不挤占构建关键路径）
+  # Job 3：架构守卫（18 条）+ 守卫自证（变异注入）
+  #
+  # 为什么必须是独立 job 而不是塞进 lint / unit-tests：
+  #   · 它是**纯 bash**（grep/awk/find/sed/tar），不需要 JDK / Gradle / Android SDK。
+  #     塞进 gradle job 会让它在「工具链装不起来」时跟着红 —— 两类失败混成一个信号。
+  #   · 它必须跑在**每个** PR 上（paths-ignore 只挡纯文档），而不是等 nightly。
+  #
+  # 门禁强度（两个脚本缺一不可）：
+  #   · arch-guard.sh 判「树合不合规」—— 当前树有存量违规就红，这是真门禁；
+  #   · arch-guard-selftest.sh 判「守卫还会不会红」—— 变异自证：注入违规后该守卫
+  #     必须报红，且报红证据必须指向本次注入的文件/行。
+  #   只有前者 ⇒ 守卫可以永远绿（旧仓「目录改名 ⇒ 空守卫永远绿」）；
+  #   只有后者 ⇒ 没人判树。
+  #
+  # ⚠️ 两个脚本都必须**存在**：缺失时显式判红，不降级成「跳过」——
+  #    「守卫悄悄跳过 = 守卫不存在」。
+  # ===========================================================================
+  arch-guard:
+    name: Arch guard (18 guards + mutation selftest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # 守卫只看工作树、不看历史 ⇒ 不需要 fetch-depth: 0（省一次全量拉取）。
+          fetch-depth: 1
+
+      - name: Verify shell toolchain
+        # 守卫依赖 grep/awk/find/sed/tar 的**方言**行为（G16 的 CJK 判定会先试
+        # grep -P，不支持时回落 UTF-8 首字节区间）。ubuntu-latest 上都该有；显式
+        # 回显版本是为了让「守卫判据突然变了」能一眼看出是不是实现换了。
+        run: |
+          set -uo pipefail
+          missing=0
+          for c in bash grep awk find sed tar; do
+            if command -v "$c" > /dev/null 2>&1; then
+              echo "ok   $c -> $(command -v "$c")"
+            else
+              echo "::error::'$c' 不在 PATH —— 架构守卫无法运行"
+              missing=1
+            fi
+          done
+          echo "::group::awk / grep 方言"
+          awk -W version 2>&1 | head -n 1 || awk --version 2>&1 | head -n 1 || echo "awk version unknown"
+          grep --version 2>&1 | head -n 1 || true
+          echo "::endgroup::"
+          [ "$missing" -eq 0 ]
+
+      - name: Run arch guards (18 条)
+        run: |
+          if [ ! -f scripts/arch-guard.sh ]; then
+            echo "::error::scripts/arch-guard.sh 缺失 —— 架构守卫从未落地，拒绝把本 job 判绿"
+            exit 1
+          fi
+          bash scripts/arch-guard.sh
+
+      - name: Mutation selftest (守卫自证)
+        run: |
+          if [ ! -f scripts/arch-guard-selftest.sh ]; then
+            echo "::error::scripts/arch-guard-selftest.sh 缺失 —— 守卫的变异自证从未落地，无法证明守卫还会红"
+            exit 1
+          fi
+          bash scripts/arch-guard-selftest.sh
+
+  # ===========================================================================
+  # Job 4：密钥扫描（gitleaks + trufflehog 双引擎）
+  #
+  # 为什么两个都跑（roadmap §5.3 明文要求，不是「双保险」而是「两个不同判据」）：
+  #   · gitleaks：正则 + 熵。快、覆盖推送范围内的历史，误报多（测试夹具、文档示例
+  #     都会被报）。盲区：不像标准密钥形状的真密钥（自有格式 token）。
+  #   · trufflehog：live verification。慢、只报「验证通过、真的需要轮换」的，误报
+  #     极低。盲区：验证不了的格式（内网服务、自建 token）默认不报。
+  #   两者盲区方向相反 ⇒ 只跑一个必然漏一类。
+  #
+  # 为什么在 CI 而不是 pre-commit：`git commit --no-verify` 能绕过 hook，CI 是
+  # 唯一不可绕过的兜底（报告 §一.3）。
+  #
+  # ⚠️ 严禁给这两步加 continue-on-error / `|| true`：密钥扫描「红但被吞掉」比不扫
+  #    更坏 —— 它给人一种「已经扫过了」的错觉。
+  # ===========================================================================
+  secret-scan:
+    name: Secret scan (gitleaks + trufflehog)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # 必须全历史：只扫本次 diff 会漏掉「曾经提交过、后来删掉但仍在历史里」的
+          # 密钥 —— 那类恰恰是**已经泄露、必须轮换**的。
+          fetch-depth: 0
+
+      - name: gitleaks（正则 + 熵；快、误报多）
+        # 用官方 action：自带默认规则集与 PR 注解。扫描范围 = 本次推送的提交区间
+        # （首次推送/新分支时 before 为空 ⇒ 退化为全历史）。
+        # ⚠️ 组织账号需要 GITLEAKS_LICENSE；本仓是个人账号，无需。若将来迁到组织
+        #    名下，要么加该 secret（那会破坏本文件头的「零密钥」约束），要么改用
+        #    官方二进制 —— 两者取其一，**不要**把本步骤改成 continue-on-error。
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          # 用 github.token（上下文）而不是 secrets.GITHUB_TOKEN：本工作流禁止
+          # 引用 secrets.*（文件头约束 1），两者取值相同。
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Install trufflehog
+        run: |
+          set -uo pipefail
+          mkdir -p "$HOME/.local/bin"
+          curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh \
+            | sh -s -- -b "$HOME/.local/bin"
+          "$HOME/.local/bin/trufflehog" --version
+
+      - name: trufflehog（live verification；慢、只报真需要轮换的）
+        # `git file://$PWD` = 扫全历史；`--only-verified` = 只报验证通过的（对应
+        # roadmap 的 trufflehog --only-verified 口径）；`--fail` = 有命中即以
+        # 183 退出 —— 这是本步骤判红的唯一依据（不靠解析输出文本）。
+        # `--no-update` 关掉自更新：门禁中途不该换掉自己的版本。
+        run: |
+          set -uo pipefail
+          "$HOME/.local/bin/trufflehog" git "file://$PWD" \
+            --only-verified \
+            --no-update \
+            --fail
+
+  # ---------------------------------------------------------------------------
+  # 关于 roadmap §5.3 里的 `strings` job（G16 + TextRef↔strings.xml 双向差集）
+  # ---------------------------------------------------------------------------
+  # 本波**不建**这个 job，理由写在这里而不是留空：
+  #   · G16（中文硬编码棘轮）已经在 arch-guard job 里跑 —— 再建一个 job 跑同一条
+  #     守卫，只会让同一个违规报两次红，信号不增量。
+  #   · TextRef↔strings.xml 的**双向差集**目前必然恒红：TextRef 在 main 源集里
+  #     **零使用**（`grep -rn TextRef --include=*.kt` 只命中定义文件），反向差集
+  #     （strings.xml 的 key 有没有被引用）会把 12 个 key 全判成「无人引用」。
+  #     造一个永远红的 job = 训练所有人忽略红 —— 比没有这个 job 更坏。
+  #   · 接线（W8：core-* 返回 TextRef.Res，:app 解析）完成后，这个 job 才有判据。
+  #     到时的判据应是**双向**的：
+  #       正向：TextRef.Res 引用到的 R.string key ⊆ strings.xml 的 key 集（防悬空引用）
+  #       反向：strings.xml 的 key 集 ⊆ 被引用集（防僵尸文案）
+  #     两者都只在「有引用」时才有意义，所以必须与接线同波落地。
+  # ---------------------------------------------------------------------------
+
+  # ===========================================================================
+  # Job 5：lint 门禁（独立并行，不挤占构建关键路径）
   #
   # 首轮允许 baseline（app/lint-baseline.xml），但**报告先行**：
   #   第一轮 —— 本 job 的 \`Upload lint baseline\` artifact 拿到 lint 自己生成的

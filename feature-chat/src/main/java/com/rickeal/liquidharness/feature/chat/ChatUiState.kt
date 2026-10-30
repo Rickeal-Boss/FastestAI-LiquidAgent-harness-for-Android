@@ -1,21 +1,83 @@
 package com.rickeal.liquidharness.feature.chat
 
+import androidx.compose.runtime.Immutable
 import com.rickeal.liquidharness.core.model.Role
+import com.rickeal.liquidharness.core.model.TerminationReason
 
 /**
- * 一条上屏气泡。
+ * 一条**已定稿**的上屏气泡。
  *
  * 与 `core-model.ChatMessage` 刻意分开：`ChatMessage` 是**线上契约**（含 toolCalls /
- * toolResults，会被序列化进请求），本类是**视图状态**（含 streaming 标记、可能被节流
- * 合并）。混用会导致「把半截流式文本当成历史发回模型」这类 bug。
+ * toolResults，会被序列化进请求），本类是**视图状态**（含 reasoning / 折叠用的工具轨迹）。
+ * 混用会导致「把半截流式文本当成历史发回模型」这类 bug。
+ *
+ * @param streaming 流式标记。历史气泡恒 false；true 只出现在 UI 侧用 [StreamingState]
+ *   临时拼出来的那条在途气泡上（见 `ChatMessageList` 的 streaming item）。
+ * @param reasoning 思考通道内容。与正文分开展示，不混进 [text]，也**不回灌**给模型。
+ * @param traces 本气泡产出的工具轨迹。run 结束由归约器从 `ChatUiState.toolTraces`
+ *   搬进来 —— 否则工具过程会随「流式区消失」一起从屏幕上蒸发（旧仓靠 message.toolCalls
+ *   承担同一职责）。
  */
+@Immutable
 data class ChatBubble(
     val id: String,
     val role: Role,
     val text: String,
     val streaming: Boolean = false,
-    /** 思考通道内容（reasoning）。与正文分开展示，不混进 [text]。 */
     val reasoning: String = "",
+    val traces: List<ToolTrace> = emptyList(),
+)
+
+/** 工具轨迹状态。RUNNING 与 FAILED **永不折叠**（见 `ToolTraceGroup`）。 */
+enum class ToolTraceStatus { RUNNING, OK, FAILED, SKIPPED }
+
+/**
+ * 一条工具轨迹。
+ *
+ * [id] 直接取 `ToolCall.id`：`ToolResultReceived` / `ToolSkipped` 只按这个 id 更新，
+ * 不新建（`AGENTS.md` §五.3）。
+ */
+@Immutable
+data class ToolTrace(
+    val id: String,
+    val name: String,
+    val arguments: String,
+    val status: ToolTraceStatus = ToolTraceStatus.RUNNING,
+    val result: String? = null,
+    val elapsedMillis: Long = 0L,
+)
+
+/**
+ * 流式通道内容。
+ *
+ * 与 [ChatUiState.bubbles] 分开的理由：气泡列表是**低频**的（一轮一条），流式文本是
+ * **高频**的（120ms 一次 flush）。放在同一个字段里会让每次 flush 都换掉气泡列表的引用，
+ * LazyColumn 的 item 跳过判定全部失效。
+ *
+ * 单一真源：在途文本只存在这里，定稿时才变成 [ChatBubble]；绝不两边各存一份。
+ */
+@Immutable
+data class StreamingState(
+    val text: String = "",
+    val reasoning: String = "",
+    val isStreaming: Boolean = false,
+) {
+    val isEmpty: Boolean get() = text.isEmpty() && reasoning.isEmpty()
+}
+
+/**
+ * 一次等待用户裁决的工具调用。
+ *
+ * 只承载**展示所需**的字段：本仓内核尚无审批回传通道（`AgentEvent.ApprovalRequested`
+ * 已定义，但没有把裁决送回 `TurnLoop` 的入口），所以这里刻意不放旧仓的
+ * `CompletableDeferred<ToolApprovalDecision>` —— 放一个永远没人 complete 的句柄
+ * 比不显示这张卡更误导。
+ */
+@Immutable
+data class PendingApproval(
+    val callId: String,
+    val toolName: String,
+    val arguments: String,
 )
 
 /**
@@ -23,17 +85,40 @@ data class ChatBubble(
  *
  * 全部字段不可变 + `copy` 更新，使得 [EventReducer] 可以是纯函数 —— 旧仓把归约与副作用
  * 缠在 `ChatViewModel`（901 行）里，导致流式节流这类逻辑只能靠真机验证。
+ *
+ * 刻意**不含**旧仓的 `availableModels` / `activeModel` / `capabilityMode` /
+ * `disclosureMode` / `config`：本仓是纯 API 路径，没有「本机加载哪个模型」「能力档位」
+ * 这些概念，留着就是永远不生效的字段。
  */
+@Immutable
 data class ChatUiState(
+    /** 已定稿气泡。在途内容在 [streaming]。 */
     val bubbles: List<ChatBubble> = emptyList(),
+    /** 在途流式内容（低频流的另一半：高频，只被流式 item 读）。 */
+    val streaming: StreamingState = StreamingState(),
+    /** 本次 run 的工具轨迹；终态时整体搬进气泡的 [ChatBubble.traces]。 */
+    val toolTraces: List<ToolTrace> = emptyList(),
+    /** 非空 = 渲染一张等待授权的提示卡。 */
+    val pendingApproval: PendingApproval? = null,
+    /** 输入框草稿。 */
     val input: String = "",
+    /** 是否有在途 run。发送按钮与停止按钮都看它。 */
     val isStreaming: Boolean = false,
     /** 用户可见的错误文案。null = 无错误。 */
     val errorMessage: String? = null,
     /** 顶栏副标题：当前端点名 + 模型。null = 未配置端点。 */
     val endpointLabel: String? = null,
-    /** 上一轮的用量摘要（如 `1.2k → 340 tok · 28 tok/s`）。 */
+    /** 最近一次 usage 的 prompt 侧 token 数（上下文占用量）。0 = 尚无数据。 */
+    val contextTokens: Int = 0,
+    /** 端点声明的上下文窗口（`RemoteEndpoint.contextLength`）。0 = 未知。 */
+    val contextLimit: Int = 0,
+    /** 上一轮的用量摘要（如 `1.2k in / 340 out`）。 */
     val usageLabel: String? = null,
+    /** 当前轮次 / 轮次上限（顶栏「3/12 轮」）。 */
+    val round: Int = 0,
+    val maxRounds: Int = 0,
+    /** 非正常终止原因。只用于渲染一行小字；null = 正常结束。 */
+    val terminatedBy: TerminationReason? = null,
 ) {
     /** 发送按钮可用性：非流式、输入非空、已配置端点。 */
     val canSend: Boolean

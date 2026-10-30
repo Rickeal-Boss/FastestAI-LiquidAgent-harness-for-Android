@@ -84,6 +84,16 @@ class RunState(
 
     private val textBuffer = StringBuilder()
 
+    /**
+     * 思考通道字符数（只计数不存文本：思考内容不进历史、不回灌模型）。
+     *
+     * 存在理由：推理模型常常先吐一大段 thinking、正文还没开始就被中断。
+     * 引擎侧判「已产出内容」含 reasoning，内核侧若只看 `textLength()` 就会判
+     * 「空输出」并重试 —— 两层口径不一致，用户看到思考显示一半 + 一条
+     * `empty output` 失败（外审 P0-2）。两个判据必须同源。
+     */
+    private var reasoningChars: Int = 0
+
     val cancelled: Boolean get() = cancelledFlag.get()
 
     /** 置取消标记。幂等。 */
@@ -126,6 +136,21 @@ class RunState(
 
     /** 当前已收文本长度。重试前用它记账，重试时用它回滚。 */
     fun textLength(): Int = textBuffer.length
+
+    /** 记一段思考通道文本。只计数 —— 思考不落历史（契约：reasoning 不进 messages）。 */
+    fun appendReasoning(delta: String) {
+        reasoningChars += delta.length
+    }
+
+    /** 思考通道已收字符数。 */
+    fun reasoningLength(): Int = reasoningChars
+
+    /**
+     * 本轮是否产出过**任何**可见内容（正文或思考）。
+     *
+     * 「空输出」判定的唯一真值源：引擎层的 `hasEmittedAny` 是同一口径的传输侧镜像。
+     */
+    fun producedAnyContent(): Boolean = textBuffer.isNotEmpty() || reasoningChars > 0
 
     /** 回滚到 [length]（重试 / `StreamReset` 用）。越界按空处理，绝不抛异常。 */
     fun truncateText(length: Int) {

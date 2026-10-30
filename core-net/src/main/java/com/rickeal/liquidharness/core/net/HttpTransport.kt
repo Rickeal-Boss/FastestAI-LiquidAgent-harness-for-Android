@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.core.net
 
 import okhttp3.Call
+import okhttp3.Dns
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -9,6 +10,7 @@ import okhttp3.Response
 import java.io.Closeable
 import java.io.IOException
 import java.io.InputStream
+import java.net.InetAddress
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
@@ -110,13 +112,21 @@ class HttpTransport(
      * 非 2xx 不抛异常 —— 返回带 [SseStream.statusCode] 的流，由引擎分类。
      *
      * @param headers 已经是最终形态（含 `Authorization`），本层不注入任何凭据。
+     * @param allowPrivateNetwork 端点是否显式允许内网。默认 `false` = fail-closed：
+     *   域名解析出来的私网地址会被 [GuardedDns] 拒掉（DNS rebinding 的第二道闸）。
+     *   字面量 IP 的裁决在 [UrlGuard.check]（请求前），这里不重复判。
      */
-    fun post(url: String, headers: Map<String, String>, body: String): SseStream {
+    fun post(
+        url: String,
+        headers: Map<String, String>,
+        body: String,
+        allowPrivateNetwork: Boolean = false,
+    ): SseStream {
         val builder = Request.Builder()
             .url(url)
             .post(body.toRequestBody(JSON_MEDIA_TYPE))
         for ((name, value) in headers) builder.addHeader(name, value)
-        val call = streamingClient().newCall(builder.build())
+        val call = streamingClient(allowPrivateNetwork).newCall(builder.build())
         return SseStream(call, call.execute())
     }
 
@@ -124,11 +134,15 @@ class HttpTransport(
      * 每次请求派生一个 client：只有「流式请求」需要 60s readTimeout，
      * 其它用途（如 MCP 的单次 JSON 调用）要的是别的值。
      * OkHttp 的 `newBuilder()` 共享连接池与线程池，派生成本很低。
+     *
+     * DNS 校验在这里注入而不是在 [post] 里手动解析：`Dns` 是 OkHttp 唯一的
+     * 「主机名 → 地址」入口，覆盖 HTTP/2、连接复用重解析与重定向后的目标。
      */
-    private fun streamingClient(): OkHttpClient = client.newBuilder()
+    private fun streamingClient(allowPrivateNetwork: Boolean): OkHttpClient = client.newBuilder()
         .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .callTimeout(0, TimeUnit.MILLISECONDS)
+        .dns(GuardedDns(allowPrivateNetwork, client.dns))
         .build()
 
     companion object {
@@ -143,5 +157,44 @@ class HttpTransport(
             .callTimeout(0, TimeUnit.MILLISECONDS)
             .retryOnConnectionFailure(false)
             .build()
+    }
+}
+
+/**
+ * 连接前对**解析结果**再判一次（DNS rebinding 的兜底）。
+ *
+ * 为什么必须有这一层：[UrlGuard.check] 只看 URL 里的字面量。一个攻击者控制的域名
+ * （或内网 DNS 里的同名记录）可以解析到 `192.168.1.1` / `169.254.169.254`，
+ * 字面量检查完全看不见 —— 只有拿到解析后的地址才判得了。
+ *
+ * 判据不复制：[UrlGuard.checkResolvedIp] 与 [UrlGuard.check] 共用同一套 IP 分类，
+ * 避免「两道闸两套规则」这种最难查的不一致。
+ *
+ * 字面量 host 在这里**跳过**：它已经被 [UrlGuard.check] 按端点策略裁决过，
+ * 再判一次会把白名单（`127.0.0.1` / `10.0.2.2`）自己拦死。
+ *
+ * 残余风险（如实登记）：域名 rebinding 到 loopback 时本类收紧为拒绝（`allowLoopback = false`），
+ * 但端点显式 `allowPrivateNetwork = true` 时仍会放行 —— 那是用户主动承担的风险。
+ */
+internal class GuardedDns(
+    private val allowPrivateNetwork: Boolean,
+    private val delegate: Dns = Dns.SYSTEM,
+) : Dns {
+
+    override fun lookup(hostname: String): List<InetAddress> {
+        val resolved = delegate.lookup(hostname)
+        if (UrlGuard.isIpLiteral(hostname)) return resolved
+        for (address in resolved) {
+            val ip = address.hostAddress ?: continue
+            val verdict = UrlGuard.checkResolvedIp(
+                ip = ip,
+                allowPrivateNetwork = allowPrivateNetwork,
+                allowLoopback = false,
+            )
+            if (verdict is UrlVerdict.Rejected) {
+                throw IOException("blocked resolved address: ${verdict.reason} ($ip)")
+            }
+        }
+        return resolved
     }
 }

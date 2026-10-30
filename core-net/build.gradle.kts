@@ -45,4 +45,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test)
+    // 单测要直接构造 okhttp3.Dns / 断言 HttpUrl 的规范化结果，故显式声明
+    // （implementation 对 test 源集本就可见，这里写明是为了不依赖该隐式规则）。
+    testImplementation(libs.okhttp)
 }

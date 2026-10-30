@@ -2,4 +2,19 @@
 <resources>
     <!-- 骨架阶段只有一条：产品名待方案席确认后可改（改这里即可，不散落在代码里） -->
     <string name="app_name">LiquidHarness</string>
+
+    <!-- 一级导航（W89：竖屏底部条 / 平板左侧竖栏 / 横屏手机顶部横条，同一组标签） -->
+    <string name="tab_chat">对话</string>
+    <string name="tab_settings">设置</string>
+    <string name="nav_rail_brand">Liquid</string>
+
+    <!-- 会话抽屉。数据源当前只有「本次运行的一条对话」，文案不得暗示已有历史记录。 -->
+    <string name="drawer_title">本地工作区</string>
+    <string name="drawer_subtitle">端侧运行 · 数据不出设备</string>
+    <string name="drawer_new_conversation">新建对话</string>
+    <string name="drawer_section_conversations">会话</string>
+    <string name="drawer_current_conversation">当前对话</string>
+    <string name="drawer_current_subtitle">仅本次运行</string>
+    <string name="drawer_empty_title">还没有会话</string>
+    <string name="drawer_persistence_note">会话尚未持久化：重启应用后不会保留。</string>
 </resources>

@@ -90,8 +90,10 @@ class RetryPolicy(
     /**
      * 是否还应该重试。
      *
-     * @param emittedText 已向上游 emit 过 TextDelta ⇒ **一律不重试**：
-     *   重发会让模型从头再答一遍，用户看到两段内容拼接（旧仓 P1 级缺陷）。
+     * @param emittedText 已向上游 emit 过**任何内容**（正文 / 思考 / 工具调用碎片）
+     *   ⇒ **一律不重试**：重发会让模型从头再答一遍，用户看到两段内容拼接
+     *   （旧仓 P1 级缺陷）。工具碎片必须计入：工具优先的模型常常只有 tool_calls、
+     *   没有正文，只看 TextDelta 会让两次尝试的 arguments 拼成坏 JSON（外审 P0-3）。
      */
     fun shouldRetry(attempt: Int, kind: EngineErrorKind, emittedText: Boolean): Boolean =
         !emittedText && attempt + 1 < maxAttempts && isRetryable(kind)

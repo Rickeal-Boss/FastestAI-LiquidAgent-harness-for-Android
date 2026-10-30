@@ -59,6 +59,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.android)
 
+    // GlassImageThumb 用 androidx.core.net.toUri（Uri → File），旧仓同款依赖。
+    implementation(libs.androidx.core.ktx)
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test)
 }

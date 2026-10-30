@@ -65,7 +65,7 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
 
     override fun buildBody(request: GenerationRequest): JsonObject {
         val endpoint = request.endpoint
-        val messages = request.messages.filterNot { it.isEmpty }.map { messageObject(it) }
+        val messages = request.messages.filterNot { it.isEmpty }.flatMap { messageObjects(it) }
         val tools = if (endpoint.supportsTools && request.tools.isNotEmpty()) request.tools else emptyList()
         return buildJsonObject {
             put("model", endpoint.modelId)
@@ -164,6 +164,30 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
             ReasoningStyle.GEMINI_INCLUDE_THOUGHTS,
             -> Unit
         }
+    }
+
+    /**
+     * 一条内核消息 → 0..n 条线上消息。
+     *
+     * **为什么 TOOL 消息要展开**：内核的 `ChatMessage.toolResults` 允许一条消息携带
+     * N 个结果（契约 §一，Anthropic 形态就是这样）。OpenAI 兼容端点要求
+     * **每条 tool 消息恰好对应一个 `tool_call_id`**，且每个 assistant 的 tool_call
+     * 都必须有对应的 tool 消息 —— 原样只取第一个会让 N−1 个结果静默消失，
+     * 服务端随即以「tool_call 无对应 result」400（外审 P1-4）。
+     *
+     * 责任钉在 adapter 而不是约束内核：内核表示法必须保持供应商无关。
+     */
+    private fun messageObjects(message: ChatMessage): List<JsonObject> {
+        if (message.role == Role.TOOL && message.toolResults.size > 1) {
+            return message.toolResults.map { result ->
+                buildJsonObject {
+                    put("role", wireRole(Role.TOOL))
+                    put("tool_call_id", result.callId)
+                    put("content", result.output.ifBlank { result.errorMessage.orEmpty() })
+                }
+            }
+        }
+        return listOf(messageObject(message))
     }
 
     private fun messageObject(message: ChatMessage): JsonObject = buildJsonObject {

@@ -1,7 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">设置</string>
+    <string name="settings_subtitle">端点 · 关于</string>
+
+    <!-- 分组 -->
     <string name="settings_section_endpoints">端点</string>
+    <string name="settings_section_about">关于</string>
+    <string name="settings_section_diagnostics">诊断</string>
+
+    <!-- 设置首页行 -->
+    <string name="settings_manage_endpoints">端点管理</string>
+    <string name="settings_manage_endpoints_subtitle">配置 OpenAI 兼容的远程端点</string>
+    <string name="settings_active_endpoint">当前：%1$s</string>
+    <string name="settings_active_endpoint_none">尚未配置端点</string>
+    <string name="settings_about_app">应用</string>
+    <string name="settings_app_name">LiquidHarness</string>
+    <string name="settings_about_version">版本</string>
+    <string name="settings_about_hint">端侧 Agent harness · 数据留在本机</string>
+    <string name="settings_diagnostics_log">诊断日志</string>
+    <string name="settings_diagnostics_log_hint">仅保存在本机，不随对话上传</string>
+
+    <!-- 端点管理 -->
+    <string name="settings_back">返回</string>
     <string name="settings_add_endpoint">添加端点</string>
     <string name="settings_edit_endpoint">编辑端点</string>
     <string name="settings_endpoint_name">名称</string>
@@ -22,4 +42,10 @@
     <string name="settings_testing">正在测试…</string>
     <string name="settings_required_hint">名称、Base URL、模型 ID 不能为空</string>
     <string name="settings_empty">还没有端点</string>
+    <string name="settings_empty_hint">添加一个 OpenAI 兼容端点后即可开始对话</string>
+
+    <!-- 保存失败：按 EndpointSaveError 错误码映射（VM 只给码，文案在这里） -->
+    <string name="settings_save_error_unsafe_url">这个地址被安全策略拒绝：只允许公网 https，且不能带账号密码。</string>
+    <string name="settings_save_error_secret_write_failed">API Key 没能写入本机加密存储，端点未保存。请重试或检查系统密钥库。</string>
+    <string name="settings_save_error_save_failed">保存失败（写入本机配置出错），端点未保存。</string>
 </resources>

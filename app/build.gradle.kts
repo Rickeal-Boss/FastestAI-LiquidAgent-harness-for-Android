@@ -135,6 +135,9 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.compose.material3)
+    // 外壳的页签 / 抽屉 / 顶栏图标用 material-icons-extended（旧仓同一依赖）。
+    // 不放进 core-design 的 api：设计系统的公开签名不暴露 ImageVector，图标是使用方的事。
+    implementation(libs.androidx.compose.material.icons.extended)
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)

@@ -19,6 +19,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+/** 端点未配置时的错误码。上屏文案由 `strings.xml` 按这个 key 映射（守卫 G16）。 */
+internal const val NO_ENDPOINT = "no endpoint configured"
+
 /**
  * 对话页 ViewModel。
  *
@@ -40,12 +43,18 @@ class ChatViewModel(
     private val _state = MutableStateFlow(ChatUiState())
     val state: StateFlow<ChatUiState> = _state.asStateFlow()
 
-    private var runJob: Job? = null
     private var activeRunner: AgentRunner? = null
 
     /** 待刷新的流式文本。只在主线程访问（`viewModelScope` 默认 Main）。 */
     private val pendingText = StringBuilder()
     private var flushJob: Job? = null
+
+    /**
+     * run 代次。`newConversation()` 取消在途 run 后递增，旧 run 的迟到事件全部丢弃 ——
+     * 否则「新对话」清空列表后，上一条 run 的 `Cancelled(partialText)` 会把半截回答
+     * 追加到空白会话里。
+     */
+    private var runGeneration = 0
 
     init {
         viewModelScope.launch { refreshEndpoint() }
@@ -54,12 +63,17 @@ class ChatViewModel(
     /**
      * 重新读取活跃端点。
      *
-     * 从设置页返回时必须调：换了端点 / 改了模型名后，顶栏与 `canSend` 都依赖这个标签，
-     * 不重读就会出现「顶栏显示旧模型、请求已经打到新端点」的错觉。
+     * 从设置页返回时必须调：换了端点 / 改了模型名后，顶栏、上下文窗口与 `canSend`
+     * 都依赖它，不重读就会出现「顶栏显示旧模型、请求已经打到新端点」的错觉。
      */
     suspend fun refreshEndpoint() {
         val endpoint = container.activeEndpoint()
-        _state.update { it.copy(endpointLabel = endpoint?.let(::labelOf)) }
+        _state.update {
+            it.copy(
+                endpointLabel = endpoint?.let(::labelOf),
+                contextLimit = endpoint?.contextLength ?: 0,
+            )
+        }
     }
 
     fun onInputChange(text: String) {
@@ -70,52 +84,81 @@ class ChatViewModel(
         _state.update { it.copy(errorMessage = null) }
     }
 
-    /** 发送。并发保护在 [AgentRunner] 内部（`tryLock` 失败会给 `GateRejected`）。 */
+    /** 开一段新对话。在途 run 先取消，迟到事件由 [runGeneration] 挡掉。 */
+    fun newConversation() {
+        runGeneration++
+        viewModelScope.launch { activeRunner?.cancel() }
+        _state.update {
+            ChatUiState(
+                endpointLabel = it.endpointLabel,
+                contextLimit = it.contextLimit,
+            )
+        }
+    }
+
+    /**
+     * 发送。
+     *
+     * 「检查 canSend + 置位 isStreaming」必须是**一次原子状态迁移**：分成两步
+     * （读 → 判 → 写）时，连点两次发送会两条都通过检查，跑起两条 run —— 第二条被
+     * `AgentRunner` 的互斥锁拒成 `GateRejected`，用户看到的是「第一条回答被一句
+     * 莫名其妙的失败打断」。用 [MutableStateFlow.compareAndSet] 把判定与写入合成
+     * 一次 CAS：抢输的那一次直接 return，连错误都不产生。
+     */
     fun send() {
         val snapshot = _state.value
         if (!snapshot.canSend) return
         val text = snapshot.input.trim()
         if (text.isEmpty()) return
 
-        _state.update { EventReducer.appendUser(it, text) }
-        runJob = viewModelScope.launch {
-            val endpoint = container.activeEndpoint()
-            if (endpoint == null) {
-                _state.update { it.copy(errorMessage = NO_ENDPOINT, isStreaming = false) }
-                return@launch
-            }
-            val history = snapshot.bubbles
-                .filter { !it.streaming && it.text.isNotBlank() }
-                .map { ChatMessage(role = it.role, text = it.text) }
+        // 历史取**发送前**的气泡（不含本条输入：本次输入走 AgentRequest.userInput，
+        // 内核自己追加到工作副本尾部，见 AgentRequest.userInput 的 KDoc）。
+        val history = snapshot.bubbles.mapNotNull { it.toHistoryMessage() }
 
-            _state.update { it.copy(isStreaming = true, errorMessage = null) }
-            val runner = container.agentRunnerFor(endpoint)
-            activeRunner = runner
-            try {
-                runner.run(
-                    AgentRequest(
-                        history = history,
-                        userInput = text,
-                        endpoint = endpoint,
-                    ),
-                ).collect(::onEvent)
-            } finally {
-                flushNow()
+        val claimed = _state.compareAndSet(
+            snapshot,
+            EventReducer.appendUser(snapshot, text).copy(isStreaming = true),
+        )
+        if (!claimed) return
+
+        val generation = ++runGeneration
+        viewModelScope.launch { runOnce(text, history, generation) }
+    }
+
+    /**
+     * 停止。先断连接（`engine.stop()`），再让协程自然收敛 —— 顺序见 `AGENTS.md` §五.5。
+     */
+    fun stop() {
+        viewModelScope.launch { activeRunner?.cancel() }
+    }
+
+    private suspend fun runOnce(text: String, history: List<ChatMessage>, generation: Int) {
+        // 协程还没被调度就被「新对话」作废：直接退出，不白跑一次请求。
+        if (generation != runGeneration) return
+        val endpoint = container.activeEndpoint()
+        if (endpoint == null) {
+            _state.update { it.copy(isStreaming = false, errorMessage = NO_ENDPOINT) }
+            return
+        }
+        val runner = container.agentRunnerFor(endpoint)
+        activeRunner = runner
+        try {
+            runner.run(
+                AgentRequest(
+                    history = history,
+                    userInput = text,
+                    endpoint = endpoint,
+                ),
+            ).collect { event -> if (generation == runGeneration) onEvent(event) }
+        } finally {
+            // 终态事件到达前必须先排空缓冲，否则最后一段增量会丢（`onEvent` 里已排过一次，
+            // 这里兜「收集被取消、没走到终态事件」的路径）。
+            if (generation == runGeneration) flushNow()
+            if (generation == runGeneration) {
                 activeRunner = null
                 _state.update { it.copy(isStreaming = false) }
             }
         }
-    }
-
-    /** 停止。先断连接（`engine.stop()`），再让协程自然收敛 —— 顺序见 `AGENTS.md` §五.5。 */
-    fun stop() {
-        viewModelScope.launch {
-            activeRunner?.cancel()
-        }
-    }
-
-    fun onEndpointChanged(endpoint: RemoteEndpoint?) {
-        _state.update { it.copy(endpointLabel = endpoint?.let(::labelOf)) }
     }
 
     private fun onEvent(event: AgentEvent) {
@@ -148,7 +191,7 @@ class ChatViewModel(
         if (pendingText.isEmpty()) return false
         val chunk = pendingText.toString()
         pendingText.setLength(0)
-        _state.update { EventReducer.appendDelta(it, chunk) }
+        _state.update { EventReducer.appendText(it, chunk) }
         return true
     }
 
@@ -164,8 +207,17 @@ class ChatViewModel(
 
     private companion object {
         const val FLUSH_INTERVAL_MS = 120L
-
-        /** ASCII 常量（守卫 N3）；上屏文案由 `strings.xml` 按这个 key 映射。 */
-        const val NO_ENDPOINT = "no endpoint configured"
     }
+}
+
+/**
+ * 视图气泡 → 线上消息。
+ *
+ * 只回灌**有正文**的 MODEL / USER 气泡：思考通道与工具轨迹不进 history
+ * （前者是过程，后者内核自己维护在 `RunState` 里，重复回灌会让模型看到两遍）。
+ */
+private fun ChatBubble.toHistoryMessage(): ChatMessage? {
+    if (text.isBlank()) return null
+    if (role == Role.TOOL) return null
+    return ChatMessage(role = role, text = text)
 }

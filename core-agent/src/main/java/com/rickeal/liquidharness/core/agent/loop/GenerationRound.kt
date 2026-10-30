@@ -56,12 +56,16 @@ class GenerationRound(
     private suspend fun runAttempt(ctx: TurnContext, systemText: String, attempt: Int): RoundOutcome? {
         ctx.checkActive()
         val textBefore = ctx.state.textLength()
+        val reasoningBefore = ctx.state.reasoningLength()
         return when (val result = attemptOnce(ctx, buildMessages(ctx, systemText), attempt)) {
             is Attempt.Completed -> {
-                val produced = ctx.state.textLength() - textBefore
+                // 「空输出」必须把思考通道算进去：只吐 thinking 的流不是空输出
+                // （外审 P0-2：引擎侧已判「有内容」，内核侧不能判「空」）。
+                val produced = (ctx.state.textLength() - textBefore) +
+                    (ctx.state.reasoningLength() - reasoningBefore)
                 when {
                     produced == 0 && result.calls.isEmpty() ->
-                        if (prepareRetry(ctx, attempt, textBefore, EMPTY_OUTPUT)) null
+                        if (prepareRetry(ctx, attempt, textBefore, reasoningBefore, EMPTY_OUTPUT)) null
                         else RoundOutcome.Terminated
 
                     result.calls.isEmpty() -> RoundOutcome.TextOnly(result.finishReason)
@@ -70,7 +74,7 @@ class GenerationRound(
             }
 
             is Attempt.Retryable ->
-                if (prepareRetry(ctx, attempt, textBefore, result.message)) null
+                if (prepareRetry(ctx, attempt, textBefore, reasoningBefore, result.message)) null
                 else RoundOutcome.Terminated
 
             is Attempt.Fatal -> {
@@ -121,7 +125,11 @@ class GenerationRound(
                         ctx.emit(AgentEvent.TextDelta(event.text))
                     }
 
-                    is GenerationEvent.ReasoningDelta -> ctx.emit(AgentEvent.ReasoningDelta(event.text))
+                    is GenerationEvent.ReasoningDelta -> {
+                        // 思考也计入「已产出」：只计数不落历史（见 RunState.appendReasoning）。
+                        ctx.state.appendReasoning(event.text)
+                        ctx.emit(AgentEvent.ReasoningDelta(event.text))
+                    }
 
                     is GenerationEvent.ToolCallDelta ->
                         fragments.onDelta(event.index, event.id, event.name, event.argumentsFragment)
@@ -178,13 +186,16 @@ class GenerationRound(
         ctx: TurnContext,
         attempt: Int,
         textBefore: Int,
+        reasoningBefore: Int,
         reason: String,
     ): Boolean {
         if (attempt >= maxRetries) {
             termination.emitFailed(ctx, "giving up after " + attempt + " retries: " + reason)
             return false
         }
-        if (ctx.state.textLength() != textBefore) {
+        // 已吐过正文**或思考**都不许重试：重发会让模型从头再答一遍，
+        // 用户看到两段思考 / 两段正文拼接（旧仓 P1 级缺陷的同一形态）。
+        if (ctx.state.textLength() != textBefore || ctx.state.reasoningLength() != reasoningBefore) {
             termination.emitFailed(ctx, "cannot retry after partial output: " + reason)
             return false
         }

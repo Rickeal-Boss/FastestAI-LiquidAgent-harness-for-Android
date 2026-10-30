@@ -1,5 +1,6 @@
 package com.rickeal.liquidharness.core.engine.provider
 
+import com.rickeal.liquidharness.core.model.DeltaTracker
 import com.rickeal.liquidharness.core.model.FinishReason
 import com.rickeal.liquidharness.core.model.GenerationEvent
 import com.rickeal.liquidharness.core.model.GenerationRequest
@@ -32,6 +33,65 @@ class AdapterStreamState {
     var textChars: Int = 0
 
     var eventCount: Int = 0
+
+    /**
+     * 正文增量判定器（每次尝试一个实例）。
+     *
+     * 存在理由：部分 OpenAI 兼容代理返回**累积式** content（每帧是从开头到现在的
+     * 完整前缀）。原样透出会让下游按增量拼接 ⇒ 文本按 O(n²) 膨胀
+     * （旧仓 `StreamAccumulator` KDoc 记录的 P1）。
+     *
+     * 放在引擎层而不是内核层：内核只应看到**真实增量**，UI 与 `RunState`
+     * 都不该知道供应商用了哪种语义（`docs/04-risk-register.md` R19）。
+     */
+    val textTracker: DeltaTracker = DeltaTracker()
+
+    /** 思考通道的独立判定器。与正文分开：两条通道的帧序列互不相干。 */
+    val reasoningTracker: DeltaTracker = DeltaTracker()
+
+    /**
+     * 已收到的工具调用碎片数。
+     *
+     * **必须计入「已向上游 emit 过内容」**：工具优先的模型常常只吐
+     * `tool_calls` 碎片、一个正文字符都没有。若重试判据只看 `textChars`，
+     * 这类流中断后会被判「可重试」，而内核侧 `fragments` 是 per-attempt 的、
+     * 跨引擎内部重试**不重置** ⇒ 两次尝试的 arguments 碎片被拼进同一个 slot
+     * ⇒ `{"path":"a"}{"path":"a"}` 坏 JSON（外审 P0-3）。
+     */
+    var toolCallFragments: Int = 0
+
+    /** 是否已经向上游 emit 过任何内容（正文 / 思考 / 工具碎片）。重试判据的唯一真值。 */
+    val hasEmittedAny: Boolean
+        get() = textChars > 0 || toolCallFragments > 0
+
+    /**
+     * 归一化一条待 emit 的事件。
+     *
+     * - `TextDelta` / `ReasoningDelta`：先喂 [DeltaTracker]，只放行真实增量；
+     *   累积式的重复帧 ⇒ 返回 null（不 emit 空串，避免 UI 收到无意义事件）。
+     * - `ToolCallDelta`：累计碎片数（判定用），原样放行。
+     * - 其余事件原样放行。
+     *
+     * 归一化必须在 `emit` **之前**：一旦上游看到重复文本，回滚就不可能了。
+     */
+    fun normalize(event: GenerationEvent): GenerationEvent? = when (event) {
+        is GenerationEvent.TextDelta -> {
+            val delta = textTracker.feed(event.text)
+            if (delta.isEmpty()) null else GenerationEvent.TextDelta(delta)
+        }
+
+        is GenerationEvent.ReasoningDelta -> {
+            val delta = reasoningTracker.feed(event.text)
+            if (delta.isEmpty()) null else GenerationEvent.ReasoningDelta(delta)
+        }
+
+        is GenerationEvent.ToolCallDelta -> {
+            toolCallFragments++
+            event
+        }
+
+        else -> event
+    }
 }
 
 /**

@@ -11,6 +11,7 @@
 | 波 | 主题 | 止损性质 | 结束时的可演示状态 |
 |---|---|---|---|
 | **W1** | 垂直切片：一个端点、纯文本、流式上屏 | **S1（报告的止损点）** | 真机输入「你好」看到流式输出 |
+| **W2U** | UI 原样搬 + 网络安全 + 外审 P0 收口（插入波） | — | 真机看到旧仓那套液态玻璃界面，出网安全在保存时拦截 |
 | **W2** | 工具循环 + 审批 + 上下文压缩 | **S2（核心假设证伪点）** | 真机让模型读文件、弹审批卡、回灌结果、给出答案 |
 | W3 | 内核硬化：journal 恢复、熔断、token 上限、诊断 | — | 杀进程重启弹恢复卡；注入超预算触发熔断 |
 | W4 | Skill 系统 | — | 内置技能生效；技能正文以 user 注入且 system 不变 |
@@ -194,6 +195,62 @@ build.gradle.kts (root)    统一 compileSdk 36 / minSdk 31 / JVM target 17
 ### W1 明确不做
 
 历史持久化（只存内存）、工具、Skill、MCP、多端点、审批、压缩、journal、i18n 完整化（只做 W1 用到的 60 条）、深色模式切换。
+
+---
+
+## 一bis、W2U — UI 原样搬 + 网络安全 + 外审 P0 收口（2026-10-29）
+
+> 本波是 W1 与 W2 之间的**插入波**：W1 交付的是「能跑」的 Material3 简易界面，
+> 而旧仓的液态玻璃界面是已经过 90 波真机打磨的资产。在接工具循环之前先把界面搬正，
+> 理由有二：① 后续 W2/W3 的审批卡、工具轨迹、诊断卡都要挂在同一套视觉语言上，
+> 界面晚搬一次就要把每个新组件重写两遍；② 外审两份报告指出的 P0 全部是「判据没接线」，
+> 它们与 UI 无关但与 W2 的止损归因强相关 —— 带着空转判据去跑 20 条题面，
+> 失败分不清是模型不行还是 harness 有 bug。
+
+### 目标
+
+真机上打开 App 看到的是旧仓那套液态玻璃界面（底栏 / 横屏 rail / 抽屉 / 玻璃气泡 /
+工具轨迹组），对话链路走的是新仓的纯 API 内核；出网安全在**保存时**就拦，
+不再等到发请求才报错。
+
+### 交付物
+
+| 面 | 内容 | 来源 |
+|---|---|---|
+| `:core-design` | 设计系统全量搬入（Glass* / Liquid* / 动效 / 交互），包名改 `com.rickeal.liquidharness.core.design` | 旧仓 `core-design` 全量 |
+| `:feature-chat` | 对话页 UI 原样搬：顶栏 / 玻璃气泡 / 流式光标 / 思考折叠块 / 工具轨迹组 / 上下文占用条 / 输入栏 / 错误卡 | 旧仓 `ChatScreen` / `ChatMessageList` / `ChatInputBar` / `ToolTraceGroup` / `ChatContextMeter` |
+| `:app` | 外壳：竖屏底栏 / 横屏顶部条 / 中间档 rail、抽屉、转场；设置页玻璃化 | 旧仓 `LiquidAgentApp` / `ConversationDrawer` / `SettingsScreen` |
+| `:core-net` | `UrlGuard` 换 `HttpUrl` 同源解析、拒 `userInfo`、连接后 IP 校验（`GuardedDns`）；`HttpTransport` 支持 `allowPrivateNetwork` | 外审 P1-3 + R7 |
+| `:app` 声明面 | `usesCleartextTraffic=false` + `network_security_config.xml`（仅 `10.0.2.2` / `127.0.0.1` / `localhost` 允许明文） | 外审 P0-1 G15b |
+| `:core-data` | 保存端点时 `UrlGuard.requireAllowed`；密钥写失败上抛；`hasSecret` 回写；`EndpointProbe` 收紧（HTML-200 不再判通过）；runner 按 endpointId 缓存 | 外审 P0-4 / P1-2 / P1-5 |
+| `:core-engine` | 引擎层接 `DeltaTracker`（累积式 provider 不再翻倍）；工具碎片计入「已 emit」；TOOL 多结果展开成 N 条线上消息 | 外审 P0-2 / P0-3 / P1-4 |
+| `:core-agent` | 思考通道计入「空输出」判定（两层口径同源） | 外审 P0-2（第二份报告） |
+| 门禁 | `build.yml` 增 `arch-guard`（含 selftest）与 `secret-scan` job；`EXPECTED_TESTS` 双向对账；G6 表按文档修正；G18 过滤 bug 修复 + 合法调用点登记 | 外审 P0-1 |
+
+### 验收判据
+
+| # | 判据 | 验证方式 | 阈值 |
+|---|---|---|---|
+| 1 | 设计系统可编译且零业务依赖 | `:core-design:compileDebugKotlin` + G7 | 0 违规 |
+| 2 | 单文件行数闸门 | G10 | 全部 ≤ 表内上限 |
+| 3 | 中文硬编码 | G16 | 业务模块 main 源集 = 0 |
+| 4 | 对话页视觉一致 | 真机截图对比旧仓 | 底栏/气泡/输入栏形态一致 |
+| 5 | 明文流量 | G15b + 真机 Ollama 端点连接测试 | 声明存在；`10.0.2.2` 可达 |
+| 6 | SSRF 三类绕过 | 单测 | `user:pass@` / `127.0.0.1@evil.com` / IPv4-mapped 全拒 |
+| 7 | 累积式 provider 不翻倍 | 单测（`AdapterStreamStateTest`） | 重复帧被吸收，`textTracker.text` 与下游一致 |
+| 8 | 工具碎片后断流不重试 | 单测 | `hasEmittedAny=true` |
+| 9 | TOOL 多结果 | 单测 | 3 结果 ⇒ 3 条线上消息、id 一一对应 |
+| 10 | 守卫在 CI 跑 | `build.yml` arch-guard job | 绿；selftest 全 PASS |
+| 11 | `@Test` | `fulltest.sh` | 只增不减（对账进 CI） |
+
+### 不做清单
+
+- 会话持久化 / 抽屉真实历史（W3）
+- 审批回传通道（内核尚无 `ApprovalDecision` 入口，UI 只预留卡片；W2 接工具循环时一起做）
+- 上下文压缩接线（W2）
+- 附件上传 / 图片输入（W6）
+- 模型库、端侧模型管理（整块删除，永不回归）
+- MCP / Skill 页面（W4 / W5）
 
 ---
 

@@ -160,4 +160,22 @@ class StreamAccumulatorTest {
 
         assertEquals("get_weather", accumulator.toGeneration().toolCalls.single().name)
     }
+
+    /**
+     * 累积模式下「前缀关系被破坏」不能丢掉已有全文。
+     *
+     * 回归用例（外审 P0-2）：旧实现在该分支 `buffer.setLength(0); buffer.append(frame)`，
+     * tracker.text 只剩最后一帧，而下游按「旧文 + 本帧」拼接 ⇒ 两处文本永久发散。
+     */
+    @Test
+    fun cumulativeModeKeepsEarlierTextWhenPrefixBreaks() {
+        val tracker = DeltaTracker()
+        assertEquals("ab", tracker.feed("ab"))
+        assertEquals("cd", tracker.feed("abcd"))
+        // 前缀被破坏：整帧当新增，但**已有全文必须保留**。
+        assertEquals("XY", tracker.feed("XY"))
+
+        assertEquals("abcdXY", tracker.text)
+        assertEquals(false, tracker.isCumulative)
+    }
 }

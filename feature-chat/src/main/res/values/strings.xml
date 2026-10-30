@@ -1,15 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 顶栏 -->
     <string name="chat_title">LiquidHarness</string>
     <string name="chat_subtitle_empty">未配置端点</string>
-    <string name="chat_input_hint">发消息…</string>
-    <string name="chat_action_send">发送</string>
-    <string name="chat_action_stop">停止</string>
+    <string name="chat_settings">设置</string>
+    <string name="chat_action_new_conversation">新对话</string>
+    <string name="chat_round_indicator">%1$d/%2$d 轮</string>
+
+    <!-- 空态 -->
     <string name="chat_empty_title">先配一个端点</string>
     <string name="chat_empty_body">在设置里填 baseUrl、模型名和 API Key，然后回来开始对话。</string>
     <string name="chat_empty_action">去设置</string>
+    <string name="chat_start_title">开始一段对话</string>
+    <string name="chat_start_body">在下方输入问题，回复会边生成边显示。</string>
+
+    <!-- 输入栏 -->
+    <string name="chat_input_hint">问点什么…</string>
+    <string name="chat_action_send">发送</string>
+    <string name="chat_action_stop">停止</string>
+
+    <!-- 气泡 -->
+    <string name="chat_action_copy">复制</string>
+
+    <!-- 状态卡 -->
+    <string name="chat_action_close">关闭</string>
     <string name="chat_error_no_endpoint">还没有配置端点。请先在设置里添加一个。</string>
     <string name="chat_error_generic">本次请求失败：%1$s</string>
-    <string name="chat_reasoning_label">思考过程</string>
-    <string name="chat_settings">设置</string>
+    <string name="chat_approval_title">工具「%1$s」请求授权</string>
+    <string name="chat_approval_hint">本仓尚未接通审批回传通道，本次调用不会执行。</string>
+    <string name="chat_termination_breaker">（已被安全熔断）</string>
+    <string name="chat_termination_gate">（请等当前回复结束后再发送）</string>
+    <string name="chat_termination_max_rounds">（达到轮次上限）</string>
+
+    <!-- 工具轨迹 -->
+    <string name="chat_tool_running">执行中…</string>
+    <string name="chat_trace_skipped">%1$d 跳过</string>
+    <string name="chat_trace_failed">%1$d 失败</string>
+    <string name="chat_tool_file_read">读取文件</string>
+    <string name="chat_tool_file_write">写入文件</string>
+    <string name="chat_tool_file_list">浏览目录</string>
+    <string name="chat_tool_calculator">计算</string>
+    <string name="chat_tool_datetime">查询时间</string>
+    <string name="chat_tool_clipboard">剪贴板</string>
+    <string name="chat_tool_memory_read">翻记忆</string>
+    <string name="chat_tool_memory_write">写入记忆</string>
+    <string name="chat_tool_memory_search">检索记忆</string>
+    <string name="chat_tool_memory_delete">删除记忆</string>
+    <string name="chat_tool_ask_actor">询问子代理</string>
+
+    <!-- 上下文占用 -->
+    <string name="chat_context_label">上下文 %1$s / %2$s</string>
+    <string name="chat_context_near_full">上下文将满</string>
+
+    <!-- 思考通道折叠块标题（文案归使用方，core-design 只画控件） -->
+    <string name="chat_thinking">思考过程</string>
+
+    <!-- 顶栏左侧抽屉入口 -->
+    <string name="chat_open_drawer">打开对话列表</string>
 </resources>

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.rickeal.liquidharness.core.data.AppContainer
+import com.rickeal.liquidharness.core.data.EndpointSaveError
+import com.rickeal.liquidharness.core.data.EndpointSaveException
 import com.rickeal.liquidharness.core.data.ProbeOutcome
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 /**
  * 设置页状态。
@@ -26,6 +29,21 @@ data class SettingsUiState(
     val probeTarget: String? = null,
     val probeResult: ProbeOutcome? = null,
     val loaded: Boolean = false,
+    /**
+     * 最近一次保存的失败原因。**错误码不是文案** —— UI 用
+     * `stringResource(settings_save_error_<code>)` 这类映射上屏（守卫 G16：main 源集不许中文字面量）。
+     * null = 没有错误 / 已被下一次保存清掉。
+     */
+    val saveError: EndpointSaveError? = null,
+    /**
+     * 一次保存**成功**的完成信号。路由用它决定是否退栈。
+     *
+     * 为什么不让 `onSave` 直接 `popBackStack()`：保存是异步的，先退栈再失败
+     * 就等于「页面关了、错误没人看见」—— 而 `UNSAFE_URL` / `SECRET_WRITE_FAILED`
+     * 恰恰是「用户以为存上了其实没有」的高危静默态（外审 P0-2）。所以退栈必须
+     * 由**保存结果**驱动，不能由点击驱动。
+     */
+    val saveCompleted: Boolean = false,
 )
 
 /**
@@ -50,11 +68,33 @@ class SettingsViewModel(
         viewModelScope.launch { load() }
     }
 
+    /**
+     * 保存端点。
+     *
+     * 失败**必须上屏**：URL 被安全策略拒绝、密钥落盘失败都是「用户以为存上了但其实没有」
+     * 的高危静默态。这里只把 [EndpointSaveError] 错误码放进状态，英文异常串只进日志
+     * （它含 host 等诊断信息，直接上屏既不本地化也会泄漏内部细节）。
+     */
     fun save(endpoint: RemoteEndpoint, apiKey: String?) {
         viewModelScope.launch {
-            container.saveEndpoint(endpoint, apiKey)
-            load()
+            _state.update { it.copy(saveError = null, saveCompleted = false) }
+            try {
+                container.saveEndpoint(endpoint, apiKey)
+                load()
+                // 只有走到这里才算「真的存上了」：saveEndpoint 内部先把 URL 过
+                // UrlGuard、再写密钥、最后写清单，任一步失败都抛异常。
+                _state.update { it.copy(saveCompleted = true) }
+            } catch (e: EndpointSaveException) {
+                _state.update { it.copy(saveError = e.error) }
+            } catch (e: IOException) {
+                _state.update { it.copy(saveError = EndpointSaveError.SAVE_FAILED) }
+            }
         }
+    }
+
+    /** 路由退栈后清掉完成信号，避免下次进入编辑页立刻被「已完成」弹回去。 */
+    fun consumeSaveCompleted() {
+        _state.update { it.copy(saveCompleted = false) }
     }
 
     fun delete(id: String) {

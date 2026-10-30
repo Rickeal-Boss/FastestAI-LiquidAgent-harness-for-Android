@@ -351,8 +351,7 @@ class OpenAiCompatibleAdapterTest {
 
     /** MODEL 消息带工具调用时，tool_calls 要按线上形态编码。 */
     @Test
-    fun assistantToolCallsAreEncoded() {
-        val message = ChatMessage(
+    fun assistantToolCallsAreEncoded() {        val message = ChatMessage(
             role = Role.MODEL,
             text = "",
             toolCalls = listOf(ToolCall(id = "call_1", name = "f", argumentsJson = "{\"a\":1}")),
@@ -365,5 +364,39 @@ class OpenAiCompatibleAdapterTest {
         assertEquals("call_1", call["id"]!!.jsonPrimitive.content)
         assertEquals("function", call["type"]!!.jsonPrimitive.content)
         assertEquals("{\"a\":1}", call["function"]!!.jsonObject["arguments"]!!.jsonPrimitive.content)
+    }
+
+    /**
+     * 一条 TOOL 消息携带 N 个结果 ⇒ 线上必须展开成 N 条 tool 消息，id 一一对应。
+     *
+     * 回归用例（外审 P1-4）：旧实现只取 `firstOrNull()`，N−1 个结果静默消失，
+     * OpenAI 兼容端点随即因「tool_call 无对应 result」400。
+     */
+    @Test
+    fun multipleToolResultsExpandToMultipleWireMessages() {
+        val message = ChatMessage(
+            role = Role.TOOL,
+            toolResults = listOf(
+                ToolResult(callId = "call_a", output = "A"),
+                ToolResult(callId = "call_b", output = "B"),
+                ToolResult(callId = "call_c", output = "C"),
+            ),
+        )
+        val body = adapter.buildBody(request(messages = listOf(message)))
+        val encoded = body["messages"] as JsonArray
+
+        assertEquals(3, encoded.size)
+        assertEquals(
+            listOf("call_a", "call_b", "call_c"),
+            encoded.map { it.jsonObject["tool_call_id"]!!.jsonPrimitive.content },
+        )
+        assertEquals(
+            listOf("A", "B", "C"),
+            encoded.map { it.jsonObject["content"]!!.jsonPrimitive.content },
+        )
+        assertEquals(
+            listOf("tool", "tool", "tool"),
+            encoded.map { it.jsonObject["role"]!!.jsonPrimitive.content },
+        )
     }
 }
