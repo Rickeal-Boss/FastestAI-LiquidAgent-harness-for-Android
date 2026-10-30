@@ -600,7 +600,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ===========================================================================
-  # Job 3：架构守卫（18 条）+ 守卫自证（变异注入）
+  # Job 3：架构守卫（23 条判据）+ 守卫自证（变异注入）
   #
   # 为什么必须是独立 job 而不是塞进 lint / unit-tests：
   #   · 它是**纯 bash**（grep/awk/find/sed/tar），不需要 JDK / Gradle / Android SDK。
@@ -618,7 +618,7 @@ jobs:
   #    「守卫悄悄跳过 = 守卫不存在」。
   # ===========================================================================
   arch-guard:
-    name: Arch guard (18 guards + mutation selftest)
+    name: Arch guard (23 guards + mutation selftest)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -650,7 +650,7 @@ jobs:
           echo "::endgroup::"
           [ "$missing" -eq 0 ]
 
-      - name: Run arch guards (18 条)
+      - name: Run arch guards (23 条判据)
         run: |
           if [ ! -f scripts/arch-guard.sh ]; then
             echo "::error::scripts/arch-guard.sh 缺失 —— 架构守卫从未落地，拒绝把本 job 判绿"
