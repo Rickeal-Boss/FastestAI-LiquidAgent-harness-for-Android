@@ -243,6 +243,30 @@ build.gradle.kts (root)    统一 compileSdk 36 / minSdk 31 / JVM target 17
 | 10 | 守卫在 CI 跑 | `build.yml` arch-guard job | 绿；selftest 全 PASS |
 | 11 | `@Test` | `fulltest.sh` | 只增不减（对账进 CI） |
 
+### 状态（2026-10-30，commit `baeb574`）
+
+CI run `41051392490` 五个 job 全绿：Assemble Debug / Unit tests（`@Test` 228 = `EXPECTED_TESTS`）/
+Lint / Secret scan / **Arch guard（22 守卫 0 违规 + selftest 22/22 PASS）**。
+
+| # | 结论 | 证据 |
+|---|---|---|
+| 1 / 2 / 3 | ✅ | `:core-design:compileDebugKotlin` 通过；G7=0、G16=0；G10 仅剩 1 条**已登记例外**（`LiquidBottomTabs.kt` 1012 行 > 600，拆分排 W2U-2） |
+| 6 / 7 / 8 / 9 | ✅ | 单测（`UrlGuardTest` / `AdapterStreamStateTest` / `ToolEventEmitterTest` 等），CI 单测 job 绿 |
+| 10 / 11 | ✅ | arch-guard job 绿；`@Test` 228 双向对账通过 |
+| 4 / 5（真机部分） | ⚠️ 未做 | 需要 OPPO PDRM00 上跑：截图对比旧仓、`10.0.2.2` Ollama 端点连通、NSC 对 IP 字面量放行、`GuardedDns` 在真机 OkHttp 路径生效 |
+
+**本波顺带修掉的两个守卫结构性失明**（都是「进了 CI 也永远绿」，selftest 抓到）：
+
+1. `guard_violation` 把多行违规块当**一个**实参 ⇒ 例外正则命中块里任意一行就整块跳过。
+   G11 / G18 因此对 core-model 的注入完全失明，且**掩盖了两处真实存量**
+   （`LiquidDialog()` 227 行、`CyberJoystickSwitch()` 124 行，本轮已拆）。
+2. `guard_absent` 只扫 `*.kt`，而 G4a / G5a 的判据钉的是 Gradle 脚本行 ⇒
+   `build.gradle.kts` 里的 retrofit、`settings.gradle.kts` 里的 jitpack 永远看不见。
+   `KTS_GLOB` 早就定义但从未被使用。
+
+判据本身的经验：**「守卫在 CI 里跑」不等于「守卫在判」**。区别只能由变异自证给出
+—— 注入违规后必须看到该守卫转红，且输出区段里出现本次注入的证据。
+
 ### 不做清单
 
 - 会话持久化 / 抽屉真实历史（W3）
