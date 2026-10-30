@@ -205,8 +205,16 @@ guard_ok() {
 guard_violation() {
   local id="$1" desc="$2"; shift 2
   local pat="${EXCEPTIONS[$id]:-}"
-  local kept=() hints=() skipped=0 ln
-  for ln in "$@"; do
+  local kept=() hints=() skipped=0 ln blob
+  # ⚠️ 逐行展开：调用点普遍是 `guard_violation ID DESC "$(cat "$raw")"`，
+  # 即**一个含多行的实参**。直接 `for ln in "$@"` 会把整块当一个元素，
+  # 于是「例外正则命中任意一行」⇒ 整块被跳过 ⇒ 真违规和例外一起消失
+  # （W2U 实测：G11/G18 因此对 core-model 的变异完全失明，selftest 报 FAIL）。
+  local -a lines=()
+  for blob in "$@"; do
+    while IFS= read -r ln; do lines+=("$ln"); done <<< "$blob"
+  done
+  for ln in "${lines[@]}"; do
     case "$ln" in
       '⇒ '*) hints+=("$ln"); continue ;;
     esac
@@ -249,7 +257,19 @@ strip_comment_hits() {
 # $1=id $2=desc $3=正则  $4=额外过滤（ALLOW 正则，空串表示不过滤）  其余=扫描路径
 guard_absent() {
   local id="$1" desc="$2" re="$3" allow="$4"; shift 4
-  local paths=("$@")
+  # 路径位置里可以夹一个 `--with-kts` 开关：把扫描范围从「仅 *.kt」扩到「*.kts + *.kt」。
+  # G4a/G5a 的判据钉的是 Gradle 脚本行，此前只收 *.kt ⇒ 从落地起结构性失明、
+  # 永远绿（selftest 抓到；这也是「进了 CI 也永远绿」的典型形态）。
+  local with_kts=0 arg
+  local paths=()
+  for arg in "$@"; do
+    case "$arg" in
+      --with-kts) with_kts=1 ;;
+      *) paths+=("$arg") ;;
+    esac
+  done
+  local glob=("${KT_GLOB[@]}")
+  if [ "$with_kts" -eq 1 ]; then glob=("${KTS_GLOB[@]}"); fi
   local p
   for p in "${paths[@]}"; do
     if [ ! -e "$p" ]; then
@@ -261,7 +281,7 @@ guard_absent() {
   local raw filtered
   raw="$(mktemp)"; filtered="$(mktemp)"
   # ⚠️ 关键：grep 的 rc 必须在这里捕获，绝不让管道参与（纪律 2）
-  grep "${GREP_COMMON[@]}" "${KT_GLOB[@]}" "$re" "${paths[@]}" > "$raw" 2>&1
+  grep "${GREP_COMMON[@]}" "${glob[@]}" "$re" "${paths[@]}" > "$raw" 2>&1
   local rc=$?
 
   case "$rc" in
@@ -378,7 +398,7 @@ g4() {
   #     —— 裸 `ksp` 会命中 `MinSdkSpec`（大小写不敏感），裸 `room` 会命中注释里的「禁 Room」。
   guard_absent "G4a" "禁依赖黑名单(.kts)" \
     '^[[:space:]]*(implementation|api|compileOnly|runtimeOnly|kapt|ksp|annotationProcessor|testImplementation|androidTestImplementation|classpath|id|alias)[[:space:]]*\(.*(ksp|kapt|room|hilt|dagger|koin|retrofit|coil|sqldelight)' \
-    '' .
+    '' . --with-kts
 
   # (b) 版本目录：只扫非注释行
   if [ ! -f gradle/libs.versions.toml ]; then
@@ -401,7 +421,7 @@ g4() {
 # G5 禁 jitpack
 # =============================================================================
 g5() {
-  guard_absent "G5a" "禁 jitpack 仓库" 'jitpack\.io|maven\("jitpack' '' .
+  guard_absent "G5a" "禁 jitpack 仓库" 'jitpack\.io|maven\("jitpack' '' . --with-kts
   # 「必须存在」型：仓库收口必须显式声明（否则模块级 repositories{} 能悄悄加回来）
   guard_present "G5b" "仓库收口声明" \
     'repositoriesMode\.set\(RepositoriesMode\.FAIL_ON_PROJECT_REPOS\)' "$SETTINGS_FILE"

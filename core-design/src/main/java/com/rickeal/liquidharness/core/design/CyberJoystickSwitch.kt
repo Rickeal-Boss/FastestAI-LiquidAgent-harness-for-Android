@@ -7,8 +7,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -33,16 +31,11 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch          // ★ 修复 2026-08-06: scope.launch 需显式 import, cb8b186 漏配导致编译失败
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -180,28 +173,21 @@ fun CyberJoystickSwitch(
     // 修饰链先收进一个 val 再交给 Box：长链直接写在实参位置时，Kotlin 解析器
     // 在「链尾 + 具名实参」这种形态上会报 `Unresolved reference 'contentAlignment'`
     // （W2U 拆分实测，语法本身合法但解析器打嗝）。收成 val 后一次解决。
-    val boxModifier = modifier
-        .defaultMinSize(minWidth = trackWidth, minHeight = 48.dp)
-        .joystickToggle(
-            checked = checked,
-            stateDescriptionOn = stateDescriptionOn,
-            stateDescriptionOff = stateDescriptionOff,
-            interactionSource = interactionSource,
-            haptics = haptics,
-            currentChecked = currentChecked,
-            currentOnCheckedChange = currentOnCheckedChange,
-        )
-        // ▸ 水平拖拽: thumb 跟随手指, 松手过半即切换, 未过半弹回原位
-        .joystickDrag(
-            progress = progress,
-            scope = scope,
-            springSpec = springSpec,
-            haptics = haptics,
-            currentChecked = currentChecked,
-            currentOnCheckedChange = currentOnCheckedChange,
-            thumbStartX = thumbStartX,
-            thumbEndX = thumbEndX,
-        )
+    val boxModifier = modifier.joystickSwitchGestures(
+        trackWidth = trackWidth,
+        checked = checked,
+        stateDescriptionOn = stateDescriptionOn,
+        stateDescriptionOff = stateDescriptionOff,
+        interactionSource = interactionSource,
+        haptics = haptics,
+        currentChecked = currentChecked,
+        currentOnCheckedChange = currentOnCheckedChange,
+        progress = progress,
+        scope = scope,
+        springSpec = springSpec,
+        thumbStartX = thumbStartX,
+        thumbEndX = thumbEndX,
+    )
     Box(
         modifier = boxModifier,
         contentAlignment = Alignment.Center,
@@ -229,6 +215,50 @@ fun CyberJoystickSwitch(
         )
     }
 }
+
+/**
+ * 开关的修饰链：点击语义（[joystickToggle]）+ 水平拖拽（[joystickDrag]）。
+ *
+ * 外提的唯一理由是方法体积闸门 G11（原 `CyberJoystickSwitch()` 124 行 > 上限 120）。
+ * 两个扩展函数都是普通 `Modifier` 扩展（非 @Composable），所以这里只是搬位置，
+ * 组合期行为与副作用一个没变。
+ */
+private fun Modifier.joystickSwitchGestures(
+    trackWidth: Dp,
+    checked: Boolean,
+    stateDescriptionOn: String?,
+    stateDescriptionOff: String?,
+    interactionSource: MutableInteractionSource,
+    haptics: GlassHaptics,
+    currentChecked: Boolean,
+    currentOnCheckedChange: (Boolean) -> Unit,
+    progress: Animatable<Float, AnimationVector1D>,
+    scope: CoroutineScope,
+    springSpec: AnimationSpec<Float>,
+    thumbStartX: Float,
+    thumbEndX: Float,
+): Modifier = this
+    .defaultMinSize(minWidth = trackWidth, minHeight = 48.dp)
+    .joystickToggle(
+        checked = checked,
+        stateDescriptionOn = stateDescriptionOn,
+        stateDescriptionOff = stateDescriptionOff,
+        interactionSource = interactionSource,
+        haptics = haptics,
+        currentChecked = currentChecked,
+        currentOnCheckedChange = currentOnCheckedChange,
+    )
+    // ▸ 水平拖拽: thumb 跟随手指, 松手过半即切换, 未过半弹回原位
+    .joystickDrag(
+        progress = progress,
+        scope = scope,
+        springSpec = springSpec,
+        haptics = haptics,
+        currentChecked = currentChecked,
+        currentOnCheckedChange = currentOnCheckedChange,
+        thumbStartX = thumbStartX,
+        thumbEndX = thumbEndX,
+    )
 
 // ════════════════════════════════════════════════════════════════
 //  轨道绘制 — 斜切平行四边形 (Komi Store 风格)
@@ -497,79 +527,3 @@ private fun JoystickTrackThumb(
 }
 
 /** 摇杆的水平拖拽（外提，行数闸门 G11）：thumb 跟手、过半提交、未过半弹回。 */
-private fun Modifier.joystickDrag(
-    progress: Animatable<Float, AnimationVector1D>,
-    scope: CoroutineScope,
-    springSpec: AnimationSpec<Float>,
-    haptics: GlassHaptics,
-    currentChecked: Boolean,
-    currentOnCheckedChange: (Boolean) -> Unit,
-    thumbStartX: Float,
-    thumbEndX: Float,
-): Modifier = this
-        .pointerInput(thumbStartX, thumbEndX) {
-            var dragBase = 0f
-            var accumulatedPx = 0f
-            val rangePx = (thumbEndX - thumbStartX).coerceAtLeast(1f)
-            detectHorizontalDragGestures(
-                onDragStart = {
-                    dragBase = progress.value
-                    accumulatedPx = 0f
-                    scope.launch { progress.stop() }   // 停弹簧, drag 接管
-                },
-                onHorizontalDrag = { change, dragAmount ->
-                    change.consume()
-                    accumulatedPx += dragAmount
-                    val p = (dragBase + accumulatedPx / rangePx).coerceIn(0f, 1f)
-                    scope.launch { progress.snapTo(p) }
-                },
-                onDragEnd = {
-                    val p = progress.value
-                    val newChecked = p > 0.5f
-                    if (newChecked != currentChecked) {
-                        // 提交分支触感：与回调同一位点（用户提交），不双发。
-                        haptics.toggle(newChecked)
-                        currentOnCheckedChange(newChecked)  // LaunchedEffect 从拖拽位置弹到目标
-                    } else {
-                        // 未过半: 从拖拽位置弹回原态（不提交、不发触感）。
-                        scope.launch { progress.animateTo(if (currentChecked) 1f else 0f, springSpec) }
-                    }
-                },
-                onDragCancel = {
-                    scope.launch { progress.animateTo(if (currentChecked) 1f else 0f, springSpec) }
-                },
-            )
-        }
-
-/**
- * 摇杆的语义与点击（外提，行数闸门 G11）。
- *
- * TalkBack 状态语义（审查 P2-2）：clickable(role = Role.Switch) 只给角色不给状态，
- * 念不出开/关，故补 stateDescription（文案由调用方传，null ⇒ 不设）。role 不重复设：
- * clickable 已挂 Role.Switch，同一节点上重复写只是噪音。stateDescription 读组合期
- * checked：本组件 checked 变化必触发重组，无陈旧快照问题。
- */
-private fun Modifier.joystickToggle(
-    checked: Boolean,
-    stateDescriptionOn: String?,
-    stateDescriptionOff: String?,
-    interactionSource: MutableInteractionSource,
-    haptics: GlassHaptics,
-    currentChecked: Boolean,
-    currentOnCheckedChange: (Boolean) -> Unit,
-): Modifier = this
-    .semantics {
-        val stateLabel = if (checked) stateDescriptionOn else stateDescriptionOff
-        if (stateLabel != null) stateDescription = stateLabel
-    }
-    .clickable(
-        interactionSource = interactionSource,
-        indication = null,
-        role = Role.Switch,
-        onClick = {
-            // 触感前置：haptics.toggle 与 GlassSwitch 同纪律 —— 只在提交位点发，
-            // 严禁挂 LaunchedEffect(checked) 回显收集器（外部回流也会震）。
-            haptics.toggle(!currentChecked)
-            currentOnCheckedChange(!currentChecked)
-        },
-    )
