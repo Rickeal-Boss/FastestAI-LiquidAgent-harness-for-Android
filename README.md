@@ -21,13 +21,13 @@
 本仓把这两件事拆开：**harness 是主体，模型是可插拔后端**。端侧积累的判据（断路器、审批、
 压缩、账本）只保留在 API 路径下**仍然可触发**的部分，其余删除 —— 空转的判据比没有判据更危险。
 
-## 现在能做什么（W1 范围）
+## 现在能做什么（截至 W2.5）
 
-- [ ] 配置多个 API 端点（OpenAI 兼容），密钥加密落盘
-- [ ] 流式对话（SSE），首 token 延迟与 tok/s 可见
-- [ ] 工具循环（内置工具 + 参数级审批）
-- [ ] Skill 加载（`SKILL.md` + 三级渐进披露）
-- [ ] MCP Client（Streamable HTTP，双 era）
+- [x] 配置多个 API 端点（OpenAI 兼容），密钥加密落盘
+- [x] 流式对话（SSE），首 token 延迟与 tok/s 可见
+- [x] 工具循环（内置工具 + 参数级审批）
+- [ ] Skill 加载（`SKILL.md` + 三级渐进披露，W4）
+- [ ] MCP Client（Streamable HTTP，双 era，W5）
 
 > 勾选状态以 `docs/02-roadmap.md` 为准，本列表只是索引。
 

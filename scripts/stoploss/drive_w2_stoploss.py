@@ -12,7 +12,10 @@ W2 止损判据 20 题真机驱动。
      「注入失败」——不许把「题面错了」算成模型失败。
   3. **完成判据看桥不看 UI**：最后一个请求无 tool_calls 且 finish_reason ∈ {stop,length}
      且此后 2.5s 无新请求。UI 的「正在输入」只是展示面。
-  4. 失败要留证据：截图 + uiautomator dump 落到 _w2tools/shots/。
+  4. **只认本次 run**：桥启动时把 run_id 写到 `<BRIDGE_LOG>.run`，驱动开局读它并按它过滤。
+     旧日志的尾条若是非终态，不按 run 过滤会让 wait_done 开局即满足（题面没注入就返回）
+     或反过来傻等 300s —— 两种都是「上一轮的尾巴」在污染本轮。
+  5. 失败要留证据：截图 + uiautomator dump 落到 _w2tools/shots/。
 """
 
 import json
@@ -23,6 +26,8 @@ import subprocess
 import sys
 import time
 
+import bridge_log
+
 # ADB 路径必须由环境变量给（本仓不假设 _j2env 的位置）；默认取 PATH 里的 adb。
 ADB = os.environ.get("ADB", "adb")
 PKG = "com.rickeal.liquidharness.debug"
@@ -31,6 +36,7 @@ BRIDGE_LOG = os.environ.get("BRIDGE_LOG", os.path.join(os.getcwd(), "glm_bridge.
 OUT_DIR = os.getcwd()
 SHOTS = os.path.join(OUT_DIR, "shots")
 RUN_LOG = os.path.join(OUT_DIR, "run_w2_stoploss.log")
+MANIFEST = os.path.join(OUT_DIR, "run_manifest.json")
 
 os.makedirs(SHOTS, exist_ok=True)
 
@@ -94,24 +100,23 @@ def reverse():
         log("WARN reverse failed: %r" % (e,))
 
 
+RUN_ID = None  # 由 main() 从 <BRIDGE_LOG>.run 读取后填；None 时不做 run 过滤（离线复算用）
+
+
 def read_records():
-    if not os.path.exists(BRIDGE_LOG):
+    try:
+        return bridge_log.load_records(bridge_log.live_spec(BRIDGE_LOG))
+    except bridge_log.LogCorrupt as e:
+        # 数据已不可信（两个进程写同一文件 / 人工拼接）：继续跑只会产出无法归因的日志。
+        log("FATAL log corrupt: %s" % e)
+        raise
+    except bridge_log.LogMissing:
         return []
-    out = []
-    with open(BRIDGE_LOG, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                out.append(json.loads(line))
-            except Exception:
-                continue
-    return out
 
 
 def records_for(prompt):
-    return [r for r in read_records() if (r.get("last_user") or "").strip() == prompt.strip()]
+    rs = bridge_log.filter_run(read_records(), RUN_ID)
+    return [r for r in rs if (r.get("last_user") or "").strip() == prompt.strip()]
 
 
 def is_terminal(record):
@@ -154,11 +159,16 @@ def maybe_approve(pid):
     return True
 
 
-def wait_done(prompt, pid=""):
-    """等到「该题的最后一个请求已终态 + 2.5s 静默」，期间自动处理审批卡。"""
+def wait_done(prompt, pid="", baseline=0):
+    """等到「该题在本 run 内的请求数 > baseline，且最后一个请求已终态 + 2.5s 静默」。
+
+    baseline 为什么不能是 0：本题在同一 run 内被重发（注入失败重试）时，上一次的
+    终态记录会让 last_count 立刻「有变化且终态」，题面还没注入就返回。以开跑时刻的
+    条数为基线，等于把「本次发送」和「历史残留」切开。
+    """
     deadline = time.time() + 300
     last_change = time.time()
-    last_count = 0
+    last_count = baseline
     last_poll = 0.0
     while time.time() < deadline:
         rs = records_for(prompt)
@@ -166,10 +176,10 @@ def wait_done(prompt, pid=""):
             last_count = len(rs)
             last_change = time.time()
         # 只有「已有一批 tool_calls 在等执行」时才可能弹卡，避免每轮都 dump。
-        if rs and ((rs[-1].get("response") or {}).get("tool_calls") or []) and time.time() - last_poll > 2.0:
+        if len(rs) > baseline and ((rs[-1].get("response") or {}).get("tool_calls") or []) and time.time() - last_poll > 2.0:
             last_poll = time.time()
             maybe_approve(pid)
-        if rs and is_terminal(rs[-1]) and time.time() - last_change >= 2.5:
+        if len(rs) > baseline and is_terminal(rs[-1]) and time.time() - last_change >= 2.5:
             return rs
         time.sleep(0.8)
     return records_for(prompt)
@@ -260,10 +270,75 @@ def send_prompt(pid, prompt):
     return False
 
 
+def apk_sha256():
+    """设备上安装的 APK 的 sha256 —— 判分报告要能指认「跑的是哪个包」。"""
+    try:
+        out = adb("shell", "pm", "path", PKG, timeout=30)
+        path = ""
+        for line in out.splitlines():
+            if line.startswith("package:"):
+                path = line.split(":", 1)[1].strip()
+                break
+        if not path:
+            return ""
+        digest = adb("shell", "sha256sum", path, timeout=60)
+        return (digest.split() or [""])[0]
+    except Exception as e:
+        log("WARN apk sha256 failed: %r" % (e,))
+        return ""
+
+
+def git_head():
+    try:
+        p = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, timeout=20,
+                           cwd=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        return (p.stdout or "").strip() if p.returncode == 0 else ""
+    except Exception:
+        return ""
+
+
+def write_manifest(fixture_version, prompts_count, bridge_run_id, started_at):
+    """跑分清单：判分器的版本门靠它。
+
+    apk_sha256 / git_head 让「同一份报告」能被指认到具体产物；model / thinking 记的是
+    操作者声明的配置（真值在 endpoints.json 里，宿主读不到设备侧那份，所以允许 env 覆盖）。
+
+    ⚠️ thinking 这一项**本仓没有开关可钉**：实测请求体只有
+    model/messages/stream/stream_options/temperature/top_p/max_tokens/tools/tool_choice，
+    没有任何 thinking 字段 ⇒ 它的真值是「端点默认行为」。所以默认值写
+    `endpoint_default_on`（= W2.5 实跑状态），而不是写成 `off` 假装关掉了；
+    是否真的开着由判分器的 `thinking_evidence()` 用 reasoning_tokens 反证。
+    """
+    manifest = {
+        "fixture_version": fixture_version,
+        "apk_sha256": apk_sha256(),
+        "git_head": git_head(),
+        "model": os.environ.get("RUN_MODEL", "glm-4.7"),
+        "thinking": os.environ.get("RUN_THINKING", "endpoint_default_on"),
+        "bridge_run_id": bridge_run_id,
+        "started_at": started_at,
+        "prompts_count": prompts_count,
+    }
+    with open(MANIFEST, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, ensure_ascii=False, indent=2)
+    log("MANIFEST %s" % json.dumps(manifest, ensure_ascii=False))
+    return manifest
+
+
 def main():
+    global RUN_ID
     with open(FIXTURE, "r", encoding="utf-8") as f:
         fixture = json.load(f)
     prompts = fixture["prompts"]
+
+    # run 边界来自桥：没有 .run 文件说明桥不是按新协议起的（或根本没起）。
+    # 这时开跑，日志会缺 run_id，判分器会拒绝出报告 —— 不如现在就说清楚。
+    RUN_ID = bridge_log.read_run_id(BRIDGE_LOG)
+    if not RUN_ID:
+        log("FATAL 找不到 %s —— 先启动 glm_bridge.py（它会写 run_id）再发题"
+            % bridge_log.run_file_for(BRIDGE_LOG))
+        return 2
+    log("bridge run_id=%s" % RUN_ID)
 
     # --start W2-T05 --no-reset：断点续跑。绝不重置会话/工作区（T06/T07、T08/T09 依赖
     # 前面题留下的状态），否则续跑会改变题面语义。
@@ -287,15 +362,22 @@ def main():
         return 2
     log("输入框坐标 %s" % (pos,))
 
+    write_manifest(fixture.get("version"), len(prompts), RUN_ID,
+                   time.strftime("%Y-%m-%dT%H:%M:%S"))
+
     results = []
     for item in prompts:
         pid, prompt = item["id"], item["prompt"]
         t0 = time.time()
+        # 基线必须在发送**之前**取：本题若因注入失败被重发，上一次的记录会让
+        # wait_done 立刻看到「有记录且终态」，题面还没到模型就返回。
+        baseline = len(records_for(prompt))
         if not send_prompt(pid, prompt):
             results.append({"id": pid, "inject": False, "error": "inject failed twice"})
             continue
 
-        rs = wait_done(prompt, pid)
+        rs = wait_done(prompt, pid, baseline)
+        rs = rs[baseline:]
         injected = bool(rs) and (rs[0].get("last_user") or "").strip() == prompt.strip()
         elapsed = round(time.time() - t0, 1)
         if not rs:
@@ -311,11 +393,13 @@ def main():
         last = rs[-1]
         resp = last.get("response") or {}
         calls = resp.get("tool_calls") or []
-        log("%s rounds=%d finish=%s calls=%s text=%r %.1fs" % (
-            pid, len(rs), resp.get("finish_reason"),
+        rounds, http, retries = bridge_log.compute_rounds(rs)
+        log("%s rounds=%d(http=%d,retry=%d) finish=%s calls=%s text=%r %.1fs" % (
+            pid, rounds, http, retries, resp.get("finish_reason"),
             [(c.get("name"), (c.get("arguments") or "")[:40]) for c in calls],
             (resp.get("text") or "")[:60], elapsed))
-        results.append({"id": pid, "inject": True, "rounds": len(rs), "records": rs})
+        results.append({"id": pid, "inject": True, "rounds": rounds,
+                        "http_requests": http, "retries": retries, "records": rs})
 
         # 等输入框清空（发送成功的旁证）；不阻塞主流程。
         time.sleep(0.5)

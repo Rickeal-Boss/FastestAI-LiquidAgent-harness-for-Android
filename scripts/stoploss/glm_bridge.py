@@ -11,9 +11,18 @@ BigModel (GLM) 转发桥 —— W2 止损 20 题跑分的取证面。
   3. 顺带拿到 `prompt_tokens_details.cached_tokens`，用于上下文缓存命中率取证。
 
 日志：每请求一行 JSON（BRIDGE_LOG，默认 glm_bridge.jsonl）。
-  {seq, ts, path, model, last_user, status, duration_ms, first_byte_ms,
+  {run_id, log_file, seq, ts, path, model, last_user, status, duration_ms, first_byte_ms,
    request: {...原始 body...},
    response: {text, reasoning, tool_calls:[{id,name,arguments}], finish_reason, usage, sse_lines}}
+
+run 边界为什么是**字段**而不是「靠操作者记得清空日志」：
+  桥重启后 seq 从 1 重来，判分器若按 last_user 全量过滤，上一轮的记录会混进来，
+  表现为「轮次虚高 / 不收敛假阳性」，镜像面是「旧尾条非终态 ⇒ 驱动傻等超时」。
+  把 run_id 写进每条记录，判分器与驱动按它过滤，历史文件留不留都不影响结论；
+  归档只是让人类翻日志方便，不再是正确性的前提。
+
+同一文件内 seq 必须唯一：同一 run 里出现重复 seq 说明有两个进程在写同一个文件
+（或人工拼接），此时记录归属不可信，判分器会拒绝出报告。
 """
 
 import json
@@ -25,6 +34,8 @@ import threading
 import time
 from http.client import HTTPSConnection
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+import bridge_log
 
 UPSTREAM_HOST = os.environ.get("BRIDGE_UPSTREAM_HOST", "open.bigmodel.cn")
 UPSTREAM_PORT = int(os.environ.get("BRIDGE_UPSTREAM_PORT", "443"))
@@ -57,11 +68,37 @@ API_KEY = os.environ.get("BIGMODEL_KEY", "")
 _lock = threading.Lock()
 _seq = [0]
 
+# 进程级 run 标识：秒级时间戳 + pid。同一秒重启两次的概率极低，pid 再兜一层；
+# 需要复现某次跑分时可显式 BRIDGE_RUN_ID 覆盖。
+RUN_ID = os.environ.get("BRIDGE_RUN_ID") or (time.strftime("%Y%m%d-%H%M%S") + "-" + str(os.getpid()))
+LOG_FILE = os.path.basename(LOG_PATH)
+
+
+def archive_previous_log():
+    """启动时把已存在的旧日志改名保留（不覆盖、不删除）。
+
+    为什么要留：跑分中断后重跑，前一段的取证是唯一能解释「那几题为什么没收敛」的
+    东西；删掉它等于把事故现场一起删了。改名后仍能被 BRIDGE_LOG=glm_bridge*.jsonl
+    合并读到。
+    """
+    try:
+        if not os.path.exists(LOG_PATH) or os.path.getsize(LOG_PATH) == 0:
+            return None
+    except OSError:
+        return None
+    target = "%s.%s.jsonl" % (LOG_PATH, RUN_ID)
+    if os.path.exists(target):
+        target = "%s.%s.%d.jsonl" % (LOG_PATH, RUN_ID, int(time.time() * 1000) % 100000)
+    os.replace(LOG_PATH, target)
+    return target
+
 
 def log_record(record):
     with _lock:
         _seq[0] += 1
         record["seq"] = _seq[0]
+        record["run_id"] = RUN_ID
+        record["log_file"] = LOG_FILE
         with open(LOG_PATH, "a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
@@ -264,6 +301,11 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    archived = archive_previous_log()
+    if archived:
+        print("archived previous log -> %s" % archived, flush=True)
+    bridge_log.write_run_id(LOG_PATH, RUN_ID)
+    print("run_id=%s log=%s" % (RUN_ID, LOG_PATH), flush=True)
     print("bridge listening on 127.0.0.1:%d -> %s%s (proxy=%s:%d)" % (
         LISTEN_PORT, UPSTREAM_HOST, UPSTREAM_PATH, PROXY_HOST, PROXY_PORT), flush=True)
     if not API_KEY:

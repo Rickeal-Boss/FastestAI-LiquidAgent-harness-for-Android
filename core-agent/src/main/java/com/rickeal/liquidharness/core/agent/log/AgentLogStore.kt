@@ -59,24 +59,34 @@ object AgentLogStore {
     fun record(level: Level, message: String) {
         val entry = Entry(level = level, message = sanitize(message), atMillis = System.currentTimeMillis())
         synchronized(lock) {
-            if (buffer.size >= DEFAULT_CAPACITY) dropOneFor(entry)
+            // 满缓冲且没有可牺牲的 INFO ⇒ 这条 INFO 自己就是最不重要的一条，直接不写。
+            // 不这么做的后果：一条 INFO 会挤掉一条 WARN/ERROR，而诊断页恰恰只需要那几条。
+            if (buffer.size >= DEFAULT_CAPACITY && !dropOneFor(entry)) return
             buffer.addLast(entry)
         }
     }
 
     /**
-     * 缓冲满时腾一个位置给 [entry]，**优先丢 INFO**（调用方必须持有 [lock]）。
+     * 缓冲满时腾一个位置（调用方必须持有 [lock]）。
      *
-     * 为什么不是一律丢最旧：工具调用、上下文压缩都会写 INFO，200 条缓冲很快被 INFO 填满；
-     * 若一律丢最旧，**崩溃前刚发生的 WARN/ERROR 会被 INFO 挤掉** —— 恰恰是用户来诊断页
-     * 最该看到的那几条没了。WARN/ERROR 进来时先找最旧的一条 INFO 丢掉；只有缓冲里
-     * 全是 WARN/ERROR（说明确实一直在报错）才退化成丢最旧一条。
+     * @return true = 已腾出位置，可以写入 [incoming]；false = 腾不出，[incoming] 应被丢弃。
+     *
+     * ## 为什么不是一律丢最旧
+     *
+     * 工具调用、上下文压缩都会写 INFO，200 条缓冲很快被 INFO 填满；若一律丢最旧，
+     * **崩溃前刚发生的 WARN/ERROR 会被 INFO 挤掉** —— 恰恰是用户来诊断页最该看到的那几条没了。
+     *
+     * ## 三档优先级（与类 KDoc 的承诺一致）
+     *
+     * 1. 缓冲里有 INFO ⇒ 丢**最旧的一条 INFO**（任何级别的新条目都走这条）；
+     * 2. 缓冲里全是 WARN/ERROR，新来的是 WARN/ERROR ⇒ 退化成丢最旧一条（确实一直在报错）；
+     * 3. 缓冲里全是 WARN/ERROR，新来的是 INFO ⇒ **丢弃这条 INFO**，不动既有条目。
+     *
+     * ⚠️ 第 3 档是 W2.6 补的：原实现的 INFO 分支无条件 `removeFirst()`，把「优先丢 INFO」
+     * 实现成了「INFO 优先挤掉别人」，与 KDoc 相反，且会顶掉熔断/压缩等关键证据。
+     * 单测 `AgentLogStoreTest` 的 `infoDoesNotEvictWarnOrError` 钉住这一档。
      */
-    private fun dropOneFor(entry: Entry) {
-        if (entry.level == Level.INFO) {
-            buffer.removeFirst()
-            return
-        }
+    private fun dropOneFor(incoming: Entry): Boolean {
         var victim = -1
         for (i in buffer.indices) {
             if (buffer[i].level == Level.INFO) {
@@ -85,13 +95,15 @@ object AgentLogStore {
             }
         }
         if (victim < 0) {
+            if (incoming.level == Level.INFO) return false
             buffer.removeFirst()
-            return
+            return true
         }
         val kept = ArrayList<Entry>(buffer.size - 1)
         for (i in buffer.indices) if (i != victim) kept.add(buffer[i])
         buffer.clear()
         buffer.addAll(kept)
+        return true
     }
 
     /** 按时间**正序**（最旧 → 最新）返回最近 [limit] 条。`limit <= 0` 返回空。 */
