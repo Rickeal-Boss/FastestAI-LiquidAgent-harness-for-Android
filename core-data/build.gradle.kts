@@ -44,6 +44,9 @@ dependencies {
     api(project(":core-engine"))
     // HttpTransport 只在装配处（AppContainer）实例化，不外泄类型
     implementation(project(":core-net"))
+    // W3：技能目录与 MCP 客户端在装配处构造（AppContainer 暴露端口类型），故用 api
+    api(project(":core-skills"))
+    api(project(":core-mcp"))
 
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)

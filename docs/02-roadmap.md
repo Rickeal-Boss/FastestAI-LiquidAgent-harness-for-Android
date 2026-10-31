@@ -565,6 +565,37 @@ Lint / Secret scan / **Arch guard（22 守卫 0 违规 + selftest 22/22 PASS）*
 
 ---
 
+## 二quater、W3 — 能力补齐波：多模态 / 记忆 / Skill / MCP / 上下文工程（2026-10-31）
+
+> 与本节原「W3 内核硬化」的关系：**顺序对调**。本波先补能力面（用户可感知），
+> 内核硬化（journal / FreezeClock / 运行账本门控）顺延为 W3.5。交接见
+> `docs/handoff-20261031-wave3.md`，供应商实测见 `docs/notes/w3-provider-matrix.md`。
+
+### 交付
+
+| 能力 | 落点 | 真机 |
+|---|---|---|
+| 多模态输入 | `Attachment` + adapter content 数组 + `AttachmentImporter` + 输入栏「+」 | ✅ 读出图内文字 |
+| 长期记忆 | `MemoryStore` 端口 + 三工具 + `FileMemoryStore` + 记忆页 | ✅ 新对话直接答出 |
+| Skill | `core-skills` 四文件 + 两工具 + 技能页 + 两个内置技能 | ✅ `skill_list` 返回两条 |
+| MCP | `core-mcp` 五文件 + `NetMcpTransport` + 注册桥 + 两页 UI | ⚠️ 仅协议单测，未联调 |
+| 上下文工程 | I1 修复（轨迹进 history）+ 缓存口径订正 | ✅ 单测 8 条 |
+| 语音 | `speak` + `SpeechEngine` 端口 | ⛔ 默认关闭（未验证） |
+| 重试可见性 | `ChatStatus` + 状态行 | ✅ 真机复现后新增 |
+
+### 闸门
+
+- `fulltest` **480 / 0 / 0 / 0**（11 模块）
+- `arch-guard` **23 / 0 / 0**
+- 真机：冷启 1.29s；工具循环 / 思考块 / 用量行 / 审批 / 记忆 / 技能 / 视觉全部通过
+
+### 明确未做（不许写成通过）
+
+Skill 导入（SAF → zip）、MCP 真机联调、逐端点 `supportsVision`、设备侧长上下文行使、
+journal / FreezeClock。逐条见交接文档 §四 / §六。
+
+---
+
 ## 三、W3–W8 概要
 
 ### W3 — 内核硬化

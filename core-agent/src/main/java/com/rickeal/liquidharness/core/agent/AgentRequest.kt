@@ -29,6 +29,15 @@ data class AgentRequest(
     /** 本次用户输入。会被追加到工作副本尾部（绝不在中段插入，`00-brief.md` A8）。 */
     val userInput: String = "",
 
+    /**
+     * 本次用户输入随附的附件（W3 多模态）。
+     *
+     * 只挂在本次用户消息上，**不回灌到历史**的旧消息里 —— 历史里的附件已经随
+     * 当时的 `ChatMessage` 存在（调用方从会话里取），这里只补「这一次」。
+     * 空 = 纯文本路径，与 W2 逐字节一致。
+     */
+    val userAttachments: List<com.rickeal.liquidharness.core.model.Attachment> = emptyList(),
+
     /** 端点配置（含 `kind` / `modelId` / 窗口声明）。**不含密钥**。 */
     val endpoint: RemoteEndpoint,
 

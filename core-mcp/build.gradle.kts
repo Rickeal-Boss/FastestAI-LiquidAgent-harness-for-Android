@@ -38,6 +38,8 @@ kotlin {
 
 dependencies {
     api(project(":core-model"))
+    // MCP 客户端实现的是 :core-agent 的 ToolSource 端口（适配器 → 端口，方向不可逆）。
+    api(project(":core-agent"))
 
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)

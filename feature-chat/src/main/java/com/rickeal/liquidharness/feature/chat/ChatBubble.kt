@@ -27,8 +27,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.rickeal.liquidharness.core.design.GlassAttachmentKind
 import com.rickeal.liquidharness.core.design.GlassBubble
+import com.rickeal.liquidharness.core.design.GlassBubbleAttachment
 import com.rickeal.liquidharness.core.design.LocalGlassColors
+import com.rickeal.liquidharness.core.model.AttachmentKind
 import com.rickeal.liquidharness.core.model.Role
 
 /**
@@ -65,6 +68,20 @@ internal fun ChatBubbleRow(
             text = bubble.text,
             isUser = true,
             modifier = modifier,
+            // 附件缩略图。uri 用导入时落到 cacheDir 的本地路径 —— `GlassImageThumb`
+            // 只认路径/uri，不认 base64；缓存被清时退化成占位图（请求体仍用内存里的字节）。
+            attachments = bubble.attachments.map { attachment ->
+                GlassBubbleAttachment(
+                    id = attachment.id,
+                    label = attachment.name,
+                    kind = when (attachment.kind) {
+                        AttachmentKind.IMAGE -> GlassAttachmentKind.IMAGE
+                        AttachmentKind.AUDIO -> GlassAttachmentKind.AUDIO
+                        AttachmentKind.TEXT -> GlassAttachmentKind.TEXT
+                    },
+                    uri = attachment.localPath,
+                )
+            },
         )
 
         Role.MODEL, Role.TOOL -> {

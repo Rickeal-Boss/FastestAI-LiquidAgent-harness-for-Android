@@ -70,6 +70,40 @@ class AppContainer(context: Context) {
 
     val probe: EndpointProbe = EndpointProbe(transport)
 
+    /** 附件导入（W3 多模态）。解码在 IO 线程内，构造期零工作。 */
+    val attachments: AttachmentImporter = AttachmentImporter(appContext)
+
+    /**
+     * 长期记忆。文件版（`memory.json`），与端点清单同一个 `dataDir`。
+     *
+     * 记忆正文在**每个 run 开始时快照一次**进 system（见 `ChatViewModel.runOnce`），
+     * run 内不变 —— 这是 prompt cache 前缀稳定的前提。
+     */
+    val memory: com.rickeal.liquidharness.core.agent.memory.MemoryStore =
+        FileMemoryStore(jsonFiles)
+
+    /**
+     * 技能目录。来源顺序 = 优先级：**用户目录在前**，内置 assets 在后。
+     *
+     * 先到先得意味着用户导入的同名技能会覆盖内置版（用户意图优先），
+     * 而不是「内置受保护」—— 后者会让用户永远改不掉一个不合适的技能。
+     */
+    val skills: com.rickeal.liquidharness.core.agent.skill.SkillCatalog by lazy {
+        val userDir = File(dataDir, "skills").apply { mkdirs() }
+        com.rickeal.liquidharness.core.skills.SkillCatalogImpl(
+            listOf(
+                com.rickeal.liquidharness.core.skills.FileSkillSource(userDir),
+                com.rickeal.liquidharness.core.skills.AssetSkillSource(appContext.assets),
+            )
+        )
+    }
+
+    /** MCP server 配置（不含明文 token）。 */
+    val mcpServers: McpServerStore = McpServerStore(jsonFiles)
+
+    /** MCP 工具装配器（传输层复用 `:core-net` 的连接池与代理配置）。 */
+    val mcpTools: McpToolSources by lazy { McpToolSources(NetMcpTransport(transport)) }
+
     /**
      * 按端点造引擎。W1 只有 OpenAI 兼容族 —— 另外两族的 adapter 是 W2，
      * 现在放行会得到一个「能建端点但发不出请求」的假象，故 fail-fast。
@@ -113,8 +147,72 @@ class AppContainer(context: Context) {
         // 注册结果在此处无处分支：内置工具装进空注册表，`register` 唯一可失败的路径是
         // 「跨来源同名覆盖」，而那条只存在于 `registerContributed`（内置路径恒为 Ok）。
         // 显式丢弃而不是包一层假处理 —— 让返回值在这里被真正读过一遍再放掉。
-        ToolRegistry().also { registerBuiltins(it, toolContext) }
+        ToolRegistry().also { registry ->
+            registerBuiltins(registry, toolContext)
+            // W3 新增能力面：记忆三件套 / 技能两件套 / 语音一个。
+            // 全部走 `register`（内置来源），因为它们随 APK 编译进来、不经远端。
+            com.rickeal.liquidharness.core.agent.tool.tools.memoryTools(memory)
+                .forEach { registry.register(it) }
+            com.rickeal.liquidharness.core.agent.tool.tools.skillTools(skills)
+                .forEach { registry.register(it) }
+            // ⚠️ `speak` **默认不注册**（W3 真机实测后关闭）。
+            //
+            // OPPO PDRM00 的默认 TTS 引擎是 `com.iflytek.speechsuite`：调用 `speak()`
+            // 会把工具协程挂住 40s 以上，且**点停止也无法中断**（阻塞调用不在挂起点上）。
+            // 一个会挂死 run 的工具比没有这个工具更糟 —— 模型会卡在那里，用户只能杀进程。
+            //
+            // 保留实现（`speakTools`）与单测：换一台 TTS 正常的设备 / 用户装了 Google TTS
+            // 之后，把这一行取消注释即可启用。这是**能力缺口**，不是「已支持」。
+            // com.rickeal.liquidharness.core.agent.tool.tools.speakTools(toolContext)
+            //     .forEach { registry.register(it) }
+        }
     }
+
+    /**
+     * 一次 run 的提示词上下文（记忆正文 + 技能一级披露）。
+     *
+     * ## 为什么是 `suspend` 且在 run 开始前调一次
+     *
+     * 两者都要读盘（记忆文件 / 技能目录）。放在 `AgentRequest` 构造处读，
+     * 保证「一个 run 内 system 字节稳定」（`00-brief.md` A8）——
+     * 若每轮重读，技能列表顺序或记忆更新时间一变，整段前缀的 prompt cache 全价重算。
+     *
+     * ## 失败降级
+     *
+     * 记忆读失败 ⇒ 空串（不带记忆，但 run 照常）；技能扫失败 ⇒ 空段。
+     * 两个都不该让「发消息」这件事失败 —— 它们是增强，不是前置条件。
+     */
+    suspend fun promptContext(): PromptContext {
+        val memoryText = runCatching {
+            com.rickeal.liquidharness.core.agent.memory.renderMemoryForPrompt(memory.all())
+        }.getOrDefault("")
+        // 停用的技能既不进一级披露，也不能被 skill_load 加载（工具层查同一个目录，
+        // 所以这里只过滤披露是不够的 —— 见 SkillTools 的 enabled 过滤）。
+        val disabled = runCatching { settings.disabledSkills.first() }.getOrDefault(emptySet())
+        val skillsSection = runCatching {
+            com.rickeal.liquidharness.core.agent.skill.renderSkillsSection(
+                skills.list().filterNot { it.name in disabled }
+            )
+        }.getOrDefault("")
+        return PromptContext(memoryText = memoryText, skillsSection = skillsSection)
+    }
+
+    /** 提示词上下文快照。字段直接对应 `AgentRequest` 的两个入参。 */
+    data class PromptContext(
+        val memoryText: String = "",
+        val skillsSection: String = "",
+    )
+
+    /**
+     * 工具注册表的**只读暴露**，供 MCP 同步与设置页诊断使用。
+     *
+     * 故意不叫 `tools`：内部那个 lazy 字段是装配细节，外部拿到的是同一个实例。
+     * 首次求值会做 `mkdirs()` + `getSystemService()`（阻塞），所以调用方必须在 IO 线程
+     * （`ChatViewModel.init` 的 `viewModelScope` 是 Main —— 那里已经包了 `runCatching`
+     * 但**没有**切线程；W3 的 MCP 同步发生在 `viewModelScope.launch` 里，
+     * 首次触碰会落在主线程。这是已知的冷启动抖动点，登记在 `docs/notes/w3-provider-matrix.md`）。
+     */
+    fun toolRegistry(): ToolRegistry = tools
 
     /**
      * 内核门面：**按 endpointId 缓存**。

@@ -51,6 +51,8 @@ fun ChatScreen(
     modifier: Modifier = Modifier,
     onNewConversation: (() -> Unit)? = null,
     onOpenDrawer: (() -> Unit)? = null,
+    onPickImage: (() -> Unit)? = null,
+    onRemoveAttachment: ((String) -> Unit)? = null,
 ) {
     GlassScaffold(
         modifier = modifier,
@@ -94,29 +96,13 @@ fun ChatScreen(
                     .navigationBarsPadding()
                     .imePadding(),
             ) {
-                val usage = state.usageLabel
-                if (!usage.isNullOrBlank()) {
-                    Text(
-                        text = usage,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = LocalGlassColors.current.onGlassSubtle,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(end = 20.dp),
-                    )
-                }
-                ChatContextMeter(
-                    usedTokens = state.contextTokens,
-                    limitTokens = state.contextLimit,
-                )
-                ChatInputBar(
-                    draft = state.input,
-                    onDraftChange = onInputChange,
+                ChatBottomArea(
+                    state = state,
+                    onInputChange = onInputChange,
                     onSend = onSend,
                     onStop = onStop,
-                    isStreaming = state.isStreaming,
-                    canSend = state.canSend,
+                    onPickImage = onPickImage,
+                    onRemoveAttachment = onRemoveAttachment,
                 )
             }
         },
@@ -139,4 +125,67 @@ fun ChatScreen(
             onOpenSettings = onOpenSettings,
         )
     }
+}
+
+/**
+ * 输入区上方的「状态 → 用量 → 上下文表 → 输入栏」四段。
+ *
+ * 抽出来只为守 G11（单方法 ≤120 行）：加一行重试提示就把 `ChatScreen` 顶到 122 行，
+ * 而「超限就拆方法」是本仓的硬纪律（不是调上限、不是加注释）。
+ *
+ * 顺序有语义：状态在最上（最需要被看见），用量次之，上下文表贴着输入栏。
+ */
+@Composable
+private fun ChatBottomArea(
+    state: ChatUiState,
+    onInputChange: (String) -> Unit,
+    onSend: () -> Unit,
+    onStop: () -> Unit,
+    onPickImage: (() -> Unit)?,
+    onRemoveAttachment: ((String) -> Unit)?,
+) {
+    val status = state.status
+    if (status != null) {
+        Text(
+            text = stringResource(
+                when (status) {
+                    ChatStatus.RETRYING -> R.string.chat_status_retrying
+                    ChatStatus.CANCELLED_EMPTY -> R.string.chat_status_cancelled
+                }
+            ),
+            style = MaterialTheme.typography.labelSmall,
+            color = LocalGlassColors.current.onGlassSubtle,
+            textAlign = TextAlign.End,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 20.dp),
+        )
+    }
+    val usage = state.usageLabel
+    if (!usage.isNullOrBlank()) {
+        Text(
+            text = usage,
+            style = MaterialTheme.typography.labelSmall,
+            color = LocalGlassColors.current.onGlassSubtle,
+            textAlign = TextAlign.End,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 20.dp),
+        )
+    }
+    ChatContextMeter(
+        usedTokens = state.contextTokens,
+        limitTokens = state.contextLimit,
+    )
+    ChatInputBar(
+        draft = state.input,
+        onDraftChange = onInputChange,
+        onSend = onSend,
+        onStop = onStop,
+        isStreaming = state.isStreaming,
+        canSend = state.canSend,
+        attachments = state.attachments,
+        onPickImage = onPickImage,
+        onRemoveAttachment = onRemoveAttachment,
+    )
 }

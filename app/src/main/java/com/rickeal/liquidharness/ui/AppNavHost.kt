@@ -98,6 +98,12 @@ private fun ChatRoute(
     // 否则顶栏还显示旧模型，而请求已经用新端点发出 —— 用户会以为「换模型没生效」。
     LaunchedEffect(Unit) { viewModel.refreshEndpoint() }
 
+    // SAF 图片选择器。回调里只把 uri 交给 ViewModel —— 解码/压缩在 core-data 的
+    // AttachmentImporter 里（IO 线程），Composable 不碰字节。
+    val pickImage = com.rickeal.liquidharness.feature.chat.rememberImagePicker { uri, name ->
+        viewModel.attachImage(uri, name)
+    }
+
     ChatScreen(
         state = state,
         onInputChange = viewModel::onInputChange,
@@ -109,6 +115,8 @@ private fun ChatRoute(
         onResolveApproval = viewModel::resolveApproval,
         onOpenDrawer = onOpenDrawer,
         onNewConversation = viewModel::newConversation,
+        onPickImage = pickImage,
+        onRemoveAttachment = viewModel::removeAttachment,
     )
 }
 

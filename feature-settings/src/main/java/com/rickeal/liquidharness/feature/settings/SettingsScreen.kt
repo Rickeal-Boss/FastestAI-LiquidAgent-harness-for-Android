@@ -48,6 +48,9 @@ fun SettingsScreen(
     appVersion: String,
     onManageEndpoints: () -> Unit,
     modifier: Modifier = Modifier,
+    onManageSkills: (() -> Unit)? = null,
+    onManageMcp: (() -> Unit)? = null,
+    onManageMemory: (() -> Unit)? = null,
 ) {
     val tokens = LocalGlassTokens.current
     val activeName = state.endpoints.firstOrNull { it.id == state.activeId }?.name
@@ -86,6 +89,37 @@ fun SettingsScreen(
                         },
                         onClick = onManageEndpoints,
                     )
+                }
+            }
+
+            GlassCard(contentPadding = PaddingValues(14.dp)) {
+                Column {
+                    GroupTitle(stringResource(R.string.settings_section_capabilities))
+                    // 三个入口都由宿主注入回调：null 表示「本构建没有这个页面」，
+                    // 不渲染行 —— 摆一个点了没反应的入口比没有更糟（本文件类头同一纪律）。
+                    if (onManageSkills != null) {
+                        GlassSettingRow(
+                            title = stringResource(R.string.settings_manage_skills),
+                            subtitle = stringResource(R.string.settings_manage_skills_hint),
+                            onClick = onManageSkills,
+                        )
+                    }
+                    if (onManageMcp != null) {
+                        GlassSettingRow(
+                            title = stringResource(R.string.settings_manage_mcp),
+                            subtitle = stringResource(R.string.settings_manage_mcp_hint),
+                            modifier = Modifier.padding(top = 8.dp),
+                            onClick = onManageMcp,
+                        )
+                    }
+                    if (onManageMemory != null) {
+                        GlassSettingRow(
+                            title = stringResource(R.string.settings_manage_memory),
+                            subtitle = stringResource(R.string.settings_manage_memory_hint),
+                            modifier = Modifier.padding(top = 8.dp),
+                            onClick = onManageMemory,
+                        )
+                    }
                 }
             }
 

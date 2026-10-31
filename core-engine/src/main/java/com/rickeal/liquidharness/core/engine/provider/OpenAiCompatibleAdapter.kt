@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.core.engine.provider
 
 import com.rickeal.liquidharness.core.model.AgentJson
+import com.rickeal.liquidharness.core.model.AttachmentKind
 import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.FinishReason
 import com.rickeal.liquidharness.core.model.GenerationEvent
@@ -13,8 +14,10 @@ import com.rickeal.liquidharness.core.model.ToolParameter
 import com.rickeal.liquidharness.core.model.ToolSpec
 import com.rickeal.liquidharness.core.net.SseEvent
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -192,7 +195,7 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
 
     private fun messageObject(message: ChatMessage): JsonObject = buildJsonObject {
         put("role", wireRole(message.role))
-        put("content", contentText(message))
+        put("content", contentElement(message))
         if (message.toolCalls.isNotEmpty()) {
             put(
                 "tool_calls",
@@ -234,6 +237,64 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
             return result.output.ifBlank { result.errorMessage.orEmpty() }
         }
         return message.text
+    }
+
+    /**
+     * `content` 字段的线上形态。
+     *
+     * ## 为什么图片必须走数组（W3 多模态）
+     *
+     * OpenAI 兼容族的视觉输入是 `content: [{type:"text"}, {type:"image_url",...}]`；
+     * 纯字符串形态**不会**被解释成多模态，模型只会看到一段文本（实测：把 base64 塞进
+     * 字符串，模型回答「我没有看到图片」）。
+     *
+     * ## 三条纪律
+     *
+     * 1. **只有 USER 消息可带附件**（`sendableAttachments` 已按 role 过滤）——
+     *    给 assistant 消息塞 image part 会被部分端点 400。
+     * 2. **文本附件拼进正文，图片走 part**：文本附件（txt/md）没有对应的 part 类型，
+     *    拼进 `text` 段是唯一通用形态；拼的时候带上文件名，模型才知道来源。
+     * 3. **无附件时逐字节等于旧行为**（返回 `JsonPrimitive(String)`），
+     *    保证既有单测与 prompt cache 的前缀字节不变。
+     */
+    private fun contentElement(message: ChatMessage): JsonElement {
+        val text = contentText(message)
+        val attachments = message.sendableAttachments
+        if (attachments.isEmpty()) return JsonPrimitive(text)
+
+        val textParts = StringBuilder(text)
+        for (attachment in attachments) {
+            if (attachment.kind == AttachmentKind.TEXT) {
+                if (textParts.isNotEmpty()) textParts.append("\n\n")
+                textParts.append("[attached file: ").append(attachment.name).append("]\n")
+                textParts.append(attachment.textContent)
+            }
+        }
+        val images = attachments.filter { it.kind == AttachmentKind.IMAGE }
+
+        return buildJsonArray {
+            if (textParts.isNotEmpty()) {
+                add(
+                    buildJsonObject {
+                        put("type", "text")
+                        put("text", textParts.toString())
+                    }
+                )
+            }
+            for (image in images) {
+                add(
+                    buildJsonObject {
+                        put("type", "image_url")
+                        put(
+                            "image_url",
+                            buildJsonObject {
+                                put("url", "data:" + image.mimeType + ";base64," + image.base64)
+                            }
+                        )
+                    }
+                )
+            }
+        }
     }
 
     private fun toolObject(spec: ToolSpec): JsonObject = buildJsonObject {

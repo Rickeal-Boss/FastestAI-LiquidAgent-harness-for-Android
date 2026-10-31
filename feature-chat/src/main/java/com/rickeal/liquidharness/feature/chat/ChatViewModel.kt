@@ -9,6 +9,7 @@ import com.rickeal.liquidharness.core.agent.approval.ToolApprovalCache
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
 import com.rickeal.liquidharness.core.data.AppContainer
+import com.rickeal.liquidharness.core.data.AttachmentImporter
 import com.rickeal.liquidharness.core.model.AgentEvent
 import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
@@ -98,6 +99,25 @@ class ChatViewModel(
 
     init {
         viewModelScope.launch { refreshEndpoint() }
+        // MCP 工具清单同步：一次会话一次（失败不影响对话）。
+        // 放在 init 而不是每次 send：远端 `tools/list` 是网络往返，每发一条消息等它一次
+        // 会把「首字延迟」拖到秒级；清单在一次会话内几乎不变。
+        viewModelScope.launch { syncMcpTools() }
+    }
+
+    /**
+     * 把启用的 MCP server 的工具注册进注册表。
+     *
+     * 逐个 server 做，单个失败只影响它自己（`McpToolSources.refresh` 返回 0 并记 message）。
+     * 这里**不抛异常、不上屏错误**：MCP 是可选增强，连不上时对话仍应可用；
+     * 具体失败原因在设置页的 MCP 列表里显示（那是用户主动去看的地方）。
+     */
+    private suspend fun syncMcpTools() {
+        val registry = container.toolRegistry()
+        val servers = runCatching { container.mcpServers.list() }.getOrDefault(emptyList())
+        for (server in servers.filter { it.enabled }) {
+            runCatching { container.mcpTools.refresh(server, registry) }
+        }
     }
 
     /**
@@ -118,6 +138,37 @@ class ChatViewModel(
 
     fun onInputChange(text: String) {
         _state.update { it.copy(input = text) }
+    }
+
+    /**
+     * 导入一张图片到待发送附件。
+     *
+     * 三条失败路径都**不静默**：解码失败 / 超过 1.5 MiB / 系统没装解码器，
+     * 全部走 `errorMessage`（用户在输入框上方能看到具体原因）。
+     *
+     * 为什么在 ViewModel 里做而不是在 Composable 里：解码是阻塞 IO（可能要读 10 MB 原图），
+     * Composable 里做会卡主线程；`AttachmentImporter` 内部已切 IO 线程。
+     */
+    fun attachImage(uri: String, name: String) {
+        viewModelScope.launch {
+            when (val result = container.attachments.importImage(uri, name)) {
+                is AttachmentImporter.Result.Ok -> _state.update {
+                    // 上限 4 张：再多会让单次请求的图片 token 超过正文预算。
+                    if (it.attachments.size >= MAX_ATTACHMENTS) it else {
+                        it.copy(attachments = it.attachments + result.attachment)
+                    }
+                }
+
+                is AttachmentImporter.Result.Failed -> _state.update {
+                    it.copy(errorMessage = "attachment failed: " + result.reason)
+                }
+            }
+        }
+    }
+
+    /** 移除一张待发送附件。 */
+    fun removeAttachment(id: String) {
+        _state.update { state -> state.copy(attachments = state.attachments.filterNot { it.id == id }) }
     }
 
     fun dismissError() {
@@ -204,20 +255,21 @@ class ChatViewModel(
         val snapshot = _state.value
         if (!snapshot.canSend) return
         val text = snapshot.input.trim()
-        if (text.isEmpty()) return
+        val attachments = snapshot.attachments
+        if (text.isEmpty() && attachments.isEmpty()) return
 
         // 历史取**发送前**的气泡（不含本条输入：本次输入走 AgentRequest.userInput，
         // 内核自己追加到工作副本尾部，见 AgentRequest.userInput 的 KDoc）。
-        val history = snapshot.bubbles.mapNotNull { it.toHistoryMessage() }
+        val history = snapshot.bubbles.flatMap { it.toHistoryMessages() }
 
         val claimed = _state.compareAndSet(
             snapshot,
-            EventReducer.appendUser(snapshot, text).copy(isStreaming = true),
+            EventReducer.appendUser(snapshot, text, attachments).copy(isStreaming = true),
         )
         if (!claimed) return
 
         val generation = ++runGeneration
-        viewModelScope.launch { runOnce(text, history, generation) }
+        viewModelScope.launch { runOnce(text, attachments, history, generation) }
     }
 
     /**
@@ -233,7 +285,12 @@ class ChatViewModel(
         viewModelScope.launch { activeRunner?.cancel() }
     }
 
-    private suspend fun runOnce(text: String, history: List<ChatMessage>, generation: Int) {
+    private suspend fun runOnce(
+        text: String,
+        attachments: List<com.rickeal.liquidharness.core.model.Attachment>,
+        history: List<ChatMessage>,
+        generation: Int,
+    ) {
         // 协程还没被调度就被「新对话」作废：直接退出，不白跑一次请求。
         if (generation != runGeneration) return
         val endpoint = container.activeEndpoint()
@@ -243,12 +300,18 @@ class ChatViewModel(
         }
         val runner = container.agentRunnerFor(endpoint)
         activeRunner = runner
+        // 记忆与技能段在 run 开始时**快照一次**：run 内 system 字节必须稳定
+        // （00-brief A8），否则每轮都要整段重算 prompt cache。
+        val promptContext = container.promptContext()
         try {
             runner.run(
                 AgentRequest(
                     history = history,
                     userInput = text,
+                    userAttachments = attachments,
                     endpoint = endpoint,
+                    memoryText = promptContext.memoryText.ifBlank { null },
+                    skillsSection = promptContext.skillsSection,
                 ),
                 approval = ToolApprovalHandler { call, _ ->
                     // 一次审批 = 一个句柄。`spec` 这里用不上：卡片只展示工具名与参数，
@@ -373,17 +436,8 @@ class ChatViewModel(
 
     private companion object {
         const val FLUSH_INTERVAL_MS = 120L
-    }
-}
 
-/**
- * 视图气泡 → 线上消息。
- *
- * 只回灌**有正文**的 MODEL / USER 气泡：思考通道与工具轨迹不进 history
- * （前者是过程，后者内核自己维护在 `RunState` 里，重复回灌会让模型看到两遍）。
- */
-private fun ChatBubble.toHistoryMessage(): ChatMessage? {
-    if (text.isBlank()) return null
-    if (role == Role.TOOL) return null
-    return ChatMessage(role = role, text = text)
+        /** 单条消息最多 4 张图：再多会让单次请求的图片 token 吃掉正文预算。 */
+        const val MAX_ATTACHMENTS = 4
+    }
 }

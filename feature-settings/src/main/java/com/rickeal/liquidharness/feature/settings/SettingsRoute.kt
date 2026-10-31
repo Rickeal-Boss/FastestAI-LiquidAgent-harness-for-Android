@@ -43,6 +43,30 @@ object EndpointEditRoute {
     fun build(id: String?): String = if (id.isNullOrBlank()) PATH else "$PATH?$ARG_ID=$id"
 }
 
+/** 技能管理子页（W3）。 */
+object SkillListRoute {
+    const val ROUTE = "settings/skills"
+}
+
+/** MCP 服务器列表子页（W3）。 */
+object McpListRoute {
+    const val ROUTE = "settings/mcp"
+}
+
+/** MCP 服务器编辑子页（W3）。`id` 缺省 = 新增。 */
+object McpEditRoute {
+    const val ARG_ID = "id"
+    private const val PATH = "settings/mcp/edit"
+    val PATTERN: String = "$PATH?$ARG_ID={$ARG_ID}"
+
+    fun build(id: String?): String = if (id.isNullOrBlank()) PATH else "$PATH?$ARG_ID=$id"
+}
+
+/** 长期记忆子页（W3）。 */
+object MemoryRoute {
+    const val ROUTE = "settings/memory"
+}
+
 /**
  * 设置模块的路由图。
  *
@@ -65,9 +89,25 @@ fun NavGraphBuilder.settingsGraph(
             state = state,
             appVersion = appVersion,
             onManageEndpoints = { navController.navigate(EndpointListRoute.ROUTE) },
+            onManageSkills = { navController.navigate(SkillListRoute.ROUTE) },
+            onManageMcp = { navController.navigate(McpListRoute.ROUTE) },
+            onManageMemory = { navController.navigate(MemoryRoute.ROUTE) },
         )
     }
+    // 子图拆分只为守 G11（单方法 ≤120 行）；路由语义不变，仍挂在同一个 graph 下。
+    endpointGraph(navController, container)
+    extrasGraph(navController, container)
+}
 
+/**
+ * 端点子图（列表 + 编辑）。
+ *
+ * 单独成函数是 G11 的要求（方法 ≤120 行），不是分层：它仍挂在同一个 graph 下。
+ */
+private fun NavGraphBuilder.endpointGraph(
+    navController: NavHostController,
+    container: AppContainer,
+) {
     composable(route = EndpointListRoute.ROUTE) {
         val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory(container))
         val state by viewModel.state.collectAsStateWithLifecycle()
@@ -125,6 +165,111 @@ fun NavGraphBuilder.settingsGraph(
                 viewModel.delete(id)
                 navController.popBackStack()
             },
+        )
+    }
+}
+
+/**
+ * 技能 / MCP / 记忆子图（W3 新增的三页）。
+ */
+private fun NavGraphBuilder.extrasGraph(
+    navController: NavHostController,
+    container: AppContainer,
+) {
+    composable(route = SkillListRoute.ROUTE) {
+        val viewModel: ExtrasViewModel = viewModel(factory = ExtrasViewModel.Factory(container))
+        val state by viewModel.state.collectAsStateWithLifecycle()
+        LaunchedEffect(Unit) { viewModel.loadSkills() }
+
+        SkillListScreen(
+            skills = state.skills,
+            onToggle = { name, enabled ->
+                // 停用是持久化的（SettingsRepository.disabledSkills），不只是 UI 状态。
+                viewModel.setSkillEnabled(name, enabled)
+            },
+            onRefresh = { viewModel.refreshSkills() },
+            // 导入能力在 W3 **未接**（SAF 选择 zip → SkillImportValidator → 解压落盘）。
+            // 传 null 让 screen 不渲染该按钮 —— 假按钮比缺按钮更糟。
+            onImport = null,
+            onBack = { navController.popBackStack() },
+            loading = state.skillsLoading,
+            error = state.error,
+        )
+    }
+
+    composable(route = McpListRoute.ROUTE) {
+        val viewModel: ExtrasViewModel = viewModel(factory = ExtrasViewModel.Factory(container))
+        val state by viewModel.state.collectAsStateWithLifecycle()
+        LaunchedEffect(Unit) { viewModel.loadMcp() }
+
+        McpServerListScreen(
+            servers = state.mcp,
+            onToggle = viewModel::toggleMcp,
+            onEdit = { id -> navController.navigate(McpEditRoute.build(id)) },
+            onAdd = { navController.navigate(McpEditRoute.build(null)) },
+            onRefresh = viewModel::refreshMcp,
+            onDelete = viewModel::deleteMcp,
+            onBack = { navController.popBackStack() },
+            loading = state.mcpLoading,
+            error = state.error,
+        )
+    }
+
+    composable(
+        route = McpEditRoute.PATTERN,
+        arguments = listOf(
+            navArgument(McpEditRoute.ARG_ID) {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+        ),
+    ) { entry ->
+        val viewModel: ExtrasViewModel = viewModel(factory = ExtrasViewModel.Factory(container))
+        val state by viewModel.state.collectAsStateWithLifecycle()
+        val serverId = entry.arguments?.getString(McpEditRoute.ARG_ID)
+        LaunchedEffect(serverId) { viewModel.loadMcp() }
+
+        val initial = remember(state.mcp, serverId) {
+            val row = serverId?.let { id -> state.mcp.firstOrNull { it.id == id } }
+            if (row == null) {
+                McpDraft()
+            } else {
+                McpDraft(
+                    id = row.id,
+                    alias = row.alias,
+                    url = row.url,
+                    // token 不回填（与端点编辑同一条纪律）。
+                    token = "",
+                    allowPrivateNetwork = false,
+                    enabled = row.enabled,
+                )
+            }
+        }
+
+        McpServerEditScreen(
+            initial = initial,
+            isNew = serverId == null,
+            onSave = { draft -> viewModel.saveMcp(draft) { navController.popBackStack() } },
+            onTest = { draft -> viewModel.testMcp(draft) },
+            onBack = { navController.popBackStack() },
+            testing = state.mcpTesting,
+            testResult = state.mcpTestResult,
+            error = state.error,
+        )
+    }
+
+    composable(route = MemoryRoute.ROUTE) {
+        val viewModel: ExtrasViewModel = viewModel(factory = ExtrasViewModel.Factory(container))
+        val state by viewModel.state.collectAsStateWithLifecycle()
+        LaunchedEffect(Unit) { viewModel.loadMemory() }
+
+        MemoryScreen(
+            entries = state.memory,
+            onDelete = viewModel::deleteMemory,
+            onEdit = viewModel::updateMemory,
+            onBack = { navController.popBackStack() },
+            loading = state.memoryLoading,
         )
     }
 }

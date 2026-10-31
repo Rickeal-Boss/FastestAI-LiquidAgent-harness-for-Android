@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.feature.chat
 
 import androidx.compose.runtime.Immutable
+import com.rickeal.liquidharness.core.model.Attachment
 import com.rickeal.liquidharness.core.model.Role
 import com.rickeal.liquidharness.core.model.TerminationReason
 
@@ -26,7 +27,31 @@ data class ChatBubble(
     val streaming: Boolean = false,
     val reasoning: String = "",
     val traces: List<ToolTrace> = emptyList(),
+    /**
+     * 本气泡的附件（W3）。只有 USER 气泡会非空。
+     *
+     * 只用于**展示缩略图**与回灌 history：图片本体在 `Attachment.base64` 里，
+     * 随 `ChatMessage` 一起走请求体，不依赖这里的 `localPath`（缓存可能被系统清掉）。
+     */
+    val attachments: List<Attachment> = emptyList(),
 )
+
+/**
+ * 顶栏/输入区上方的一行状态提示。
+ *
+ * 用枚举而不是字符串：本模块不许出现中文硬编码（守卫 G16），
+ * 文案由 `ChatScreen` 用 `stringResource` 映射；同时枚举让「哪些状态值得提示」
+ * 成为可枚举的清单，而不是散落的布尔。
+ */
+enum class ChatStatus {
+    /** 同一 round 正在重发请求（网络抖动 / 5xx）。真机实测：没有这行提示时，
+     *  用户看到的是「三个点永远在跳」，无法区分「慢」与「死」。 */
+    RETRYING,
+
+    /** 用户主动停止且本轮没有任何正文产出 —— 需要一个「已停止」的落点，
+     *  否则提问气泡下面空着，看起来像回答丢失。 */
+    CANCELLED_EMPTY,
+}
 
 /** 工具轨迹状态。RUNNING 与 FAILED **永不折叠**（见 `ToolTraceGroup`）。 */
 enum class ToolTraceStatus { RUNNING, OK, FAILED, SKIPPED }
@@ -129,8 +154,19 @@ data class ChatUiState(
     val maxRounds: Int = 0,
     /** 非正常终止原因。只用于渲染一行小字；null = 正常结束。 */
     val terminatedBy: TerminationReason? = null,
+    /**
+     * 输入框待发送的附件（W3 多模态）。发送成功后清空。
+     *
+     * 与 [ChatBubble.attachments] 是两个阶段：这里是「还没发」，那边是「已经发过」。
+     * 发送失败时**不清空**（否则用户要重新选一次图）。
+     */
+    val attachments: List<Attachment> = emptyList(),
+    /** 非空 = 输入区上方渲染一行状态提示（重试中 / 已停止）。 */
+    val status: ChatStatus? = null,
 ) {
-    /** 发送按钮可用性：非流式、输入非空、已配置端点。 */
+    /** 发送按钮可用性：非流式、有输入或有附件、已配置端点。 */
     val canSend: Boolean
-        get() = !isStreaming && input.isNotBlank() && endpointLabel != null
+        get() = !isStreaming &&
+            (input.isNotBlank() || attachments.isNotEmpty()) &&
+            endpointLabel != null
 }

@@ -17,6 +17,10 @@
     <!-- 输入栏 -->
     <string name="chat_input_hint">问点什么…</string>
     <string name="chat_action_send">发送</string>
+    <string name="chat_action_attach">添加图片</string>
+    <string name="chat_status_retrying">网络抖动，正在重试…</string>
+    <string name="chat_status_cancelled">已停止（本轮没有产出内容）</string>
+    <string name="chat_action_remove_attachment">移除附件</string>
     <string name="chat_action_stop">停止</string>
 
     <!-- 气泡 -->

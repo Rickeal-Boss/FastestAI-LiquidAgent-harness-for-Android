@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  设置子页（技能 / MCP / 记忆）的文案。
+
+  单独成文件而不是塞进 strings.xml：这几屏由并行的界面任务新增，独立文件可避免
+  与既有资源的编辑冲突。资源名全部带 settings_skills_ / settings_mcp_ /
+  settings_memory_ 前缀，不会与 strings.xml 重名。
+-->
+<resources>
+
+    <!-- 技能列表 -->
+    <string name="settings_skills_title">技能</string>
+    <string name="settings_skills_subtitle">模型可调用的 SKILL.md</string>
+    <string name="settings_skills_refresh">刷新技能</string>
+    <string name="settings_skills_import">导入技能</string>
+    <string name="settings_skills_empty">还没有技能，导入一个 SKILL.md 或从内置示例开始</string>
+    <string name="settings_skills_loading">正在加载技能…</string>
+    <string name="settings_skills_meta">来源：%1$s · 工具：%2$s</string>
+    <string name="settings_skills_meta_unrestricted">来源：%1$s · 不限工具</string>
+
+    <!-- MCP 服务器列表 -->
+    <string name="settings_mcp_title">MCP 服务器</string>
+    <string name="settings_mcp_subtitle">远程工具来源</string>
+    <string name="settings_mcp_add">新增 MCP 服务器</string>
+    <string name="settings_mcp_refresh">刷新工具列表</string>
+    <string name="settings_mcp_empty">还没有 MCP 服务器</string>
+    <string name="settings_mcp_empty_hint">添加一个远程 MCP 端点，模型即可调用它的工具</string>
+    <string name="settings_mcp_loading">正在加载 MCP 服务器…</string>
+    <string name="settings_mcp_tool_count">%1$d 个工具</string>
+    <string name="settings_mcp_cached_at">缓存于 %1$s</string>
+    <string name="settings_mcp_status_connected">已连接</string>
+    <string name="settings_mcp_status_error">连接失败</string>
+    <string name="settings_mcp_status_cached">缓存</string>
+    <string name="settings_mcp_status_disabled">已停用</string>
+    <string name="settings_mcp_delete_title">删除 MCP 服务器？</string>
+    <string name="settings_mcp_delete_message">「%1$s」及其缓存的工具列表会一并移除。</string>
+
+    <!-- MCP 服务器编辑 -->
+    <string name="settings_mcp_new_title">新增 MCP 服务器</string>
+    <string name="settings_mcp_edit_title">编辑 MCP 服务器</string>
+    <string name="settings_mcp_alias">别名</string>
+    <string name="settings_mcp_url">服务器 URL</string>
+    <string name="settings_mcp_token">Bearer Token</string>
+    <string name="settings_mcp_token_kept">已保存；留空则沿用现有令牌</string>
+    <string name="settings_mcp_allow_private">允许本地/内网地址</string>
+    <string name="settings_mcp_allow_private_hint">内网地址必须在这里显式允许，否则会被安全策略拒绝</string>
+    <string name="settings_mcp_enabled">启用</string>
+    <string name="settings_mcp_alias_invalid">别名不能为空，且不超过 32 个字符</string>
+    <string name="settings_mcp_url_invalid">URL 必须以 http:// 或 https:// 开头</string>
+    <string name="settings_mcp_show_token">显示令牌</string>
+    <string name="settings_mcp_hide_token">隐藏令牌</string>
+
+    <!-- 长期记忆 -->
+    <string name="settings_memory_title">长期记忆</string>
+    <string name="settings_memory_subtitle">模型写入本机的记忆条目</string>
+    <string name="settings_memory_empty">模型还没有写入任何长期记忆</string>
+    <string name="settings_memory_loading">正在加载记忆…</string>
+    <string name="settings_memory_updated">更新于 %1$s</string>
+    <string name="settings_memory_edit">编辑记忆</string>
+    <string name="settings_memory_delete_title">删除这条记忆？</string>
+    <string name="settings_memory_delete_message">「%1$s」将从本机删除，模型不再记得它。</string>
+
+</resources>

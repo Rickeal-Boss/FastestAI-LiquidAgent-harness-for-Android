@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +33,22 @@ class SettingsRepository(
 
     val hasCompletedOnboarding: Flow<Boolean> = safeData().map { it[KEY_ONBOARDED] ?: false }
 
+    /**
+     * 被用户**停用**的技能名集合（W3）。
+     *
+     * 存「停用集合」而不是「启用集合」：新装技能默认可用，用户只需要关掉不想要的。
+     * 反过来的话，每次导入新技能都要额外写一次启用记录，而漏写就表现为「装了但用不了」。
+     */
+    val disabledSkills: Flow<Set<String>> = safeData().map { it[KEY_DISABLED_SKILLS] ?: emptySet() }
+
+    suspend fun setSkillEnabled(name: String, enabled: Boolean) {
+        if (name.isBlank()) return
+        dataStore.edit { prefs ->
+            val current = prefs[KEY_DISABLED_SKILLS].orEmpty()
+            prefs[KEY_DISABLED_SKILLS] = if (enabled) current - name else current + name
+        }
+    }
+
     suspend fun setActiveEndpointId(id: String?) {
         dataStore.edit { prefs ->
             if (id.isNullOrBlank()) prefs.remove(KEY_ACTIVE_ENDPOINT) else prefs[KEY_ACTIVE_ENDPOINT] = id
@@ -56,6 +73,7 @@ class SettingsRepository(
     companion object {
         private val KEY_ACTIVE_ENDPOINT = stringPreferencesKey("active_endpoint_id")
         private val KEY_ONBOARDED = booleanPreferencesKey("has_completed_onboarding")
+        private val KEY_DISABLED_SKILLS = stringSetPreferencesKey("disabled_skills")
 
         /**
          * 生产装配入口。文件落在 `filesDir/datastore/settings.preferences_pb`

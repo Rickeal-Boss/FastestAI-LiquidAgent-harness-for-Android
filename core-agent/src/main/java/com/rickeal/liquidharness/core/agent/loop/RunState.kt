@@ -213,8 +213,14 @@ class RunState(
         ): RunState {
             val initial = ArrayList<ChatMessage>(request.history.size + 1)
             initial.addAll(request.history)
-            if (request.userInput.isNotEmpty()) {
-                initial.add(ChatMessage(role = com.rickeal.liquidharness.core.model.Role.USER, text = request.userInput))
+            if (request.userInput.isNotEmpty() || request.userAttachments.isNotEmpty()) {
+                initial.add(
+                    ChatMessage(
+                        role = com.rickeal.liquidharness.core.model.Role.USER,
+                        text = request.userInput,
+                        attachments = request.userAttachments,
+                    )
+                )
             }
             return RunState(initial, nowNanos)
         }

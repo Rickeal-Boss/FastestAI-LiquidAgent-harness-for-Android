@@ -40,6 +40,15 @@ class SseStream internal constructor(
     val contentType: String? get() = response.header("Content-Type")
 
     /**
+     * 任意响应头（W3 新增）。
+     *
+     * 唯一消费者是 MCP：Streamable HTTP 用 `Mcp-Session-Id` 响应头下发会话句柄，
+     * 客户端必须回传。不暴露这个方法，MCP 就得自己再建一套 OkHttp ——
+     * 那正是 G1（网络栈收口）要禁止的两套网络栈。
+     */
+    fun header(name: String): String? = response.header(name)
+
+    /**
      * `Retry-After` 折算成毫秒。支持秒数与 HTTP-date 两种形态（RFC 9110），
      * 上限 [MAX_RETRY_AFTER_MILLIS]（60s）—— 服务端要求等一小时时，
      * 我们应该报错让用户决定，而不是静默挂住 UI。

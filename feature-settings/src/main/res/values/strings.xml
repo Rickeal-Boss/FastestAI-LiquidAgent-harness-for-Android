@@ -11,6 +11,13 @@
     <!-- 设置首页行 -->
     <string name="settings_manage_endpoints">端点管理</string>
     <string name="settings_manage_endpoints_subtitle">配置 OpenAI 兼容的远程端点</string>
+    <string name="settings_section_capabilities">能力</string>
+    <string name="settings_manage_skills">技能</string>
+    <string name="settings_manage_skills_hint">查看已安装的 SKILL.md 与内置示例</string>
+    <string name="settings_manage_mcp">MCP 服务器</string>
+    <string name="settings_manage_mcp_hint">接入远端工具（强制审批）</string>
+    <string name="settings_manage_memory">长期记忆</string>
+    <string name="settings_manage_memory_hint">查看与删除模型写入的记忆</string>
     <string name="settings_active_endpoint">当前：%1$s</string>
     <string name="settings_active_endpoint_none">尚未配置端点</string>
     <string name="settings_about_app">应用</string>

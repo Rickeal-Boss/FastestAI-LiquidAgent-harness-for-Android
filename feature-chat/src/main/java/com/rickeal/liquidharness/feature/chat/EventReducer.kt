@@ -57,7 +57,11 @@ object EventReducer {
         is AgentEvent.Failed -> fail(state, event.message, event.terminatedBy)
         is AgentEvent.Cancelled -> finish(state, event.partialText, null)
         // 重发请求 ⇒ 服务端会从头再发一遍，旧文本必须丢弃，否则同一句话出现两遍。
-        is AgentEvent.Retrying -> state.copy(streaming = StreamingState(isStreaming = true))
+        // 重试必须可见：真机实测「只显示三个点」时，用户无法区分慢与死。
+        is AgentEvent.Retrying -> state.copy(
+            streaming = StreamingState(isStreaming = true),
+            status = ChatStatus.RETRYING,
+        )
         // 丢弃本轮已流出文本 ⇒ 同上清空，但不动「是否在流式」。
         is AgentEvent.StreamReset -> state.copy(
             streaming = state.streaming.copy(text = "", reasoning = ""),
@@ -84,6 +88,8 @@ object EventReducer {
             ),
             isStreaming = true,
             errorMessage = null,
+            // 有正文产出 ⇒ 重试已恢复，提示必须消失，否则会一直挂着。
+            status = null,
         )
     }
 
@@ -100,13 +106,24 @@ object EventReducer {
     }
 
     /** 追加用户气泡并清空输入框。 */
-    fun appendUser(state: ChatUiState, text: String): ChatUiState =
-        if (text.isBlank()) {
+    fun appendUser(
+        state: ChatUiState,
+        text: String,
+        attachments: List<com.rickeal.liquidharness.core.model.Attachment> = emptyList(),
+    ): ChatUiState =
+        if (text.isBlank() && attachments.isEmpty()) {
             state
         } else {
             state.copy(
-                bubbles = state.bubbles + ChatBubble(id = newId(), role = Role.USER, text = text),
+                bubbles = state.bubbles + ChatBubble(
+                    id = newId(),
+                    role = Role.USER,
+                    text = text,
+                    attachments = attachments,
+                ),
                 input = "",
+                // 附件随用户消息一起「消耗」：留着会跟着下一条消息再发一次（重复计费）。
+                attachments = emptyList(),
                 errorMessage = null,
                 terminatedBy = null,
                 toolTraces = emptyList(),
@@ -188,6 +205,13 @@ object EventReducer {
             bubbles = bubbles,
             streaming = StreamingState(),
             toolTraces = emptyList(),
+            // 一个字都没产出就被停止 ⇒ 明确告诉用户「已停止」，而不是留一个空落点。
+            // 有内容时不提示：气泡本身就是落点。
+            status = if (text.isBlank() && reasoning.isBlank() && traces.isEmpty()) {
+                ChatStatus.CANCELLED_EMPTY
+            } else {
+                null
+            },
             isStreaming = false,
             pendingApproval = null,
             terminatedBy = terminatedBy,
