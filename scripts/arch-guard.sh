@@ -73,7 +73,7 @@ done
 # 新增模块时**先改这里**，G9 会立刻告诉你另外两处是否同步。
 MODULES=(
   core-model core-net core-engine core-agent core-skills core-mcp
-  core-data core-design feature-chat feature-settings app
+  core-data core-design feature-chat feature-settings feature-tools app
 )
 
 # ---- G10：行数闸门（表驱动，来源 docs/01-architecture.md §二 行数预算）
@@ -90,10 +90,17 @@ LINE_CAPS=(
   "core-design|600|12600"
   "feature-chat|500|3500"
   "feature-settings|500|3000"
+  # W4 从 :feature-settings 拆出（设置模块 3451 > 3000 触顶 ⇒ 拆分，不是调大上限）。
+  # 单文件 600 与 feature-settings 同档：两个页面的原文件都在 300~480 行，
+  # 600 是「单个 Screen 文件」的合理上限；2600 是模块预算，不是「先给足再填」。
+  "feature-tools|600|2600"
   "app|350|1600"
 )
-# 全仓 main 源集总量上限（01-architecture.md §二：合计上限 ≈ 39900）
-TOTAL_LINE_CAP=39900
+# 全仓 main 源集总量上限（01-architecture.md §二：合计上限 ≈ 42500）
+# 42500 = 11 个模块时代的 39900 + :feature-tools 的 2600（W4 新增模块，预算随模块走）。
+# ⚠️ 这个数是**预算合计**，不是「可以涨到的水位」：G10 判的是实际行数，
+#    触顶的处理永远是拆分，不是调大本常量。
+TOTAL_LINE_CAP=42500
 
 # ---- G6：模块边界（禁止的 Gradle 依赖边）
 # 只钉**文档声明为硬边**的边，不把 01 的拓扑图当白名单用：
@@ -103,16 +110,21 @@ TOTAL_LINE_CAP=39900
 #   ③ 结构常识：core-* ↛ feature-*、feature-* ↛ feature-*、任何模块 ↛ app
 # 格式：<模块>|<禁止依赖，逗号分隔>
 FORBIDDEN_EDGES=(
-  "core-model|core-net,core-engine,core-agent,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,app"
-  "core-net|core-agent,core-engine,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,app"
-  "core-engine|core-agent,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,app"
-  "core-agent|core-net,core-engine,core-data,core-design,core-skills,core-mcp,feature-chat,feature-settings,app"
-  "core-skills|core-net,core-engine,core-mcp,core-data,core-design,feature-chat,feature-settings,app"
-  "core-mcp|core-engine,core-skills,core-data,core-design,feature-chat,feature-settings,app"
-  "core-data|core-design,feature-chat,feature-settings,app"
-  "core-design|core-model,core-agent,core-net,core-engine,core-skills,core-mcp,core-data,feature-chat,feature-settings,app"
-  "feature-chat|core-net,core-engine,core-skills,core-mcp,feature-settings,app"
-  "feature-settings|core-net,core-engine,core-skills,core-mcp,feature-chat,app"
+  "core-model|core-net,core-engine,core-agent,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
+  "core-net|core-agent,core-engine,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
+  "core-engine|core-agent,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
+  "core-agent|core-net,core-engine,core-data,core-design,core-skills,core-mcp,feature-chat,feature-settings,feature-tools,app"
+  "core-skills|core-net,core-engine,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
+  "core-mcp|core-engine,core-skills,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
+  "core-data|core-design,feature-chat,feature-settings,feature-tools,app"
+  "core-design|core-model,core-agent,core-net,core-engine,core-skills,core-mcp,core-data,feature-chat,feature-settings,feature-tools,app"
+  "feature-chat|core-net,core-engine,core-skills,core-mcp,feature-settings,feature-tools,app"
+  "feature-settings|core-net,core-engine,core-skills,core-mcp,feature-chat,feature-tools,app"
+  # W4 新增：:feature-tools 与 :feature-settings 同档（feature ↛ feature、↛ app）。
+  # 刻意**不**把 core-data 列进来：文件浏览走 java.io / SAF，工具页只读 ToolRegistry，
+  # 当前不需要持久化模块。若将来需要，那是「新增一条模块边界」——
+  # 同时改本表与 01-architecture.md §一，而不是只在 build.gradle.kts 里加一行依赖。
+  "feature-tools|core-net,core-engine,core-skills,core-mcp,feature-chat,feature-settings,app"
   "app|"
 )
 

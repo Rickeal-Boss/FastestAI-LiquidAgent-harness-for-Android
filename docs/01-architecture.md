@@ -106,9 +106,16 @@ app          ← 全部
 | `:core-design` | LiquidGlass 设计系统 | 600 | 12000 | core-design 11749（基本原样） |
 | `:feature-chat` | 会话 UI、运行编排、事件归约、落库 | 500 | 3500 | feature-chat 5650（参数面板 773 大部分丢弃） |
 | `:feature-settings` | 端点/Skill/MCP/审批/诊断 管理 UI | 500 | 3000 | feature-settings + feature-models 合并 |
+| `:feature-tools` | 文件浏览页 + 工具页（W4 从 `:feature-settings` 拆出） | 600 | 2600 | 无（W4 新增） |
 | `:app` | Application、导航、首启引导 | 350 | 1600 | app 3100（LiquidAgentApp 1342 必须拆） |
 
-**合计上限 ≈ 39 900 行**（旧仓 main 源集 54 138 行，报告 §基线）。差额主要来自：端侧引擎 4200 + 端侧 model 2600 + 模型管理/下载/预设 UI ~2500 + 文本协议/热保护/history ~660 + 后台保活/OEM ~800。
+**合计上限 ≈ 42 500 行**（旧仓 main 源集 54 138 行，报告 §基线）。差额主要来自：端侧引擎 4200 + 端侧 model 2600 + 模型管理/下载/预设 UI ~2500 + 文本协议/热保护/history ~660 + 后台保活/OEM ~800。
+
+> **`42 500` 的来历**：11 个模块时代是 `39 900`；W4 把「文件浏览 + 工具页」从
+> `:feature-settings` 拆出成 `:feature-tools`（该模块 3451 行 > 3000 触顶）时，
+> 预算随模块走 `+2600` ⇒ `42 500`。**这是预算合计，不是「可以涨到的水位」**：
+> G10 判的是实际行数，触顶的处理永远是拆分，不是调大这里的数
+> （`scripts/arch-guard.sh` 的 `TOTAL_LINE_CAP` 与本行必须同步）。
 
 ### 2.1 包名与 applicationId（硬约束）
 
@@ -131,6 +138,7 @@ app          ← 全部
 | 设计系统 | `:core-design` | `com.rickeal.liquidharness.core.design` | `core-design/src/main/java/com/rickeal/liquidharness/core/design/` |
 | 会话 UI | `:feature-chat` | `com.rickeal.liquidharness.feature.chat` | `feature-chat/src/main/java/com/rickeal/liquidharness/feature/chat/` |
 | 设置 UI | `:feature-settings` | `com.rickeal.liquidharness.feature.settings` | `feature-settings/src/main/java/com/rickeal/liquidharness/feature/settings/` |
+| 工具/文件 UI | `:feature-tools` | `com.rickeal.liquidharness.feature.tools` | `feature-tools/src/main/java/com/rickeal/liquidharness/feature/tools/` |
 | 壳 | `:app` | `com.rickeal.liquidharness`（注意：**无 `.app` 后缀**，`MainActivity` / `LiquidHarnessApplication` 直接在这个包下） | `app/src/main/java/com/rickeal/liquidharness/` |
 
 **两条与旧仓不同的地方，写下来防误改**：

@@ -73,11 +73,21 @@ object MemoryRoute {
  * 由 `:app` 的 NavHost 调用（外壳持有唯一的 NavHostController）。图定义放在 feature
  * 模块里而不是塞进 `:app`：新增设置子页时只动本文件，外壳的导航文件不需要知道
  * 「设置下面有几页」。
+ *
+ * ## 两个「借来的」入口：[onOpenTools] / [onOpenSandbox]
+ *
+ * 工具页与沙箱页在 W4 搬去了 `:feature-tools`（G10 行数闸门：本模块触顶 ⇒ 拆分）。
+ * 那两个页面的路由常量归 `:feature-tools` 所有 —— feature ↛ feature 是 G6 的硬边，
+ * 本模块**不能**引用它的符号。所以入口动作由外壳注入：`:app` 同时知道两边，
+ * 把「跳到 tools / sandbox」这件事作为回调传进来，本模块只负责渲染入口行。
+ * null = 本构建没有这两个页面（与其它入口同一条纪律：不摆假入口）。
  */
 fun NavGraphBuilder.settingsGraph(
     navController: NavHostController,
     container: AppContainer,
     appVersion: String,
+    onOpenTools: (() -> Unit)? = null,
+    onOpenSandbox: (() -> Unit)? = null,
 ) {
     composable(route = SettingsRoute.ROUTE) {
         val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory(container))
@@ -92,6 +102,9 @@ fun NavGraphBuilder.settingsGraph(
             onManageSkills = { navController.navigate(SkillListRoute.ROUTE) },
             onManageMcp = { navController.navigate(McpListRoute.ROUTE) },
             onManageMemory = { navController.navigate(MemoryRoute.ROUTE) },
+            onManageTools = onOpenTools,
+            onManageSandbox = onOpenSandbox,
+            onSetContextWindow = viewModel::setMaxContextTokens,
         )
     }
     // 子图拆分只为守 G11（单方法 ≤120 行）；路由语义不变，仍挂在同一个 graph 下。

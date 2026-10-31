@@ -126,6 +126,8 @@ dependencies {
     // 全部 feature（业务实现落在 feature 模块；app 只做壳与 DI 组装）
     implementation(project(":feature-chat"))
     implementation(project(":feature-settings"))
+    // W4 从 :feature-settings 拆出（G10 行数闸门：设置模块触顶 3000 ⇒ 拆分而非调大上限）
+    implementation(project(":feature-tools"))
 
     implementation(platform(libs.androidx.compose.bom))
 

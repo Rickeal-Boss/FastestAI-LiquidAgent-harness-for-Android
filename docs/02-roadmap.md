@@ -8,17 +8,24 @@
 
 ## 零、总览
 
-| 波 | 主题 | 止损性质 | 结束时的可演示状态 |
-|---|---|---|---|
-| **W1** | 垂直切片：一个端点、纯文本、流式上屏 | **S1（报告的止损点）** | 真机输入「你好」看到流式输出 |
-| **W2U** | UI 原样搬 + 网络安全 + 外审 P0 收口（插入波） | — | 真机看到旧仓那套液态玻璃界面，出网安全在保存时拦截 |
-| **W2** | 工具循环 + 审批 + 上下文压缩 | **S2（核心假设证伪点）** | 真机让模型读文件、弹审批卡、回灌结果、给出答案 |
-| W3 | 内核硬化：journal 恢复、熔断、token 上限、诊断 | — | 杀进程重启弹恢复卡；注入超预算触发熔断 |
-| W4 | Skill 系统 | — | 内置技能生效；技能正文以 user 注入且 system 不变 |
-| W5 | MCP Client（双 era） | — | 接 1 个真实 server，拉到工具并调用成功 |
-| W6 | 多供应商 + 上下文工程二期 | — | 三家 provider 各跑通一次工具调用；长会话不丢上下文 |
-| W7 | 安全收口 | — | 8 种密钥形态在 5 个出口全脱敏；内网 baseUrl 被拒 |
-| W8 | 打磨与发布 | — | release APK 真机冷启动 < 2s，i18n 100% |
+| 波 | 主题 | 止损性质 | 结束时的可演示状态 | 状态（截至 W4，逐行可查证据） |
+|---|---|---|---|---|
+| **W1** | 垂直切片：一个端点、纯文本、流式上屏 | **S1（报告的止损点）** | 真机输入「你好」看到流式输出 | ✅ 代码已落地 `174a832`（`feat(w1): 垂直切片 —— 远程流式对话 + 端点管理 + 11 模块骨架 + 双 CI 流水线`）。**真机验收记录「未核」**：本仓无 W1 交接文档，不写成「已完成」 |
+| **W2U** | UI 原样搬 + 网络安全 + 外审 P0 收口（插入波） | — | 真机看到旧仓那套液态玻璃界面，出网安全在保存时拦截 | ✅ 代码已落地 `8186db9`（`feat(w2u)`）。真机项**明确挂账**：`c12501d`（`docs(roadmap): W2U 状态块 —— CI 全绿证据 + 两条守卫失明判据 + 真机项挂账`） |
+| **W2** | 工具循环 + 审批 + 上下文压缩 | **S2（核心假设证伪点）** | 真机让模型读文件、弹审批卡、回灌结果、给出答案 | ✅ 已交付 `34d8cad`（`feat(w2)`），收口基线 `37465b4`。**S2 止损判据在 W2.6 复跑达标**：v2 口径 19/20、旧口径 18/20、0 条 8 轮不收敛（`handoff-20261031-wave26.md` §一）；W2.5 首跑为 17/20 未达标（`handoff-20261031-wave25.md` §一） |
+| W3 | 内核硬化：journal 恢复、熔断、token 上限、诊断 | — | 杀进程重启弹恢复卡；注入超预算触发熔断 | ⚠️ **部分**：W3 实际做的是**能力补齐**（多模态 / 记忆 / Skill / MCP / 上下文工程 / 语音），471 测试 + 23 守卫 + 真机全过（`handoff-20261031-wave3.md` §一/§三）。**journal / FreezeClock 未做**（挂账 W3-05，§六）；长上下文**设备侧未行使**（§四）；MCP 真机联调未做（W3-03） |
+| W4 | Skill 系统 | — | 内置技能生效；技能正文以 user 注入且 system 不变 | 🔄 **主题已变更**：Skill 已在 **W3** 交付（`handoff-20261031-wave3.md` §2.3，`78abace`），本波槽位改放**上下文工程二期**（设计见 `docs/notes/w4-context-design.md`）。**实现未收口**，交付表 / 闸门 / vacuous 清单待 W4 收口时补写 |
+| W5 | MCP Client（双 era） | — | 接 1 个真实 server，拉到工具并调用成功 | ✅ **已在 W3 交付**：协议层 + 36 条单测（`handoff-20261031-wave3.md` §2.4，`78abace`）。**生态真机联调未做**（W3-03，§四已列为 vacuous） |
+| W6 | 多供应商 + 上下文工程二期 | — | 三家 provider 各跑通一次工具调用；长会话不丢上下文 | ⛔ **未开始**。交付物已收敛为「多供应商 + 思考通道」（上下文工程二期提前到 W4，见本文件 W6 段） |
+| W7 | 安全收口 | — | 8 种密钥形态在 5 个出口全脱敏；内网 baseUrl 被拒 | ⛔ **未开始**（MCP token 进 Keystore 挂账 W3-04，是它的前置） |
+| W8 | 打磨与发布 | — | release APK 真机冷启动 < 2s，i18n 100% | ⛔ **未开始** |
+
+> **「状态」列的口径**（本列是**现状**，不是计划；计划在三列之后不动）：
+> - 每条必须指到 **commit 哈希** 或 **交接文档的 `§小节`**。指不到的一律写 **「未核」**，不写「已完成」。
+> - 「✅ 代码已落地」≠「真机验收通过」：前者有 commit，后者必须有交接文档里的真机证据小节。
+>   两者分开写，就是为了不让这张表退化成愿望清单。
+> - 「⚠️ 部分」必须点名**哪些没做**及**挂账号**（W3-0x 之类），否则「部分」等于什么都没说。
+> - 本列于 W4 更新；W4 自身那行在收口时由 W4 交接补写。
 
 **W1 + W2 = 报告的 S1 + S2。W2 未达标不得进 W3**（见 §一 W2 的止损判据）。
 
@@ -596,6 +603,34 @@ journal / FreezeClock。逐条见交接文档 §四 / §六。
 
 ---
 
+## 二quinquies、W4 — 上下文工程二期 + UI 补齐（2026-11-01）
+
+> 交接：`docs/handoff-20261101-wave4.md`｜设计：`docs/notes/w4-context-design.md`
+> 供应商实测：`docs/notes/w4-provider-matrix.md`
+
+### 交付
+
+| 能力 | 落点 | 真机 |
+|---|---|---|
+| 前缀指纹（分块缓存） | `context/PromptPrefix.kt` 四段 + SHA-256，WARN 级变化告警 | ⛔ 需成功请求 |
+| 压缩水位线 | `ContextCompressor` 目标 0.6×budget + `CutPolicy.TURN_ALIGNED` | ✅ 单测 |
+| L2 摘要压缩 | `StructuredSummary` / `LayeredContextCompressor` / `EngineBackedSummarizer` + **接线判据** | ⛔ 未触发 |
+| 窗口上限可配 | 设置页 32K/128K/512K/1M 四档 → `AgentPolicy.maxContextTokens` | ✅ 截图 |
+| UI 补齐 | 新模块 `:feature-tools`（工具页 + 沙箱文件页），模块数 11 → 12 | ✅ 两页均渲染真实数据 |
+
+### 闸门
+
+- `fulltest` **544 / 0 / 0 / 0**（12 模块）
+- `arch-guard` **23 / 0 / 0**（G9 模块数同步到 12）
+- 真机：工具页 11 个真实工具、沙箱 3 个真实文件、窗口档位持久
+
+### 明确未做（不许写成通过）
+
+C 组（首字节看门狗 / 等待期进度 / `cachedReported` 三态）设计已写、**本波未实施**；
+设备侧 1M 行使、MCP 真机联调、L2 真机触发 —— 三条 vacuous，原因见交接 §五。
+
+---
+
 ## 三、W3–W8 概要
 
 ### W3 — 内核硬化
@@ -670,13 +705,26 @@ journal / FreezeClock。逐条见交接文档 §四 / §六。
 
 **风险**：找不到可用的真实 server 做真机验证 ⇒ 允许自建一个 30 行的本地 HTTP MCP echo server 作为测试夹具（不进 APK），但**必须**在文档里标注「已验证对象是自建 server，不是生态里的真实 server」，不得含糊成「MCP 已验证」。
 
-### W6 — 多供应商 + 上下文工程二期
+### W6 — 多供应商 + 思考通道
 
-**目标**：Anthropic / Gemini 各跑通一次工具调用；长会话不丢上下文；prompt cache 布局就位。
+**目标**：Anthropic / Gemini 各跑通一次工具调用；思考通道独立成块。
+（上下文工程二期 —— L2 摘要压缩与前缀稳定段布局 —— **已提前到 W4**，设计与验收判据见
+`docs/notes/w4-context-design.md`，本波不再重复交付。）
 
-交付物：`AnthropicAdapter` / `GeminiAdapter`、`ContextSummarizer`（L2 摘要压缩，旧仓 Wave 35 判死的 `SummarizingContextCompressor` **翻案重建**）、`PromptCacheLayout`（稳定段前置 + 断点标记）、`ReasoningBlock`（思考内容独立折叠块）。
+交付物：`AnthropicAdapter` / `GeminiAdapter`、`ReasoningBlock`（思考内容独立折叠块）。
 
-**翻案理由（必须写进代码 KDoc）**：旧仓判死原文是「摘要需要一次额外推理，端侧 4B 上这笔开销换不来等价收益」。API 路径下这笔开销是**一次廉价调用**，而替代方案是整段对话丢失 ⇒ 成本收益反转。旧仓判死的重启前提「出现估算失准事故」由 W3 的 usage 账本满足。
+**W4 迁出项的去处（留痕，避免同一能力被设计两次）**：
+- `ContextSummarizer`（L2 摘要压缩，旧仓 Wave 35 判死的 `SummarizingContextCompressor` **翻案重建**）
+  ⇒ W4 的 `core-agent/context/ContextSummarizer.kt` + `LayeredContextCompressor.kt`；
+  翻案理由逐字写进 `ContextSummarizer` 的 KDoc（W4 设计文档 §3.B.1）。
+- `PromptCacheLayout`（稳定段前置 + 断点标记）⇒ W4 只做「稳定段 + 分段指纹账」，
+  **断点标记明确不做**（OpenAI 兼容族与 GLM 无该字段）；Anthropic 的 `cache_control`
+  渲染留给本波的 `AnthropicAdapter`，落点即 W4 已显式化的段边界。
+
+> ⚠️ **迁出是有条件的，不是永久的**：若 W4 最终**未交付 L2**（例如 B 组集成失败 / 摘要格式校验
+> 无法通过），上面两项**必须加回本波交付物**，并在 W4 交接里写明「设计存在但未落地」。
+> 判据：W4 收口时 `docs/notes/w4-context-design.md` §4 的 B 组判据若大面积 `⛔ vacuous` 或判红，
+> 即触发本条。只删不补会让 L2 从两份实现的风险变成**零实现且无人发现**。
 
 **验收判据**
 1. 三家 provider 各完成一次「读文件 → 总结」（真机，各 1 次）。
@@ -770,8 +818,8 @@ journal / FreezeClock。逐条见交接文档 §四 / §六。
 | G6 | 模块边界 | `core-agent` ↛ `core-net`/`core-engine`/`core-data`/`core-design`/`core-skills`/`core-mcp` | 旧仓 #10 |
 | G7 | 设计系统零业务 | `core-design` 无 `com.rickeal.liquidharness.core.model` / `.core.agent` 引用 | 旧仓 #2 |
 | G8 | 契约层纯 Kotlin | `core-model` 无 `android.` / `androidx.` / `java.net` | 旧仓 #3 |
-| G9 | 模块数一致 | `settings.gradle.kts` 的 include 数 == 守卫脚本 `MODULES` 数组长度 == 实际目录数 | 旧仓「模块存在性」断言 |
-| G10 | **行数闸门（表驱动）** | 一张 `path<TAB>cap` 表 + 循环；缺文件判红（不是跳过） | 旧仓 #25 家族（21 条压成 1 条） |
+| G9 | 模块数一致 | `settings.gradle.kts` 的 include 数 == 守卫脚本 `MODULES` 数组长度 == 实际目录数（W4 起为 **12 个模块**，新增 `:feature-tools`） | 旧仓「模块存在性」断言 |
+| G10 | **行数闸门（表驱动）** | 一张 `path<TAB>cap` 表 + 循环；缺文件判红（不是跳过）。W4 起 **12 行**表，合计上限 **42 500**（= 11 模块时代的 39 900 + `:feature-tools` 的 2600） | 旧仓 #25 家族（21 条压成 1 条） |
 | G11 | 方法体积 | 单方法 ≤ 120 行（`fun` 到下一条 4 空格 `}` 的行差） | 旧仓 #12（阈值从 550 降到 120） |
 | G12 | `AgentRunner` 门面 | `AgentRunner.kt` ≤ 200 行 | 旧仓 #31（阈值 2900→200） |
 | G13 | 测试方法形态 | `@Test` 方法返回 void；反引号名无 JVM 非法字符 | 旧仓 #15 |

@@ -25,7 +25,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "FastestAI-Harness"
 
-// ---- 11 个模块，按依赖拓扑排序（下层在前） ----
+// ---- 12 个模块，按依赖拓扑排序（下层在前） ----
 include(":core-model")
 include(":core-net")
 // :core-engine 在 core-net 之后、core-agent 之前：依赖 core-model + core-net，
@@ -38,4 +38,8 @@ include(":core-data")
 include(":core-design")
 include(":feature-chat")
 include(":feature-settings")
+// :feature-tools 在 feature-settings 之后：它是 W4 从 :feature-settings 拆出的
+// 「文件浏览 + 工具页」两个页面，**不依赖** :feature-settings（feature ↛ feature，
+// G6 硬边），两者是并列关系而非上下层。放在这里只是因为字母/职责相邻，便于阅读。
+include(":feature-tools")
 include(":app")

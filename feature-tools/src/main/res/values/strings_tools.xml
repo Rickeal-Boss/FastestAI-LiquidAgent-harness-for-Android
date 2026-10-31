@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  :feature-tools 的文案（W4 从 :feature-settings 拆出的两页：Agent 工具 / 沙箱文件）。
+
+  为什么文案必须在这里而不是 .kt 里：守卫 G16（中文硬编码棘轮）对 feature-* 的 main
+  源集基线是 0 —— 一个中文字面量即判红。
+
+  为什么资源名没有 settings_ 前缀：本模块不是设置模块。设置页里那两个入口行
+  （settings_manage_tools / settings_manage_sandbox）仍在 :feature-settings 的
+  strings.xml 里 —— 它们属于设置页，不属于这两个页面。
+-->
+<resources>
+
+    <!-- Agent 工具（只读清单） -->
+    <string name="tools_title">Agent 工具</string>
+    <string name="tools_subtitle">共 %1$d 个 · 已启用 %2$d 个</string>
+    <string name="tools_back">返回</string>
+    <string name="tools_loading">正在读取工具注册表…</string>
+    <string name="tools_empty">还没有注册的工具</string>
+    <string name="tools_error">读取工具注册表失败</string>
+    <string name="tools_effect_read">只读</string>
+    <string name="tools_effect_write">写入</string>
+    <string name="tools_approval">需审批</string>
+    <string name="tools_no_approval">免审批</string>
+    <string name="tools_dangerous">危险</string>
+    <string name="tools_disabled">已停用</string>
+    <string name="tools_source_builtin">内置</string>
+    <string name="tools_source_mcp">MCP</string>
+    <string name="tools_source_subagent">子代理</string>
+
+    <!-- 沙箱文件浏览 -->
+    <string name="sandbox_title">沙箱文件</string>
+    <string name="sandbox_back">返回</string>
+    <string name="sandbox_subtitle_root">根层 · 共 %1$d 项</string>
+    <string name="sandbox_subtitle_dir">%1$s · 共 %2$d 项</string>
+    <string name="sandbox_loading">正在读取沙箱目录…</string>
+    <string name="sandbox_empty_root">沙箱还没有文件</string>
+    <string name="sandbox_empty_hint_root">Agent 写入的文件会出现在这里</string>
+    <string name="sandbox_empty_dir">这个目录是空的</string>
+    <string name="sandbox_empty_hint_dir">点左上角返回上一层</string>
+    <string name="sandbox_error_read">读取沙箱目录失败</string>
+    <string name="sandbox_error_read_hint">目录可能已被删除，或应用没有读权限</string>
+    <string name="sandbox_error_delete">删除失败</string>
+    <string name="sandbox_error_delete_hint">目录非空时不能删除，请先清空里面的文件</string>
+    <string name="sandbox_retry">重试</string>
+    <string name="sandbox_directory">目录</string>
+    <string name="sandbox_file_meta">%1$s · %2$s</string>
+    <string name="sandbox_action_delete">删除</string>
+    <string name="sandbox_action_cancel">取消</string>
+    <string name="sandbox_delete_title">删除这一项？</string>
+    <string name="sandbox_delete_message">「%1$s」将从沙箱中永久删除，Agent 之后读不到它。</string>
+    <string name="sandbox_preview_close">关闭</string>
+    <string name="sandbox_preview_binary">不是文本文件，不支持应用内预览</string>
+    <string name="sandbox_preview_truncated">仅预览前 %1$d 个字符</string>
+
+</resources>

@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -41,6 +42,30 @@ class SettingsRepository(
      */
     val disabledSkills: Flow<Set<String>> = safeData().map { it[KEY_DISABLED_SKILLS] ?: emptySet() }
 
+    /**
+     * 单次请求允许消耗的**输入窗口**上限（token）。W4 新增。
+     *
+     * ## 为什么必须可配
+     *
+     * 预算算式是 `min(endpoint.contextLength, maxContextTokens)`。`maxContextTokens` 写死 32 000 时，
+     * 一个声明 1M 窗口的端点在设备上最多只能发 ≈24k —— 窗口能力永远行使不到，
+     * 而这不是模型限制，是本应用的**钱包上限**。把它做成设置项，才谈得上「1M 窗口可行使」。
+     *
+     * 默认仍是 32 000（与 W3 基线一致，不改变既有用户的账单行为）。
+     * 取值在 [MIN_MAX_CONTEXT_TOKENS]..[MAX_MAX_CONTEXT_TOKENS] 之间钳制：
+     * 上限 1 000 000 是「别让一个手滑的输入产生四位数账单」的硬闸，不是模型能力上限。
+     */
+    val maxContextTokens: Flow<Int> = safeData().map { prefs ->
+        (prefs[KEY_MAX_CONTEXT_TOKENS] ?: DEFAULT_MAX_CONTEXT_TOKENS)
+            .coerceIn(MIN_MAX_CONTEXT_TOKENS, MAX_MAX_CONTEXT_TOKENS)
+    }
+
+    suspend fun setMaxContextTokens(tokens: Int) {
+        dataStore.edit { prefs ->
+            prefs[KEY_MAX_CONTEXT_TOKENS] = tokens.coerceIn(MIN_MAX_CONTEXT_TOKENS, MAX_MAX_CONTEXT_TOKENS)
+        }
+    }
+
     suspend fun setSkillEnabled(name: String, enabled: Boolean) {
         if (name.isBlank()) return
         dataStore.edit { prefs ->
@@ -74,6 +99,15 @@ class SettingsRepository(
         private val KEY_ACTIVE_ENDPOINT = stringPreferencesKey("active_endpoint_id")
         private val KEY_ONBOARDED = booleanPreferencesKey("has_completed_onboarding")
         private val KEY_DISABLED_SKILLS = stringSetPreferencesKey("disabled_skills")
+        private val KEY_MAX_CONTEXT_TOKENS = intPreferencesKey("max_context_tokens")
+
+        /** 与 `AgentPolicy.maxContextTokens` 的默认值同源（32 000），改一处必须改两处并加断言。 */
+        const val DEFAULT_MAX_CONTEXT_TOKENS: Int = 32_000
+
+        const val MIN_MAX_CONTEXT_TOKENS: Int = 8_000
+
+        /** 硬闸：单请求输入窗口不允许超过 1M（模型能力上限，也是账单失控的护栏）。 */
+        const val MAX_MAX_CONTEXT_TOKENS: Int = 1_000_000
 
         /**
          * 生产装配入口。文件落在 `filesDir/datastore/settings.preferences_pb`

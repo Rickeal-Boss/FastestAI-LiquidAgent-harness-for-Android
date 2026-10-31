@@ -7,6 +7,10 @@
     <string name="settings_section_endpoints">端点</string>
     <string name="settings_section_about">关于</string>
     <string name="settings_section_diagnostics">诊断</string>
+    <string name="settings_section_context">上下文窗口</string>
+    <string name="settings_context_hint">单次请求允许消耗的输入上限。档位越高，长上下文越能行使，单次费用也越高。</string>
+    <string name="settings_context_current">当前 %1$s</string>
+    <string name="settings_context_selected">已选</string>
 
     <!-- 设置首页行 -->
     <string name="settings_manage_endpoints">端点管理</string>
@@ -18,6 +22,11 @@
     <string name="settings_manage_mcp_hint">接入远端工具（强制审批）</string>
     <string name="settings_manage_memory">长期记忆</string>
     <string name="settings_manage_memory_hint">查看与删除模型写入的记忆</string>
+    <!-- W4：工具页与沙箱页在 :feature-tools（G10 触顶后拆出），这里只留设置页的入口行文案。 -->
+    <string name="settings_manage_tools">Agent 工具</string>
+    <string name="settings_manage_tools_hint">已注册工具、副作用档位与审批要求（只读）</string>
+    <string name="settings_manage_sandbox">沙箱文件</string>
+    <string name="settings_manage_sandbox_hint">浏览 Agent 读写的 workspace 目录</string>
     <string name="settings_active_endpoint">当前：%1$s</string>
     <string name="settings_active_endpoint_none">尚未配置端点</string>
     <string name="settings_about_app">应用</string>

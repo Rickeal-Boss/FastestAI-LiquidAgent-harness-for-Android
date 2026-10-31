@@ -3,6 +3,7 @@ package com.rickeal.liquidharness.core.data
 import android.content.ClipboardManager
 import android.content.Context
 import com.rickeal.liquidharness.core.agent.AgentRunner
+import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.agent.tool.ToolContext
 import com.rickeal.liquidharness.core.agent.tool.ToolRegistry
 import com.rickeal.liquidharness.core.agent.tool.registerBuiltins
@@ -241,10 +242,15 @@ class AppContainer(context: Context) {
     private val runners = ConcurrentHashMap<String, AgentRunner>()
 
     suspend fun agentRunnerFor(endpoint: RemoteEndpoint): AgentRunner = withContext(Dispatchers.IO) {
+        // 窗口上限在**建 runner 时**读一次：改设置对已缓存的 runner 不生效，
+        // 换端点或重启后生效。不做实时监听是刻意的 —— 一次 run 中途改预算会让
+        // 「这一轮压不压缩」在轮与轮之间跳变，那是最难排查的一类不一致。
+        val windowCap = settings.maxContextTokens.first()
         runners.getOrPut(endpoint.id) {
             AgentRunner(
                 engine = RemoteEngineBridge(engineFor(endpoint)),
                 tools = if (endpoint.supportsTools) tools else ToolRegistry(),
+                policy = AgentPolicy(maxContextTokens = windowCap),
             )
         }
     }

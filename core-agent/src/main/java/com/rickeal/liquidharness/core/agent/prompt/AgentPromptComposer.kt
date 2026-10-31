@@ -1,7 +1,21 @@
 package com.rickeal.liquidharness.core.agent.prompt
 
 import com.rickeal.liquidharness.core.agent.AgentRequest
+import com.rickeal.liquidharness.core.agent.context.PrefixSegmentKind
 import com.rickeal.liquidharness.core.model.ToolSpec
+
+/**
+ * 一段系统提示词。
+ *
+ * `kind` 只区分「指纹意义上的段」（[PrefixSegmentKind]），**不是**六个子段各一档：
+ * 人格 / 护栏 / 记忆 / 记忆维护 / 停止条件全部归 [PrefixSegmentKind.SYSTEM]，
+ * 只有技能段单列 [PrefixSegmentKind.SKILLS]（理由见 `PromptPrefix.kt` 的类头 KDoc）。
+ *
+ * 存在理由：`sections()` 只返回文本，调用方无法回答「这一段是技能还是人格」；
+ * 而前缀指纹恰恰需要这个分辨力。两份实现（一份给文本、一份给分段）会让段序出现两个
+ * 真值源 —— 所以 [AgentPromptComposer.sections] 委托本列表的 `text`，段序只有一份定义。
+ */
+data class PromptSection(val kind: PrefixSegmentKind, val text: String)
 
 /**
  * 系统提示词组装（纯函数、零实例状态、零 IO、零协程）。
@@ -110,18 +124,36 @@ object AgentPromptComposer {
      *
      * @param tools 本轮**启用**的工具声明（`ToolRegistry.specs()`）。顺序由注册中心保证稳定。
      */
-    fun sections(request: AgentRequest, tools: List<ToolSpec>): List<String> {
-        val sections = ArrayList<String>(6)
-        if (request.systemInstruction.isNotBlank()) sections.add(request.systemInstruction)
-        if (tools.isNotEmpty()) sections.add(TOOL_GUARDRAILS)
+    fun sections(request: AgentRequest, tools: List<ToolSpec>): List<String> =
+        sectionsTyped(request, tools).map { it.text }
+
+    /**
+     * [sections] 的分段版本。**段序与过滤条件只在本方法里写一次** ——
+     * [sections] 是它的投影，前缀指纹也从它取段，两处不各写一份。
+     *
+     * 空段（未启用的可选段）**不出现**：既省 token，也让「有没有这一段」在指纹里可分辨
+     * （空串不参与哈希，见 `fingerprintOf`）。
+     */
+    fun sectionsTyped(request: AgentRequest, tools: List<ToolSpec>): List<PromptSection> {
+        val sections = ArrayList<PromptSection>(6)
+        if (request.systemInstruction.isNotBlank()) {
+            sections.add(PromptSection(PrefixSegmentKind.SYSTEM, request.systemInstruction))
+        }
+        if (tools.isNotEmpty()) {
+            sections.add(PromptSection(PrefixSegmentKind.SYSTEM, TOOL_GUARDRAILS))
+        }
         if (request.skillsSection.isNotBlank()) {
-            sections.add(SKILLS_SECTION_PREFIX + request.skillsSection)
+            sections.add(PromptSection(PrefixSegmentKind.SKILLS, SKILLS_SECTION_PREFIX + request.skillsSection))
         }
         val memory = request.memoryText
-        if (!memory.isNullOrBlank()) sections.add(MEMORY_SECTION_PREFIX + memory)
-        if (tools.any { it.name == MEMORY_WRITE_TOOL }) sections.add(MEMORY_MAINTENANCE)
+        if (!memory.isNullOrBlank()) {
+            sections.add(PromptSection(PrefixSegmentKind.SYSTEM, MEMORY_SECTION_PREFIX + memory))
+        }
+        if (tools.any { it.name == MEMORY_WRITE_TOOL }) {
+            sections.add(PromptSection(PrefixSegmentKind.SYSTEM, MEMORY_MAINTENANCE))
+        }
         // 停止条件始终下发，且始终在最后一段。
-        sections.add(STOP_CONDITIONS)
+        sections.add(PromptSection(PrefixSegmentKind.SYSTEM, STOP_CONDITIONS))
         return sections
     }
 

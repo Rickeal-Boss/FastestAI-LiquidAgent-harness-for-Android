@@ -29,6 +29,9 @@ import com.rickeal.liquidharness.feature.chat.ChatScreen
 import com.rickeal.liquidharness.feature.chat.ChatViewModel
 import com.rickeal.liquidharness.feature.settings.SettingsRoute
 import com.rickeal.liquidharness.feature.settings.settingsGraph
+import com.rickeal.liquidharness.feature.tools.SandboxFilesRoute
+import com.rickeal.liquidharness.feature.tools.ToolsRoute
+import com.rickeal.liquidharness.feature.tools.toolsGraph
 
 /**
  * 导航宿主。
@@ -81,6 +84,19 @@ internal fun AppNavHost(
             navController = navController,
             container = container,
             appVersion = appVersion,
+            // 工具页 / 沙箱页在 :feature-tools（W4 因 G10 行数闸门从设置模块拆出）。
+            // feature ↛ feature 是 G6 硬边 ⇒ 由外壳把「跳到那一页」作为回调注入设置页。
+            onOpenTools = { navController.navigate(ToolsRoute.ROUTE) },
+            onOpenSandbox = { navController.navigate(SandboxFilesRoute.ROUTE) },
+        )
+        toolsGraph(
+            navController = navController,
+            // lambda 而非实例：container.toolRegistry() 首次求值会 mkdirs + getSystemService，
+            // 必须由 ToolsViewModel 在 IO 段内触发（见其 KDoc）。
+            registryProvider = container::toolRegistry,
+            // 沙箱根 = AppContainer 的 dataDir（filesDir/harness）下的 workspace/，
+            // 与 ToolContext.sandboxDir 同源。本模块有 core-data，故这一句留在这里。
+            sandboxRoot = container.jsonFiles.file("workspace"),
         )
     }
 }

@@ -107,7 +107,10 @@ CASES=(
   "G6|模块边界：core-model 依赖 :core-net（禁止边）|m_g6|core-model/build.gradle.kts -> :core-net"
   "G7|设计系统零业务：core-design 引用 core.model|m_g7|__SelftestG7.kt:3:import com.rickeal.liquidharness.core.model.GenerationRequest"
   "G8|契约层纯 Kotlin：core-model 里 import android.content|m_g8|__SelftestG8.kt:3:import android.content.Context"
-  "G9|模块数一致：settings 多一个 include(:ghost-module)|m_g9|settings include = 12"
+  # ⚠️ G9 的证据串里含**模块总数 + 1**（当前 12 个模块 ⇒ 注入 ghost-module 后 include=13）。
+  #    新增/删除模块时必须同步改这个数，否则 case 会以「判红了但证据串不匹配」失败 ——
+  #    那**不是**守卫失效，是自证夹具没跟上模块数。改完务必真跑一次本脚本。
+  "G9|模块数一致：settings 多一个 include(:ghost-module)|m_g9|settings include = 13"
   "G10|行数闸门：core-model 放一个 400 行文件（上限 300）|m_g10|__SelftestG10.kt = 400 行 > 单文件上限 300"
   "G11|方法体积：core-model 放一个 130 行方法（上限 120）|m_g11|__SelftestG11.kt:3  selftestBig() = 130 行"
   "G12|AgentRunner 门面：把 AgentRunner.kt 撑到 210 行（上限 200）|m_g12|"
@@ -484,7 +487,7 @@ normalize_fixture() { # $1 = 树
 preflight() { # $1 = 树
   local t="$1" m miss=()
   for m in core-model core-net core-engine core-agent core-skills core-mcp \
-           core-data core-design feature-chat feature-settings app; do
+           core-data core-design feature-chat feature-settings feature-tools app; do
     [ -f "$t/$m/build.gradle.kts" ] || miss+=("$m/build.gradle.kts")
   done
   for m in settings.gradle.kts gradle/libs.versions.toml "$APP_MANIFEST" "$LINT_BASELINE" "$AGENT_RUNNER"; do

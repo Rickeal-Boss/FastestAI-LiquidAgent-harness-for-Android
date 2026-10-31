@@ -7,6 +7,7 @@ import com.rickeal.liquidharness.core.data.AppContainer
 import com.rickeal.liquidharness.core.data.EndpointSaveError
 import com.rickeal.liquidharness.core.data.EndpointSaveException
 import com.rickeal.liquidharness.core.data.ProbeOutcome
+import com.rickeal.liquidharness.core.data.SettingsRepository
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +26,8 @@ import java.io.IOException
 data class SettingsUiState(
     val endpoints: List<RemoteEndpoint> = emptyList(),
     val activeId: String? = null,
+    /** 单次请求窗口上限（token）。见 `SettingsRepository.maxContextTokens`。 */
+    val maxContextTokens: Int = SettingsRepository.DEFAULT_MAX_CONTEXT_TOKENS,
     val probing: Boolean = false,
     val probeTarget: String? = null,
     val probeResult: ProbeOutcome? = null,
@@ -144,7 +147,22 @@ class SettingsViewModel(
     private suspend fun load() {
         val list = container.endpoints.list()
         val active = container.settings.activeEndpointId.first()
-        _state.update { it.copy(endpoints = list, activeId = active, loaded = true) }
+        val window = container.settings.maxContextTokens.first()
+        _state.update { it.copy(endpoints = list, activeId = active, maxContextTokens = window, loaded = true) }
+    }
+
+    /**
+     * 切换单次请求的窗口上限。
+     *
+     * 生效时机是**下一次建 runner 时**（换端点或重启），不是立即 ——
+     * 这条限制写在 `AppContainer.agentRunnerFor` 的注释里，UI 侧不重复解释，
+     * 但改动后立刻回写 state，让用户看到选择已被记住。
+     */
+    fun setMaxContextTokens(tokens: Int) {
+        viewModelScope.launch {
+            container.settings.setMaxContextTokens(tokens)
+            _state.update { it.copy(maxContextTokens = tokens) }
+        }
     }
 
     class Factory(private val container: AppContainer) : ViewModelProvider.Factory {

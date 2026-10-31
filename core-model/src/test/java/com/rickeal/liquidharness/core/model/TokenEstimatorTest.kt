@@ -3,7 +3,6 @@ package com.rickeal.liquidharness.core.model
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-
 /**
  * token 估算的单测。
  *
@@ -62,5 +61,62 @@ class TokenEstimatorTest {
         )
         // 3 条消息 × 4 开销 + "hi"(1) + "f"(1) + 40/4(10) + 400/4(100)
         assertEquals(12 + 1 + 1 + 10 + 100, TokenEstimator.estimateMessages(messages))
+    }
+
+    // ── W4：工具声明计入预算（design §2.3 / 判据 A6）────────────────────────
+
+    private fun spec(
+        name: String = "file_read",
+        description: String = "d".repeat(200),
+        parameters: List<ToolParameter> = emptyList(),
+    ): ToolSpec = ToolSpec(name = name, description = description, parameters = parameters)
+
+    /**
+     * 判据 A6③（回归钉）：空工具面返回 0。
+     *
+     * 它保证 `system + tools + history` 在 tools 为空时与「改动前只算 system + history」
+     * 逐值相同 —— 否则本波会静默改掉所有既有阈值。
+     */
+    @Test
+    fun emptyToolSpecsEstimateZero() {
+        assertEquals(0, TokenEstimator.estimateToolSpecs(emptyList()))
+    }
+
+    /** 判据 A6①：6 个内置量级的工具在 (0, 2000) 之间（量级正确，不是精确值）。 */
+    @Test
+    fun sixToolSpecsStayUnderTwoThousandTokens() {
+        val specs = (1..6).map { spec(name = "tool_$it") }
+
+        val estimate = TokenEstimator.estimateToolSpecs(specs)
+
+        assertTrue(estimate > 0, "actual=$estimate")
+        assertTrue(estimate < 2_000, "actual=$estimate")
+    }
+
+    /** 参数名 / 参数描述 / 枚举值都是发出去的字节。 */
+    @Test
+    fun toolSpecEstimateGrowsWithParameters() {
+        val withoutParams = spec()
+        val withParams = spec(
+            parameters = listOf(
+                ToolParameter(name = "path", description = "file path", enumValues = listOf("a", "b")),
+            )
+        )
+
+        val delta = TokenEstimator.estimateToolSpecs(listOf(withParams)) -
+            TokenEstimator.estimateToolSpecs(listOf(withoutParams))
+
+        // "path"(1) + "file path"(3) + "a"(1) + "b"(1) = 6
+        assertEquals(6, delta)
+    }
+
+    /** 描述变长 ⇒ 估算变高（工具面是 W3 接 MCP 后最容易被低估的一段）。 */
+    @Test
+    fun toolSpecEstimateTracksDescriptionLength() {
+        val short = TokenEstimator.estimateToolSpecs(listOf(spec(description = "d".repeat(40))))
+        val long = TokenEstimator.estimateToolSpecs(listOf(spec(description = "d".repeat(4_000))))
+
+        // 只有描述不同：40/4=10 vs 4000/4=1000。
+        assertEquals(1_000 - 10, long - short)
     }
 }

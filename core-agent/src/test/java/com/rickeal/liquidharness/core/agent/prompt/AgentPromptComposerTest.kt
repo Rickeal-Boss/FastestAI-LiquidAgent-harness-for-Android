@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.core.agent.prompt
 
 import com.rickeal.liquidharness.core.agent.AgentRequest
+import com.rickeal.liquidharness.core.agent.context.PrefixSegmentKind
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.model.ToolSpec
 import kotlin.test.Test
@@ -107,5 +108,49 @@ class AgentPromptComposerTest {
             listOf(tool("memory_write")),
         )
         assertTrue(all.all { it.code in 0x09..0x7E || it == '\n' })
+    }
+
+    // ── W4：分段版本 ────────────────────────────────────────────────────────
+
+    /** 判据 A2：段序只有一份定义 —— `sections()` 是 `sectionsTyped()` 的投影。 */
+    @Test
+    fun sectionsIsTheProjectionOfSectionsTyped() {
+        val req = request(systemInstruction = "be brief", skillsSection = "- pdf: read pdf", memoryText = "- memo")
+        val tools = listOf(tool("memory_write"))
+
+        assertEquals(
+            AgentPromptComposer.sectionsTyped(req, tools).map { it.text },
+            AgentPromptComposer.sections(req, tools),
+        )
+        // 委托的尽头仍是同一条 system 文本（否则指纹与线上字节会分叉）。
+        assertEquals(
+            AgentPromptComposer.sectionsTyped(req, tools).joinToString("\n\n") { it.text },
+            AgentPromptComposer.compose(req, tools),
+        )
+    }
+
+    /** 技能段必须能**单独定位**（指纹要回答「是技能变了还是人格变了」）。 */
+    @Test
+    fun skillsSectionIsTheOnlySectionTypedAsSkills() {
+        val sections = AgentPromptComposer.sectionsTyped(
+            request(systemInstruction = "be brief", skillsSection = "- pdf: read pdf", memoryText = "- memo"),
+            listOf(tool("memory_write")),
+        )
+
+        val skills = sections.filter { it.kind == PrefixSegmentKind.SKILLS }
+        assertEquals(1, skills.size)
+        assertTrue(skills.single().text.startsWith(AgentPromptComposer.SKILLS_SECTION_PREFIX))
+        // 其余段全部归 SYSTEM（本波不做更细的分段，理由见 PromptPrefix.kt）。
+        assertTrue(sections.filter { it.kind == PrefixSegmentKind.SYSTEM }.size == sections.size - 1)
+    }
+
+    /** 空段**不出现**（既省 token，也让「有没有这一段」在指纹里可分辨）。 */
+    @Test
+    fun sectionsTypedOmitsEmptyOptionalSections() {
+        val sections = AgentPromptComposer.sectionsTyped(request(), emptyList())
+
+        assertEquals(1, sections.size)
+        assertEquals(AgentPromptComposer.STOP_CONDITIONS, sections.single().text)
+        assertTrue(sections.none { it.kind == PrefixSegmentKind.SKILLS })
     }
 }
