@@ -6,11 +6,16 @@ import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.agent.prompt.AgentPromptComposer
 import com.rickeal.liquidharness.core.agent.tool.ToolRegistry
 import com.rickeal.liquidharness.core.model.AgentEvent
+import com.rickeal.liquidharness.core.model.EngineCapabilities
 import com.rickeal.liquidharness.core.model.EngineErrorKind
 import com.rickeal.liquidharness.core.model.FinishReason
 import com.rickeal.liquidharness.core.model.GenerationEvent
+import com.rickeal.liquidharness.core.model.GenerationRequest
 import com.rickeal.liquidharness.core.model.Role
 import com.rickeal.liquidharness.core.model.TerminationReason
+import java.io.IOException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -176,9 +181,29 @@ class TurnLoopTest {
         assertEquals(Role.USER, engine.lastRequest?.messages?.last()?.role)
     }
 
+    /**
+     * T-5：流中途炸断（IOException）时，这一次尝试的 prompt **仍要进账本**。
+     *
+     * 旧实现只在正常收尾后估算 ⇒ IOException 直接跳 catch，那一轮 prompt 完全漏记，
+     * `maxRunPromptTokens` 门控系统性低估。判据是「promptTokens > 0」而不是「等于某个值」：
+     * 估算值随分词实现变化，钉死数字会让这条用例变成维护负担。
+     */
     @Test
-    fun toolCallToAnUnregisteredToolIsSkippedAndTheLoopContinues() {
+    fun promptEstimateIsRecordedEvenWhenTheStreamDiesMidway() {
         val events = mutableListOf<AgentEvent>()
+        val ctx = context(BrokenStreamEngine(), events)
+
+        val step = runBlocking { loop().run(ctx) }
+
+        assertEquals(Step.Terminated, step)
+        assertTrue(ctx.state.promptTokens > 0, "prompt must be booked even on a broken stream")
+        // 已收内容不丢（与「部分输出」路径同款收尾）。
+        assertEquals("half", ctx.state.partialText())
+        assertTrue(events.filterIsInstance<AgentEvent.Failed>().single().message.contains("stream failed"))
+    }
+
+    @Test
+    fun toolCallToAnUnregisteredToolIsSkippedAndTheLoopContinues() {        val events = mutableListOf<AgentEvent>()
         val engine = FakeEngine(
             scripts = listOf(
                 listOf(
@@ -198,5 +223,20 @@ class TurnLoopTest {
         // 注册表里没有 file_read ⇒ 没有 spec ⇒ 没有轨迹创建点 ⇒ 只能发 skip，不许发 result。
         assertTrue(events.none { it is AgentEvent.ToolResultReceived })
         assertEquals("done", events.filterIsInstance<AgentEvent.Finished>().single().text)
+    }
+
+    /** 吐一帧正文后炸断：模拟连接中途 IOException（旧实现漏记账本的那条路径）。 */
+    private class BrokenStreamEngine : LlmEngine {
+        override val endpointId: String = "broken"
+
+        override suspend fun capabilities(): EngineCapabilities =
+            EngineCapabilities(maxContextTokens = 8_192, maxOutputTokens = 1_024)
+
+        override fun generate(request: GenerationRequest): Flow<GenerationEvent> = flow {
+            emit(GenerationEvent.TextDelta("half"))
+            throw IOException("connection reset")
+        }
+
+        override suspend fun stop() = Unit
     }
 }

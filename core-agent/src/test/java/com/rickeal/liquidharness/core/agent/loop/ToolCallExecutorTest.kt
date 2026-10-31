@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.core.agent.loop
 
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision
+import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.model.AgentEvent
 import com.rickeal.liquidharness.core.model.FinishReason
 import com.rickeal.liquidharness.core.model.GenerationEvent
@@ -10,10 +11,13 @@ import com.rickeal.liquidharness.core.model.ToolCall
 import com.rickeal.liquidharness.core.model.ToolParamType
 import com.rickeal.liquidharness.core.model.ToolParameter
 import com.rickeal.liquidharness.core.model.ToolResult
+import java.util.concurrent.Executors
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 /**
@@ -124,5 +128,66 @@ class ToolCallExecutorTest {
         assertEquals("call-1", toolMessage.toolResults.single().callId)
         assertEquals(2, events.count { it is AgentEvent.MessageCommitted })
         assertEquals(1, ctx.state.executedToolCount)
+    }
+
+    /**
+     * T-1：工具体必须跑在注入的 IO 调度器上，**不能**留在调用方线程。
+     *
+     * 判据用「线程名」而不是协程上下文：上下文可以继承成同一条线程而断言照样通过，
+     * 线程名骗不了人。`Dispatchers.Unconfined` 也不行 —— 它会让 `runBlocking` 原地跑完，
+     * 用例看起来绿、真机上照样在主线程做磁盘 IO。
+     */
+    @Test
+    fun toolRunsOnTheInjectedIoDispatcherNotOnTheCallerThread() {
+        val events = mutableListOf<AgentEvent>()
+        var observedThread = ""
+        val tool = FakeTool(fakeSpec(name = "io")) { _ ->
+            observedThread = Thread.currentThread().name
+            ToolResult(name = "io", ok = true, output = "ok")
+        }
+        val ctx = testContext(events, registered = listOf(tool))
+        val executor = Executors.newSingleThreadExecutor { runnable -> Thread(runnable, IO_THREAD_NAME) }
+            .asCoroutineDispatcher()
+
+        try {
+            runBlocking { ToolCallExecutor(ioDispatcher = executor).execute(ctx, listOf(IO_CALL)) }
+        } finally {
+            executor.close()
+        }
+
+        assertEquals(1, tool.invocations)
+        // 名字带 `@coroutine#N` 后缀是 `asCoroutineDispatcher` 的正常行为，用前缀判。
+        assertTrue(observedThread.startsWith(IO_THREAD_NAME), "ran on: $observedThread")
+        assertNotEquals(Thread.currentThread().name, observedThread)
+        assertTrue(events.filterIsInstance<AgentEvent.ToolResultReceived>().single().result.ok)
+    }
+
+    /** T-2：策略拦下的工具**一次都不许被调用**，且失败原因就是策略给的原因码。 */
+    @Test
+    fun policyBlockedToolIsNotInvokedAndReportsTheReasonCode() {
+        val events = mutableListOf<AgentEvent>()
+        val tool = FakePolicyGatedTool(fakeSpec(name = "clip")) { policy ->
+            if (policy.allowClipboardRead) null else "clipboard read disabled by policy"
+        }
+        val ctx = testContext(
+            events = events,
+            registered = listOf(tool),
+            policy = AgentPolicy(allowClipboardRead = false),
+        )
+        val call = ToolCall(id = "c1", name = "clip", argumentsJson = "{}")
+
+        val outcome = runBlocking { ToolCallExecutor().execute(ctx, listOf(call)) }
+
+        assertEquals(ToolCallExecutor.Outcome.Continue, outcome)
+        assertEquals(0, tool.invocations)
+        val result = events.filterIsInstance<AgentEvent.ToolResultReceived>().single().result
+        assertFalse(result.ok)
+        assertEquals("clipboard read disabled by policy", result.errorMessage)
+    }
+
+    private companion object {
+        const val IO_THREAD_NAME = "tool-io-test"
+
+        val IO_CALL = ToolCall(id = "io-1", name = "io", argumentsJson = "{}")
     }
 }

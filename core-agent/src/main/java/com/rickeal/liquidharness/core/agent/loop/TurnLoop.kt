@@ -1,5 +1,6 @@
 package com.rickeal.liquidharness.core.agent.loop
 
+import com.rickeal.liquidharness.core.agent.approval.ToolApprovalCache
 import com.rickeal.liquidharness.core.agent.prompt.AgentPromptComposer
 import com.rickeal.liquidharness.core.model.AgentEvent
 
@@ -35,9 +36,10 @@ class TurnLoop(
 
     suspend fun run(ctx: TurnContext): Step {
         val systemText = systemTextFor(ctx)
-        // 执行器按 run 创建：护栏计数与审批缓存的作用域都是「这一次 run」，跨 run 复用
-        // 会把上一次会话的授权 / 失败连击带进来（见 ToolApprovalFlow 的类头）。
-        val executor = ToolCallExecutor()
+        // 执行器按 run 创建：护栏计数（失败连击 / 同参）的作用域就是「这一次 run」。
+        // 审批缓存**不跟着 run 走**：`ctx.approvalCache` 由调用方持有，`null` 才退化成
+        // run 级实例 —— 「本会话不再询问」的语义必须跨 run 才成立（见 ToolApprovalFlow 类头）。
+        val executor = ToolCallExecutor(ToolApprovalFlow(ctx.approvalCache ?: ToolApprovalCache()))
         while (true) {
             ctx.checkActive()
 

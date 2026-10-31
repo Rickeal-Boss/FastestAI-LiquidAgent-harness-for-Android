@@ -1,13 +1,16 @@
 package com.rickeal.liquidharness.core.agent.tool.tools
 
+import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.agent.tool.EffectAwareTool
 import com.rickeal.liquidharness.core.agent.tool.ParamGatedTool
+import com.rickeal.liquidharness.core.agent.tool.PolicyGatedTool
 import com.rickeal.liquidharness.core.agent.tool.Tool
 import com.rickeal.liquidharness.core.model.ToolEffect
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -70,6 +73,27 @@ class ClipboardToolTest {
         val asTool: Tool = tool
         assertTrue(asTool is ParamGatedTool)
         assertTrue(asTool is EffectAwareTool)
+        assertTrue(asTool is PolicyGatedTool)
+    }
+
+    /** T-2：策略关掉剪贴板读取后，`get` 必须被拦（原因码由 UI 映射成文案）。 */
+    @Test
+    fun getIsBlockedWhenPolicyDisallowsClipboardRead() {
+        val reason = tool.blockedBy(AgentPolicy(allowClipboardRead = false), getJson)
+        assertEquals("clipboard read disabled by policy", reason)
+    }
+
+    /** 默认策略（`allowClipboardRead = true`）= 保持 W2 行为：`get` 不被策略拦。 */
+    @Test
+    fun getIsAllowedWhenPolicyAllowsClipboardRead() {
+        assertNull(tool.blockedBy(AgentPolicy(), getJson))
+        assertNull(tool.blockedBy(AgentPolicy(allowClipboardRead = true), getJson))
+    }
+
+    /** 写侧本来就要审批，不该被「剪贴板读取」这个开关连带拦掉。 */
+    @Test
+    fun setIsNotAffectedByTheClipboardReadPolicy() {
+        assertNull(tool.blockedBy(AgentPolicy(allowClipboardRead = false), setJson))
     }
 
     @Test

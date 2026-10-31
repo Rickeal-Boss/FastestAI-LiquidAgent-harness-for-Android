@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.rickeal.liquidharness.core.agent.AgentRequest
 import com.rickeal.liquidharness.core.agent.AgentRunner
+import com.rickeal.liquidharness.core.agent.approval.ToolApprovalCache
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
 import com.rickeal.liquidharness.core.data.AppContainer
@@ -72,6 +73,28 @@ class ChatViewModel(
      * 在 `await()` 的句柄。两者一旦分家就会出现「点了没反应的卡」。
      */
     private var pendingApprovalDeferred: CompletableDeferred<ToolApprovalDecision>? = null
+
+    /**
+     * 会话级审批授权（「本会话允许相同调用」）。
+     *
+     * ## 为什么必须由 ViewModel 持有，而不是让内核每次 run 自建
+     *
+     * 内核的 `ToolApprovalFlow` 是**一次 run 一个实例**，它的 `ToolApprovalCache` 也随
+     * 实例生灭 ⇒ 用户点了「本会话允许相同调用」，下一个 run 里同一个调用还会再弹一次卡。
+     * 卡上的文案说「本会话」，行为却是「本 run」—— 这是**界面在说谎**，比没有这个按钮更糟：
+     * 用户会学会「反正每次都要点」，审批闸门就退化成形式。
+     *
+     * 现在缓存挂在 ViewModel 上（生命周期 = 一段对话），经
+     * `runner.run(..., approvalCache = approvalCache)` 注入内核。作用域边界只有一个：
+     * [newConversation] 时 [ToolApprovalCache.clear] —— 「新对话 = 新会话授权边界」。
+     *
+     * ⚠️ 刻意**不**在 [stop] 里清：停止一次 run 不是撤销授权，用户下一条消息里
+     * 同一个 `file_write` 仍应免打扰。要收回授权就开新对话。
+     *
+     * 线程模型见 [ToolApprovalCache] 类头（读无锁、写 synchronized）；本字段只在
+     * 主线程被读写，不需要额外同步。
+     */
+    private val approvalCache = ToolApprovalCache()
 
     init {
         viewModelScope.launch { refreshEndpoint() }
@@ -155,6 +178,10 @@ class ChatViewModel(
         // 一条已作废的 run 回传裁决（旧仓「新对话后点了允许，旧工具真的执行了」）。
         pendingApprovalDeferred?.cancel()
         pendingApprovalDeferred = null
+        // 新对话 = 新会话授权边界：用户点过「本会话允许相同调用」的授权到此为止。
+        // 只在这里清（不在 stop() 里清）：停止一次 run 不是撤销授权，撤回授权的
+        // 唯一入口就是「开新对话」—— 语义单一，用户不需要猜。
+        approvalCache.clear()
         viewModelScope.launch { activeRunner?.cancel() }
         _state.update {
             ChatUiState(
@@ -257,6 +284,9 @@ class ChatViewModel(
                         }
                     }
                 },
+                // 会话级授权：跨 run 生效，[newConversation] 时清空（见字段 KDoc）。
+                // 不传的话内核每次 run 自建一个空缓存，「本会话允许」退化成「本 run 允许」。
+                approvalCache = approvalCache,
             ).collect { event -> if (generation == runGeneration) onEvent(event, generation) }
         } finally {
             // 终态事件到达前必须先排空缓冲，否则最后一段增量会丢（`onEvent` 里已排过一次，

@@ -128,16 +128,28 @@ class AppContainer(context: Context) {
      * 模型看到的工具清单直接来自注册表：`supportsTools=false` 的端点若仍拿到那 6 个工具，
      * 模型会去调一个协议层根本发不出去的调用（adapter 会整段丢掉 tool 字段），
      * 用户看到的是「模型反复说要用工具但什么都没发生」。空注册表 = 工具面不存在。
+     *
+     * ## 为什么是 `suspend`（W2 外审 §四.1）
+     *
+     * 首次求值 [tools] 会做 `workspace.mkdirs()` + `appContext.getSystemService()`，
+     * 两者都是**阻塞**调用（磁盘 IO / 系统服务握手）。旧签名是普通函数，而调用点是
+     * `viewModelScope`（`Main.immediate`）⇒ 首帧主线程上做磁盘 IO，冷启动有掉帧风险。
+     * 现在整段包进 `withContext(Dispatchers.IO)`：`getOrPut` 的 lambda 里构造
+     * [AgentRunner] 也会读 `tools`，所以它必须一起在 IO 段内。
+     *
+     * 构造期仍然**不碰**任何系统服务（`tools` 是 `by lazy`，W78 纪律不变）——
+     * 变的只是「第一次真的要跑 run 时落在哪个线程」。
      */
     private val runners = ConcurrentHashMap<String, AgentRunner>()
 
-    fun agentRunnerFor(endpoint: RemoteEndpoint): AgentRunner =
+    suspend fun agentRunnerFor(endpoint: RemoteEndpoint): AgentRunner = withContext(Dispatchers.IO) {
         runners.getOrPut(endpoint.id) {
             AgentRunner(
                 engine = RemoteEngineBridge(engineFor(endpoint)),
                 tools = if (endpoint.supportsTools) tools else ToolRegistry(),
             )
         }
+    }
 
     suspend fun activeEndpoint(): RemoteEndpoint? {
         val id = settings.activeEndpointId.first() ?: return null
@@ -151,8 +163,20 @@ class AppContainer(context: Context) {
      * - 先判 URL：不安全的目标不许进清单（否则它会成为「已保存但一发请求就被拦」的僵尸端点）；
      * - 密钥写失败必须抛错：Keystore 异常时静默返回会让用户以为 key 存上了，
      *   之后每次请求都 401，排查方向完全错（`04-risk-register.md` R11）；
+     * - 写成功但**解不开**（`hasUsable=false`）同样抛错，且**不回滚密文**：
+     *   删掉会丢失「为什么解不开」的现场（Keystore 被清 / 密文被截断 / 换机恢复），
+     *   而下次保存会原地覆盖。保留一份不可用密文的风险，低于失去唯一的诊断线索。
      * - 清单最后写：`hasSecret` 要按**写完之后**的真实状态回写，否则列表页的
      *   「已保存密钥」标记永远是 false（旧实现的缺陷）。
+     *
+     * ## `hasSecret` 用 `hasUsable` 而不是 `hasFile`（W2 外审 §四.1）
+     *
+     * `hasFile` 只判文件存在：写盘成功但**用当前 Keystore 解不开**时它会返回 true，
+     * 于是清单写 `hasSecret=true`、UI 显示「已配置」，而每次请求必然 401。
+     * 这里改成写完立刻真解密一次：
+     * - 解不开 ⇒ 抛 [EndpointSaveError.SECRET_WRITE_FAILED]（「写了但用不了」必须说出来，
+     *   比静默 hasSecret=true 诚实）；
+     * - 解得开 ⇒ `hasSecret=true`，与「发请求时真的能取到密钥」同源。
      */
     suspend fun saveEndpoint(endpoint: RemoteEndpoint, apiKey: String?): List<RemoteEndpoint> {
         val safeUrl = try {
@@ -170,7 +194,16 @@ class AppContainer(context: Context) {
                     "failed to persist api key",
                 )
             }
-            secrets.has(normalized.id)
+            val usable = secrets.hasUsable(normalized.id)
+            // 写成功却解不开 = Keystore 刚换过密钥 / 密文被截断。此时回写 hasSecret=true
+            // 会制造「显示已配置但请求 401」的假象（R11 的触发信号）。
+            if (apiKey != null && !usable) {
+                throw EndpointSaveException(
+                    EndpointSaveError.SECRET_WRITE_FAILED,
+                    "api key written but cannot be decrypted",
+                )
+            }
+            usable
         }
 
         val saved = endpoints.upsert(normalized.copy(hasSecret = hasSecret))

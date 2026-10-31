@@ -59,6 +59,24 @@ data class AgentPolicy(
     /** 是否自动放行 dangerous 工具。**默认 false = fail-closed**（旧仓同）。 */
     val autoApproveDangerous: Boolean = false,
 
+    /**
+     * 是否允许工具读系统剪贴板（`clipboard get`）。
+     *
+     * **默认 true = 保持 W2 的既有行为**（`get` 不弹卡、直接读）。
+     *
+     * 关掉之后 `clipboard get` **一律失败**（`ToolCallExecutor` 经 `PolicyGatedTool` 拦下，
+     * 工具体根本不会被调用），理由是这个工具是一条**提示注入的外带通道**：
+     * `get` 不需要审批、不进审批卡，于是「模型读一眼剪贴板再把内容拼进下一次请求」
+     * 可以在用户完全看不见的情况下把剪贴板里的密码 / 验证码带出设备。写侧（`set`）本来
+     * 就弹卡，读侧的这条通道此前是静默放行的 —— 默认保留是为了不改变现网行为，
+     * 但设置页需要一个真开关（排 W7，`feature-settings`）。
+     *
+     * **W7 设置页开关的落点**：`feature-settings` 读这个字段时必须是**保存后重启 run 才生效**
+     * （policy 是 run 级快照，不是热更新）—— 别把它做成「改了就立刻生效」的假承诺：
+     * 在途 run 用的是开跑时那份 `AgentPolicy`，改字段不会回灌。
+     */
+    val allowClipboardRead: Boolean = true,
+
     /** 是否启用每轮前的上下文压缩（旧仓同）。 */
     val compressContext: Boolean = true,
 

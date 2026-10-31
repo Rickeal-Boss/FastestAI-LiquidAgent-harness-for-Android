@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.core.agent.loop
 
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
+import com.rickeal.liquidharness.core.agent.tool.PolicyGatedTool
 import com.rickeal.liquidharness.core.agent.tool.Tool
 import com.rickeal.liquidharness.core.agent.tool.ToolArgsValidator
 import com.rickeal.liquidharness.core.agent.tool.ToolExecutionGuard
@@ -8,6 +9,9 @@ import com.rickeal.liquidharness.core.model.AgentEvent
 import com.rickeal.liquidharness.core.model.ToolCall
 import com.rickeal.liquidharness.core.model.ToolResult
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
@@ -24,11 +28,13 @@ import kotlinx.coroutines.withTimeoutOrNull
  *    审批卡要显示工具名与参数，UI 得先有这条轨迹；`ToolResultReceived` / `ToolSkipped`
  *    在 UI 侧「只更新不新建」，漏了这一步等于整批事件静默丢失。
  * 4. 审批（[ToolApprovalFlow]）。可能 emit `ApprovalRequested` / `ToolSkipped`。
- * 5. 参数校验。**在审批之后**（见下「顺序选择」）。
- * 6. 执行（带超时）。
- * 7. 护栏记账（同参 / 失败连击 / 振荡），熔断信号返回给调用方。
- * 8. 发 `ToolResultReceived`，成功则 `recordToolExecuted()`。
- * 9. 整批结束后落工作副本（[ToolResultCommit.commit]）。
+ * 5. 策略闸门（[PolicyGatedTool]）：**不看用户意愿的硬禁止**（如策略关闭后的 `clipboard get`）。
+ *    **在审批之后**：审批是「用户同不同意」，策略是「这件事本来就不许」，先让人看见再拒。
+ * 6. 参数校验。**在审批之后**（见下「顺序选择」）。
+ * 7. 执行（带超时，跑在 [ioDispatcher] 上）。
+ * 8. 护栏记账（同参 / 失败连击 / 振荡），熔断信号返回给调用方。
+ * 9. 发 `ToolResultReceived`，成功则 `recordToolExecuted()`。
+ * 10. 整批结束后落工作副本（[ToolResultCommit.commit]）。
  *
  * ## 顺序选择：**先审批，后校验**（显式声明，外审要求二选一）
  *
@@ -50,6 +56,16 @@ import kotlinx.coroutines.withTimeoutOrNull
 class ToolCallExecutor(
     private val approvalFlow: ToolApprovalFlow = ToolApprovalFlow(),
     private val commit: ToolResultCommit = ToolResultCommit(),
+    /**
+     * 工具执行用的调度器。**默认 `Dispatchers.IO`，不要改回默认上下文**：
+     * 调用链源头是 `ChatViewModel.viewModelScope.launch`（`Dispatchers.Main`），
+     * 而工具体内部是 `canonicalFile` / `writeText` / `listFiles` 这类阻塞 IO ——
+     * 不切走就是「主线程做磁盘读写」，真机上表现为掉帧甚至 ANR。
+     *
+     * 单测注入单线程 executor（`Executors.newSingleThreadExecutor().asCoroutineDispatcher()`）
+     * 来钉住「执行确实发生了另一条线程上」，比断言协程上下文更难被假通过。
+     */
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
 
     /** 一次执行的结论。熔断必须由调用方终止 run（`TerminationReason.BreakerTripped`）。 */
@@ -122,6 +138,21 @@ class ToolCallExecutor(
             ToolExecutionGuard.Verdict.Proceed -> Unit
         }
 
+        // 策略闸门：不看用户意愿的硬禁止（例：策略关闭后的 `clipboard get`）。
+        // 放在校验**之前**：策略禁止是「这件事本来就不许」，比「参数写错了」更根本 ——
+        // 命中就照常记一次失败连击（模型反复重发被禁止的调用，也该走到熔断）。
+        // ⚠️ 已知取舍：本检查在**审批之后**，所以「spec.dangerous/requiresConfirmation + 策略禁止」
+        // 的工具会先弹一张卡、用户点了同意再被拒（卡片点了没用）。当前无此形态的工具
+        // （`clipboard get` 的 `needsApproval` 为 false，根本不会弹卡），故不在 `ToolApprovalFlow`
+        // 里前置策略判断 —— 那会把「策略」耦合进审批类。**这是取舍，不是漏判。**
+        if (tool is PolicyGatedTool) {
+            val reason = tool.blockedBy(ctx.policy, call.argumentsJson)
+            if (reason != null) {
+                AgentLogStore.warn("tool blocked by policy: " + call.name + " (" + reason + ")")
+                return finish(guard, call, failure(call, reason))
+            }
+        }
+
         val validated = ToolArgsValidator.validate(tool.spec, call.argumentsJson)
         if (validated is ToolArgsValidator.Result.Invalid) {
             // 校验失败也算一次失败：模型连续发坏参数正是失败连击该抓的形态。
@@ -131,19 +162,29 @@ class ToolCallExecutor(
         return finish(guard, call, commit.truncate(call, raw, tool, ctx.policy))
     }
 
-    /** 执行 + 超时。超时结果标 `indeterminate`：工具可能已经在后台产生了副作用。 */
+    /**
+     * 执行 + 超时。超时结果标 `indeterminate`：工具可能已经在后台产生了副作用。
+     *
+     * **阻塞 IO 跑在 [ioDispatcher] 上**（见构造参数 KDoc）。这里有一条不可修的语义缺口，
+     * 如实写明：阻塞 IO **不可被协程取消打断** —— `withTimeoutOrNull` 到点只是让调用方
+     * 先返回，工具线程会把 `writeText` / `delete` 做完。所以超时结果的
+     * `indeterminate=true` 不是保守修辞，而是**唯一正确的描述**：副作用可能已经落地。
+     * 真要能中断，得让工具体自己在 IO 之间查 `ensureActive()`，那是工具实现的事。
+     */
     private suspend fun invoke(ctx: TurnContext, call: ToolCall, tool: Tool): ToolResult {
         val timeout = tool.spec.timeoutMillisOverride ?: ctx.policy.toolTimeoutMillis
         val startedAt = System.currentTimeMillis()
         val result = withTimeoutOrNull(timeout) {
-            try {
-                tool.invoke(call.argumentsJson)
-            } catch (c: CancellationException) {
-                // 前置原样抛：吞掉它会让 Job 从 cancelled 变 completed（AGENTS.md §五.4）。
-                throw c
-            } catch (t: Throwable) {
-                AgentLogStore.error("tool " + call.name + " threw: " + (t.message ?: t::class.simpleName))
-                failure(call, "tool failed: " + (t.message ?: t::class.simpleName ?: "unknown"))
+            withContext(ioDispatcher) {
+                try {
+                    tool.invoke(call.argumentsJson)
+                } catch (c: CancellationException) {
+                    // 前置原样抛：吞掉它会让 Job 从 cancelled 变 completed（AGENTS.md §五.4）。
+                    throw c
+                } catch (t: Throwable) {
+                    AgentLogStore.error("tool " + call.name + " threw: " + (t.message ?: t::class.simpleName))
+                    failure(call, "tool failed: " + (t.message ?: t::class.simpleName ?: "unknown"))
+                }
             }
         }
         val elapsed = System.currentTimeMillis() - startedAt

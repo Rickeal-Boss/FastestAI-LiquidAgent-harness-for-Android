@@ -2,8 +2,10 @@ package com.rickeal.liquidharness.core.agent.tool.tools
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.agent.tool.EffectAwareTool
 import com.rickeal.liquidharness.core.agent.tool.ParamGatedTool
+import com.rickeal.liquidharness.core.agent.tool.PolicyGatedTool
 import com.rickeal.liquidharness.core.agent.tool.ToolContext
 import com.rickeal.liquidharness.core.model.ToolEffect
 import com.rickeal.liquidharness.core.model.ToolParameter
@@ -12,7 +14,7 @@ import com.rickeal.liquidharness.core.model.ToolResult
 import com.rickeal.liquidharness.core.model.ToolSpec
 
 /**
- * `clipboard`：读 / 写系统剪贴板。**同时实现 [ParamGatedTool] 与 [EffectAwareTool]。**
+ * `clipboard`：读 / 写系统剪贴板。**同时实现 [ParamGatedTool]、[EffectAwareTool] 与 [PolicyGatedTool]。**
  *
  * ## 为什么必须按参数判定（W2 判据 #4）
  *
@@ -26,13 +28,22 @@ import com.rickeal.liquidharness.core.model.ToolSpec
  * | `set` | 是 | WRITE |
  * | 解析失败 / 未知 action | **是**（fail-closed） | **WRITE**（fail-closed） |
  *
- * 两个方法都是纯函数（无状态、无 IO），符合接口契约。
+ * ## `get` 不弹卡 ≠ 永远放行（[PolicyGatedTool]）
+ *
+ * `get` 读到的内容会进模型上下文，等于一条用户看不见的外带通道（提示注入最爱用它）。
+ * 所以除了参数级闸门（决定「弹不弹卡」），还要一道策略闸门（决定「跑不跑」）：
+ * `AgentPolicy.allowClipboardRead = false` ⇒ `blockedBy` 返回原因码，
+ * 执行器在**工具体被调用之前**就产出失败结果 —— 用户点不点同意都改变不了这个结论。
+ *
+ * 三个判定方法都是纯函数（无状态、无 IO），符合接口契约。
  *
  * 主构造器只收 `ClipboardManager?`：`invoke` 不需要 `Context`（`ClipData.Item.text` 足够
- * 处理纯文本），JVM 单测因此可以直接构造本类并断言两个判定方法（传 `null` 即「剪贴板
+ * 处理纯文本），JVM 单测因此可以直接构造本类并断言判定方法（传 `null` 即「剪贴板
  * 不可用」分支）。
  */
-class ClipboardTool internal constructor(private val clipboard: ClipboardManager?) : ParamGatedTool, EffectAwareTool {
+class ClipboardTool internal constructor(
+    private val clipboard: ClipboardManager?,
+) : ParamGatedTool, EffectAwareTool, PolicyGatedTool {
 
     constructor(context: ToolContext) : this(context.clipboard)
 
@@ -57,6 +68,14 @@ class ClipboardTool internal constructor(private val clipboard: ClipboardManager
 
     override fun effectFor(argumentsJson: String): ToolEffect =
         if (actionOf(argumentsJson) == Action.GET) ToolEffect.READ else ToolEffect.WRITE
+
+    /**
+     * 策略闸门：只有「读」受 `allowClipboardRead` 约束；写侧本来就要审批，不再叠一层。
+     * 未知 action 不在这里拦（交给参数校验与 `invoke` 的 fail-closed 分支），
+     * 否则「策略关读」会被误报成所有剪贴板调用的原因。
+     */
+    override fun blockedBy(policy: AgentPolicy, argumentsJson: String): String? =
+        if (!policy.allowClipboardRead && actionOf(argumentsJson) == Action.GET) READ_DISABLED else null
 
     override suspend fun invoke(argumentsJson: String): ToolResult {
         val action = actionOf(argumentsJson)
@@ -102,5 +121,8 @@ class ClipboardTool internal constructor(private val clipboard: ClipboardManager
     private companion object {
         /** 剪贴板条目的来源标签（Android 会把它展示给用户，保持与包名同源的短标识）。 */
         const val CLIP_LABEL = "LiquidHarness"
+
+        /** ASCII 原因码（守卫 G16）：用户文案由 UI 按 reason 映射。 */
+        const val READ_DISABLED = "clipboard read disabled by policy"
     }
 }

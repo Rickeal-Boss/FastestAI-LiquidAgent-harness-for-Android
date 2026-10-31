@@ -1,5 +1,6 @@
 package com.rickeal.liquidharness.core.agent
 
+import com.rickeal.liquidharness.core.agent.approval.ToolApprovalCache
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
 import com.rickeal.liquidharness.core.agent.engine.LlmEngine
 import com.rickeal.liquidharness.core.agent.loop.RunState
@@ -91,13 +92,21 @@ class AgentRunner(
      * [approval] 按 run 传入（不进构造参数，理由见 `ToolApprovalHandler` 的 KDoc）；
      * `null` ⇒ 需要审批的工具一律拒绝（fail-closed）。
      *
+     * [approvalCache] 是「本会话不再询问」的授权存储。`null` ⇒ 本 run 内新建一个（范围 = 这次
+     * run，单测 / 无宿主场景的默认）；宿主传**会话级**实例 ⇒ 跨 run 生效，与 UI 文案一致。
+     * 生命周期归调用方，**不得**挂进程级单例（会把上一个会话的授权带进下一个）。
+     *
      * `.buffer(BUFFERED)`：收集方退后台时 `send` 会挂起，突发事件（工具批）会被卡住。
      * 缓冲吸收突发，配合 `ToolApprovalFlow` 的投递超时一起兜「审批卡发不出去」。
      *
      * 终态事件由 [TurnLoop] 内部经 [RunTermination] 发出；本类只在**异常与取消路径**补发，
      * 因此正常路径不会出现两条 `Finished`。
      */
-    fun run(request: AgentRequest, approval: ToolApprovalHandler? = null): Flow<AgentEvent> = channelFlow {
+    fun run(
+        request: AgentRequest,
+        approval: ToolApprovalHandler? = null,
+        approvalCache: ToolApprovalCache? = null,
+    ): Flow<AgentEvent> = channelFlow {
         if (!runMutex.tryLock()) {
             // fail-closed：并发请求明确拒绝，不排队（见类头 KDoc）。
             send(AgentEvent.Failed(message = BUSY_MESSAGE, terminatedBy = TerminationReason.GateRejected))
@@ -113,6 +122,7 @@ class AgentRunner(
             state = state,
             approval = approval,
             emit = { event -> send(event) },
+            approvalCache = approvalCache,
         )
         busyState.value = true
 

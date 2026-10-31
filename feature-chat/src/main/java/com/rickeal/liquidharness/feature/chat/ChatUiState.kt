@@ -72,6 +72,12 @@ data class StreamingState(
  * **刻意不放在这里**，而是留在 [ChatViewModel] 的私有字段 —— 状态对象会被复制、
  * 进 Compose 快照、被日志打印，把一个挂起句柄塞进来既泄漏又没有任何展示价值。
  *
+ * ## 唯一写者 = [ChatViewModel] 的审批 handler（外审 §四.1）
+ *
+ * `EventReducer` **不再**根据 `AgentEvent.ApprovalRequested` 写这个字段：写卡与存句柄
+ * 必须发生在同一处，否则会出现「卡在、句柄不在」（点不掉的卡）或反过来的分家状态。
+ * 归约器只处理轨迹类事件（`ToolCallStarted` / `ToolResultReceived` / `ToolSkipped`）。
+ *
  * 历史：W2U 时本 KDoc 写的是「本仓内核尚无审批回传通道，放一个永远没人 complete
  * 的句柄比不显示这张卡更误导」。**W2 已把通道接通**（`AgentRunner.run(request, approval)`
  * → `TurnContext.approval` → `ToolApprovalFlow`），那条判断的前提不再成立，
@@ -102,7 +108,7 @@ data class ChatUiState(
     val streaming: StreamingState = StreamingState(),
     /** 本次 run 的工具轨迹；终态时整体搬进气泡的 [ChatBubble.traces]。 */
     val toolTraces: List<ToolTrace> = emptyList(),
-    /** 非空 = 渲染一张等待授权的提示卡。 */
+    /** 非空 = 渲染一张等待授权的提示卡。唯一写者是 `ChatViewModel` 的审批 handler（见 [PendingApproval]）。 */
     val pendingApproval: PendingApproval? = null,
     /** 输入框草稿。 */
     val input: String = "",

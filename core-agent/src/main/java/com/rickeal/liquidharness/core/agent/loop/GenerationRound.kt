@@ -113,8 +113,12 @@ class GenerationRound(
             idempotencyKey = ctx.request.endpoint.id + "#" + ctx.state.runId + "#" + ctx.state.round,
         )
         val promptBefore = ctx.state.promptTokens
+        // 「这次尝试确实建立过连接」的判据：至少收到过一个事件。为 false 时一个字节都没到，
+        // 记账会把「连接都没建起来」算成一次真实请求（那是另一种失真）。
+        var sawAnyEvent = false
         try {
             ctx.engine.generate(request).collect { event ->
+                sawAnyEvent = true
                 ctx.checkActive()
                 when (event) {
                     is GenerationEvent.TextDelta -> {
@@ -141,7 +145,6 @@ class GenerationRound(
                     is GenerationEvent.Failed -> failure = event
                 }
             }
-            recordEstimatedUsage(ctx, messages, promptBefore)
         } catch (c: CancellationException) {
             // 挂起点必须前置：`runCatching` / `catch (t: Throwable)` 吞掉它会让 Job
             // 从 cancelled 变 completed（AGENTS.md §五.4，旧仓真实事故）。
@@ -150,6 +153,10 @@ class GenerationRound(
             val message = "stream failed: " + (t.message ?: t::class.simpleName ?: "unknown")
             AgentLogStore.error(message + " (attempt=" + attempt + ")")
             return Attempt.Fatal(message, t)
+        } finally {
+            // 放在 finally 而不是正常收尾之后：中途 IOException 直接跳 catch，那一轮的
+            // prompt 就永远进不了账本 —— `maxRunPromptTokens` 门控会系统性低估，熔断迟到。
+            if (sawAnyEvent) recordEstimatedUsage(ctx, messages, promptBefore, attempt)
         }
 
         failure?.let { failed ->
@@ -163,19 +170,38 @@ class GenerationRound(
     }
 
     /**
-     * provider 未回报 usage 时的估算兜底。
+     * provider 未回报 usage 时的估算兜底。**在 [attemptOnce] 的 `finally` 里调用**，
+     * 条件是「本次尝试至少收到过一个事件」—— 流正常结束、中途抛 IOException、被取消
+     * 三条路径都会记账（取消时请求已经发出去了，token 已经花了，不记就是漏账）。
      *
      * 只在「本轮**确实发了请求**（`promptTokens` 没有增长）」时记一次：
      * [RunState.recordEstimatedPrompt] 是**累加**，每轮都记会把同一条历史重复计进账本，
      * `maxRunPromptTokens` 门控会提前误触发 —— 那是「钱没花完但 run 被停」的假熔断。
      *
      * 每次尝试（含重试）各记一次是对的：每一次尝试都是一次真实请求。
+     *
+     * **残余不精确（如实记录，别当 bug 修）**：引擎先 emit 了 `Failed` 再抛异常 / 再断流的
+     * 路径，旧代码一次都不记，现在会多记一次。方向是**宁可多记** —— budget 闸是 fail-safe
+     * 设计（多记 ⇒ 提前熔断；少记 ⇒ 账单失控），这个偏差站在安全侧。
+     *
+     * @param attempt **内核**重试序号（[prepareRetry] 那条链，≤ [maxRetries]+1），写进日志只为
+     *   让「内核侧重试链」可 grep。它**不是 HTTP 请求数**：`RemoteLlmEngine` 内部还有一层重试，
+     *   一次内核 attempt 可能打出多次 HTTP（引擎侧每 attempt 一行日志由 `AttemptObserver`
+     *   端口补，见 W3 账 2）。别拿本日志的条数反推请求数。
      */
-    private fun recordEstimatedUsage(ctx: TurnContext, messages: List<ChatMessage>, promptBefore: Int) {
+    private fun recordEstimatedUsage(
+        ctx: TurnContext,
+        messages: List<ChatMessage>,
+        promptBefore: Int,
+        attempt: Int,
+    ) {
         if (ctx.state.promptTokens != promptBefore) return
         val estimated = TokenEstimator.estimateMessages(messages)
         ctx.state.recordEstimatedPrompt(estimated)
-        AgentLogStore.warn("provider reported no usage; estimated prompt tokens: " + estimated)
+        AgentLogStore.warn(
+            "provider reported no usage; estimated prompt tokens: " + estimated +
+                " (attempt=" + attempt + ")"
+        )
     }
 
     /**

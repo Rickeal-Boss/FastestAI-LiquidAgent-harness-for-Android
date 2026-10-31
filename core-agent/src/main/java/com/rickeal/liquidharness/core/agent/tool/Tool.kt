@@ -2,6 +2,7 @@ package com.rickeal.liquidharness.core.agent.tool
 
 import android.content.ClipboardManager
 import android.content.Context
+import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.model.ToolEffect
 import com.rickeal.liquidharness.core.model.ToolResult
 import com.rickeal.liquidharness.core.model.ToolSpec
@@ -25,7 +26,19 @@ data class ToolContext(
     val nowMillis: () -> Long = { System.currentTimeMillis() },
 )
 
-/** 一个可被模型调用的工具。`invoke` 必须是幂等的，且不得自行捕获 `CancellationException`。 */
+/**
+ * 一个可被模型调用的工具。`invoke` 必须是幂等的，且不得自行捕获 `CancellationException`。
+ *
+ * ## 三个可选闸门接口（都在本文件，按判定目的分工，别互相替代）
+ *
+ * | 接口 | 回答的问题 | 纯函数入参 |
+ * |---|---|---|
+ * | [ParamGatedTool] | 这次调用**要不要弹卡**（用户在回路） | `argumentsJson` |
+ * | [EffectAwareTool] | 这次调用**是读还是写**（档位判定） | `argumentsJson` |
+ * | [PolicyGatedTool] | 这次调用**允不允许跑**（不看用户意愿） | `policy` + `argumentsJson` |
+ *
+ * 三个判定方法都是**纯函数**：无状态、零 IO、无副作用，且约定 fail-closed。
+ */
 interface Tool {
     val spec: ToolSpec
     suspend fun invoke(argumentsJson: String): ToolResult
@@ -40,6 +53,27 @@ interface Tool {
  */
 interface ParamGatedTool : Tool {
     fun requiresConfirmationFor(argumentsJson: String): Boolean
+}
+
+/**
+ * 策略级禁止：某些调用**不是「要不要用户批准」的问题，而是「策略根本不允许」**。
+ *
+ * 与 [ParamGatedTool] 的分工：后者决定「弹不弹卡」，本接口决定「跑不跑」。
+ * 典型例子是 `clipboard get` —— 参数级闸门认为它无害（不弹卡），但一旦策略关闭剪贴板
+ * 读取，它就必须失败，否则就是一条用户看不见的提示注入外带通道。
+ *
+ * 实现纪律（与 [ParamGatedTool] 同款）：**纯函数** —— 不得有状态、不得做 IO、不得有副作用。
+ * 调用侧在执行前查一次，非 null 即产出 `ok=false` 的结果（照常计失败连击）。
+ */
+interface PolicyGatedTool : Tool {
+    /**
+     * 返回非 null = 被策略拦下，值为 ASCII 原因码（用户文案由 UI 映射）。纯函数、零 IO。
+     *
+     * 参数里带 `argumentsJson` 是必须的：策略按**动作**而非工具生效
+     * （`clipboard get` 要拦、`clipboard set` 走审批），只看 `policy` 无法区分两者。
+     * 与 [ParamGatedTool.requiresConfirmationFor] / [EffectAwareTool.effectFor] 同款入参。
+     */
+    fun blockedBy(policy: AgentPolicy, argumentsJson: String): String?
 }
 
 /**

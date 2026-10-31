@@ -4,6 +4,7 @@ import com.rickeal.liquidharness.core.agent.AgentRequest
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
 import com.rickeal.liquidharness.core.agent.engine.LlmEngine
 import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
+import com.rickeal.liquidharness.core.agent.tool.PolicyGatedTool
 import com.rickeal.liquidharness.core.agent.tool.Tool
 import com.rickeal.liquidharness.core.agent.tool.ToolRegistry
 import com.rickeal.liquidharness.core.model.AgentEvent
@@ -35,8 +36,29 @@ class FakeTool(
     }
 }
 
-/** 造一个 spec。默认 READ 效果（写档位 2000 字符会干扰截断类断言）。 */
-fun fakeSpec(
+/**
+ * 策略闸门的假工具：`blockedBy` 由测试注入的纯函数决定。
+ *
+ * 为什么要它：`FakeTool` 只实现 `Tool`，断言不到「策略拦下 ⇒ 工具体一次都没被调用」——
+ * 而「没被调用」正是策略闸门的唯一判据（先执行后补一条错误结果能骗过事件断言）。
+ */
+class FakePolicyGatedTool(
+    override val spec: ToolSpec,
+    private val gate: (AgentPolicy) -> String?,
+) : PolicyGatedTool {
+
+    var invocations: Int = 0
+        private set
+
+    override fun blockedBy(policy: AgentPolicy, argumentsJson: String): String? = gate(policy)
+
+    override suspend fun invoke(argumentsJson: String): ToolResult {
+        invocations += 1
+        return ToolResult(name = spec.name, ok = true, output = "ok")
+    }
+}
+
+/** 造一个 spec。默认 READ 效果（写档位 2000 字符会干扰截断类断言）。 */fun fakeSpec(
     name: String = "fake",
     dangerous: Boolean = false,
     requiresConfirmation: Boolean = false,

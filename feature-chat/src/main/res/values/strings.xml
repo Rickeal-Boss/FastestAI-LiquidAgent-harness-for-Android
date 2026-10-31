@@ -27,7 +27,7 @@
     <string name="chat_error_no_endpoint">还没有配置端点。请先在设置里添加一个。</string>
     <string name="chat_error_generic">本次请求失败：%1$s</string>
     <string name="chat_approval_title">工具「%1$s」请求授权</string>
-    <string name="chat_approval_hint">允许后该工具会立即执行；「本会话允许相同调用」会记住同工具同参数，之后不再询问。</string>
+    <string name="chat_approval_hint">允许后该工具会立即执行；「本会话允许相同调用」会记住同工具同参数，之后不再询问 —— 直到你开启新对话。</string>
     <string name="chat_approval_allow_once">允许一次</string>
     <string name="chat_approval_allow_session">本会话允许相同调用</string>
     <string name="chat_approval_deny">拒绝</string>

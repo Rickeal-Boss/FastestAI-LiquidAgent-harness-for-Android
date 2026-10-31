@@ -131,7 +131,15 @@ class SettingsViewModel(
         _state.update { it.copy(probeResult = null, probeTarget = null) }
     }
 
-    fun secretFor(id: String): Boolean = container.secrets.has(id)
+    /**
+     * 「这个端点存过密钥吗」—— 只判**文件存在**，不解密。
+     *
+     * 列表页/输入框占位只需要这个弱判据；解密要过 Keystore，冷启动可能几百毫秒
+     * （R11），不该出现在渲染路径上。真正的「能不能用」判据是
+     * `EndpointSecretStore.hasUsable`，由 `AppContainer.saveEndpoint` 在 IO 线程行使，
+     * 结果落进 `RemoteEndpoint.hasSecret`。
+     */
+    fun secretFor(id: String): Boolean = container.secrets.hasFile(id)
 
     private suspend fun load() {
         val list = container.endpoints.list()

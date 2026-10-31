@@ -91,6 +91,9 @@ START_EPOCH="$(date +%s)"
 #   G1 G1b G2 G3 G4a G4b G5a G5b G6 G7 G8 G9 G10 G11 G12 G13 G14 G15a G15b G15c G16 G17 G18
 #   （G1/G4/G5/G15 各拆了 a/b/c 子判据 —— 子判据是独立的断言，必须各自自证，
 #     否则拆出来的那一半会变成没人看的分支。故「G 编号」数 ≠ 判据数。）
+#   ⚠️ G15c 有**两条 case**（同一 ID，两种变异形态）：① 把 allowBackup 改成 true；
+#      ② 删掉 dataExtractionRules 属性（W2 外审 §四.1 加的「排除面」那一半）。
+#      判据编号仍是 23 个，case 数 24 —— 判据数与 case 数本来就不同源。
 # =============================================================================
 CASES=(
   "G1|网络栈收口：core-model 里 import okhttp3（只许在 core-net）|m_g1|__SelftestG1.kt:3:import okhttp3.OkHttpClient"
@@ -113,6 +116,7 @@ CASES=(
   "G15a|INTERNET 权限：从 manifest 删掉该权限|m_g15a|缺少必需声明：android\\.permission\\.INTERNET"
   "G15b|禁明文流量：从 manifest 删掉 usesCleartextTraffic=false|m_g15b|缺少必需声明：android:usesCleartextTraffic=\"false\""
   "G15c|禁备份：把 manifest 的 allowBackup=false 改成 true|m_g15c|缺少必需声明：android:allowBackup=\"false\"  （文件：app/src/main/AndroidManifest.xml）"
+  "G15c|禁备份排除面：从 manifest 删掉 dataExtractionRules 属性|m_g15c_rules|缺少必需声明：android:dataExtractionRules=\"@xml/data_extraction_rules\""
   "G16|中文硬编码棘轮：core-model 里写死一句中文文案|m_g16|__SelftestG16.kt:3:val selftestCjk = \"自证中文字面量\""
   "G17|禁密钥字段：@Serializable 类里加 val apiKey|m_g17|__SelftestG17.kt:7  @Serializable 类内出现密钥字段: apiKey"
   "G18|引擎调用点收口：core-model 里调 engine.generate(|m_g18|__SelftestG18.kt:3:fun selftestDrive(engine: Any) { engine.generate(1) }"
@@ -402,6 +406,16 @@ m_g15c() {
   # 变异必须真的生效（三条判据的第 ① 条），否则红/绿都无从归因
   grep -q 'android:allowBackup="true"' "$abs" 2>/dev/null || return 1
   return 0
+}
+
+# G15c 的第二形态（W2 外审 §四.1）：**删掉 dataExtractionRules 属性**。
+# 与 m_g15c 分开的理由：两种变异改的是不同判据段（开关 vs 排除面接线），
+# 用同一个函数做不了「只删属性、保留 allowBackup=false」的隔离。
+# 删行而不是改值：该属性的正确形态只有一种（指向本仓的规则文件），
+# 改值（指向别的 xml）与删除对守卫是同一后果 —— 都算「声明落空」，
+# 而删行是更常见的真实形态（有人重写 <application> 时漏掉）。
+m_g15c_rules() {
+  drop_line "$1" "$APP_MANIFEST" 'android:dataExtractionRules="@xml/data_extraction_rules"'
 }
 
 m_g16() {

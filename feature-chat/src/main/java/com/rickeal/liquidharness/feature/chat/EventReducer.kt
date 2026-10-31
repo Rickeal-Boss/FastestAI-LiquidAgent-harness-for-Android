@@ -6,6 +6,7 @@ import com.rickeal.liquidharness.core.model.TerminationReason
 import com.rickeal.liquidharness.core.model.ToolCall
 import com.rickeal.liquidharness.core.model.ToolResult
 import com.rickeal.liquidharness.core.model.newId
+import java.util.Locale
 
 /**
  * `AgentEvent` → [ChatUiState] 的**纯函数**归约。
@@ -22,7 +23,11 @@ import com.rickeal.liquidharness.core.model.newId
  *    `isStreaming` 置 false（否则 UI 会永远显示「正在输入」）。
  * 3. `ToolResultReceived` / `ToolSkipped` **只更新不新建**轨迹（`AGENTS.md` §五.3）：
  *    找不到对应 `ToolCallStarted` 时**原样返回**，绝不补一条没有参数的轨迹。
- * 4. `ApprovalRequested` **无去重**（同上）：每次到达都覆盖 [ChatUiState.pendingApproval]。
+ * 4. `ApprovalRequested` **归约器不碰** [ChatUiState.pendingApproval]（原样返回 state）：
+ *    唯一写者是 `ChatViewModel` 的审批 handler。理由见下方 `ApprovalRequested` 分支的注释 ——
+ *    两个写者等于两个真值源，而真正决定「这张卡能不能被点掉」的是 handler 手里那个
+ *    `CompletableDeferred`，它归约器看不见。**内核仍然必须发这个事件**（它是「该弹卡了」
+ *    的唯一信号，W3 起的审计 / 日志收集方也要消费它），只是 UI 归约器不再据此写状态。
  * 5. `Retrying` 与 `StreamReset` **语义不同**（同上）：前者「同一 round 重发请求」，
  *    后者「主循环丢弃本轮已流出的文本」。UI 侧两者都清缓冲，但分支刻意分开写，
  *    将来 Retrying 要加「重试中」提示时不需要动 StreamReset。
@@ -36,13 +41,14 @@ object EventReducer {
         is AgentEvent.ToolCallStarted -> startTrace(state, event.call)
         is AgentEvent.ToolResultReceived -> finishTrace(state, event.result)
         is AgentEvent.ToolSkipped -> skipTrace(state, event.call, event.reason)
-        is AgentEvent.ApprovalRequested -> state.copy(
-            pendingApproval = PendingApproval(
-                callId = event.call.id,
-                toolName = event.call.name,
-                arguments = event.call.argumentsJson,
-            ),
-        )
+        // 审批卡**不在归约器里写**（外审 §四.1 的「双写者」）：唯一写者是
+        // `ChatViewModel` 的审批 handler —— 它写完 state 还要把同一个 `CompletableDeferred`
+        // 存进字段，两者是配对的。归约器在这里再写一遍会形成**隐式顺序依赖**：
+        // `onEvent` 先跑 handler（写卡 + 存句柄）再跑 reduce，谁最后写谁赢；
+        // 将来 handler 的 PendingApproval 多一个字段（风险档位 / spec），归约器这份
+        // 不带该字段的副本就会把它抹掉，而两边内容「看起来一样」，极难定位。
+        // 单写者纪律：卡片只能有一个产地。事件本身保留（内核照发，见类头不变量 #4）。
+        is AgentEvent.ApprovalRequested -> state
         is AgentEvent.UsageUpdated -> state.copy(
             contextTokens = event.prompt,
             usageLabel = buildUsageLabel(event.prompt, event.completion, event.cachedPrompt),
@@ -225,9 +231,33 @@ object EventReducer {
     }
 
     /** `1.2k in / 340 out (200 cached)`。纯 ASCII：中文文案一律走 `strings.xml`。 */
+    /**
+     * 上下文用量标签。
+     *
+     * ## 为什么 `cached` 恒显示（含 0）
+     *
+     * 旧实现只在 `cached > 0` 时追加 "(N cached)" ⇒ 「缓存没命中」与「provider 没报这个字段」
+     * 在界面上**完全同形**，而这两件事的处置相反（前者查前缀，后者查端点）。所以：
+     * - `prompt > 0` ⇒ 恒输出 `(N cached, R%)`，0 也输出 `(0 cached, 0.0%)`；
+     * - `prompt <= 0` ⇒ 只输出 `(N cached)`（分母未知时算不出比率，不编一个 0.0%）。
+     *
+     * ⚠️ 能力边界：本标签只回答「**这次请求有没有命中**」，不回答「为什么没命中」。
+     * 缓存命中的最小前缀长度是**端点侧性质**（GLM-4.7 实测 ≈4096 token），短前缀下
+     * `0.0%` 是**正确值**，不是缺陷。诊断时要先看上下文总量再看命中率。
+     *
+     * ⚠️ **不许**用本标签区分「命中 0」与「provider 未报告该字段」：
+     * `OpenAiCompatibleAdapter` 在解析层就把缺失的 `cached_tokens` 压成了 `0`（`:136`），
+     * 类型一路是 `Int`。要能区分必须把契约改成 `Int?` / `cachedReported`，属 W6；
+     * 在那之前，任何「0 cached 就是没命中」的断言都不成立。
+     */
     private fun buildUsageLabel(prompt: Int, completion: Int, cached: Int): String {
         if (prompt <= 0 && completion <= 0) return ""
-        val cachePart = if (cached > 0) " (" + cached + " cached)" else ""
+        val cachePart = if (prompt > 0) {
+            val rate = cached * 100.0 / prompt
+            " (" + cached + " cached, " + String.format(Locale.US, "%.1f", rate) + "%)"
+        } else {
+            " (" + cached + " cached)"
+        }
         return compact(prompt) + " in / " + compact(completion) + " out" + cachePart
     }
 

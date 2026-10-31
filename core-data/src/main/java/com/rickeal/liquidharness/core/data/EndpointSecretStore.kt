@@ -53,8 +53,42 @@ class EndpointSecretStore(
         }
     }
 
-    fun has(endpointId: String): Boolean = synchronized(lock) {
+    /**
+     * **文件在不在**。UI 用（列表页的「已保存密钥」标记），**不解密**。
+     *
+     * 为什么不直接给 UI 用 [hasUsable]：解密要过 AndroidKeyStore，冷启动首次取密钥
+     * 可能几百毫秒（`04-risk-register.md` R11 的触发信号之一），放在列表渲染路径上
+     * 会把首屏拖慢。UI 只需要「有没有东西」这个弱判据。
+     *
+     * ⚠️ 换机 / 恢复备份后它会是 `true` 而密文根本解不开（Keystore 密钥不随迁）。
+     * 所以**不要**拿它回答「能不能用」—— 那个问题归 [hasUsable]。
+     */
+    fun hasFile(endpointId: String): Boolean = synchronized(lock) {
         ID_PATTERN.matches(endpointId) && fileFor(endpointId).exists()
+    }
+
+    /**
+     * **真的能用**：文件存在**且**能用当前 Keystore 解开。
+     *
+     * 这是「已配置密钥」的诚实判据。旧实现只有一个 `has()`（只判文件存在），换机后
+     * 返回 `true` 但发请求必然 401 —— 用户看到「显示已配置」却每次失败，排查方向完全错
+     * （`04-risk-register.md` R11 的第 2 条缓解动作）。
+     *
+     * 🔴 **调用方必须在 IO 线程**：本函数会走一次 Keystore 解密（文件几百字节，
+     * 但首次取密钥有系统调用开销）。`AppContainer.saveEndpoint` 已包
+     * `withContext(Dispatchers.IO)`。
+     */
+    fun hasUsable(endpointId: String): Boolean = synchronized(lock) {
+        if (!ID_PATTERN.matches(endpointId)) return@synchronized false
+        val file = fileFor(endpointId)
+        if (!file.exists()) return@synchronized false
+        try {
+            cipher.decrypt(file.readBytes())
+            true
+        } catch (t: Throwable) {
+            // 与 read() 同一口径：解不开 = 没有密钥（预期路径，不是异常）。
+            false
+        }
     }
 
     fun remove(endpointId: String): Boolean = synchronized(lock) {

@@ -708,13 +708,91 @@ g14() {
 # 密文在**同机型**上仍可被同一 Keystore 解开，等于把凭据连同它要访问的地址一起
 # 打包给云端/换机通道。这不是推演：旧仓 gallery#1325 的真实事故就是备份恢复了
 # 一份本不该离开设备的配置。默认值 true ⇒ 必须显式钉成 false，且必须由守卫看着。
+#
+# ---- W2 外审 §四.1：G15c 扩成「开关 + 排除面」两段（仍是同一个判据编号） ----
+# 只钉 `allowBackup="false"` 是**单点**判据：它是 manifest 里的一个布尔值，
+# 一次「顺手打开」就整条失效，而守卫看不出任何中间状态。所以同一个 ID 再钉三件事：
+#   ② manifest 必须声明 `android:dataExtractionRules`（把排除面接上系统）；
+#   ③ 被引用的规则文件必须存在（属性写了但文件被删 = 声明落空，系统静默全量备份）；
+#   ④ 规则文件必须同时含 `harness/secrets` 与 `device-transfer` 两个关键词
+#      （前者 = 密钥密文确实被排除；后者 = D2D 段确实写了，只写 cloud-backup 时
+#       换机流程仍然会把密文带走）。
+# 四条**合并成一次 OK / 一次 VIOLATION**：判据数保持 23 条（CI 与文档都按这个数对齐），
+# 且不因为「一处文件缺失连带报三条」把 OK/VIOLATION 计数打乱。
+# 语义边界（如实申报）：排除 ≠ 加密。文件仍在应用私有目录，root/调试版可读；
+# 这里只回答「系统级备份与换机迁移要不要把它们带走」。
+DATA_EXTRACTION_RULES="app/src/main/res/xml/data_extraction_rules.xml"
+
+# G15c 的 present 型探针：stdout 回证据行 / 问题行，rc 0 = 命中 / 1 = 未命中 / 2 = grep 故障。
+# 不用 `grep -q`：它无输出，失败会被当成「无命中 = OK」而变成僵尸规则（纪律 3）。
+# 也不用临时文件：本机 Git Bash 的 `mktemp` 返回 `C:\...\Temp/tmp.x`（内嵌盘符），
+# 安全钩子会拦 `rm`（[SAFE_DELETE_INVALID_PATH]）⇒ 每次守卫漏一个临时文件。
+# 命令替换不经过管道，rc 直接来自 grep，纪律 2 的「管道洗白 rc」在这里不适用。
+g15c_decl() { # $1=正则 $2=文件
+  local out rc
+  out="$(grep -nE "$1" "$2" 2>&1)"
+  rc=$?
+  case "$rc" in
+    0) printf '%s\n' "$out" | head -n 1; return 0 ;;
+    1) printf '缺少必需声明：%s  （文件：%s）\n' "$1" "$2"; return 1 ;;
+    *) return 2 ;;
+  esac
+}
+
+g15c() {
+  local id="G15c" desc="禁备份"
+  if [ ! -f "$APP_MANIFEST" ]; then
+    guard_fault "$id" "$desc" "目标文件不存在：$APP_MANIFEST"
+    return
+  fi
+
+  local hits=() probs=() out rc fault=0 kw cnt
+
+  # ① 开关：显式 false（系统默认 true）
+  out="$(g15c_decl 'android:allowBackup="false"' "$APP_MANIFEST")"; rc=$?
+  if [ "$rc" -eq 0 ]; then hits+=("$out"); elif [ "$rc" -eq 1 ]; then probs+=("$out"); else fault=1; fi
+
+  # ② 接线：manifest 必须把排除面挂上
+  out="$(g15c_decl 'android:dataExtractionRules="@xml/data_extraction_rules"' "$APP_MANIFEST")"
+  rc=$?
+  if [ "$rc" -eq 0 ]; then hits+=("$out"); elif [ "$rc" -eq 1 ]; then probs+=("$out"); else fault=1; fi
+
+  # ③ 规则文件必须存在（属性写了但文件没了 = 声明落空）
+  if [ -f "$DATA_EXTRACTION_RULES" ]; then
+    hits+=("存在：$DATA_EXTRACTION_RULES")
+  else
+    probs+=("缺少必需文件：$DATA_EXTRACTION_RULES")
+  fi
+
+  # ④ 关键词：密钥密文被排除 + D2D 段真的写了
+  if [ -f "$DATA_EXTRACTION_RULES" ]; then
+    for kw in 'harness/secrets' 'device-transfer'; do
+      cnt="$(grep -cF -- "$kw" "$DATA_EXTRACTION_RULES" 2>/dev/null | tr -d ' ')"
+      [ -n "$cnt" ] || cnt=0
+      if [ "$cnt" -gt 0 ]; then
+        hits+=("$DATA_EXTRACTION_RULES 含关键词 $kw（$cnt 处）")
+      else
+        probs+=("缺少关键词：$kw  （文件：$DATA_EXTRACTION_RULES）")
+      fi
+    done
+  fi
+
+  if [ "$fault" -eq 1 ]; then
+    guard_fault "$id" "$desc" "grep 退出码 ≥2（$APP_MANIFEST 不可读 / 正则写坏）—— 守卫会永远绿，故判红"
+  elif [ "${#probs[@]}" -gt 0 ]; then
+    guard_violation "$id" "$desc" "$(printf '%s\n' "${probs[@]}")" \
+      "⇒ 四条一起判：allowBackup=false 是开关，dataExtractionRules + 规则文件 + 两个关键词是开关被打开时的第二道闸（理由见 $DATA_EXTRACTION_RULES）"
+  else
+    guard_ok "$id" "$desc" "$(printf '%s' "${hits[0]}" | cut -c1-60)"
+  fi
+}
+
 g15() {
   guard_present "G15a" "INTERNET 权限" \
     'android\.permission\.INTERNET' "$APP_MANIFEST"
   guard_present "G15b" "禁明文流量" \
     'android:usesCleartextTraffic="false"' "$APP_MANIFEST"
-  guard_present "G15c" "禁备份" \
-    'android:allowBackup="false"' "$APP_MANIFEST"
+  g15c
 }
 
 # =============================================================================

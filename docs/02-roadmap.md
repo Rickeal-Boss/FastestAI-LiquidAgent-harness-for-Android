@@ -353,7 +353,7 @@ Lint / Secret scan / **Arch guard（22 守卫 0 违规 + selftest 22/22 PASS）*
 | 10 | ✅ **真机** | OPPO PDRM00：`file_write` ⇒ 弹审批卡（三按钮）⇒ 允许一次 ⇒ `files/harness/workspace/notes.txt` 内容 = `hello harness` ⇒ 结果回灌（第二轮 msgs=6）⇒ 出最终答复 |
 | 11 | ✅ | `@Test` **349**（≥130），`build.yml` 的 `EXPECTED_TESTS` 已同步 349 |
 | 12 | ✅ | 23 条守卫（W2U 22 + G15c） |
-| 1 / 2 | ⚠️ **未跑** | 题面已固化在 `scripts/fixtures/w2-tool-prompts.json`（20 条 + 机械成功判定 + 归因分类），**但需要真实模型算力**，当前环境无 API Key ⇒ 不得记为通过 |
+| 1 / 2 | ❌ / ✅ | 已在 **§二bis（W2.5）** 实跑：判据 1 = **17/20 未达标**；判据 2 = 0 条 8 轮不收敛（最长 4 轮）。题面与判分脚本见 §二bis |
 
 **本波顺带修掉的两条真机缺陷（CI 抓不到，只有真机看得出）**：
 
@@ -368,9 +368,125 @@ Lint / Secret scan / **Arch guard（22 守卫 0 违规 + selftest 22/22 PASS）*
 不进按 endpointId 缓存的长生命周期 `AgentRunner`、不进 `@Serializable` 的 `AgentRequest`，
 转发进 `TurnContext` 第 6 个字段。
 
-> 一处**已登记的口径缺口**：`ToolApprovalFlow` 的 `ToolApprovalCache` 实例随 run 创建
-> ⇒ 「本会话允许相同调用」的作用域实际是**一次 run**，不是一次会话。会话级装配需要
-> `AppContainer` 持有 cache 并注入，排在 W2-2。
+> 一处**已在 W2.5 修掉的口径缺口**：`ToolApprovalFlow` 的 `ToolApprovalCache` 曾随 run 创建
+> ⇒ 「本会话允许相同调用」的作用域实际是**一次 run**。W2.5 改为 `ChatViewModel` 持有会话级
+> cache、经 `run(..., approvalCache)` 注入、`newConversation()` 清空（见 §二bis）。
+
+
+---
+
+## 二bis、W2.5 — S2 止损实跑 + 外审 T 系列收口（2026-10-30/31）
+
+> **定位**：W2 的**判据补跑波**，不是新能力波。W2 代码面已完成，但判据 1/2 因无 API Key 悬置；
+> 外审第三轮又抓到 7 条 T 系列运行时问题。本波两件事：把判据跑掉 + 关掉 T 系列。
+>
+> **结论先行：判据 1 未达标（17/20），判据 2 达标（最长 4 轮）。按 §二 的红线，W3 不启动，
+> 转 W2.6 归因波。**
+
+### 跑分方法（可复算）
+
+| 项 | 值 |
+|---|---|
+| 模型 | GLM-4.7（BigModel / 智谱），`maxOutputTokens=8192`，thinking 默认开（未关） |
+| 链路 | App(OPPO PDRM00 / Android 13) → `adb reverse 8765` → 宿主 Python 转发桥 → `open.bigmodel.cn/api/paas/v4/chat/completions` |
+| 取证 | 桥日志 JSONL：每请求一行，含**完整 request** + 解析后的 response（tool_calls / finish_reason / usage） |
+| APK | `sha256=1de01ef2cbed85e1fe4e38a8ba75456f…`，HEAD `37465b4`（跑分时工作树干净） |
+| 协议 | **每题先点「新对话」**；审批卡由驱动点「允许一次」（扮演在场的用户） |
+| 判分 | `score_w2_stoploss.py`：以桥日志为唯一真值源，按 fixture 的 `expect.tool/args/final_contains/max_rounds` 机械判定 |
+
+**为什么每题新对话**：首轮 attempt 里输入框残留把 T08+T09 拼成一条题面（已作废归档
+`glm_bridge_attempt1.jsonl`）。换新对话后题面逐字可自证（桥日志 `last_user` 与 fixture 比对）。
+代价：跨 run 缓存不可观测、压缩链路未行使 —— 这两条本轮记 `vacuous`。
+
+### 结果
+
+| 判据 | 阈值 | 实测 | 结论 |
+|---|---|---|---|
+| 1 单工具调用成功率 | ≥ 18/20 | **17/20** | ❌ **未达标** |
+| 2 8 轮不收敛 | 0 条 | 0 条（最长 4 轮） | ✅ |
+
+失败三题（证据在桥日志，逐条可复算）：
+
+| 题 | 期望 | 实际 | 归因 |
+|---|---|---|---|
+| W2-T10 | 调 `file_read`（路径逃逸被沙箱拒） | **未调工具**，直接以「path traversal」拒绝 | `not_called` |
+| W2-T11 | 调 `file_read`（绝对路径被拒） | `file_read` 被拒 → `file_list({})` → `file_list(相对路径)` → 答复，共 **4 轮**（上限 3） | `tool_name` + `not_converged` |
+| W2-T20 | 不调任何工具，说明没有删除能力 | 调 `file_list({})` 后说明「没有删除工具」 | `not_called` |
+
+**归因结论**：三条全部是**模型的工具选择 / 拒答策略**，**没有一条是 harness 执行错误** ——
+所有 tool result 都正确（沙箱拒绝、文件读写、剪贴板内容都符合预期），事件序列与配对完整。
+
+### 夹具缺陷（本轮跑出来的，必须修）
+
+1. `scoring.pass` 写「≤2 轮内合法 tool_calls」，而 per-prompt `max_rounds` 最高 6（T15/T17/T19）—— 两处口径互斥。
+2. T10/T20 的 `$note` 判据（「没拿到内容且没编造」/「不许假装删了」）与机器字段 `expect.tool` 互斥：
+   按 note 判 T10/T20 可算通过（19/20），按字段判 17/20。**本轮按字段判（更保守），不按 note 解释结果。**
+3. 判据 2 的「0 条触发 `MaxRounds`」（`policy.maxRounds=12`）与「0 条 8 轮不收敛」是两个阈值。
+
+⇒ **W2.6 第一件事**：给 fixture 加 `expect.mode`（`tool_required` / `no_tool` / `refusal_ok`），
+把「期望路径」与「通过判据」分开；**改完必须原样重跑 20 题**，不许拿本轮数据按新口径重新解释。
+
+### 本波代码交付（T 系列 + 外审 §四）
+
+| 项 | 落点 | 判据 / 证据 |
+|---|---|---|
+| T-1 工具阻塞 IO 离开 Main | `ToolCallExecutor.invoke` 包 `withContext(ioDispatcher)` | 单测注入单线程 dispatcher；**`commit` / `ContextBudget.prepare` 仍在 Main**（如实登记） |
+| T-2 clipboard 读策略 | `AgentPolicy.allowClipboardRead` + `PolicyGatedTool` | 3 单测（get 拦 / set 不拦 / 执行器一次都没调用）；**设置页开关排 W7** |
+| T-3 审批卡单写者 | `EventReducer` 对 `ApprovalRequested` 只返回 state | 2 单测；删除「覆盖写」旧用例并在类头登记理由 |
+| T-4 会话级审批缓存 | `ChatViewModel` 持有 cache；`run(..., approvalCache)`；`newConversation()` 清 | 单测跨 run 命中 / 换 cache 再弹；真机三步见下 |
+| T-5 估算兜底进 finally | `GenerationRound` 的 `sawAnyEvent` 守卫 | 单测「吐半截后 IOException 仍记账」；日志带 `attempt=`（**kernel 序号，不是 HTTP 请求数**） |
+| T-6 工具初始化离开 Main | `AppContainer.agentRunnerFor` 改 `suspend` + `withContext(IO)` | 编译 + 真机冷启 |
+| D2D 迁移 | `data_extraction_rules.xml` + manifest + G15c 扩成四条 | selftest 新变异用例 PASS（24/24） |
+| `has()` 说谎 | `hasFile` / `hasUsable` 拆分；`saveEndpoint` 用后者 | 2 单测（可解 / 不可解）；失败不回滚密文（保留线索） |
+| M1 缓存可观测 | `usageLabel` 恒显示 `(N cached, R%)` | 2 单测；**只回答有没有命中，不回答为什么**（类型仍是 `Int`） |
+| CI 测试数 | `EXPECTED_TESTS 349 → 361` | `fulltest tests=361 failures=0 errors=0`（11/11 模块） |
+
+### 缓存实测（GLM-4.7，独立前缀实验）
+
+| 形状 | prompt_tokens | 第 2 次 `cached_tokens` |
+|---|---|---|
+| 纯 system 前缀（fresh，间隔 0/10s） | 574 / 586 / 1691 / 1923 / 2292 / 2303 | **0**（6 次全部） |
+| 同上 | 2502 / 2513 | **2432** |
+| 同上 | 4111 / 4122 | **4096** |
+| 同上 | 6426 / 6437 | **6400** |
+| 同上 | 7352 / 7363 | **7296** |
+| **真机 20 题** | 928（会话内第 2 轮起） | **896** |
+
+结论（与初版笔记的「门槛 4096」不同，以本表为准）：
+
+1. **缓存是自动前缀缓存**，无显式创建 API；命中量走 `usage.prompt_tokens_details.cached_tokens`。
+2. **「创建缓存条目」的门槛在 (2303, 2502] 之间**（6 个 < 2.4k 的 fresh 前缀全部 0 命中）。
+3. **「命中」不受该门槛限制**：真机里 928 token 的请求命中了 896 —— 因为它匹配的是一条**更长条目**
+   的前缀（system+tools 段被更早的长请求缓存过）。⇒ 门槛约束「写入」，不约束「读取」。
+4. 粒度 64 token（4096 / 6400 / 7296 全是 64 的整数倍，且 ≈ prompt − 70~120）。
+5. 20 题整体：42 次请求，Σprompt=32,657，Σcached=1,792（**5.5%**），首次命中在 seq=42。
+
+**可执行结论**：现役静态前缀 ~800 token **首轮必然 0 命中**；会话变长后才开始有折扣。
+**禁止为凑缓存加长 system 提示词**（800 全价 vs 4096×0.5 = 2048 当量，反而贵 2.5 倍）。
+缓存是「本来就要发这么长」时的折扣，不是可以买的东西。
+
+### 本轮 vacuous（不许写成通过）
+
+- **I1 跨轮 history 分叉**：每题新对话 ⇒ `history` 恒空 ⇒ 该路径一次未走；
+- **T-4 的 UI 侧**：跑分用「允许一次」+ 每题新对话 ⇒ cache 命中路径未行使（真机验收单独跑，见交接）；
+- **压缩链路**：单题上下文远低于 32K ⇒ 0 次压缩 ⇒ 单测 ✅ / 真机 ⛔ 未行使。
+
+### W3 前置（W3 未启动）
+
+- **W2.6 归因波**：修 fixture 口径 → 原样重跑 20 题 → 按归因决定是否进 W3。
+  若仍 <18/20，按失败类别走：`param` 聚集 ⇒ 工具 schema/描述；`not_called` 聚集 ⇒ `TOOL_GUARDRAILS` /
+  `tool_choice`；`not_converged` 聚集 ⇒ 先补「本轮文本区间 + reasoning 回传」再重跑（否则归因不可信）。
+- W3 若启动，**先做三笔前置**（都不是一行改动）：
+  1. `AgentRunner` 194/200 行，加 journal 参数必超 200 ⇒ 先拆门面；
+  2. **`AttemptObserver` 取证缝**：引擎/传输层零日志，`core-engine ↛ core-agent` 边界使
+     `AgentLogStore` 进不去；先加 `log: (String) -> Unit` 构造参数（engine + adapter 各一），
+     装配点 **2 处**（`AppContainer` 与 `EndpointProbe`），探针 key 改 `probe:` 前缀以便排除计数污染；
+  3. **`AgentLogStore` 实现缺陷**：INFO 入口 `removeFirst()` 会顶掉 WARN/ERROR（与类内 KDoc 相反），
+     attempt 日志上线前必须先修，否则会把 `context compressed` 等关键 INFO 挤掉。
+- **账 2 记 `⛔ vacuous`**：结构上一轮最多 6 次全价请求（`RetryPolicy.maxAttempts=3` × `GenerationRound.maxRetries=1`），
+  且 `maxRunPromptTokens` 只在轮头判；**观测面缺失**，不许写「实测 6 次」。
+- **W7 挂账**：`allowClipboardRead` 的设置页开关（保存后下一次 run 生效，policy 是 run 级快照）。
+
 
 ---
 
@@ -380,7 +496,7 @@ Lint / Secret scan / **Arch guard（22 守卫 0 违规 + selftest 22/22 PASS）*
 
 **目标**：从「能跑」到「跑不死」。
 
-交付物：`journal/AgentRunJournal.kt`（照搬 368 行）、`loop/RoundHeadGate.kt`（墙钟 SOFT 180s / HARD 600s + token 硬上限）、`FreezeClock`（照搬 108 行）、`loop/PostStreamSignals.kt`、`loop/NoToolCallHandler.kt`、`StreamRepetitionDetector`（照搬，砍掉 prompt-echo 半边）、`token/RunTokenLedger.kt`（改造，**首次启用门控**）、`feature-settings/DiagnosticsScreen`。
+交付物：`journal/AgentRunJournal.kt`（照搬 368 行）、`loop/RoundHeadGate.kt`（**已存在并接线**，W3 只做增强：`RoundHeadGate.kt:36-52` 三种闸门已在）、`FreezeClock`（照搬 108 行）、`loop/PostStreamSignals.kt`、`loop/NoToolCallHandler.kt`、`StreamRepetitionDetector`（照搬，砍掉 prompt-echo 半边）、`token/RunTokenLedger.kt`（改造，**首次启用门控**）、`feature-settings/DiagnosticsScreen`。
 
 **验收判据**
 1. 杀进程后重启 ⇒ 弹恢复卡（journal 有 `run_started` 无 `settled`）；点「继续」能接上。
@@ -388,7 +504,7 @@ Lint / Secret scan / **Arch guard（22 守卫 0 违规 + selftest 22/22 PASS）*
 3. 单 run 累计 prompt token 超 `maxRunPromptTokens` ⇒ 熔断，文案含实际用量。
 4. 灭屏 60s 后解锁 ⇒ run 未被误熔断（冻结时钟生效）；日志有冻结时长。
 5. 空输出 3 连 ⇒ 注入提醒后重跑，不直接失败。
-6. `@Test` ≥ 200。
+6. `@Test` **只增不减**，且与 `build.yml` 的 `EXPECTED_TESTS` 双向对账（W2.5 后基线 **361**；写死「≥200」已失去意义）。
 
 **风险**：FreezeClock 在 API 路径**未验证**（旧仓只在本地路径验过）⇒ 判据 4 是本波唯一真机硬门；不通过就把 FreezeClock 降级为「只服务墙钟 SOFT，不服务 HARD」。
 

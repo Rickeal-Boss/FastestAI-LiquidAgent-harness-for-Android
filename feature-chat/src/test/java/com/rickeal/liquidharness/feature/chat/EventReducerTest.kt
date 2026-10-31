@@ -30,7 +30,10 @@ import org.junit.Test
  * 增：
  * - `toolResultWithoutStartedTraceIsIgnored` / `toolSkippedWithoutStartedTraceIsIgnored`：
  *   钉 `AGENTS.md` §五.3「ToolResultReceived / ToolSkipped 只更新不新建」。
- * - `approvalRequestedOverwritesPrevious`：钉同节的「ApprovalRequested 无去重」。
+ * - `approvalRequestedDoesNotWritePendingApproval` / `approvalRequestedOnEmptyStateLeavesNoCard`：
+ *   钉「审批卡单写者」—— 归约器不再写 `pendingApproval`，唯一产地是 ViewModel 的
+ *   handler（外审 §四.1）。**原用例 `approvalRequestedOverwritesPrevious` 已删除**：
+ *   它钉的是「归约器覆盖写」，而那正是本轮要去掉的第二个写者。
  * - `retryingClearsStreamingText` / `streamResetClearsStreamingText`：钉「两条事件
  *   语义不同但都要清缓冲」—— 分开测是为了将来给 Retrying 加「重试中」提示时，
  *   StreamReset 的行为不被顺手改掉。
@@ -215,25 +218,42 @@ class EventReducerTest {
     }
 
     /**
-     * `AGENTS.md` §五.3：`ApprovalRequested` **无去重** —— 同一调用重复发就覆盖成新的，
-     * 不做「已经问过就不问」的合并（那会让第二次的参数变更被吞掉）。
+     * `ApprovalRequested` **不由归约器写** `pendingApproval`（外审 §四.1 的「双写者」）。
+     *
+     * 唯一写者是 `ChatViewModel` 的审批 handler —— 它写 state 的同时要把
+     * `CompletableDeferred` 存进字段，两者必须配对。归约器再写一遍就等于第二个真值源，
+     * 而它拿不到句柄 ⇒ 会出现「卡在、句柄不在」（点了没反应）或反过来的分家状态。
+     *
+     * 断言用「等值」而不是「同一实例」：归约器返回 `state` 本身是当前实现，
+     * 但真正的契约是**语义不变**（将来为了其他原因 copy 一次也不该红）。
+     * 事件本身保留 —— 内核仍必须发它（`ChatViewModel` 的 handler 就是被它触发的）。
      */
     @Test
-    fun approvalRequestedOverwritesPrevious() {
-        var state = EventReducer.reduce(
+    fun approvalRequestedDoesNotWritePendingApproval() {
+        val before = initial.copy(
+            pendingApproval = PendingApproval(
+                callId = "call-0",
+                toolName = "file_read",
+                arguments = "{\"path\":\"before.txt\"}",
+            ),
+        )
+        val next = EventReducer.reduce(
+            before,
+            AgentEvent.ApprovalRequested(call = readCall(), spec = readSpec()),
+        )
+        assertEquals(before, next)
+        assertEquals("call-0", next.pendingApproval?.callId)
+        assertEquals(0, next.toolTraces.size)
+    }
+
+    /** 空 state 上收到 `ApprovalRequested` 同样不该凭空造卡（handler 才是产地）。 */
+    @Test
+    fun approvalRequestedOnEmptyStateLeavesNoCard() {
+        val next = EventReducer.reduce(
             initial,
             AgentEvent.ApprovalRequested(call = readCall(), spec = readSpec()),
         )
-        state = EventReducer.reduce(
-            state,
-            AgentEvent.ApprovalRequested(
-                call = ToolCall(id = "call-2", name = "file_write", argumentsJson = "{\"p\":1}"),
-                spec = readSpec(),
-            ),
-        )
-        assertTrue(state.pendingApproval != null)
-        assertEquals("call-2", state.pendingApproval?.callId)
-        assertEquals("file_write", state.pendingApproval?.toolName)
+        assertNull(next.pendingApproval)
     }
 
     @Test
@@ -273,6 +293,28 @@ class EventReducerTest {
             ),
         )
         assertEquals(TerminationReason.BreakerTripped, state.terminatedBy)
+    }
+
+    @Test
+    fun usageLabelShowsZeroCachedExplicitly() {
+        // 「0 命中」必须与「字段缺失」在展示层可区分（虽然类型层还分不出）：
+        // 只要 prompt > 0，就必须出现 "(0 cached, 0.0%)"，而不是什么都不显示。
+        val state = EventReducer.reduce(
+            initial,
+            AgentEvent.UsageUpdated(prompt = 1000, completion = 10, cachedPrompt = 0),
+        )
+        assertTrue(state.usageLabel.orEmpty().contains("0 cached"))
+        assertTrue(state.usageLabel.orEmpty().contains("0.0%"))
+    }
+
+    @Test
+    fun usageLabelComputesCacheHitRate() {
+        val state = EventReducer.reduce(
+            initial,
+            AgentEvent.UsageUpdated(prompt = 1000, completion = 10, cachedPrompt = 600),
+        )
+        assertTrue(state.usageLabel.orEmpty().contains("600 cached"))
+        assertTrue(state.usageLabel.orEmpty().contains("60.0%"))
     }
 
     private fun readCall(): ToolCall =

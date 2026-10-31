@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.core.agent.loop
 
 import com.rickeal.liquidharness.core.agent.AgentRequest
+import com.rickeal.liquidharness.core.agent.approval.ToolApprovalCache
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
 import com.rickeal.liquidharness.core.agent.engine.LlmEngine
 import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
@@ -53,6 +54,14 @@ class TurnContext(
     val approval: ToolApprovalHandler? = null,
     /** 事件出口。**内核发出的每一个 AgentEvent 都必须经过它**，便于单测断言序列。 */
     val emit: suspend (AgentEvent) -> Unit,
+    /**
+     * 会话级审批缓存（「本会话相同调用不再询问」的授权存储）。
+     *
+     * `null` = 由 [TurnLoop] 在本次 run 内新建一个 ⇒ 授权范围 = 一次 run（单测 / 无宿主）。
+     * 宿主传入会话级实例 ⇒ 跨 run 生效，与 UI 文案「本会话」对齐。
+     * **禁止**把它做成进程级单例：那会把上一个会话的授权带进下一个会话。
+     */
+    val approvalCache: ToolApprovalCache? = null,
 ) {
 
     /**

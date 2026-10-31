@@ -75,7 +75,10 @@ internal fun ChatStatusColumn(
  *
  * - 允许一次 ⇒ [ToolApprovalDecision.AllowOnce]：只放行这一次；
  * - 本会话允许相同调用 ⇒ [ToolApprovalDecision.AllowForSession]：内核按「同工具 + 同参数
- *   指纹」记进会话级缓存，后续相同调用不再弹卡；
+ *   指纹」记进**会话级缓存**。该缓存由 `ChatViewModel` 持有（不是内核每次 run 自建），
+ *   因此**跨 run 生效** —— 用户下一条消息里同样的调用不再弹卡；失效点只有一个：
+ *   「新对话」（`ChatViewModel.newConversation()` 里 `approvalCache.clear()`）。
+ *   停止一次 run 不算撤销授权，这是刻意的（撤回授权的入口只留一个，用户不用猜）；
  * - 拒绝 ⇒ [ToolApprovalDecision.Deny]：只拒**这一个工具**，run 继续 —— 模型会收到一条
  *   ok=false 的结果，有机会改用别的办法。它不是「停止整轮」，所以不叫「取消」。
  *

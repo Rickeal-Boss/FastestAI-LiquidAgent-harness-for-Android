@@ -1,6 +1,8 @@
 package com.rickeal.liquidharness.core.agent
 
+import com.rickeal.liquidharness.core.agent.approval.ToolApprovalCache
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision
+import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
 import com.rickeal.liquidharness.core.agent.loop.FakeEngine
 import com.rickeal.liquidharness.core.agent.loop.FakeTool
 import com.rickeal.liquidharness.core.agent.loop.fakeSpec
@@ -86,9 +88,42 @@ class AgentApprovalRunTest {
         assertEquals("done", events.filterIsInstance<AgentEvent.Finished>().single().text)
     }
 
+    /**
+     * T-4：会话级审批缓存**跨 run 生效**，且换一个 cache 就重新弹卡。
+     *
+     * 判据是「handler 被问了几次」而不是「事件里有几条 ApprovalRequested」——
+     * 后者会被「发了卡但没等裁决」的实现骗过。三次 run 都要真的执行工具（`invocations`），
+     * 否则「没弹卡」可能只是「根本没走到工具」。
+     */
     @Test
-    fun abortCancelsRunAndKeepsPartialText() {
+    fun sessionCacheSuppressesTheCardAcrossRunsUntilItIsReplaced() {
+        var asked = 0
+        val handler: ToolApprovalHandler = { _, _ ->
+            asked += 1
+            ToolApprovalDecision.AllowForSession
+        }
         val tool = FakeTool(fakeSpec(name = "gated", requiresConfirmation = true))
+        val cache = ToolApprovalCache()
+        val events = mutableListOf<AgentEvent>()
+
+        // 同一个 cache 连跑两次 run：第二次相同调用不再弹卡。
+        repeat(2) {
+            val runner = AgentRunner(engine = twoRoundScript("gated"), tools = gatedRegistry(tool))
+            runBlocking { runner.run(testRequest(), approval = handler, approvalCache = cache).collect { events += it } }
+        }
+        assertEquals(1, asked)
+        assertEquals(2, tool.invocations)
+
+        // 换一个新 cache（= 新会话）：授权不带过来，第三次必须重新弹卡。
+        val fresh = AgentRunner(engine = twoRoundScript("gated"), tools = gatedRegistry(tool))
+        runBlocking { fresh.run(testRequest(), approval = handler, approvalCache = ToolApprovalCache()).collect { events += it } }
+        assertEquals(2, asked)
+        assertEquals(3, tool.invocations)
+        assertEquals(2, events.count { it is AgentEvent.ApprovalRequested })
+    }
+
+    @Test
+    fun abortCancelsRunAndKeepsPartialText() {        val tool = FakeTool(fakeSpec(name = "gated", requiresConfirmation = true))
         val engine = FakeEngine(
             scripts = listOf(
                 listOf(

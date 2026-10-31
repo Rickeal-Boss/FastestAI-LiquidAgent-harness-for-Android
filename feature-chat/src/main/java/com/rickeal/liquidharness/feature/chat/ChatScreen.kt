@@ -35,6 +35,8 @@ import com.rickeal.liquidharness.core.design.LocalGlassColors
  * @param onNewConversation 非空才渲染「新对话」入口。null = 宿主不提供该能力
  *   （`app` 尚未接线时保持 null，顶栏只留设置键，不留一个点了没反应的图标）。
  * @param onResolveApproval 授权卡上的三个键：允许一次 / 本会话允许相同调用 / 拒绝。
+ *   「本会话」= **这段对话**，不是这一次 run：会话级缓存在 ViewModel 上，跨 run 生效，
+ *   只有「新对话」才清空（语义与失效点见 `ChatErrorPanel.ApprovalCard` 的 KDoc）。
  *   直接透传给 ViewModel —— 裁决的语义与回传通道都在内核侧，本屏只负责把点击送出去。
  */
 @Composable

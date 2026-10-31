@@ -31,3 +31,7 @@ secrets.properties
 # ---- 本机脚本 ----
 *.bat.local
 *.sh.local
+
+# ---- Python（止损台脚本）----
+__pycache__/
+*.pyc

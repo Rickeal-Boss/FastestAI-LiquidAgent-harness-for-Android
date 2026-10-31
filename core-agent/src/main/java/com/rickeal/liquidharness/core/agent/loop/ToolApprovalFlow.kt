@@ -64,10 +64,18 @@ import kotlinx.coroutines.withTimeoutOrNull
  *
  * ## 状态归属
  *
- * [ToolApprovalCache] 与拒绝计数都是**本实例的字段**，而实例随 run 创建
- * （`TurnLoop.run` 内）⇒ 生命周期 = 一次 run。刻意不放进长生命周期对象：审批授权的
- * 作用域是「这次对话」，跨 run 复用会把上一个会话的授权带进下一个会话。
- * 真正的会话级装配需要 `AppContainer` 持有 cache，属接线之外的一步。
+ * 两类状态，**作用域不同，别混在一起**：
+ *
+ * - **拒绝计数**（[denials]）是本实例字段，实例随 run 创建 ⇒ 生命周期 = 一次 run。
+ *   这是对的：它是弹卡节流，跨 run 累积会让用户在新会话里莫名其妙不再被询问。
+ * - **[ToolApprovalCache] 的生命周期由调用方决定**（`TurnContext.approvalCache`）：
+ *   传 `null` ⇒ `TurnLoop` 建一个 run 级实例，授权只在本 run 内有效（单测 / 无宿主）；
+ *   传会话级实例 ⇒ 授权跨 run 生效，这才对得上 UI 文案「本会话相同调用不再询问」。
+ *   装配点在宿主（`AppContainer`），属接线的一步，不在本类里做。
+ *
+ * 🔴 **禁止把 cache 挂在进程级单例上**：那是「跨会话授权」，上一个对话里点过的
+ * 「不再询问」会被下一个对话继承 —— 用户在新会话里第一次遇到写操作就不弹卡，
+ * 而他从没为这个会话做过授权。
  */
 class ToolApprovalFlow(
     private val cache: ToolApprovalCache = ToolApprovalCache(),
