@@ -97,6 +97,16 @@ class ChatViewModel(
      */
     private val approvalCache = ToolApprovalCache()
 
+    /**
+     * 会话级动作（手动压缩 / 会话导入）的实现。
+     *
+     * 单独成类只为守 G10 单文件 500 行闸门（理由与依赖注入方式见 [ConversationOps] 的类头）。
+     * 它只读一次 [ChatUiState] 快照、写一次，不碰本类的 `runGeneration` / `flushBuffer` /
+     * `pendingApprovalDeferred` —— 那三样是流式时序的核心，混进来会让「谁能改 state」
+     * 变得不可枚举。
+     */
+    private val ops = ConversationOps(container, _state, viewModelScope)
+
     init {
         viewModelScope.launch { refreshEndpoint() }
         // MCP 工具清单同步：一次会话一次（失败不影响对话）。
@@ -125,13 +135,17 @@ class ChatViewModel(
      *
      * 从设置页返回时必须调：换了端点 / 改了模型名后，顶栏、上下文窗口与 `canSend`
      * 都依赖它，不重读就会出现「顶栏显示旧模型、请求已经打到新端点」的错觉。
+     *
+     * 状态条的**分母**取生效硬预算而不是端点声明窗口（理由与算式见 [contextLimitOf]）：
+     * 声明 1M + 档位 32K 时用声明值当分母会让状态条永不报警，而压缩早在 20 928 就发生了。
      */
     suspend fun refreshEndpoint() {
         val endpoint = container.activeEndpoint()
+        val windowCap = contextWindowCap(container)
         _state.update {
             it.copy(
                 endpointLabel = endpoint?.let(::labelOf),
-                contextLimit = endpoint?.contextLength ?: 0,
+                contextLimit = contextLimitOf(endpoint, windowCap),
             )
         }
     }
@@ -260,7 +274,8 @@ class ChatViewModel(
 
         // 历史取**发送前**的气泡（不含本条输入：本次输入走 AgentRequest.userInput，
         // 内核自己追加到工作副本尾部，见 AgentRequest.userInput 的 KDoc）。
-        val history = snapshot.bubbles.flatMap { it.toHistoryMessages() }
+        // 手动压缩的切点在这里生效：切点及之前的气泡不再进 history（气泡仍在列表里）。
+        val history = snapshot.bubbles.toHistoryMessages(snapshot.compressedUpTo)
 
         val claimed = _state.compareAndSet(
             snapshot,
@@ -284,6 +299,22 @@ class ChatViewModel(
         pendingApprovalDeferred = null
         viewModelScope.launch { activeRunner?.cancel() }
     }
+
+    /**
+     * 手动压缩（W6）。实现与全部理由见 [ConversationOps.compressContext] ——
+     * 搬出去是 G10（单文件 500 行）的处置，不是分层：它与本类的时序逻辑零耦合。
+     */
+    fun compressContext() = ops.compressContext()
+
+    /** 撤销手动压缩（只清指针）。见 [ConversationOps.undoCompress]。 */
+    fun undoCompress() = ops.undoCompress()
+
+    /**
+     * 会话导入（W6）。重置走 [newConversation]（它已处理取消在途 run / 清审批缓存），
+     * 物化走 [toChatBubbles]。见 [ConversationOps.importConversation]。
+     */
+    fun importConversation(messages: List<ChatMessage>) =
+        ops.importConversation(messages) { newConversation() }
 
     private suspend fun runOnce(
         text: String,
@@ -350,7 +381,17 @@ class ChatViewModel(
                 // 会话级授权：跨 run 生效，[newConversation] 时清空（见字段 KDoc）。
                 // 不传的话内核每次 run 自建一个空缓存，「本会话允许」退化成「本 run 允许」。
                 approvalCache = approvalCache,
-            ).collect { event -> if (generation == runGeneration) onEvent(event, generation) }
+            ).collect { event ->
+                if (generation == runGeneration) {
+                    // 400 学到的真实窗口必须落盘，否则下一轮仍按超报值算预算（同一 400 每轮重演）。
+                    // 放这里而不是 onEvent：`onEvent` 是普通函数，而写回是 suspend；
+                    // 且 `endpoint` 只是 runOnce 的局部变量，onEvent 拿不到。
+                    if (event is AgentEvent.Failed) {
+                        ops.offerContextLimit(endpoint.id, event.contextLimitHint)
+                    }
+                    onEvent(event, generation)
+                }
+            }
         } finally {
             // 终态事件到达前必须先排空缓冲，否则最后一段增量会丢（`onEvent` 里已排过一次，
             // 这里兜「收集被取消、没走到终态事件」的路径）。

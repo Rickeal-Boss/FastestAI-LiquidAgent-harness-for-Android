@@ -1,5 +1,6 @@
 package com.rickeal.liquidharness.core.agent.loop
 
+import com.rickeal.liquidharness.core.agent.context.HardBudgetShrinker
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
 import com.rickeal.liquidharness.core.model.AgentEvent
 import com.rickeal.liquidharness.core.model.ChatMessage
@@ -14,7 +15,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -114,11 +117,15 @@ class GenerationRound(
      * 再重试一次只是把「卡住」变成「卡住两倍」。首个事件到达即解除，后续慢流不受影响 ——
      * 那一段是 `readTimeout` 与墙钟 HARD 的辖区。
      *
-     * 用**墙钟**计时，刻意不接 `FreezeClock`：看门狗保护的是「远端不响应」，
+     * 用**墙钟**计时，刻意不接冻结感知时钟：看门狗保护的是「远端不响应」，
      * 不是「设备冻结后误判」。设备被 cgroup 冻结时协程整体停摆，`delay` 与被监视的
      * 流**一起**暂停，冻结多久都不会让本看门狗提前开火；反过来，用冻结感知时钟去
      * 「扣除」冻结时长会让「对端真的 120s 不吐字节」这个唯一要抓的形态漏掉。
-     * 别拿 FreezeClock 的反证条款来混这两件事。
+     *
+     * ⚠️ 冻结感知时钟（旧文档里叫 `FreezeClock`）**本仓尚未落地，挂账 W3-05** ——
+     * 全仓零实现。别在别处引用它当成「已接的机制」，也别拿它的（尚不存在的）反证条款
+     * 来混这两件事。落地之前，墙钟 HARD 在设备被冻结时有**误杀风险**（见
+     * `RunState.elapsedMillis`）。
      *
      * ## 取消的生效时延（如实记录，别当 bug 修）
      *
@@ -199,12 +206,25 @@ class GenerationRound(
 
                             is GenerationEvent.Usage -> {
                                 ctx.state.recordUsage(event.prompt, event.completion, event.cachedPrompt)
+                                // 估算锚点 + chars/token 标定：真值 + 本次请求条数 + 本次请求字符数。
+                                // 下一轮只用它 + 新增部分的估算，不再对整条历史重跑启发式
+                                // （W6 / T5；标定见 RunState.measuredCharsPerToken）。
+                                ctx.state.recordReportedPrompt(
+                                    prompt = event.prompt,
+                                    messageCount = messages.size,
+                                    charsSent = HardBudgetShrinker.promptChars(messages),
+                                )
                                 ctx.emit(AgentEvent.UsageUpdated(event.prompt, event.completion, event.cachedPrompt))
                             }
 
                             is GenerationEvent.Finished -> finished = event.reason
 
-                            is GenerationEvent.Failed -> failure = event
+                            is GenerationEvent.Failed -> {
+                                // 400 带回的真实窗口，经 RunState 传到 AgentEvent.Failed，
+                                // 由宿主写回端点（AppContainer.recordContextLimit）。
+                                ctx.state.recordContextLimitHint(event.contextLimitHint)
+                                failure = event
+                            }
                         }
                     }
                 } finally {
@@ -216,6 +236,12 @@ class GenerationRound(
             // 所以这里能把「远端不响应」翻成失败。用户取消走下面的 rethrow：
             // 吞掉 CancellationException 会让 Job 从 cancelled 变 completed（AGENTS.md §五.4）。
             if (!firstByteTimedOut) throw c
+            // ⚠️ 看门狗到点与用户取消**可能并发**：看门狗先 cancel 了内层 scope，而用户在同一
+            // 时刻点了停止（`AgentRunner.cancel` 置标记 + 取消子 job）。此时 `firstByteTimedOut`
+            // 已经是 true，只看它就会把「用户取消」记成 `TIMEOUT` —— 用户看到的是「对端超时」，
+            // 排查方向完全错。转 Fatal 之前**再查一次取消标记**：外层 Job 的 isActive 覆盖
+            // 「子 job 被取消」，`state.cancelled` 覆盖「标记已置、job 还没轮到」。
+            if (!currentCoroutineContext().isActive || ctx.state.cancelled) throw c
             requestSent.set(true)
             // 归类成 `EngineErrorKind.TIMEOUT` 后走**与 provider 失败同一条收尾路径**：
             // 多一条 `return Attempt.Fatal(...)` 就是第二个出口，将来改收尾逻辑时必漏一处。

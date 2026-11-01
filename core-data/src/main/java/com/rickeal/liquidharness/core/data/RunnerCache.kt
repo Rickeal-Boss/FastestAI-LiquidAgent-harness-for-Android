@@ -18,7 +18,18 @@ import java.util.concurrent.ConcurrentHashMap
  * [maxContextTokens] 单独成键而不是并进 policy：它是「用户在设置页能改、且改了必须生效」
  * 的唯一 policy 字段（W4-07）。其余 policy 字段目前没有 UI 入口，进键只会让缓存永远不命中。
  */
-internal data class RunnerKey(val endpoint: RemoteEndpoint, val maxContextTokens: Int)
+internal data class RunnerKey(
+    val endpoint: RemoteEndpoint,
+    val maxContextTokens: Int,
+    /**
+     * 自动压缩开关（W6 调试项）。
+     *
+     * 它必须进键，理由与 [maxContextTokens] **完全相同**：这是「用户在设置页能改、
+     * 且改了必须生效」的字段。不进键 ⇒ 用户关掉压缩后，缓存的旧 runner 仍带着
+     * `compressContext = true`，开关看起来点了没反应（正是 W4-07 的缺陷形态）。
+     */
+    val compressContext: Boolean = true,
+)
 
 /**
  * 按 endpointId 缓存的重型实例（当前只有 [AgentRunner]），**键变了就重建**。
@@ -68,6 +79,39 @@ internal class RunnerCache<T> {
     /** 显式失效（保存 / 删除端点时调，让「配置已落盘」与「缓存已清」同一时刻发生）。 */
     fun remove(endpointId: String) {
         entries.remove(endpointId)
+    }
+
+    /**
+     * 失效 —— **但旧实例正忙时不失效**（W6 / P2）。
+     *
+     * ## 为什么不能无条件 [remove]
+     *
+     * `remove` 之后下一次 [getOrBuild] 必然重建实例，而重建会换掉 `runMutex`：
+     * 旧实例正跑着一条 run，新实例的锁是空闲的 ⇒ 此时再发一次就是**两条并发 run**
+     * 写同一份历史（`RunState` 明确「单协程访问、不加锁」）。旧实现在
+     * `AppContainer.saveEndpoint` 里无条件 `remove`，等于「保存端点」这个动作本身
+     * 打开了一个双 runner 并发窗口。
+     *
+     * ## 为什么「不失效」不会让新配置丢失
+     *
+     * `RunnerKey` 含**整个** `RemoteEndpoint`：配置一变，key 就不等，`getOrBuild` 自己会
+     * 重建。本方法只是让「配置已落盘」与「缓存已清」在同一时刻发生（少一次 key 比对），
+     * 顺便把**已经没用的实例**从缓存里摘掉。忙的时候推迟到这一轮跑完 —— 与
+     * `getOrBuild` 的 `keepWhile` 同一条纪律：**新配置晚一轮生效，好过并发写同一份状态**。
+     *
+     * @return true = 已失效；false = 旧实例正忙，保留（调用方不必处理，只是可断言）。
+     */
+    fun removeIfIdle(endpointId: String, keepWhile: (T) -> Boolean): Boolean {
+        var removed = false
+        entries.compute(endpointId) { _, old ->
+            if (old != null && keepWhile(old.value)) {
+                old
+            } else {
+                removed = old != null
+                null
+            }
+        }
+        return removed
     }
 
     /** 当前缓存条目数（诊断与单测用）。 */

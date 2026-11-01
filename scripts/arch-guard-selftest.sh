@@ -64,6 +64,9 @@ GUARD="scripts/arch-guard.sh"
 APP_MANIFEST="app/src/main/AndroidManifest.xml"
 LINT_BASELINE="app/lint-baseline.xml"
 AGENT_RUNNER="core-agent/src/main/java/com/rickeal/liquidharness/core/agent/AgentRunner.kt"
+# W6：挂账单一台账。G20 的判据域 = 「handoff 里的 ID」×「台账」，
+# 副本里缺这个文件时 G20 会 SELF_FAULT ⇒ 自证无法归因，故 preflight 必须前置断言它存在。
+LEDGER="docs/06-deferred-ledger.md"
 
 MODE="batch"
 KEEP=0
@@ -87,13 +90,17 @@ START_EPOCH="$(date +%s)"
 # =============================================================================
 # case 表：id|一句话说明|变异函数|期望证据（空 = 由变异函数动态写入 $EV_DIR/<id>）
 #
-# 覆盖口径 = arch-guard.sh 实际产出的**全部 24 个 ID**：
-#   G1 G1b G2 G3 G4a G4b G5a G5b G6 G7 G8 G9 G10 G11 G12 G13 G14 G15a G15b G15c G16 G17 G18 G19
+# 覆盖口径 = arch-guard.sh 实际产出的**全部 26 个 ID**：
+#   G1 G1b G2 G3 G4a G4b G5a G5b G6 G7 G8 G9 G10 G11 G12 G13 G14 G15a G15b G15c
+#   G16 G17 G18 G19 G20 G21
 #   （G1/G4/G5/G15 各拆了 a/b/c 子判据 —— 子判据是独立的断言，必须各自自证，
 #     否则拆出来的那一半会变成没人看的分支。故「G 编号」数 ≠ 判据数。）
 #   ⚠️ G15c 有**两条 case**（同一 ID，两种变异形态）：① 把 allowBackup 改成 true；
 #      ② 删掉 dataExtractionRules 属性（W2 外审 §四.1 加的「排除面」那一半）。
-#      判据编号仍是 24 个，case 数 25 —— 判据数与 case 数本来就不同源。
+#   ⚠️ **G21（空转棘轮）不在本表**：它的变异是「把某个守卫的扫描目标清空」，而 batch
+#      树里 G1b 的变异是「注入违规」，两者作用在同一目录会互相抹掉。它的自证在文件
+#      末尾的「VACUOUS 机制自证」段（独立一棵树 + 一次 guard 跑），判据是
+#      「G1b 转 VACUOUS」+「G21 因空转超基线判红」两条。
 # =============================================================================
 CASES=(
   "G1|网络栈收口：core-model 里 import okhttp3（只许在 core-net）|m_g1|__SelftestG1.kt:3:import okhttp3.OkHttpClient"
@@ -126,6 +133,7 @@ CASES=(
   "G17|禁密钥字段：@Serializable 类里加 val apiKey|m_g17|__SelftestG17.kt:7  @Serializable 类内出现密钥字段: apiKey"
   "G18|引擎调用点收口：core-model 里调 engine.generate(|m_g18|__SelftestG18.kt:3:fun selftestDrive(engine: Any) { engine.generate(1) }"
   "G19|日志不得拼接凭据：core-engine 里 log(\"Authorization=\" + secret)|m_g19|__SelftestG19.kt:4  日志拼接凭据"
+  "G20|挂账不丢失：从台账副本删掉 W3-05 那一行|m_g20|"
 )
 
 if [ "$LIST_ONLY" -eq 1 ]; then
@@ -195,10 +203,15 @@ guard_section() { # $1 = id $2 = 输出文件
     f' "$2"
 }
 
-guard_state() { # $1 = id $2 = 输出文件 → OK / RED / MISSING
+guard_state() { # $1 = id $2 = 输出文件 → OK / VACUOUS / RED / MISSING
+  # VACUOUS（W6 新增）是第四态：不判红，但也不是 OK。assert_case 要求 RED，
+  # 所以这里必须把它区分出来 —— 否则「注入后仍是 VACUOUS」会被误读成「通过了」。
   awk -v id="[$1]" '
     index($0, id) == 1 {
-      if ($0 ~ /VIOLATION|SELF_FAULT/) print "RED"; else print "OK"; exit
+      if ($0 ~ /VIOLATION|SELF_FAULT/) print "RED"
+      else if ($0 ~ /VACUOUS/) print "VACUOUS"
+      else print "OK"
+      exit
     }' "$2"
 }
 
@@ -474,6 +487,18 @@ internal fun selftestG19(secret: String) {
 EOF
 }
 
+# G20 的变异形态：**从台账副本里删掉一行**（外审建议的原话就是「故意从台账删一条 ⇒
+# 守卫必须转红」）。选 W3-05 而不是随便一条，是因为它是最贵的静默丢失项：
+# 若守卫对「W3-05 从台账消失」都不敏感，它对本波真正要防的事就不敏感。
+# 删完必须回读校验（变异三判据的第 ① 条），否则「删了但没删掉」会被误判成守卫失明。
+m_g20() {
+  local abs="$1/$LEDGER"
+  [ -f "$abs" ] || return 1
+  drop_line "$1" "$LEDGER" '^\|[[:space:]]*W3-05[[:space:]]*\|' || return 1
+  grep -qE '^\|[[:space:]]*W3-05[[:space:]]*\|' "$abs" 2>/dev/null && return 1
+  ev G20 "台账缺 ID（handoff 里有、台账里没有）：W3-05"
+}
+
 # =============================================================================
 # fixture 归一化
 # =============================================================================
@@ -514,7 +539,7 @@ preflight() { # $1 = 树
            core-data core-design feature-chat feature-settings feature-tools app; do
     [ -f "$t/$m/build.gradle.kts" ] || miss+=("$m/build.gradle.kts")
   done
-  for m in settings.gradle.kts gradle/libs.versions.toml "$APP_MANIFEST" "$LINT_BASELINE" "$AGENT_RUNNER"; do
+  for m in settings.gradle.kts gradle/libs.versions.toml "$APP_MANIFEST" "$LINT_BASELINE" "$AGENT_RUNNER" "$LEDGER"; do
     [ -f "$t/$m" ] || miss+=("$m")
   done
   [ "$(find "$t" -path '*/src/test/*' -name '*.kt' 2>/dev/null | wc -l | tr -d ' ')" -gt 0 ] \
@@ -646,6 +671,60 @@ else
     [ "$KEEP" -eq 1 ] || rm -rf "$T" 2>/dev/null
     i=$((i + 1))
   done
+fi
+
+# =============================================================================
+# VACUOUS 机制自证（W6 新增）—— 「目标集为空 ⇒ 输出 VACUOUS 而不是 OK」
+# =============================================================================
+# 为什么单独一棵树 + 单独一次 guard 跑（而不是塞进 CASES）：
+#   ① 它要的变异是「**清空**一个扫描目标」，而 batch 树里 G1b 的变异是「注入违规」，
+#      两者作用在同一目录（core-net/src/main）上会互相抹掉；
+#   ② 它断言的是「**不判红**但必须出现 VACUOUS」，与 CASES 的「必须判红」语义相反，
+#      混进同一个 assert 会把两种判据搅在一起。
+# 代价 = 多一次 arch-guard 全量跑（本机实测 ~90s）。换来的是「空转可见」这条新纪律
+# 自己也有变异自证 —— 否则它又会变成一条「只在文档里成立」的规则（本仓最忌的形态）。
+run_vacuous_proof() {
+  local T="$WORK/tree-vacuous" OUT="$WORK/guard-vacuous.out"
+  mkdir -p "$T" || { fail_case "VAC-G1b" "VACUOUS 机制自证" "无法创建临时树"; return; }
+  if ! copy_tree "$T" || ! preflight "$T"; then
+    fail_case "VAC-G1b" "VACUOUS 机制自证" "临时树准备失败（复制/前置断言）"
+    return
+  fi
+  # 变异：清空 core-net/src/main 的**全部 .kt** ⇒ G1b 的扫描目标集 = 0
+  find "$T/core-net/src/main" -type f -name '*.kt' -delete 2>/dev/null
+  local left
+  left="$(find "$T/core-net/src/main" -type f -name '*.kt' 2>/dev/null | wc -l | tr -d ' ')"
+  if [ "$left" != "0" ]; then
+    fail_case "VAC-G1b" "VACUOUS 机制自证" "变异未生效：core-net/src/main 仍有 $left 个 .kt"
+    return
+  fi
+  run_guard "$T" "$OUT" > /dev/null
+
+  local st
+  st="$(guard_state "G1b" "$OUT")"
+  if [ "$st" = "VACUOUS" ]; then
+    pass_case "VAC-G1b" "清空扫描目标 ⇒ G1b 报 VACUOUS（不是 OK）"
+  else
+    fail_case "VAC-G1b" "清空扫描目标 ⇒ G1b 报 VACUOUS（不是 OK）" "实际 state=${st:-MISSING}"
+    guard_section "G1b" "$OUT" | head -n 6 | sed 's/^/              | /'
+  fi
+
+  # G21 的棘轮：空转从 1 条变 2 条（G19 + G1b）⇒ 必须判红。
+  # 证据串只用「> 基线」这个**结构**片段，不写死具体数字（纪律 3：随规模变化的数字现算）。
+  st="$(guard_state "G21" "$OUT")"
+  if [ "$st" = "RED" ] && guard_section "G21" "$OUT" | grep -qF "> 基线"; then
+    pass_case "VAC-G21" "空转条数超基线 ⇒ G21 棘轮判红"
+  else
+    fail_case "VAC-G21" "空转条数超基线 ⇒ G21 棘轮判红" \
+      "实际 state=${st:-MISSING}（期望 RED 且证据含「> 基线」）"
+    guard_section "G21" "$OUT" | head -n 6 | sed 's/^/              | /'
+  fi
+  [ "$KEEP" -eq 1 ] || rm -rf "$T" 2>/dev/null
+}
+
+if [ -z "$ONLY" ]; then
+  echo "[selftest] VACUOUS 机制自证（独立一棵树：清空一个扫描目标）"
+  run_vacuous_proof
 fi
 
 # =============================================================================

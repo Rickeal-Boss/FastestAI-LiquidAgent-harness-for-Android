@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.ui
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -13,7 +14,10 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,6 +29,7 @@ import androidx.navigation.compose.composable
 import com.rickeal.liquidharness.core.data.AppContainer
 import com.rickeal.liquidharness.core.design.liquid.backdrops.LayerBackdrop
 import com.rickeal.liquidharness.core.design.liquid.backdrops.layerBackdrop
+import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.feature.chat.ChatScreen
 import com.rickeal.liquidharness.feature.chat.ChatViewModel
 import com.rickeal.liquidharness.feature.settings.SettingsRoute
@@ -55,6 +60,13 @@ internal fun AppNavHost(
 ) {
     val context = LocalContext.current
     val appVersion = rememberAppVersion(context)
+    // 会话导入的一次性信箱（W6）。**刻意不放进 AppContainer**：
+    // - 它是「一次 UI 动作的载荷」，不是长生命周期依赖 —— 放进容器会让最多 8 MiB 的
+    //   解析结果挂在容器上，直到进程结束；
+    // - 它只在两个目的地之间传递一次，消费即清空（见 ChatRoute 的 LaunchedEffect）。
+    // 提升到 NavHost 之上是必须的：设置页发布时对话页还没组合，值必须活得比它久。
+    val pendingImport = remember { mutableStateOf<List<ChatMessage>?>(null) }
+    val importEnabled = remember(context) { isDebuggable(context) }
 
     NavHost(
         navController = navController,
@@ -78,6 +90,7 @@ internal fun AppNavHost(
                 container = container,
                 onOpenSettings = { navController.navigateTop(SettingsRoute.ROUTE) },
                 onOpenDrawer = onOpenDrawer,
+                pendingImport = pendingImport,
             )
         }
         settingsGraph(
@@ -88,6 +101,19 @@ internal fun AppNavHost(
             // feature ↛ feature 是 G6 硬边 ⇒ 由外壳把「跳到那一页」作为回调注入设置页。
             onOpenTools = { navController.navigate(ToolsRoute.ROUTE) },
             onOpenSandbox = { navController.navigate(SandboxFilesRoute.ROUTE) },
+            // 会话导入（W6）：解析在设置页，落点是对话页的 ChatViewModel ⇒ 外壳转交。
+            // 仅 debuggable 安装包注入：这是测试通道，不是普通用户功能。
+            onImportSession = if (importEnabled) {
+                { messages ->
+                    pendingImport.value = messages
+                    // 落到对话页本身就是「导入成功」的反馈（题面已经在屏幕上）。
+                    navController.navigateTop(CHAT_ROUTE)
+                }
+            } else {
+                null
+            },
+            // 自动压缩开关同理：只在 debuggable 安装包上出现（设置页按回调是否为 null 决定渲染）。
+            debugTools = importEnabled,
         )
         toolsGraph(
             navController = navController,
@@ -106,6 +132,7 @@ private fun ChatRoute(
     container: AppContainer,
     onOpenSettings: () -> Unit,
     onOpenDrawer: () -> Unit,
+    pendingImport: MutableState<List<ChatMessage>?>,
 ) {
     val viewModel: ChatViewModel = viewModel(factory = ChatViewModel.Factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -113,6 +140,15 @@ private fun ChatRoute(
     // 从设置页返回时端点可能变了（换了活跃端点 / 改了模型名），必须重读，
     // 否则顶栏还显示旧模型，而请求已经用新端点发出 —— 用户会以为「换模型没生效」。
     LaunchedEffect(Unit) { viewModel.refreshEndpoint() }
+
+    // 消费会话导入。**先取快照再清空**：`importConversation` 会重置整个 state，
+    // 若先清信箱再读，遇到重组时序问题就会导入一份空列表（= 清空当前对话）。
+    val imported = pendingImport.value
+    LaunchedEffect(imported) {
+        if (imported == null) return@LaunchedEffect
+        viewModel.importConversation(imported)
+        pendingImport.value = null
+    }
 
     // SAF 图片选择器。回调里只把 uri 交给 ViewModel —— 解码/压缩在 core-data 的
     // AttachmentImporter 里（IO 线程），Composable 不碰字节。
@@ -133,8 +169,24 @@ private fun ChatRoute(
         onNewConversation = viewModel::newConversation,
         onPickImage = pickImage,
         onRemoveAttachment = viewModel::removeAttachment,
+        // 手动压缩（W6）：入口 → 二次确认（ChatScreen 里）→ ViewModel 压缩。
+        onCompressContext = viewModel::compressContext,
+        onUndoCompress = viewModel::undoCompress,
     )
 }
+
+/**
+ * 本安装包是否 debuggable。
+ *
+ * 用 `ApplicationInfo.FLAG_DEBUGGABLE` 而不是 `BuildConfig.DEBUG`：`:app` 的
+ * `buildFeatures` 没开 `buildConfig`（AGP 8 默认关），而**库模块**的 `BuildConfig.DEBUG`
+ * 反映的是库自己的变体、与安装包无关（`rememberAppVersion` 的 KDoc 已就同一件事踩过）。
+ * manifest 里的 `debuggable` 标志是唯一与「装到设备上的这个包」同源的事实。
+ */
+@Suppress("DEPRECATION")
+private fun isDebuggable(context: Context): Boolean = runCatching {
+    (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+}.getOrDefault(false)
 
 /**
  * 取应用版本名（设置页「关于」行展示用）。

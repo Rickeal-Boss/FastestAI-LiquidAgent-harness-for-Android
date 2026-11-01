@@ -29,6 +29,30 @@ import com.rickeal.liquidharness.core.design.LocalGlassColors
 private val CONTEXT_WARN_RATIO: Float = AgentPolicy().compressThreshold
 
 /**
+ * 是否已到「上下文将满」档位。**纯函数**，因为它是本组件唯一的判定，必须能在 JVM 上断言。
+ *
+ * ## 语义：变色 ⟺ 压缩已经（或即将）开始
+ *
+ * 分母由调用方给**生效硬预算**（`contextLimitOf`），而阈值是 `compressThreshold`：
+ * `used / hard >= 0.75` ⟺ `used >= hard × 0.75` = 软预算 = **压缩触发点本身**。
+ * 这就是本组件 KDoc 那句「一变色就精确对应压缩已经开始」的算式依据。
+ *
+ * ⚠️ 换分母会让这条恒等式失效（W6 修过一个真实缺陷：分母曾是端点声明窗口，
+ * 声明 1M + 档位 32K 时占用率永远到不了 4% ⇒ 永不报警）。
+ *
+ * 任一侧 `<= 0` 时返回 false：0 是「还不知道」（未配置端点 / 还没有 usage 回报），
+ * 把它当「已满」会在一进页面就挂一条假警告。
+ */
+internal fun nearFullContext(
+    usedTokens: Int,
+    limitTokens: Int,
+    ratio: Float = CONTEXT_WARN_RATIO,
+): Boolean {
+    if (usedTokens <= 0 || limitTokens <= 0) return false
+    return usedTokens.toFloat() / limitTokens.toFloat() >= ratio
+}
+
+/**
  * 一行上下文占用状态：`上下文 12.3K / 32.8K`。
  *
  * 为什么要显示：超出窗口会被内核**静默压缩**，用户只看到「模型怎么突然忘了前面说过的」。
@@ -39,6 +63,9 @@ private val CONTEXT_WARN_RATIO: Float = AgentPolicy().compressThreshold
  * 兜底，本仓不需要两套数字互相解释。
  *
  * 两个数任一为 0 时不渲染：显示「0 / 4K」比不显示更误导。
+ *
+ * 分母（[limitTokens]）由调用方给**生效硬预算**，不是端点声明窗口 ——
+ * 理由与算式见 `contextLimitOf` 与 [nearFullContext]。
  */
 @Composable
 fun ChatContextMeter(
@@ -48,7 +75,7 @@ fun ChatContextMeter(
 ) {
     if (usedTokens <= 0 || limitTokens <= 0) return
     val colors = LocalGlassColors.current
-    val nearFull = usedTokens.toFloat() / limitTokens.toFloat() >= CONTEXT_WARN_RATIO
+    val nearFull = nearFullContext(usedTokens, limitTokens)
     Row(
         modifier = modifier
             .fillMaxWidth()

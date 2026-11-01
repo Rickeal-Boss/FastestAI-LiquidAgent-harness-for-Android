@@ -1,9 +1,7 @@
 package com.rickeal.liquidharness.core.agent.context
 
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
-import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.model.ChatMessage
-import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.model.Role
 import com.rickeal.liquidharness.core.model.TokenEstimator
 import com.rickeal.liquidharness.core.model.ToolResult
@@ -13,32 +11,10 @@ interface ContextCompressor {
     suspend fun compress(messages: List<ChatMessage>, budgetTokens: Int): List<ChatMessage>
 }
 
-/**
- * 发送前的上下文预算。
- *
- * ## 算式（`00-brief.md` A8 理由 3）
- *
- * ```
- * window = min(endpoint.contextLength, policy.maxContextTokens)
- * budget = (window - endpoint.maxOutputTokens) * policy.compressThreshold
- * ```
- *
- * 三处都不能省：
- * - **`min(...)`**：没有它，1M 窗口的模型会真的按 0.75 发 75 万 token 出去 —— 一次几美元。
- *   `maxContextTokens` 是本应用愿意付的钱的上限，不是模型能力的上限。
- * - **减 `maxOutputTokens`**：输入 + 输出共享同一个窗口，不扣掉输出预留，
- *   真实请求会在输出阶段撞窗口。
- * - **乘 `compressThreshold`（0.75，旧仓值）**：留 25% 余量给「压缩判断之后又追加的
- *   工具结果」。压缩是缓存失效事件，要稀有（A8），门槛太松会变成每轮都压。
- *
- * 下限兜底：`window - maxOutputTokens` 可能 ≤ 0（用户把 maxOutputTokens 填得比窗口还大）。
- * 那时按窗口一半算 —— 宁可压缩得激进，也不要发出一个必然 400 的请求。
- */
-fun contextBudgetTokens(endpoint: RemoteEndpoint, policy: AgentPolicy): Int {
-    val window = minOf(endpoint.contextLength, policy.maxContextTokens).coerceAtLeast(1)
-    val usable = (window - endpoint.maxOutputTokens).let { if (it > 0) it else window / 2 }
-    return (usable * policy.compressThreshold).toInt().coerceAtLeast(1)
-}
+// 预算算式（软 / 硬两条）已搬到 `BudgetFormula.kt`：本文件已触 G10 单文件上限，
+// 拆的是「算式」与「压缩算法」两件事，不是调大上限。
+//   - 软预算 `contextBudgetTokens`（含水位线）⇒ 丢最老历史（本文件的压缩器）
+//   - 硬预算 `hardContextBudgetTokens`（不含水位线）⇒ 原地收缩 / 熔断
 
 /**
  * 切点策略。**默认 [MINIMAL]** —— 保持现役行为，既有调用点与既有单测不受影响。
@@ -68,14 +44,8 @@ enum class CutPolicy {
  * 每轮都把切点往后推一次，即每轮前缀失效一次。0.6 × 24k = 14.4k，留 9.6k ≈ 2.4 条满额
  * 工具结果 ⇒ 连续 2–3 轮不会复发。
  *
- * ## 为什么这个常量不在 `AgentPolicy` 里（本波如实登记的妥协）
- *
- * 它**应该**在 policy 里（那里是「所有数字的唯一出处」，`loop/` 内不许有魔数）。本波没放
- * 进去，原因只有一个：本波 A 组的文件域不含 `policy/AgentPolicy.kt`（另一路开发正在改
- * 相邻文件，同改必然冲突），且 `AgentPolicy` 是 `@Serializable` 的落盘契约，加字段要连带
- * 确认反序列化兼容。⇒ **W5 第一件事是把它搬进 `AgentPolicy.compressTargetRatio` 并删掉本常量。**
- *
- * 不放进 policy 的代价是如实的：它现在不能被端点 / 设置页调，只能改代码。
+ * ⚠️ **它仍不在 `AgentPolicy` 里**：W4 登记「W5 第一件事是搬进 policy」，W5/W6 两波都没做
+ * （A 组文件域已含 policy，只是没人排进任务）。**挂账 W7**。代价照旧：不能被端点 / 设置页调。
  */
 const val DEFAULT_COMPRESS_TARGET_RATIO: Float = 0.6f
 
@@ -86,7 +56,7 @@ const val DEFAULT_COMPRESS_TARGET_RATIO: Float = 0.6f
  * 丢掉 ⇒ 压缩完仍超预算 ⇒ 下一轮再压 ⇒ 退化成「每轮一次」的病态（design §3.A.5）。
  * 超限即退回 [CutPolicy.MINIMAL] 的结果，并记 `compress_align=skipped`。
  *
- * 同样待 W5 搬进 `AgentPolicy`（理由同上）。
+ * 同样挂账 W7 搬进 `AgentPolicy`（理由同上）。
  */
 const val DEFAULT_COMPRESS_ALIGN_MAX_EXTRA_DROP_RATIO: Float = 0.25f
 
@@ -100,9 +70,8 @@ const val DEFAULT_COMPRESS_ALIGN_MAX_EXTRA_DROP_RATIO: Float = 0.25f
  * ## 为什么必须这么严（这段 KDoc 是踩过 400 换来的，逐字保留动机）
  *
  * OpenAI 兼容协议要求每条 `role=tool` 的结果都能对应到声明它的 `assistant.tool_calls`。
- * 只按 token 贪心切，会把「assistant(toolCalls) + 紧随其后的 toolResult」从中间截断，
- * 发出去就是 400。
- * 因此压缩失败必须**无损**（原样返回），绝不「尽力而为地删一半」。
+ * 只按 token 贪心切会把「assistant(toolCalls) + 紧随其后的 toolResult」从中间截断，
+ * 发出去就是 400 ⇒ 压缩失败必须**无损**（原样返回），绝不「尽力而为地删一半」。
  *
  * @param keepRecent 旧语义「保留最近 N 条」。现在切点完全由「预算贪心 + 安全切点调整」
  *   决定，该参数不再影响结果，仅作为构造参数保留，以免破坏既有调用方的具名参数写法。
@@ -248,22 +217,15 @@ class WindowContextCompressor(
 
 /**
  * 发送前的最后一道清洗：保证 `MODEL(toolCalls)` 与 `TOOL(toolResult)` 严格成对，
- * 并把相邻同角色消息合并。
+ * 并把相邻同角色消息合并。三件事各有各的 400 来源：
  *
- * ### 三件事，各有各的 400 来源
+ * 1. **孤儿 toolResult**（`callId` 找不到 MODEL 声明）→ 丢弃：OpenAI 兼容端点直接 400。
+ * 2. **声明了却没有结果的 toolCall** → 补一条合成的错误结果：端点对它的容忍度更低。
+ * 3. **相邻同角色合并** → Anthropic 族要求交替；旧仓只做 1+2（只有 OpenAI 一条路），
+ *    新仓三族并存，必须补这一条。
  *
- * 1. **孤儿 toolResult**（其 `callId` 找不到任何 MODEL 声明）→ 丢弃。
- *    OpenAI 兼容端点遇到「有 tool 消息但没有对应 tool_call」直接 400。
- * 2. **声明了却没有结果的 toolCall** → 补一条合成的错误结果。
- *    端点对「有 tool_call 却没结果」的容忍度更低，通常拒绝整个请求。
- * 3. **相邻同角色合并** → Anthropic 族要求 user / assistant 交替，连续两条同角色
- *    会被拒。旧仓只做 1+2，是因为只有 OpenAI 兼容一条路；新仓三族并存，必须补这一条。
- *
- * ### 补丁消息为什么用稳定派生 id
- *
- * 旧仓的理由是「本地引擎的增量水印（sentMessageIds）会把新 UUID 的补丁当成新消息逐轮重发」。
- * 新仓没有引擎水印，但**理由换了一个仍然成立**：每轮生成都发同一段历史，补丁 id 抖动
- * 会让前缀字节变化 ⇒ prompt cache 失效（`00-brief.md` A8）。所以稳定派生 id 必须保留。
+ * 补丁消息用**稳定派生 id**：补丁 id 抖动会让前缀字节变化 ⇒ prompt cache 失效
+ * （`00-brief.md` A8；旧仓的理由是引擎水印，新仓换了个理由但结论相同）。
  *
  * 空命中语义：已经成对且无相邻同角色 ⇒ **返回同一个对象**（调用方可据此判「没变化」）。
  */

@@ -398,6 +398,33 @@ class EventReducerTest {
         assertEquals("timeout: no response", state.errorMessage)
     }
 
+    /**
+     * **`UsageUpdated` 不退出等待态 —— 这是有意钉住的（W6 / P3）。**
+     *
+     * 两个口径不同，混用会各自错一半（详见 `ChatStatus.WAITING_FIRST_BYTE` 的 KDoc）：
+     * - UI 语义 = 「模型开口」（用户要看到回答开始出来）。usage 是计费账，有些端点上它
+     *   先于正文到达 —— 此时屏幕上一个字都没有，把状态行撤掉会让用户看到「圈没了、也没
+     *   内容」，比一直转圈更像死机。
+     * - 看门狗语义 = 「连接产出」（任何帧都算），所以内核侧看到 usage 就该重置超时计时。
+     *
+     * 这条用例不是「顺手钉一下现状」：它把**UI 语义**固定下来。将来若有人为了「让等待
+     * 提示早点消失」在这里加 `status = null`，本用例会立刻判红，逼他先想清楚改的是哪个语义。
+     */
+    @Test
+    fun usageUpdatedDoesNotLeaveWaitingState() {
+        var state = EventReducer.reduce(initial, AgentEvent.RoundStarted(round = 1, maxRounds = 12))
+        assertEquals(ChatStatus.WAITING_FIRST_BYTE, state.status)
+
+        state = EventReducer.reduce(
+            state,
+            AgentEvent.UsageUpdated(prompt = 1_200, completion = 0, cachedPrompt = null),
+        )
+
+        assertEquals(ChatStatus.WAITING_FIRST_BYTE, state.status)
+        // usage 本身仍然要落进 state：不退出等待态 ≠ 忽略这一帧。
+        assertEquals(1_200, state.contextTokens)
+    }
+
     /** 状态行的秒数：整秒向下取整、非负。文案本体在 `strings.xml`（守卫 G16）。 */
     @Test
     fun waitingLabelCountsWholeSeconds() {

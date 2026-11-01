@@ -66,4 +66,21 @@
 
     <!-- 顶栏左侧抽屉入口 -->
     <string name="chat_open_drawer">打开对话列表</string>
+    <string name="chat_more_actions">更多操作</string>
+
+    <!-- 手动压缩（W6） -->
+    <string name="chat_action_compress">压缩上下文</string>
+    <string name="chat_compress_title">压缩这段对话的上下文？</string>
+    <!-- ⚠️ 这句是压缩的**代价**，不许删、不许改写成「不影响」：
+         压缩会让提示前缀从第一个字节起变化 ⇒ 下一次请求缓存命中为 0、费用更高。 -->
+    <string name="chat_compress_warning">压缩后本会话的提示缓存会从头重建，下一次请求缓存命中为 0、费用更高。</string>
+    <string name="chat_compress_body">较早的消息不再发给模型（模型会忘掉它们），但仍留在本页可展开回看。撤销能把历史还原，已经发生的请求费用不会退。</string>
+    <string name="chat_compress_confirm">压缩</string>
+    <string name="chat_compress_cancel">取消</string>
+    <string name="chat_compress_separator">已压缩 %1$d 条（不再发给模型）</string>
+    <string name="chat_compress_saving">省约 %1$d token</string>
+    <string name="chat_compress_expand">展开查看</string>
+    <string name="chat_compress_collapse">收起</string>
+    <string name="chat_compress_undo">撤销</string>
+    <string name="chat_error_manual_compress_noop">没有可压缩的内容：历史本来就装得下，或找不到安全的截断点。</string>
 </resources>

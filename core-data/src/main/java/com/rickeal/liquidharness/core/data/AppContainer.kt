@@ -42,9 +42,10 @@ import java.io.File
  * 旧实现正是每次 new（而单测复用同一个实例，所以一直绿：典型的「判据空转」）。
  * 现在按 endpointId 缓存，**缓存键带配置指纹**（[RunnerKey]）：端点配置或窗口档位一变，
  * 下一次取用就重建 —— 否则旧 runner 的引擎仍指向旧 baseUrl / modelId，
- * 而用户在设置页改的窗口档位永远不生效（W4-07）。[saveEndpoint] / [deleteEndpoint]
+ * 而用户在设置页改的窗口档位永远不生效（W4-07）。[saveEndpoint] / [recordContextLimit]
  * 里的显式失效保留：那是「配置已落盘」与「缓存已清」同一时刻发生的保证，比等下一次
- * 取用时才比对更早一步，也更省一次比对。
+ * 取用时才比对更早一步。**但失效一律走 `removeIfIdle`**：无条件 remove 会在旧实例
+ * 正忙时换掉 `runMutex`，等于打开一个双 runner 并发窗口（W6 / P2）。
  */
 class AppContainer(context: Context) {
 
@@ -254,14 +255,21 @@ class AppContainer(context: Context) {
      */
     suspend fun agentRunnerFor(endpoint: RemoteEndpoint): AgentRunner = withContext(Dispatchers.IO) {
         val windowCap = settings.maxContextTokens.first()
+        // 自动压缩开关（W6 调试项）：它此前是 `AgentPolicy.compressContext` 的**零写入点**
+        // 声明 —— 一旦有人接进设置页并默认关，全部压缩会静默消失且无任何日志。现在它
+        // 有真实写入点，且必须进 `RunnerKey`（否则改了不生效，与 W4-07 同型）。
+        val compress = settings.compressContext.first()
         // keepWhile：**在途 run 未结束就绝不换实例**。换掉等于换掉 `runMutex` ——
         // 新实例的锁是空闲的，此时再发一次就是两条并发 run 写同一份历史。
         // 新配置不会丢，只是推迟到这一轮跑完后的下一次取用才生效。
-        runners.getOrBuild(RunnerKey(endpoint, windowCap), keepWhile = { it.isBusy }) {
+        runners.getOrBuild(
+            RunnerKey(endpoint, windowCap, compress),
+            keepWhile = { it.isBusy },
+        ) {
             AgentRunner(
                 engine = RemoteEngineBridge(engineFor(endpoint)),
                 tools = if (endpoint.supportsTools) tools else ToolRegistry(),
-                policy = AgentPolicy(maxContextTokens = windowCap),
+                policy = AgentPolicy(maxContextTokens = windowCap, compressContext = compress),
             )
         }
     }
@@ -324,11 +332,48 @@ class AppContainer(context: Context) {
         val saved = endpoints.upsert(normalized.copy(hasSecret = hasSecret))
         // 配置变了 ⇒ 旧 runner 的引擎还指着旧 baseUrl / modelId，必须失效重建。
         // 放在 upsert 之后：保存失败时不该丢掉仍与磁盘一致的那个实例。
-        runners.remove(normalized.id)
+        //
+        // ⚠️ 必须走 removeIfIdle 而不是 remove（W6 / P2）：无条件 remove 之后下一次
+        // getOrBuild 必然重建实例，而重建会换掉 `runMutex` —— 旧实例正跑着一条 run 时，
+        // 新实例的锁是空闲的 ⇒ 再发一次就是两条并发 run 写同一份历史。
+        // 忙的时候推迟失效：新配置晚一轮生效，好过并发写同一份状态。
+        runners.removeIfIdle(normalized.id) { it.isBusy }
         if (settings.activeEndpointId.first() == null) {
             settings.setActiveEndpointId(normalized.id)
         }
         return saved
+    }
+
+    /**
+     * 把真实运行学到的窗口写回端点（W5-02 的学习式写回终点）。
+     *
+     * ## 传递链（不新增任何模块边）
+     *
+     * `OpenAiCompatibleAdapter` 解析 400 的 `maximum context length is N`
+     * → `GenerationEvent.Failed.contextLimitHint` → `RunState`
+     * → `AgentEvent.Failed.contextLimitHint` → 宿主（`ChatViewModel` 的 run 收尾）
+     * → **本方法** → `EndpointStore` → `endpoints.json`。
+     *
+     * ## 为什么不做「探窗口」请求
+     *
+     * 要探就必须故意发一个超窗请求（1M ≈ 115 s + 一次计费，免费池上还会撞 429）。
+     * 「从真实 400 学习」是唯一可接受的通道，所以本方法只在**真的失败过**之后被调用。
+     *
+     * ## 为什么要顺手失效 runner 缓存
+     *
+     * `verifiedContextLength` 参与预算算式，而 runner 的缓存键含整个 endpoint
+     * ⇒ 下一次 `agentRunnerFor` 本来就会重建。这里显式失效只是让「值已落盘」与
+     * 「缓存已清」同一时刻发生；忙的时候照样推迟（`removeIfIdle`）。
+     *
+     * @param verified 服务端回报的真实窗口。`<= 0` 一律忽略（网关噪声不许写进预算）。
+     */
+    suspend fun recordContextLimit(endpointId: String, verified: Int) {
+        val updated = endpoints.recordVerifiedContextLength(endpointId, verified) ?: return
+        val applied = updated.firstOrNull { it.id == endpointId }?.verifiedContextLength
+        com.rickeal.liquidharness.core.agent.log.AgentLogStore.info(
+            "context_limit_learned endpoint=" + endpointId + " verified=" + applied
+        )
+        runners.removeIfIdle(endpointId) { it.isBusy }
     }
 
     /** 删端点必须**同时删密钥**：否则 Keystore 里留下一份无主密钥（`01-architecture` §十一）。 */

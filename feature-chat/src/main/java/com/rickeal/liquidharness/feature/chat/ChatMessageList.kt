@@ -4,12 +4,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -23,8 +27,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.rickeal.liquidharness.core.design.GlassBubble
+import com.rickeal.liquidharness.core.design.GlassButton
+import com.rickeal.liquidharness.core.design.GlassCard
 import com.rickeal.liquidharness.core.design.GlassEmptyState
 import com.rickeal.liquidharness.core.design.GlassEmptyStateAction
+import com.rickeal.liquidharness.core.design.GlassMaterial
+import com.rickeal.liquidharness.core.design.LocalGlassColors
 import com.rickeal.liquidharness.core.design.LocalGlassTokens
 import com.rickeal.liquidharness.core.model.Role
 
@@ -44,6 +52,17 @@ private const val SCROLL_TO_TAIL_SLACK = 1_000_000
  * 在途气泡由 [StreamingState] 现场拼出来，不落进 [bubbles] —— 单一真源，
  * 定稿时才由归约器生成真正的气泡。
  *
+ * ## 手动压缩区（W6）
+ *
+ * [compressedUpTo] 非空时，列表顶部插一张**分隔卡**，并且被压缩掉的那段气泡默认**收起**
+ * （可展开回看）。三条理由：
+ * - 收起是「点压缩」这个动作的可见结果 —— 点了之后屏幕上什么都没变，用户会以为按钮坏了；
+ * - 气泡仍然保留（数据一条没删），所以「展开查看」是真实的、不是装饰；
+ * - 收起状态是**纯 UI 状态**（`remember`），不进 `ChatUiState`：它不影响任何业务判定。
+ *
+ * 分隔卡的位置固定在列表顶部而不是「切点处」：切点之前的全部气泡正好是列表开头那一段，
+ * 收起后列表顶部就是切点，语义等价，且不需要为「插在中间」维护额外的 key 顺序。
+ *
  * ## 滚动跟随（旧仓同一口径）
  *
  * 只在用户**贴着底部**时跟随；回看历史时收到新消息不被强行拽到底。
@@ -61,6 +80,9 @@ fun ChatMessageList(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
+    compressedUpTo: String? = null,
+    compressedSavingTokens: Int = 0,
+    onUndoCompress: (() -> Unit)? = null,
 ) {
     val tokens = LocalGlassTokens.current
     val atBottom by remember {
@@ -73,12 +95,21 @@ fun ChatMessageList(
     // 思考块的展开态是纯 UI 状态（不进 ChatUiState）：它不影响任何业务判定，
     // 放进状态机只会让归约器多一个与事件无关的字段。
     val expandedThinking = remember { mutableStateMapOf<String, Boolean>() }
+    // 压缩区默认收起；切点一变（新的压缩 / 撤销）就回到默认态。
+    var compressedExpanded by remember(compressedUpTo) { mutableStateOf(false) }
+    val cutIndex = remember(bubbles, compressedUpTo) {
+        compressedUpTo?.let { id -> bubbles.indexOfFirst { it.id == id } } ?: -1
+    }
+    // 分隔卡占一个 item，所有「第几个 item」的换算都要带上它。
+    val dividerItems = if (cutIndex >= 0) 1 else 0
+    val visible = if (cutIndex >= 0 && !compressedExpanded) bubbles.drop(cutIndex + 1) else bubbles
     val streamingLength = streaming.text.length + streaming.reasoning.length
 
     LaunchedEffect(bubbles.size) {
-        val index = bubbles.lastIndex
+        val last = bubbles.lastOrNull() ?: return@LaunchedEffect
+        val index = visible.lastIndex + dividerItems
         if (index < 0) return@LaunchedEffect
-        if (atBottom || bubbles[index].role == Role.USER) {
+        if (atBottom || last.role == Role.USER) {
             listState.animateScrollToItem(index, scrollOffset = SCROLL_TO_TAIL_SLACK)
         }
     }
@@ -111,8 +142,19 @@ fun ChatMessageList(
                 )
             }
         }
+        if (cutIndex >= 0) {
+            item(key = "compressed") {
+                CompressedDivider(
+                    count = cutIndex + 1,
+                    savingTokens = compressedSavingTokens,
+                    expanded = compressedExpanded,
+                    onToggle = { compressedExpanded = !compressedExpanded },
+                    onUndo = onUndoCompress,
+                )
+            }
+        }
         items(
-            items = bubbles,
+            items = visible,
             key = { it.id },
             contentType = { if (it.role == Role.USER) 0 else 1 },
         ) { bubble ->
@@ -127,6 +169,63 @@ fun ChatMessageList(
         if (isStreaming) {
             item(key = "streaming", contentType = 1) {
                 StreamingTurn(streaming = streaming, toolTraces = toolTraces)
+            }
+        }
+    }
+}
+
+/**
+ * 手动压缩分隔卡：`已压缩 N 条` + 展开/收起 + 撤销。
+ *
+ * 用 `GlassCard(THIN)` 而不是气泡：它不是对话内容，是**元信息**（一段历史被移出了
+ * 请求体）。视觉上必须比气泡轻，否则用户会以为模型说了这句话。
+ */
+@Composable
+private fun CompressedDivider(
+    count: Int,
+    savingTokens: Int,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    onUndo: (() -> Unit)?,
+) {
+    val colors = LocalGlassColors.current
+    val tokens = LocalGlassTokens.current
+    GlassCard(
+        material = GlassMaterial.THIN,
+        cornerRadius = tokens.radiusMd,
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = stringResource(R.string.chat_compress_separator, count),
+                style = MaterialTheme.typography.labelMedium,
+                color = colors.onGlassMuted,
+            )
+            if (savingTokens > 0) {
+                Text(
+                    text = stringResource(R.string.chat_compress_saving, savingTokens),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onGlassSubtle,
+                )
+            }
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(tokens.gapSm),
+            ) {
+                GlassButton(
+                    text = stringResource(
+                        if (expanded) R.string.chat_compress_collapse else R.string.chat_compress_expand,
+                    ),
+                    onClick = onToggle,
+                    material = GlassMaterial.THIN,
+                )
+                if (onUndo != null) {
+                    GlassButton(
+                        text = stringResource(R.string.chat_compress_undo),
+                        onClick = onUndo,
+                        material = GlassMaterial.THIN,
+                    )
+                }
             }
         }
     }

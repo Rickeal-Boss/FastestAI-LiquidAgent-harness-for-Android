@@ -4,6 +4,7 @@ import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.Role
 import com.rickeal.liquidharness.core.model.ToolCall
 import com.rickeal.liquidharness.core.model.ToolResult
+import com.rickeal.liquidharness.core.model.newId
 
 /*
  * 从 UI 气泡重建线上 history。
@@ -72,4 +73,47 @@ internal fun ChatBubble.toHistoryMessages(): List<ChatMessage> {
     // 每个 tool_call_id 一条 TOOL 消息：OpenAI 兼容族要求一一对应
     // （`OpenAiCompatibleAdapter.messageObjects` 对多结果也是拆成多条）。
     return listOf(head) + results.map { ChatMessage(role = Role.TOOL, toolResults = listOf(it)) }
+}
+
+/**
+ * 整段气泡 → 线上 history，并支持「手动压缩」的切点。
+ *
+ * @param fromId 非空 = 该气泡**及其之前**的气泡不再进 history（手动压缩的产物）。
+ *   它们仍留在 [ChatUiState.bubbles] 里给用户读 —— 压缩改变的是「发回模型的字节」，
+ *   不是「用户能看到的内容」，这两件事必须分开。
+ *
+ * 切点是**气泡级**的，不是消息级：一条 MODEL 气泡可能映射成 `1 + N` 条消息，
+ * 从消息中间切会把 `assistant.tool_calls` 与它的 `tool` 结果拆散 ⇒ 端点 400
+ * （`WindowContextCompressor` 的类头同一论证）。气泡边界天然是安全边界。
+ *
+ * **失效 id 回落到全量**：`fromId` 找不到只有一种成因 —— 气泡列表被整体换掉了
+ * （新对话 / 会话导入），而那时 `compressedUpTo` 本来就被重置。真出现不一致时宁可多发
+ * 一段历史（可见、可诊断），也不要静默少发一段（模型凭空忘事，且界面上看不出来）。
+ */
+internal fun List<ChatBubble>.toHistoryMessages(fromId: String? = null): List<ChatMessage> {
+    if (fromId == null) return flatMap { it.toHistoryMessages() }
+    val cut = indexOfFirst { it.id == fromId }
+    if (cut < 0) return flatMap { it.toHistoryMessages() }
+    return drop(cut + 1).flatMap { it.toHistoryMessages() }
+}
+
+/**
+ * 线上消息 → 视图气泡（**导入通道的反向映射**）。
+ *
+ * 只映射 [Role.USER] 与 [Role.MODEL]：`SessionImportParser` 已经保证只产出这两种，
+ * 其余角色（SYSTEM / TOOL）在这里被丢弃而不是硬塞成气泡 —— 一条 `role=tool` 气泡在
+ * 列表里既没有工具卡也没有宿主声明，只会显示成一句无主的文本。
+ *
+ * **不带附件**（`attachments` 恒空）：历史图片不回灌（[ChatBubble.toHistoryMessages] 的
+ * 同一口径），导入的是题面文本。
+ *
+ * 空正文**不过滤**：调用方（导入）已经过滤过；这里再过滤一次会让「气泡数 == 消息数」
+ * 这条判据在别处悄悄不成立。
+ */
+internal fun List<ChatMessage>.toChatBubbles(): List<ChatBubble> = mapNotNull { message ->
+    when (message.role) {
+        Role.USER -> ChatBubble(id = newId(), role = Role.USER, text = message.text)
+        Role.MODEL -> ChatBubble(id = newId(), role = Role.MODEL, text = message.text)
+        else -> null
+    }
 }

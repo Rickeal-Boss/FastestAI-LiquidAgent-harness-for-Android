@@ -28,6 +28,13 @@ data class SettingsUiState(
     val activeId: String? = null,
     /** 单次请求窗口上限（token）。见 `SettingsRepository.maxContextTokens`。 */
     val maxContextTokens: Int = SettingsRepository.DEFAULT_MAX_CONTEXT_TOKENS,
+    /**
+     * 是否允许内核自动压缩上下文（W6 调试项）。见 `SettingsRepository.compressContext`。
+     *
+     * 只在 debug 变体的设置页可见（可见性由宿主注入的回调是否为 null 决定，
+     * 与其它调试入口同一条纪律）。
+     */
+    val compressContext: Boolean = SettingsRepository.DEFAULT_COMPRESS_CONTEXT,
     val probing: Boolean = false,
     val probeTarget: String? = null,
     val probeResult: ProbeOutcome? = null,
@@ -148,7 +155,16 @@ class SettingsViewModel(
         val list = container.endpoints.list()
         val active = container.settings.activeEndpointId.first()
         val window = container.settings.maxContextTokens.first()
-        _state.update { it.copy(endpoints = list, activeId = active, maxContextTokens = window, loaded = true) }
+        val compress = container.settings.compressContext.first()
+        _state.update {
+            it.copy(
+                endpoints = list,
+                activeId = active,
+                maxContextTokens = window,
+                compressContext = compress,
+                loaded = true,
+            )
+        }
     }
 
     /**
@@ -162,6 +178,20 @@ class SettingsViewModel(
         viewModelScope.launch {
             container.settings.setMaxContextTokens(tokens)
             _state.update { it.copy(maxContextTokens = tokens) }
+        }
+    }
+
+    /**
+     * 开关自动压缩（W6 调试项）。
+     *
+     * 与 [setMaxContextTokens] 同一条纪律：写盘后立刻回写 state（否则开关会「弹回去」，
+     * 用户以为没生效）。真正生效点在下一次建 runner 时 —— `AppContainer.agentRunnerFor`
+     * 用 `AgentPolicy(compressContext = ...)` 读它（那一行由主理人接）。
+     */
+    fun setCompressContext(enabled: Boolean) {
+        viewModelScope.launch {
+            container.settings.setCompressContext(enabled)
+            _state.update { it.copy(compressContext = enabled) }
         }
     }
 

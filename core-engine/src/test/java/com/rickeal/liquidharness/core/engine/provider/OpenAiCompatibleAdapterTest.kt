@@ -323,6 +323,32 @@ class OpenAiCompatibleAdapterTest {
         assertFalse(adapter.isTerminal(SseEvent("""{"choices":[]}""")))
     }
 
+    // ------------------------------------------------------------ 实测窗口解析（W5-02 / T6）
+
+    /**
+     * 400 错误体里的真实窗口必须被解析出来，且**不许误抓别的数字**。
+     *
+     * 文案出处 `w5-provider-matrix.md:89-93`（9 次观测完全一致）。把 `max_tokens` /
+     * `requested N tokens` 里的数字当成窗口，会写回一个**更错**的预算 ——
+     * 那比不写回更糟：预算一旦错，后续每次请求的判据全部失真且没有任何报错。
+     */
+    @Test
+    fun contextLimitHintIsParsedFromTheOverflowBody() {
+        val real = """{"error":{"message":"This model's maximum context length is 1000000 """ +
+            """tokens. However, you requested 1200000 tokens (1195904 in the messages, 4096 in """ +
+            """the completion). Please reduce the length of the messages or completion."}}"""
+        assertEquals(1_000_000, adapter.contextLimitHint(real))
+
+        // 大小写 / 多余空白放宽（部分网关会改写措辞）。
+        assertEquals(200_000, adapter.contextLimitHint("Maximum   Context Length Is 200000 tokens"))
+
+        // 反 vacuous：不含该句时必须是 null（否则「解析」等于「随便抓一个数字」）。
+        assertNull(adapter.contextLimitHint(""))
+        assertNull(adapter.contextLimitHint("rate limited, retry later"))
+        assertNull(adapter.contextLimitHint("""{"error":{"message":"maximum tokens is 4096"}}"""))
+        assertNull(adapter.contextLimitHint("""{"error":{"message":"context length is abc"}}"""))
+    }
+
     // ------------------------------------------------------------ 终帧裁决
 
     @Test

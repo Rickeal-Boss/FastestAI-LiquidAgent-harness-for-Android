@@ -11,6 +11,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.rickeal.liquidharness.core.data.AppContainer
+import com.rickeal.liquidharness.core.model.ChatMessage
 
 /**
  * 设置一级目的地。
@@ -74,13 +75,17 @@ object MemoryRoute {
  * 模块里而不是塞进 `:app`：新增设置子页时只动本文件，外壳的导航文件不需要知道
  * 「设置下面有几页」。
  *
- * ## 两个「借来的」入口：[onOpenTools] / [onOpenSandbox]
+ * ## 三个「借来的」入口：[onOpenTools] / [onOpenSandbox] / [onImportSession]
  *
  * 工具页与沙箱页在 W4 搬去了 `:feature-tools`（G10 行数闸门：本模块触顶 ⇒ 拆分）。
  * 那两个页面的路由常量归 `:feature-tools` 所有 —— feature ↛ feature 是 G6 的硬边，
  * 本模块**不能**引用它的符号。所以入口动作由外壳注入：`:app` 同时知道两边，
  * 把「跳到 tools / sandbox」这件事作为回调传进来，本模块只负责渲染入口行。
  * null = 本构建没有这两个页面（与其它入口同一条纪律：不摆假入口）。
+ *
+ * [onImportSession] 同理：会话导入的解析器在 `:core-data`（本模块可见），但落点是
+ * **对话页**的 `ChatViewModel`（`:feature-chat`，本模块不可见）⇒ 由外壳把「解析好的
+ * 消息交给谁」注入。null = 非 debuggable 安装包，不渲染该行。
  */
 fun NavGraphBuilder.settingsGraph(
     navController: NavHostController,
@@ -88,6 +93,8 @@ fun NavGraphBuilder.settingsGraph(
     appVersion: String,
     onOpenTools: (() -> Unit)? = null,
     onOpenSandbox: (() -> Unit)? = null,
+    onImportSession: ((List<ChatMessage>) -> Unit)? = null,
+    debugTools: Boolean = false,
 ) {
     composable(route = SettingsRoute.ROUTE) {
         val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory(container))
@@ -105,6 +112,12 @@ fun NavGraphBuilder.settingsGraph(
             onManageTools = onOpenTools,
             onManageSandbox = onOpenSandbox,
             onSetContextWindow = viewModel::setMaxContextTokens,
+            // 会话导入的落点是对话页的 ChatViewModel，而 feature ↛ feature 是 G6 硬边
+            // ⇒ 与 onOpenTools 同一套做法：由外壳注入「解析好的消息该交给谁」。
+            onImportSession = onImportSession,
+            // 自动压缩开关（W6 调试项）：只在 debuggable 安装包上注入回调，
+            // 非 debug 时 screen 不渲染该行（「回调 null = 不摆假入口」的既有纪律）。
+            onSetCompressContext = if (debugTools) viewModel::setCompressContext else null,
         )
     }
     // 子图拆分只为守 G11（单方法 ≤120 行）；路由语义不变，仍挂在同一个 graph 下。

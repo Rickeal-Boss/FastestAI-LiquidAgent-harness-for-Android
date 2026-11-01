@@ -14,6 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -22,7 +23,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision
+import com.rickeal.liquidharness.core.design.GlassButton
+import com.rickeal.liquidharness.core.design.GlassMaterial
 import com.rickeal.liquidharness.core.design.GlassScaffold
+import com.rickeal.liquidharness.core.design.LiquidDialog
 import com.rickeal.liquidharness.core.design.LocalBottomBarOverlay
 import com.rickeal.liquidharness.core.design.LocalGlassColors
 import kotlinx.coroutines.delay
@@ -42,6 +46,10 @@ import kotlinx.coroutines.delay
  *   「本会话」= **这段对话**，不是这一次 run：会话级缓存在 ViewModel 上，跨 run 生效，
  *   只有「新对话」才清空（语义与失效点见 `ChatErrorPanel.ApprovalCard` 的 KDoc）。
  *   直接透传给 ViewModel —— 裁决的语义与回传通道都在内核侧，本屏只负责把点击送出去。
+ * @param onCompressContext 手动压缩（W6）。null = 宿主不提供该能力，顶栏不渲染溢出菜单。
+ *   本屏只负责「二次确认」这一步：确认对话框是压缩的**唯一**入口，因为压缩有不可忽视的
+ *   代价（前缀缓存整段重建），把它做成一步到位的按钮等于把代价藏起来。
+ * @param onUndoCompress 撤销压缩（清空切点）。null = 只读展示，不渲染撤销键。
  */
 @Composable
 fun ChatScreen(
@@ -57,7 +65,13 @@ fun ChatScreen(
     onOpenDrawer: (() -> Unit)? = null,
     onPickImage: (() -> Unit)? = null,
     onRemoveAttachment: ((String) -> Unit)? = null,
+    onCompressContext: (() -> Unit)? = null,
+    onUndoCompress: (() -> Unit)? = null,
 ) {
+    // 确认对话框的开关是纯 UI 状态（不进 ChatUiState）：它不影响任何业务判定，
+    // 放进状态机只会让归约器多一个与事件无关的字段。
+    var confirmCompress by remember { mutableStateOf(false) }
+
     GlassScaffold(
         modifier = modifier,
         topBar = {
@@ -70,6 +84,9 @@ fun ChatScreen(
                 onOpenSettings = onOpenSettings,
                 onNewConversation = onNewConversation,
                 onOpenDrawer = onOpenDrawer,
+                // 入口非空才渲染菜单项；点击只负责「开确认框」，真正的压缩在确认之后。
+                onCompressContext = onCompressContext?.let { { confirmCompress = true } },
+                compressEnabled = !state.isStreaming,
             )
         },
         bottomBar = {
@@ -127,8 +144,67 @@ fun ChatScreen(
             isStreaming = state.isStreaming,
             hasEndpoint = state.endpointLabel != null,
             onOpenSettings = onOpenSettings,
+            compressedUpTo = state.compressedUpTo,
+            compressedSavingTokens = state.compressedSavingTokens,
+            onUndoCompress = onUndoCompress,
         )
     }
+
+    if (confirmCompress && onCompressContext != null) {
+        CompressConfirmDialog(
+            onDismiss = { confirmCompress = false },
+            onConfirm = {
+                confirmCompress = false
+                onCompressContext()
+            },
+        )
+    }
+}
+
+/**
+ * 手动压缩的二次确认框。
+ *
+ * ## 为什么必须有这一步，且必须写代价
+ *
+ * 压缩**不是**「免费的省钱操作」：它把 history 的最老一段整体拿掉 ⇒ 下一次请求的提示
+ * 前缀从第一个字节起就变了 ⇒ provider 侧缓存整段重建、`cached_tokens` 归 0、账单更贵。
+ * 本仓明令禁止「只说收益不说代价」的界面（`ContextCompressor` 的类头同一纪律：账单上
+ * 只表现为「贵了」是最难发现的回归），所以确认文案里写死这句话。
+ *
+ * 第二个代价是**不可逆的信息损失**（对模型而言）：被移出 history 的气泡用户仍能展开
+ * 回看，但模型再也看不到它们。撤销能把历史还原，**已经发生过的那次请求的费用不会退**。
+ */
+@Composable
+private fun CompressConfirmDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    LiquidDialog(
+        onDismissRequest = onDismiss,
+        title = stringResource(R.string.chat_compress_title),
+        subtitle = stringResource(R.string.chat_compress_warning),
+        actions = { dismiss ->
+            GlassButton(
+                text = stringResource(R.string.chat_compress_cancel),
+                onClick = dismiss,
+                material = GlassMaterial.THIN,
+            )
+            GlassButton(
+                text = stringResource(R.string.chat_compress_confirm),
+                onClick = {
+                    dismiss()
+                    onConfirm()
+                },
+            )
+        },
+        content = {
+            Text(
+                text = stringResource(R.string.chat_compress_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = LocalGlassColors.current.onGlassSubtle,
+            )
+        },
+    )
 }
 
 /**

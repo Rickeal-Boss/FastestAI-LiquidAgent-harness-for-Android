@@ -10,10 +10,14 @@ import com.rickeal.liquidharness.core.agent.log.AgentLogStore
 import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.model.AgentEvent
 import com.rickeal.liquidharness.core.model.ChatMessage
+import com.rickeal.liquidharness.core.model.FinishReason
+import com.rickeal.liquidharness.core.model.GenerationEvent
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.model.Role
 import com.rickeal.liquidharness.core.model.TokenEstimator
 import com.rickeal.liquidharness.core.model.ToolCall
+import com.rickeal.liquidharness.core.model.ToolParamType
+import com.rickeal.liquidharness.core.model.ToolParameter
 import com.rickeal.liquidharness.core.model.ToolResult
 import java.security.MessageDigest
 import kotlinx.coroutines.runBlocking
@@ -283,6 +287,145 @@ class ContextBudgetTest {
     private class FixedSummarizer(private val text: String) : ContextSummarizer {
         override suspend fun summarize(messages: List<ChatMessage>, targetTokens: Int): SummaryResult =
             SummaryResult.Ok(text, TokenEstimator.estimate(text), 1L)
+    }
+
+    // ── W6：估算锚点 / 可机读计数 / 零消费开关 ──────────────────────────────
+
+    /** 账本里最后一条 `prompt=` 估算值（这是「估算器看到了多少」的唯一可观测出口）。 */
+    private fun lastPromptEstimate(): Int? {
+        val line = AgentLogStore.recent().lastOrNull { it.message.contains("prompt=") }?.message
+            ?: return null
+        return Regex("""prompt=(\d+)""").find(line)?.groupValues?.get(1)?.toIntOrNull()
+    }
+
+    /**
+     * T5：第 1 轮 provider 回报 `prompt_tokens = 33 800` ⇒ 第 2 轮的估算值必须 **≥ 33 800**。
+     *
+     * ## 为什么这条断言能证明锚点生效
+     *
+     * 第 2 轮的真实内容只有几百个字符（约 100 token）。**不用锚点**时估算必然是个三位数，
+     * 与 33 800 差两个数量级；所以 `>= 33 800` 只可能来自「上次真值 + 其后增量」。
+     *
+     * ## 它**不能**证明什么（必须写清，否则下一个 agent 会以为 M1 已修）
+     *
+     * 锚点只修**静态部分**。W5-01 事故里被低估的那段增量（工具结果正文）仍然被低估，
+     * 所以本用例绿不代表「32K 档不会再发出 33 800 token」—— 那条由
+     * `PreStepBudgetTest` 的字符判据兜。两件事，别合并。
+     */
+    @Test
+    fun promptEstimateUsesProviderTruthAsAnchor() {
+        AgentLogStore.clear()
+        val events = mutableListOf<AgentEvent>()
+        val probe = FakeTool(
+            spec = fakeSpec(
+                name = "probe",
+                parameters = listOf(ToolParameter("path", ToolParamType.STRING, "path", required = true)),
+            ),
+            behavior = { ToolResult(name = "probe", ok = true, output = "ok") },
+        )
+        val engine = FakeEngine(
+            scripts = listOf(
+                listOf(
+                    GenerationEvent.ToolCallDelta(0, "c1", "probe", """{"path":"/a"}"""),
+                    GenerationEvent.Finished(FinishReason.TOOL_CALLS),
+                    // usage 在末帧单独到达，顺序与真实 adapter 一致。
+                    GenerationEvent.Usage(prompt = 33_800, completion = 12, cachedPrompt = null),
+                ),
+                FakeEngine.textOnly("done"),
+            ),
+        )
+        val request = AgentRequest(endpoint = endpoint)
+        val ctx = testContext(
+            events = events,
+            registered = listOf(probe),
+            engine = engine,
+            request = request,
+            state = RunState.forRequest(request),
+        )
+
+        val step = runBlocking { TurnLoop(generation = GenerationRound(backoff = {})).run(ctx) }
+
+        assertEquals(Step.Done, step)
+        assertEquals(2, engine.generateCount)
+        val estimate = lastPromptEstimate()
+        assertTrue(estimate != null, "estimate must be logged: " + AgentLogStore.recent().size)
+        assertTrue(
+            estimate!! >= 33_800,
+            "estimate=" + estimate + " must be anchored on the provider truth 33800",
+        )
+    }
+
+    /**
+     * M2 可观测性：压缩器「无损放弃」必须留下**可机读**的计数。
+     *
+     * 旧文案 `context over budget but not compressible` 在 W5 排障时被误读成
+     * 「没有压缩逻辑」，而它其实正是「压缩跑了、但没有可丢的东西」这条结论本身。
+     * 判据是可 grep 的 token：`compress_skipped=not_compressible`。
+     */
+    @Test
+    fun notCompressibleIsReportedAsAMachineReadableCounter() {
+        AgentLogStore.clear()
+        val narrow = RemoteEndpoint(id = "ep-narrow", contextLength = 8_000, maxOutputTokens = 2_000)
+        // 单轮形态 [USER, MODEL(calls), TOOL]：安全切点只能落在 USER@0 ⇒ 保留区 = 全部。
+        val singleTurn = listOf(
+            ChatMessage(id = "u", role = Role.USER, text = "x".repeat(4_000)),
+            ChatMessage(
+                id = "m",
+                role = Role.MODEL,
+                toolCalls = listOf(ToolCall(id = "c1", name = "f", argumentsJson = "{}")),
+            ),
+            ChatMessage(
+                id = "t",
+                role = Role.TOOL,
+                toolResults = listOf(ToolResult(callId = "c1", name = "f", output = "y".repeat(16_000))),
+            ),
+        )
+        val ctx = testContext(
+            events = mutableListOf<AgentEvent>(),
+            request = AgentRequest(endpoint = narrow),
+            state = RunState(singleTurn),
+        )
+
+        runBlocking { ContextBudget().prepare(ctx, "s".repeat(2_000)) }
+
+        assertTrue(
+            AgentLogStore.recent().any { it.message.contains("compress_skipped=not_compressible") },
+            AgentLogStore.recent().joinToString("\n") { it.message },
+        )
+        // 无损放弃 ⇒ 历史一条都不许被改写（这是它「无损」的含义）。
+        assertEquals(singleTurn.size, ctx.state.working().size)
+    }
+
+    /**
+     * M4：压缩总开关被关时必须留一行证据，**而且每次 prepare 都要留**。
+     *
+     * `compressContext` 是第 4 个「声明了没消费者」的开关（默认 true、全仓零写入点）。
+     * 一旦有人把它接进设置页并默认关，全部压缩会**静默消失** —— 没有日志的话，
+     * 下一次排障只能靠猜。
+     *
+     * 「每次」是主理人补的口径：只打一次的日志会让用户「关了开关又打开」或
+     * 「长会话跑到第 8 轮」时看不出这一轮到底压没压。这里连续 prepare 两次断言两行。
+     */
+    @Test
+    fun disabledCompressionLeavesATraceOnEveryPrepare() {
+        AgentLogStore.clear()
+        val ctx = testContext(
+            events = mutableListOf<AgentEvent>(),
+            request = AgentRequest(endpoint = endpoint),
+            policy = AgentPolicy(compressContext = false),
+            state = RunState(history(4)),
+        )
+        val budget = ContextBudget()
+
+        runBlocking { budget.prepare(ctx, "sys") }
+        runBlocking { budget.prepare(ctx, "sys") }
+
+        val lines = AgentLogStore.recent().count { it.message.contains("compress=disabled_by_policy") }
+        assertTrue(
+            lines >= 2,
+            "expected one line per prepare, got " + lines + ":\n" +
+                AgentLogStore.recent().joinToString("\n") { it.message },
+        )
     }
 
     private companion object {

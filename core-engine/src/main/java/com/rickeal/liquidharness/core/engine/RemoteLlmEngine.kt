@@ -332,7 +332,15 @@ class RemoteLlmEngine(
             GenerationEvent.Failed(EngineErrorKind.NETWORK, "request timeout (HTTP $status)", true)
 
         status == 400 && looksLikeContextOverflow(bodyText) ->
-            GenerationEvent.Failed(EngineErrorKind.CONTEXT_OVERFLOW, "context window exceeded", false)
+            // 顺手把服务端回报的真实窗口带出去（W5-02 的学习式写回通道）。
+            // 只有这一条分支解析：`contextLimitHint` 的匹配串本身就含 overflow 措辞，
+            // 在别的分支上它必然返回 null —— 放在这里是为了让「为什么会有这个数」可读。
+            GenerationEvent.Failed(
+                EngineErrorKind.CONTEXT_OVERFLOW,
+                "context window exceeded",
+                false,
+                contextLimitHint = adapter.contextLimitHint(bodyText),
+            )
 
         status >= 500 ->
             GenerationEvent.Failed(EngineErrorKind.SERVER, "server error (HTTP $status)", true)

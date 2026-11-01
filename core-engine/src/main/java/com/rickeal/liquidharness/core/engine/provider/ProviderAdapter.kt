@@ -162,6 +162,19 @@ interface ProviderAdapter {
      * 会在某一族上复活（AGENTS.md §五.6）。
      */
     fun finish(state: AdapterStreamState): GenerationEvent.Finished
+
+    /**
+     * 从**错误响应体**里解析服务端回报的真实窗口（W5-02 的「学习式写回」通道）。
+     *
+     * 返回 `null` = 本族不认这个文案 / 报文里没有该信息。默认实现恒 `null`：
+     * 另外两族（Anthropic / Gemini）的错误体格式不同，将来各自 override，
+     * 现在给默认值可以让既有实现与单测**无需改动**就编译。
+     *
+     * 为什么放在 adapter 而不是 engine：文案是**族**的属性（同一族的所有供应商
+     * 共用一套 400 措辞），而 engine 是与供应商无关的驱动层。放在 engine 里会让
+     * 「认哪句话」变成第二套按 baseUrl 分支的判断。
+     */
+    fun contextLimitHint(errorBody: String): Int? = null
 }
 
 /**

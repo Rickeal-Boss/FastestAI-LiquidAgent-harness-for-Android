@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.rickeal.liquidharness.core.design.CyberJoystickSwitch
 import com.rickeal.liquidharness.core.design.GlassCard
 import com.rickeal.liquidharness.core.design.GlassScaffold
 import com.rickeal.liquidharness.core.design.GlassSettingRow
@@ -23,6 +24,7 @@ import com.rickeal.liquidharness.core.design.GlassTopBar
 import com.rickeal.liquidharness.core.design.LocalBottomBarOverlay
 import com.rickeal.liquidharness.core.design.LocalGlassColors
 import com.rickeal.liquidharness.core.design.LocalGlassTokens
+import com.rickeal.liquidharness.core.model.ChatMessage
 
 /**
  * 设置首页（一级目的地，竖屏是底部页签 / 横屏是顶部横条，因此**没有返回钮**）。
@@ -39,8 +41,12 @@ import com.rickeal.liquidharness.core.design.LocalGlassTokens
  *    `BuildConfig.VERSION_NAME` 是库自己的版本，与安装包无关）。
  *  - **诊断**：日志行**只读展示**（`enabled = false`）。本仓还没有诊断页，这里如实
  *    说明"日志仅保存在本机"，不摆一个点不动的「打开诊断」入口。
+ *    该组还挂着**会话导入**（W6 调试通道）：仅当宿主注入回调时渲染，见 [SessionImportRow]。
  *
  * 无状态：所有数据从 [SettingsUiState] / 参数来，动作走回调 —— UI 测试不需要 ViewModel。
+ *
+ * @param onImportSession 非空才渲染「导入会话（调试）」行。null = 本构建不提供该通道
+ *   （`:app` 只在 debuggable 安装包上传入回调）。与其它入口同一条纪律：不摆假入口。
  */
 @Composable
 fun SettingsScreen(
@@ -54,6 +60,8 @@ fun SettingsScreen(
     onManageTools: (() -> Unit)? = null,
     onManageSandbox: (() -> Unit)? = null,
     onSetContextWindow: ((Int) -> Unit)? = null,
+    onImportSession: ((List<ChatMessage>) -> Unit)? = null,
+    onSetCompressContext: ((Boolean) -> Unit)? = null,
 ) {
     val tokens = LocalGlassTokens.current
     val activeName = state.endpoints.firstOrNull { it.id == state.activeId }?.name
@@ -143,16 +151,61 @@ fun SettingsScreen(
             }
 
             GlassCard(contentPadding = PaddingValues(14.dp)) {
-                Column {
-                    GroupTitle(stringResource(R.string.settings_section_diagnostics))
-                    // 只读行：本仓还没有诊断页，如实说明日志的去向，不摆假入口。
-                    GlassSettingRow(
-                        title = stringResource(R.string.settings_diagnostics_log),
-                        subtitle = stringResource(R.string.settings_diagnostics_log_hint),
-                        enabled = false,
-                    )
-                }
+                DiagnosticsCard(
+                    compressContext = state.compressContext,
+                    onImportSession = onImportSession,
+                    onSetCompressContext = onSetCompressContext,
+                )
             }
+        }
+    }
+}
+
+/**
+ * 诊断分组：日志行（只读）+ 自动压缩开关（调试）+ 会话导入（调试）。
+ *
+ * 抽成独立 composable 只为守 G11（单方法 ≤120 行）：`SettingsScreen` 加上这些行之后
+ * 会超过 120 行，而「超限就拆方法」是本仓的硬纪律（不是调上限、不是加注释）。
+ *
+ * 两个调试项（开关 / 导入）都由「回调是否为 null」决定可见性：宿主只在 debuggable
+ * 安装包上注入回调（理由见 `SessionImportRow` 的类头）。不摆假入口是本文件的一贯纪律。
+ */
+@Composable
+private fun DiagnosticsCard(
+    compressContext: Boolean,
+    onImportSession: ((List<ChatMessage>) -> Unit)?,
+    onSetCompressContext: ((Boolean) -> Unit)?,
+) {
+    Column {
+        GroupTitle(stringResource(R.string.settings_section_diagnostics))
+        // 只读行：本仓还没有诊断页，如实说明日志的去向，不摆假入口。
+        GlassSettingRow(
+            title = stringResource(R.string.settings_diagnostics_log),
+            subtitle = stringResource(R.string.settings_diagnostics_log_hint),
+            enabled = false,
+        )
+        // 自动压缩开关（W6 调试项）。开关的 checked 语义与标题**同向**：
+        // 标题说「自动压缩」，checked = 压缩开着。反过来的写法（标题「关闭自动压缩」+ 开关）
+        // 会出现「开关打开 = 功能关闭」——界面说谎，比没有这个开关更糟。
+        if (onSetCompressContext != null) {
+            GlassSettingRow(
+                title = stringResource(R.string.settings_debug_auto_compress),
+                subtitle = stringResource(R.string.settings_debug_auto_compress_hint),
+                modifier = Modifier.padding(top = 8.dp),
+                trailing = {
+                    CyberJoystickSwitch(
+                        checked = compressContext,
+                        onCheckedChange = onSetCompressContext,
+                    )
+                },
+            )
+        }
+        // 会话导入（W6 调试通道）。
+        if (onImportSession != null) {
+            SessionImportRow(
+                onImported = onImportSession,
+                modifier = Modifier.padding(top = 8.dp),
+            )
         }
     }
 }

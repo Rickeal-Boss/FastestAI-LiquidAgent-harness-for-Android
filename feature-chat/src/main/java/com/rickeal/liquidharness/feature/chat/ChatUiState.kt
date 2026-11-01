@@ -57,6 +57,20 @@ enum class ChatStatus {
      *
      * 进入：`RoundStarted`。离开：首个 `TextDelta` / `ReasoningDelta` / `ToolCallStarted`，
      * 或任何终态事件。
+     *
+     * ## `UsageUpdated` 不解除等待态 —— 这是**有意**的（W6 钉住）
+     *
+     * 两个口径刻意不同，混用会各自错一半：
+     * - **UI 语义 = 「模型开口」**：用户要看到的是「回答开始出来了」。`UsageUpdated` 是
+     *   计费账（`prompt` / `completion` 数字），它在有些端点上**先于正文**到达，
+     *   此刻屏幕上一个字都还没有 —— 把它当「开口」会让状态行提前消失，用户看到的是
+     *   「圈没了、也没内容」，比一直转圈更像死机。
+     * - **看门狗语义 = 「连接产出」**：首字节超时判的是「这条连接到底有没有吐东西」，
+     *   任何帧（含 usage 帧）都算产出，所以内核侧看到 usage 就该重置超时计时。
+     *
+     * 归约器只行使前一条（见 `EventReducer` 的 `UsageUpdated` 分支原样返回 `status`），
+     * 后一条归内核看门狗。**改这一条前先想清楚改的是哪个语义**：让 usage 解除等待态，
+     * 等于让 UI 替看门狗做判断，而 UI 拿不到超时时间。
      */
     WAITING_FIRST_BYTE,
 
@@ -184,10 +198,33 @@ data class ChatUiState(
     val attachments: List<Attachment> = emptyList(),
     /** 非空 = 输入区上方渲染一行状态提示（重试中 / 等待首字节 / 已停止）。 */
     val status: ChatStatus? = null,
+    /**
+     * 手动压缩切点（气泡 id）。非空 = 该气泡**及其之前**的气泡不再进 history。
+     *
+     * 只影响「发回模型的字节」：气泡本体仍留在 [bubbles] 里，用户可以展开回看。
+     * 真值源仍只有一处 —— [bubbles]；本字段只是一个**指针**，不是第二份内容。
+     * 撤销 = 清空本字段（`ChatViewModel.undoCompress`），不需要回滚任何数据。
+     */
+    val compressedUpTo: String? = null,
+    /** 手动压缩省下的估算 token。0 = 未压缩 / 没省下。只用于分隔卡上的副标题。 */
+    val compressedSavingTokens: Int = 0,
 ) {
     /** 发送按钮可用性：非流式、有输入或有附件、已配置端点。 */
     val canSend: Boolean
         get() = !isStreaming &&
             (input.isNotBlank() || attachments.isNotEmpty()) &&
             endpointLabel != null
+
+    /**
+     * 被切点移出 history 的气泡数（分隔卡上的「已压缩 N 条」）。
+     *
+     * 派生而不是另存一个计数：多存一个数就多一处会与 [bubbles] 漂移的真值。
+     * 切点失效（id 不在列表里）时返回 0，与 `toHistoryMessages(fromId)` 的回落一致。
+     */
+    val compressedBubbleCount: Int
+        get() {
+            val id = compressedUpTo ?: return 0
+            val index = bubbles.indexOfFirst { it.id == id }
+            return if (index < 0) 0 else index + 1
+        }
 }

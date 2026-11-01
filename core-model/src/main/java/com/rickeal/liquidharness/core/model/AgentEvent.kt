@@ -107,11 +107,23 @@ sealed interface AgentEvent {
         val report: BottleneckReport? = null,
     ) : AgentEvent
 
+    /**
+     * 终态失败。
+     *
+     * [contextLimitHint]：本次失败若由「上下文超窗 400」引起，且服务端回报了真实窗口
+     * （`maximum context length is N`），这里带 N。消费者是宿主的 run 收尾：
+     * `AppContainer.recordContextLimit(endpointId, n)` 把它写回端点
+     * （`RemoteEndpoint.verifiedContextLength`），下一次 run 的预算算式立刻用实测值。
+     *
+     * 默认 `null` ⇒ 既有构造点与既有归约层（`feature-chat` 的 EventReducer）**无需改动**
+     * 就能编译（W6 纪律：新增字段一律给默认值）。
+     */
     data class Failed(
         val message: String,
         val cause: Throwable? = null,
         val report: BottleneckReport? = null,
         val terminatedBy: TerminationReason? = null,
+        val contextLimitHint: Int? = null,
     ) : AgentEvent
 
     data class Cancelled(val partialText: String) : AgentEvent

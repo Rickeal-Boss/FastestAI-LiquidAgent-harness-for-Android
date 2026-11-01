@@ -52,6 +52,33 @@ class EndpointStore(
         next
     }
 
+    /**
+     * 写回**实测**窗口（W5-02 的学习式写回，唯一数据来源是真实运行的 400）。
+     *
+     * ## 三条约束
+     *
+     * 1. **只接受正数**：`maximum context length is 0` 之类的报文是网关噪声，
+     *    写进去会让预算算式变成 0 ⇒ 下一次 run 必然误熔断。
+     * 2. **端点不存在就什么都不做**（返回 null）：调用方可能是在「删端点」之后收到
+     *    迟到的失败事件，这里不许把已删的端点复活（不 `upsert`，只 `map`）。
+     * 3. **值没变就不落盘**：这个写回会在每次超窗失败后发生，无脑重写文件是白 IO，
+     *    而且会让 `endpoints.json` 的 mtime 抖动（诊断时看不出「配置到底改过没有」）。
+     *
+     * @return 写后的完整清单；`null` = 参数非法 / 端点不存在（**未写盘**）。
+     */
+    suspend fun recordVerifiedContextLength(id: String, verified: Int): List<RemoteEndpoint>? =
+        mutex.withLock {
+            if (verified <= 0) return@withLock null
+            val current = loadOrSeed()
+            val target = current.firstOrNull { it.id == id } ?: return@withLock null
+            if (target.verifiedContextLength == verified) return@withLock current
+            val next = current.map {
+                if (it.id == id) it.copy(verifiedContextLength = verified) else it
+            }
+            persist(next)
+            next
+        }
+
     /** 读文件；不存在则写入预置并返回预置（只发生一次）。 */
     private suspend fun loadOrSeed(): List<RemoteEndpoint> {
         val stored = files.read(FILE_NAME, ListSerializer(RemoteEndpoint.serializer()))

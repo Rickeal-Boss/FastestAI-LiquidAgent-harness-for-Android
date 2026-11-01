@@ -98,10 +98,22 @@ class RunTermination {
         )
     }
 
-    /** 不可恢复的失败（协议错误 / 鉴权 / 配置错误 / 未知异常）。 */
+    /**
+     * 不可恢复的失败（协议错误 / 鉴权 / 配置错误 / 未知异常）。
+     *
+     * `contextLimitHint` 从 [RunState.contextLimitHint] 透传（W5-02 的学习式写回通道）：
+     * 值由 `GenerationRound` 从 `GenerationEvent.Failed` 抄进 RunState，这里只负责让它
+     * 走出内核。宿主的 run 收尾读这个字段写回端点 —— 内核不判断它、不改写它。
+     */
     suspend fun emitFailed(ctx: TurnContext, message: String, cause: Throwable? = null) {
         AgentLogStore.error("run failed: " + message)
-        ctx.emit(AgentEvent.Failed(message = message, cause = cause))
+        ctx.emit(
+            AgentEvent.Failed(
+                message = message,
+                cause = cause,
+                contextLimitHint = ctx.state.contextLimitHint,
+            )
+        )
     }
 
     /**

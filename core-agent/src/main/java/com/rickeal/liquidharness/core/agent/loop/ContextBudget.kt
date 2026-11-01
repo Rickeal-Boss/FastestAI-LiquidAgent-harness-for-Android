@@ -152,9 +152,16 @@ class ContextBudget(
 
         val budget = contextBudgetTokens(ctx.request.endpoint, ctx.policy)
         val toolTokens = TokenEstimator.estimateToolSpecs(specs)
-        val estimated = TokenEstimator.estimateMessages(full) + toolTokens
+        val estimated = estimatePrompt(ctx, full, toolTokens)
         observePrefix(ctx, systemText, full, specs, estimated)
-        if (!ctx.policy.compressContext) return full
+        if (!ctx.policy.compressContext) {
+            // 压缩总开关是**第 4 个「声明了没消费者」的字段**（`AgentPolicy.compressContext`：
+            // 默认 true，全仓零写入点）。一旦有人把它接进设置页并默认关，全部压缩会
+            // **静默消失**且无任何日志 —— 那是最难排查的形态（账单不会变，只是每次请求都超窗）。
+            // 这一行就是那种情况下的唯一证据，别删。
+            AgentLogStore.info("compress=disabled_by_policy prompt=" + estimated + " budget=" + budget)
+            return full
+        }
         if (estimated <= budget) return full
 
         // 工具声明也占窗口，而压缩器只看 messages ⇒ 先把工具那一段从预算里扣掉，
@@ -164,10 +171,19 @@ class ContextBudget(
         val keptBody = compressed.filter { it.role != Role.SYSTEM }
         if (keptBody.size >= body.size) {
             // 无损放弃：压缩器没能安全丢掉任何一条 ⇒ 不改写历史（见类头最后一段）。
-            AgentLogStore.warn("context over budget but not compressible: " + estimated + " > " + budget)
+            // 措辞必须**可机读**（`compress_skipped=not_compressible`）：旧文案
+            // `context over budget but not compressible` 在 W5 排障时被误读成「没有压缩逻辑」，
+            // 而它其实正是「压缩跑了、但没有可丢的东西」这条结论本身。
+            AgentLogStore.warn(
+                "compress_skipped=not_compressible prompt=" + estimated + " budget=" + budget +
+                    " messages=" + body.size
+            )
             return full
         }
         ctx.state.replaceWorking(keptBody)
+        // 压缩改写了历史前半段 ⇒ 估算锚点（上次真值 + 其后增量）的下标失去意义。
+        // 不置 0 会把「压缩后重排的整段历史」当成增量，估算暴涨到误熔断。
+        ctx.state.invalidatePromptAnchor()
         AgentLogStore.info(
             "context compressed before round " + ctx.state.round + ": " + body.size + " -> " +
                 keptBody.size + " messages (estimated " + estimated + " > budget " + budget + ")"
@@ -200,6 +216,44 @@ class ContextBudget(
             layeredForRun = null
         }
         return toolSpecsSnapshot
+    }
+
+    /**
+     * 本轮请求的 token 估算：**上次真值 + 其后新增部分的估算**（W6 / T5）。
+     *
+     * ```
+     * estimated = state.lastReportedPrompt + estimate(full.drop(state.lastReportedAtMessageCount))
+     *             + toolTokens
+     * ```
+     *
+     * ## 它修的是什么，以及它**修不了**什么（必须一起读）
+     *
+     * 修的是**静态部分**：历史里那一大段已经被 provider 数过一次（真值），之后每轮不再
+     * 用启发式重复估它 —— 否则启发式的偏差会随轮次累积。
+     *
+     * **修不了** W5-01 那次事故：本例的增量本身就是被低估的那一段（工具结果正文，
+     * 估算按 4 字符/token、实测 ≈2）⇒ 锚点对「本轮新增的工具结果」**一次都拦不住**。
+     * 真正的兜底是字符量纲（`PreStepBudget` + `AgentPolicy.hardCharsPerToken`）。
+     * 看到这段就以为「估算器已经准了」是下一个 agent 最容易犯的错。
+     *
+     * ## 锚点失效的三条路径
+     *
+     * 1. 压缩改写了历史（`invalidatePromptAnchor`）；
+     * 2. `lastReportedAtMessageCount` 超过本轮请求条数（sanitize 合并 / 补丁改写了条数）；
+     * 3. provider 从未回报过 usage（`lastReportedPrompt == 0`）。
+     *
+     * 三条都回落成「整条请求全量估算」，即 W5 之前的语义 —— **宁可退回旧行为，也不要
+     * 用一个错位的锚点算出一个小得多的数**（那会把「该压缩」判成「不用压」）。
+     */
+    private fun estimatePrompt(ctx: TurnContext, full: List<ChatMessage>, toolTokens: Int): Int {
+        val anchor = ctx.state.lastReportedPrompt
+        val anchorAt = ctx.state.lastReportedAtMessageCount
+        val base = if (anchor > 0 && anchorAt in 0..full.size) {
+            anchor + TokenEstimator.estimateMessages(full.drop(anchorAt))
+        } else {
+            TokenEstimator.estimateMessages(full)
+        }
+        return base + toolTokens
     }
 
     /**

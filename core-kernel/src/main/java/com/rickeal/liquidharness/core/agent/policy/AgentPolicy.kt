@@ -136,16 +136,56 @@ data class AgentPolicy(
     val compressContext: Boolean = true,
 
     /**
-     * 压缩阈值。旧仓 0.75，沿用 —— 但**分母换了**：旧仓分母是 litertlm 的 KV 预算，
-     * 新仓分母是「端点声明窗口与 [maxContextTokens] 取小」（见 [com.rickeal.liquidharness.core.agent.context.contextBudgetTokens]）。
+     * 压缩阈值（**软预算**的水位线，不是压缩目标）。旧仓 0.75，沿用 —— 但**分母换了**：
+     * 旧仓分母是 litertlm 的 KV 预算，新仓分母是「端点声明窗口与 [maxContextTokens] 取小，
+     * 再减 [maxOutputTokens]」（见 [com.rickeal.liquidharness.core.agent.context.hardContextBudgetTokens]）。
+     *
+     * ## 两条口径订正（W5 交接与外审都写错过，别照抄）
+     *
+     * 1. 32K 窗口档的触发预算是 `(32 000 − 4 096) × 0.75 = 20 928`，**不是 19 200**
+     *    （19 200 是 `32 000 × 0.6`，把「压缩目标水位线」当成了触发线）。
+     * 2. 0.6 是**压缩目标**（`DEFAULT_COMPRESS_TARGET_RATIO`），与 0.75 不是同一个数，
+     *    也不是同一个用途：0.75 决定「要不要压」，0.6 决定「压到多小」。
+     *
+     * 本字段只影响**软预算**（丢最老历史）。硬预算
+     * （`hardContextBudgetTokens`，原地收缩 / 熔断）**不乘本字段** ——
+     * 乘了就等于把硬上限砍掉 25%，兜底形同虚设（w6-plan §2.5(a)）。
      */
     val compressThreshold: Float = 0.75f,
+
+    /**
+     * 硬预算的**字符量纲下界（floor）**：`hardBudgetTokens × 本值 = hardCharCap`。
+     *
+     * 为什么需要字符判据：`TokenEstimator` 对代码 / JSON 按 4 字符/token 估、实测 ≈2.0，
+     * 于是「估算 16k < 预算 20 928」与「实际 33 800 token」可以同时成立 —— **用有偏的尺子
+     * 量自己等于没量**。字符量纲与估算器无关，是本仓唯一不依赖估算器正确性的判据（W5-01）。
+     *
+     * 取值 **1.8**：实测下界 2.01 向下取整留 ~10% 余量。⚠️ 它是 **floor 不是唯一取值**：
+     * chars/token 是**内容相关**的（散文 5.73～5.75、代码 ≈2.0），固定 1.8 会把散文会话
+     * 过度收缩约 3 倍。实际生效值由 [maxCalibratedCharsPerToken] 与 provider 真值标定
+     * （见 `effectiveCharsPerToken`）；本字段只在「还没有任何真值」时生效。
+     */
+    val hardCharsPerToken: Float = 1.8f,
+
+    /**
+     * 标定后 chars/token 的**上界（ceiling）**：`effective = max(floor, min(ceiling, measured))`。
+     *
+     * 没有上界时一次异常回报（provider 少报 token）就能把 cap 放大十几倍 = **把兜底关掉**。
+     * 6.0 是实测散文值（5.75）之上留的余量。标定只能在 `[floor, ceiling]` 内调整余量，
+     * 不能替代 floor 的安全语义：实测值来自**已发出**的那条请求，兜底保护的是**下一条**，
+     * 两者内容分布可以完全不同（上一轮散文、下一轮全是 JSON 工具结果）。
+     */
+    val maxCalibratedCharsPerToken: Float = 6.0f,
 
     /**
      * 本应用愿意发出的上下文上限（token）。
      *
      * **新仓新增，理由是这个字段省钱**：没有它，1M 窗口的模型会真的按 0.75 发 75 万 token
      * 出去 —— 一次几美元（`00-brief.md` A8 理由 3）。
+     *
+     * ⚠️ 它是「愿意付的钱的上限」，**不是模型能力的上限**：真实可用的窗口还要与
+     * `endpoint.verifiedContextLength ?: endpoint.contextLength` 取小
+     * （见 `hardContextBudgetTokens`）。
      */
     val maxContextTokens: Int = 32_000,
 
@@ -165,8 +205,12 @@ data class AgentPolicy(
      * 只覆盖**首字节之前**：首个事件到达即解除。之后的慢流由 `readTimeout` 与
      * [wallClockHardMillis] 管 —— 两者的辖区不能混（`01-architecture.md` §6.1）。
      *
-     * 计时用墙钟，**不接 `FreezeClock`**：本字段防的是「远端不响应」，不是「设备被冻结」。
+     * 计时用墙钟，**不接冻结感知时钟**：本字段防的是「远端不响应」，不是「设备被冻结」。
      * 冻结时协程与 `delay` 一起停摆，看门狗不会因此提前开火，不需要冻结感知。
+     *
+     * ⚠️ 那个冻结感知时钟（旧文档里的 `FreezeClock`）**尚未落地，挂账 W3-05**，全仓零实现。
+     * 落地之前，[wallClockHardMillis] 在设备被系统冻结时有**误杀风险**（单调时钟照走，
+     * 解冻后一算就是超时，而模型其实什么都没做）。这里如实登记，不假装已经处理。
      *
      * `<= 0` = 关闭看门狗（只给明确不要它的调用方 / 单测用）。
      *

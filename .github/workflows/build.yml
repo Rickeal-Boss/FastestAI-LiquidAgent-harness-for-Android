@@ -109,10 +109,15 @@ env:
   #   N-1/N-3 修复 12 + 节流缓冲 6）→ 361（W2.5：外审 T 系列 + D2D 迁移 + M1 缓存可观测）
   #   → 365（W2.6 测量批：AgentLogStore 驱逐优先级 4 条，钉住「INFO 不得顶掉 WARN/ERROR」）。
   #   → 480（W3 能力批：多模态 6 / 记忆 11 / Skill 10 / MCP 35 / I1 8 / 存储 7 / TTS 7 …）。
-  #   本地 `bash scripts/fulltest.sh` 实测 tests=480 failures=0 errors=0，11/11 模块；
-  #   同一口径 `grep -rE '^\s*@Test'` 计数亦为 480（双向对账成立）。
+  #   → 544（W4 上下文二期 + UI 补齐：前缀指纹 / L2 摘要 / :feature-tools 8 条）。
+  #   → 593（W5：审批咽喉点审计 10 行 + feature-settings 1→20 + :core-kernel 拆分后补齐）。
+  #   同一口径 `grep -rE '^\s*@Test'` 实测 593，与本地 fulltest 的 tests=593 双向对账成立。
+  #
+  # 【W6 起：本常量是**单一写口**】W6 三流并行（A 改内核 / B 挂账与守卫 / C 改 UI），
+  #   只有 B 流改这一行；A/C 只**报告**自己新增的 @Test 数，由 B 收口时一次改到位。
+  #   反过来做（三流各改一次）必然冲突，且冲突解决时极易把某一流的增量丢掉。
   # ---------------------------------------------------------------------------
-  EXPECTED_TESTS: '593'
+  EXPECTED_TESTS: '666'
 
 jobs:
   # ===========================================================================
@@ -427,7 +432,7 @@ jobs:
 
       - name: Reconcile EXPECTED_TESTS with real @Test count
         # 【双向对账】roadmap §5.1 的「基线同步」判据，落在 CI 里而不是文档里。
-        # 三个必须做对的点：
+        # 四个必须做对的点：
         #   ① 用 `^\s*@Test\b` 而不是裸 `@Test`：KDoc 里引用 `@Test` 会多算
         #      （知识库 §5 的实测）。
         #   ② 排除 build/.gradle/.kotlin/.git：KSP/AGP 生成目录里的 .kt 会把数算大。
@@ -436,7 +441,14 @@ jobs:
         #   ③ 两个方向分别给话术：actual > expected = 加了测试没同步常量；
         #      actual < expected = 测试被删 / 被注释 / 被漏扫。只报「不相等」会把
         #      两种根因混成一句，排障时间全花在猜方向。
+        #   ④ 【W6 新增】**逐文件归因**：只报一个总数差，人会去猜是哪个模块；
+        #      这里用 `git diff base..HEAD -- '*.kt'` 把「哪些文件的 @Test 数变了」
+        #      直接列出来（含增删文件）。基线提交 = PR 的 base.sha / push 的 before；
+        #      两者都取不到（新分支、dispatch）时显式 warning 并退回总数口径，
+        #      **不静默跳过**（跳过 = 这条归因看起来通过过）。
         # 不设 `>=` 容差：容差一开，这个门禁就退化成「有测试就行」的装饰。
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           set -uo pipefail
           expected="$EXPECTED_TESTS"
@@ -446,12 +458,47 @@ jobs:
               --exclude-dir=.kotlin --exclude-dir=.git \
               . 2>/dev/null | wc -l | tr -d ' '
           }
+          # 单个文件（工作树）里的 @Test 数。文件不存在（本次被删）⇒ 0。
+          count_in_file() {
+            if [ -f "$1" ]; then
+              grep -cE '^\s*@Test\b' "$1" 2>/dev/null || true
+            else
+              echo 0
+            fi
+          }
           actual="$(count_tests)"
           echo "EXPECTED_TESTS=$expected  actual=$actual"
           if [ "$actual" = "$expected" ]; then
             echo "::notice::@Test 对账通过：$actual 个（EXPECTED_TESTS=$expected）"
             exit 0
           fi
+
+          # ---- 逐文件归因（只在不等时跑：等的时候不需要打扰任何人）----
+          base="${BASE_SHA:-}"
+          case "$base" in
+            ''|0000000000000000000000000000000000000000) base="" ;;
+          esac
+          if [ -n "$base" ] && git rev-parse --verify -q "$base^{commit}" > /dev/null 2>&1; then
+            echo "::group::@Test 逐文件归因（基线 ${base} → HEAD）"
+            delta=0; changed=0
+            while IFS= read -r f; do
+              [ -n "$f" ] || continue
+              old="$(git show "$base:$f" 2>/dev/null | grep -cE '^\s*@Test\b' || true)"
+              new="$(count_in_file "$f")"
+              [ -n "$old" ] || old=0
+              [ -n "$new" ] || new=0
+              if [ "$old" != "$new" ]; then
+                printf '  %-76s %4s -> %4s (%+d)\n' "$f" "$old" "$new" "$((new - old))"
+                delta=$((delta + new - old)); changed=$((changed + 1))
+              fi
+            done < <(git diff --name-only "$base" HEAD -- '*.kt' 2>/dev/null)
+            echo "  ---- 有 @Test 变化的文件 $changed 个，净变化 $delta；实际总数差 $((actual - expected))"
+            echo "::endgroup::"
+            echo "::notice::归因：本次 $changed 个 .kt 文件的 @Test 净变化 $delta（actual-expected = $((actual - expected))）。差不为 0 说明还有文件未计入（例如未被 git 跟踪）"
+          else
+            echo "::warning::取不到基线提交（BASE_SHA='${base:-}'）—— 无法逐文件归因，只报总数。本地可手工跑：git diff <base>..HEAD --name-only -- '*.kt'"
+          fi
+
           echo "::group::@Test 分布（按文件）"
           grep -rnE '^\s*@Test\b' --include=*.kt \
             --exclude-dir=build --exclude-dir=.gradle \
@@ -459,9 +506,9 @@ jobs:
             . 2>/dev/null | sed 's/:.*//' | sort | uniq -c | sort -rn || true
           echo "::endgroup::"
           if [ "$actual" -gt "$expected" ]; then
-            echo "::error::实际 @Test 数 $actual > EXPECTED_TESTS=$expected —— 新增测试必须在同一次提交里把 build.yml 的 EXPECTED_TESTS 改大"
+            echo "::error::实际 @Test 数 $actual > EXPECTED_TESTS=$expected —— 新增测试必须在同一次提交里把 build.yml 的 EXPECTED_TESTS 改大（对照上面「逐文件归因」里 (Δ>0) 的那些文件）"
           else
-            echo "::error::实际 @Test 数 $actual < EXPECTED_TESTS=$expected —— 有测试被删/被注释/被漏扫；若确为删除，同一次提交里把常量改小"
+            echo "::error::实际 @Test 数 $actual < EXPECTED_TESTS=$expected —— 有测试被删/被注释/被漏扫（对照上面「逐文件归因」里 (Δ<0) 的那些文件）；若确为删除，同一次提交里把常量改小"
           fi
           exit 1
 
@@ -603,7 +650,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ===========================================================================
-  # Job 3：架构守卫（23 条判据）+ 守卫自证（变异注入）
+  # Job 3：架构守卫（26 条判据）+ 守卫自证（变异注入）
   #
   # 为什么必须是独立 job 而不是塞进 lint / unit-tests：
   #   · 它是**纯 bash**（grep/awk/find/sed/tar），不需要 JDK / Gradle / Android SDK。
@@ -617,11 +664,16 @@ jobs:
   #   只有前者 ⇒ 守卫可以永远绿（旧仓「目录改名 ⇒ 空守卫永远绿」）；
   #   只有后者 ⇒ 没人判树。
   #
+  # 第四态 VACUOUS（W6 新增）：判据的**扫描目标集为空**时输出 VACUOUS 而不是 OK，
+  #   汇总行有 `VACUOUS=n`，由 G21 做棘轮（只许减不许增）。它**不判红** ——
+  #   空集不是缺陷，但「装了烟感但没火」必须可见。当前 1 条：G19（core-engine 零日志点）。
+  #   详见 docs/06-deferred-ledger.md 的 W6-03 行。
+  #
   # ⚠️ 两个脚本都必须**存在**：缺失时显式判红，不降级成「跳过」——
   #    「守卫悄悄跳过 = 守卫不存在」。
   # ===========================================================================
   arch-guard:
-    name: Arch guard (23 guards + mutation selftest)
+    name: Arch guard (26 guards + mutation selftest)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -653,7 +705,7 @@ jobs:
           echo "::endgroup::"
           [ "$missing" -eq 0 ]
 
-      - name: Run arch guards (23 条判据)
+      - name: Run arch guards (26 条判据)
         run: |
           if [ ! -f scripts/arch-guard.sh ]; then
             echo "::error::scripts/arch-guard.sh 缺失 —— 架构守卫从未落地，拒绝把本 job 判绿"

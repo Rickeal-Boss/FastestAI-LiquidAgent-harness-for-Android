@@ -104,6 +104,27 @@ data class RemoteEndpoint(
     val modelId: String = "",
     val contextLength: Int = 32_768,
     val maxOutputTokens: Int = 4_096,
+    /**
+     * **实测**窗口（由真实运行的 400 学到）。`null` = 从未观测到，用 [contextLength]。
+     *
+     * ## 为什么它是 `Int?` 而不是又一个「能力声明」
+     *
+     * [contextLength] 是用户手填的声明值 —— 免费池上经常填大（写 1M、实际 256k），
+     * 于是预算算得过大、请求必然 400。本字段只在端点**真的报过一次超窗**之后才有值，
+     * 来源是错误体里的 `maximum context length is N`（`OpenAiCompatibleAdapter` 解析
+     * → `GenerationEvent.Failed.contextLimitHint` → `AppContainer.recordContextLimit`）。
+     *
+     * 刻意**不做**「探窗口」请求：那要故意发一个超窗请求（1M ≈ 115 s + 一次计费），
+     * 在免费池上还会撞 429。学习式写回是唯一可接受的通道。
+     *
+     * ## 纪律
+     *
+     * - 默认 `null` ⇒ 反序列化兼容（老 `endpoints.json` 里没有这个键也能读）。
+     * - 字段名不含 `token` / `key` / `secret` / `password`，守卫 G17 不受影响。
+     * - 消费点唯一：`hardContextBudgetTokens` 里的
+     *   `min(verifiedContextLength ?: contextLength, policy.maxContextTokens)`。
+     */
+    val verifiedContextLength: Int? = null,
     val supportsTools: Boolean = true,
     val supportsReasoning: Boolean = false,
     val reasoningStyle: ReasoningStyle = ReasoningStyle.NONE,

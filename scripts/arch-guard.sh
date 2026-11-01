@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# arch-guard.sh — LiquidAgent harness-v2 架构守卫（24 条判据，表驱动）
+# arch-guard.sh — LiquidAgent harness-v2 架构守卫（26 条判据，表驱动）
 #
 # 用法：
-#   bash scripts/arch-guard.sh            # 跑全部 24 条判据
+#   bash scripts/arch-guard.sh            # 跑全部 26 条判据
 #   bash scripts/arch-guard.sh --verbose  # 额外回显每条扫了多少文件
 #   bash scripts/arch-guard.sh --help
 #
@@ -14,7 +14,9 @@
 # -----------------------------------------------------------------------------
 # 编号约定
 # -----------------------------------------------------------------------------
-# 本脚本用 docs/02-roadmap.md §五 的 **G1..G19** 为准（CI 与文档都引用这套编号）。
+# 本脚本用 docs/02-roadmap.md §五 的 **G1..G21** 为准（CI 与文档都引用这套编号）。
+#   G20（挂账不丢失）与 G21（空转棘轮）是 W6 新增，编号口径仍沿用同一套；
+#   它们的判据与自证说明在 docs/06-deferred-ledger.md §零。
 # ⚠️ 源码注释里另有一套旧编号 N1/N3/N7（历史遗留，别按它找守卫）：
 #      N1 = G1  网络栈收口
 #      N3 = G16 中文硬编码棘轮
@@ -28,6 +30,14 @@
 #      SELF_FAULT 的典型成因：目标目录被改名、正则写坏、grep 退出码 ≥2。
 #      「目录被改名 ⇒ 空守卫永远绿」是旧仓最贵的教训：守卫绿不代表树合规，
 #      也可能代表守卫根本没在看。
+#
+#   1bis. **第四态 VACUOUS（W6 新增）**：判据的**扫描目标集为空**时输出 VACUOUS 而不是 OK。
+#      这是 1 号的机器化：目录没改名、grep 也正常，但那条目录里**根本没有它要找的东西**
+#      （最典型：G19 要抓「日志拼接凭据」，而 core-engine 一个日志调用点都没有 ⇒ 它守的是空集）。
+#      VACUOUS **不判红**（空集不是缺陷），但**必须出现在输出里**，否则「装了烟感但没火」
+#      这件事永远不可见。汇总行有 `VACUOUS=n`，并由 G21 做棘轮（只许减不许增）。
+#      实现：每个守卫在判 OK 前必须 `scan_declare <本次实际参与判定的对象数>`；
+#      **没声明就判 SELF_FAULT** —— 一个不参与空转自检的守卫，等于这条新纪律对它没生效。
 #
 #   2. **带管道的守卫命令 rc 会被洗白**。`grep ... | grep -vE ...` 的退出码来自
 #      后一个 grep，前一个 grep 的 rc=2（文件不存在/正则错）会被吃成 1（无命中）
@@ -48,7 +58,39 @@
 #      全仓逐条告警 = 没有告警。
 #
 # -----------------------------------------------------------------------------
-# 退出码：0 = 24 条全 OK；1 = 有 VIOLATION 或 SELF_FAULT（两者都判红）
+# 已知问题 / 踩过的坑（**写新守卫前必读**，否则必重踩）
+# -----------------------------------------------------------------------------
+#   K1. **markdown 表格不能用 `awk -F'|'` 解析**。markdown 用 `\|` 表示单元格内的
+#       字面竖线；`-F'|'` 不认识转义，会把一行多切几段 ⇒ 后面所有列错位。
+#       本仓实测后果：G20 读状态列读到「项」列的内容，报「非法状态值」—— 而台账
+#       那一行完全合法。**正确手法**（G20 的 ledger_ids / bad_rows 两处已用）：
+#           1) 先把 `\|` 换成一个不可能出现的哨兵（本脚本用 "\001"）：
+#              `gsub(/\\\|/, "\001", line)`
+#           2) 再用 `split(line, f, /\|/)`（**正则字面量**，不是字符串 "|"）
+#           3) 列数用 `n != 8` 兜（6 列 + 首尾空段）
+#       另：文档里任何「首列是 ID」的多列表格都会被 G20 当成台账行去校验列数 ——
+#       写文档时要么用列表，要么别让首列以裸 ID 开头。
+#
+#   K2. **多行问题块必须用数组传参，不能写 `${var:-}`**。未加引号的 `${var:-}` 会
+#       被 bash 词分割，`guard_violation` 收到的是一堆碎片，输出变成
+#       「W3-05:」/「非法状态值「」（只允许」/「OPEN」/「/」… —— 排障时完全读不懂。
+#       正确手法：`local -a probs=(); while IFS= read -r ln; do probs+=("$ln"); done <<< "$blob"`
+#       然后 `guard_violation "$id" "$desc" "${probs[@]}"`。
+#
+#   K3. **不可复现异常：一次全量跑里 G7/G8/G9 各打印了两遍，OK=26 虚高 3**。
+#       时间 2026-11-01 20:47（W6 首次接入 VACUOUS 之后），当次 rc=1。
+#       之后 4 次全量跑（含最终验收）**均未复现**，日志比对不出差异，根因未定位。
+#       ⚠️ **不许因为「后来几次都正常」就把它当成没发生过**：这类形态下一次出现时，
+#       会被误当成新 bug 从头排查。若再现，按这个顺序查：
+#         a) `bash -x scripts/arch-guard.sh 2>&1 | grep -cE '^\+ g[789]$'` —— 看函数被调了几次；
+#         b) 查 `guard_ok` 是否被同一 id 调了两次（`grep -c 'guard_ok "G7"'` 应为 1）；
+#         c) 查是否有第二个进程往同一个输出文件写（当时确有一个并行 agent 在同一工作树
+#            跑过守卫；`> file` 是截断写，两个进程交错会互相覆盖但不该产生重复行）。
+#       登记它本身就是判据：**不可复现 ≠ 不存在**，与本仓「未触发 ≠ 已验证通过」同源。
+#
+# -----------------------------------------------------------------------------
+# 退出码：0 = 26 条无 VIOLATION 且无 SELF_FAULT（含 VACUOUS 不判红）；
+#         1 = 有 VIOLATION 或 SELF_FAULT（两者都判红）
 # =============================================================================
 set -uo pipefail
 
@@ -60,7 +102,11 @@ VERBOSE=0
 for a in "$@"; do
   case "$a" in
     --verbose|-v) VERBOSE=1 ;;
-    --help|-h) sed -n '2,50p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --help|-h)
+      # 头部注释自解释：打印第 2 行起、到 `set -uo pipefail` 之前为止。
+      # 不用写死的 `sed -n '2,50p'` —— 头部一长就截断（改一次忘一次，必漂）。
+      awk 'NR > 1 && /^set -uo pipefail/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "${BASH_SOURCE[0]}"
+      exit 0 ;;
     *) echo "arch-guard: 未知参数 $a（支持 --verbose / --help）" >&2; exit 2 ;;
   esac
 done
@@ -149,8 +195,20 @@ LINT_BASELINE_MAX_ISSUES=1
 LINT_BASELINE_PATH="app/lint-baseline.xml"
 # ---- G16：中文硬编码棘轮基线（01-architecture.md §五：写死 0，只许不增）
 CJK_LITERAL_BASELINE=0
+# ---- G21：空转（VACUOUS）条数棘轮（W6 新增，与 G14/G16 同款：只许减不许增）
+# 期望「扫描目标集为空」的守卫条数上限。首版实测 1 条：
+#   G19（日志不拼凭据）—— core-engine/src/main 的日志调用点 = 0 ⇒ 它守的是空集。
+# 逐条登记在 docs/06-deferred-ledger.md 的 W6-03 行。
+# ⚠️ 修掉一条（例如给 adapter 接了日志让 G19 真开火）就把这里改小，**绝不为了变绿改大**。
+#    改大 = 承认「又多了一条没人看的守卫」而不管，这正是本机制要防的事。
+VACUOUS_BASELINE=1
 APP_MANIFEST="app/src/main/AndroidManifest.xml"
 SETTINGS_FILE="settings.gradle.kts"
+# ---- G20：挂账单一台账（W6 新增）
+# 判据：所有 docs/handoff-*.md 里出现的 W<数字>-<数字> 形态 ID，必须在台账里存在；
+#       台账里每条 CLOSED 行的「证据」列必须非空。
+LEDGER_PATH="docs/06-deferred-ledger.md"
+HANDOFF_GLOB="docs/handoff-*.md"
 
 # ---- 例外登记表（键 = 守卫 ID，值 = 允许的命中行正则）
 # 只登记**已知且已论证**的例外，并写清理由；新增例外必须同时写理由。
@@ -181,20 +239,31 @@ declare -A EXCEPTIONS=(
 
 # 源码扫描的公共 grep 参数：排除生成目录 —— build/ 里有 merged manifest、
 # 生成源码、KSP 产物，扫进去会出大量假红（旧仓教训）。
-GREP_COMMON=(
-  -rnE
-  --binary-files=without-match
-  --exclude-dir=build
-  --exclude-dir=.gradle
-  --exclude-dir=.kotlin
-  --exclude-dir=.git
-  --exclude-dir=docs
-)
+#
+# ⚠️ 排除目录只在这一个数组里定义一次：GREP_COMMON 与 scan_file_count（VACUOUS 自检的
+#    「扫了多少文件」）**都从它派生**。此前两处各写一份，改一处忘另一处会让
+#    「grep 扫的面」与「计数扫的面」悄悄分叉 —— 那正是本文件第 4 条纪律要防的形态。
+SCAN_EXCLUDE_DIRS=(build .gradle .kotlin .git docs)
+GREP_COMMON=(-rnE --binary-files=without-match)
+for _excl in "${SCAN_EXCLUDE_DIRS[@]}"; do
+  GREP_COMMON+=("--exclude-dir=$_excl")
+done
+unset _excl
 KT_GLOB=(--include=*.kt)
 KTS_GLOB=(--include=*.kts --include=*.kt)
+# ---- 业务模块的 main 源集（G11 方法体积 / G18 引擎调用点 共用）
+# ⚠️ W6 补漏：此前**缺 `core-kernel` 与 `feature-tools`** ⇒ 这两个模块的方法体积与
+#    引擎调用点**从未被任何守卫看过**。这不是「新加门禁」，是把已存在的门禁对准它本该
+#    覆盖的目录 —— 12 个模块漏 2 个（占 17%），而 core-kernel 恰好是「内核硬化」的落点。
+#    漏的原因可复盘：两个模块都是后加的（`feature-tools` W4、`core-kernel` W5），
+#    加模块时改的是 `MODULES` / `LINE_CAPS` / G9 三处，**没人回头看 MAIN_PATHS**。
+#    ⇒ 纪律：**新增模块时同步检查 MAIN_PATHS / CJK_SCAN_PATHS**（G9 只保证模块数一致，
+#       不保证每个模块都被扫）。
 MAIN_PATHS=(core-model/src/main core-net/src/main core-engine/src/main core-agent/src/main
+            core-kernel/src/main
             core-skills/src/main core-mcp/src/main core-data/src/main core-design/src/main
-            feature-chat/src/main feature-settings/src/main app/src/main)
+            feature-chat/src/main feature-settings/src/main feature-tools/src/main
+            app/src/main)
 # G16 只扫业务模块的 main 源集（app 的文案允许进 strings.xml，且 app 不在棘轮范围）
 CJK_SCAN_PATHS=(core-model/src/main core-net/src/main core-engine/src/main core-agent/src/main
                 core-skills/src/main core-mcp/src/main core-data/src/main core-design/src/main
@@ -203,13 +272,63 @@ CJK_SCAN_PATHS=(core-model/src/main core-net/src/main core-engine/src/main core-
 OK_COUNT=0
 VIOLATION_COUNT=0
 FAULT_COUNT=0
+VACUOUS_COUNT=0
 FAILED_IDS=()
 FAULT_IDS=()
+VACUOUS_IDS=()
 
 hr() { printf '%s\n' "-------------------------------------------------------------------"; }
 
+# -----------------------------------------------------------------------------
+# VACUOUS 自检基础设施（W6）
+# -----------------------------------------------------------------------------
+# 每个守卫在**得出 OK 结论之前**必须调用 `scan_declare <n>`，n = 本次实际参与判定的
+# 对象个数（扫了几个文件 / 比对了几条表项 / 看了几个日志调用点）。
+#   n = 0  ⇒ 该守卫对空集判绿 ⇒ 输出 VACUOUS（不判红，但可见），计入 VACUOUS_COUNT
+#   n > 0  ⇒ 正常 OK
+#   未声明 ⇒ SELF_FAULT（判红）：空转自检没接线，等于这条新纪律对该守卫无效
+# SCAN_COUNT 在每个终态（ok/violation/fault）里被取走并复位，所以不存在跨守卫的陈旧值。
+SCAN_COUNT=-1
+scan_declare() { SCAN_COUNT="${1:-0}"; }
+scan_take() {
+  local n="$SCAN_COUNT"
+  SCAN_COUNT=-1
+  printf '%s' "$n"
+}
+
+# 数「某个守卫实际会去读的源文件数」——供 absent 型守卫与需要自报规模的守卫共用。
+# $1 = 1 表示同时收 *.kts（与 guard_absent 的 --with-kts 对齐）；其余参数 = 扫描路径。
+# 排除目录从 SCAN_EXCLUDE_DIRS 派生（与 GREP_COMMON 同源）。
+scan_file_count() {
+  local with_kts="$1"; shift
+  local names=(-name '*.kt') ex=() d p n=0 c
+  [ "$with_kts" -eq 1 ] && names+=(-o -name '*.kts')
+  for d in "${SCAN_EXCLUDE_DIRS[@]}"; do ex+=(-not -path "*/$d/*"); done
+  for p in "$@"; do
+    [ -e "$p" ] || continue
+    c="$(find "$p" -type f \( "${names[@]}" \) "${ex[@]}" -print 2>/dev/null | wc -l | tr -d ' ')"
+    [ -n "$c" ] || c=0
+    n=$((n + c))
+  done
+  printf '%s' "$n"
+}
+
 guard_ok() {
   local id="$1" desc="$2" extra="${3:-}"
+  local n; n="$(scan_take)"
+  if [ "$n" -lt 0 ]; then
+    # 不声明 = 该守卫不参与空转自检。判红，理由与「目录被改名」同类：
+    # 一个没人验证过「它到底在看什么」的守卫，绿也不构成证据。
+    guard_fault "$id" "$desc" \
+      "VACUOUS 自检未接线：本守卫判 OK 前没有调用 scan_declare <扫描目标数> —— 空转不可见，故判红"
+    return 0
+  fi
+  if [ "$n" -eq 0 ]; then
+    VACUOUS_COUNT=$((VACUOUS_COUNT + 1))
+    VACUOUS_IDS+=("$id")
+    printf '[%s] %-22s VACUOUS  (扫描目标集为空%s)\n' "$id" "$desc" "${extra:+；$extra}"
+    return 0
+  fi
   OK_COUNT=$((OK_COUNT + 1))
   printf '[%s] %-22s OK%s\n' "$id" "$desc" "${extra:+  ($extra)}"
 }
@@ -247,10 +366,13 @@ guard_violation() {
     fi
   done
   if [ "${#kept[@]}" -eq 0 ] && [ "$skipped" -gt 0 ]; then
-    OK_COUNT=$((OK_COUNT + 1))
-    printf '[%s] %-22s OK  (已登记例外 %d 条，见 EXCEPTIONS 表)\n' "$id" "$desc" "$skipped"
+    # 全部命中都是已登记例外 ⇒ 结论仍是 OK，但**必须走 guard_ok**：
+    # 这里此前直接 `OK_COUNT++` 并打印 OK，绕过了 VACUOUS 自检（空集也会被印成 OK）。
+    # 让两个 OK 出口收敛到同一个函数，是为了让「扫描目标为空」在这一支也可见。
+    guard_ok "$id" "$desc" "已登记例外 $skipped 条，见 EXCEPTIONS 表"
     return 0
   fi
+  scan_take > /dev/null   # 判违规时不看空转：违规本身就是「它在看」的证据
   VIOLATION_COUNT=$((VIOLATION_COUNT + 1))
   FAILED_IDS+=("$id")
   printf '[%s] %-22s VIOLATION\n' "$id" "$desc"
@@ -262,6 +384,7 @@ guard_violation() {
 
 guard_fault() {
   local id="$1" desc="$2" reason="$3"
+  scan_take > /dev/null   # 复位，避免陈旧值漏进下一个守卫的 guard_ok
   FAULT_COUNT=$((FAULT_COUNT + 1))
   FAULT_IDS+=("$id")
   printf '[%s] %-22s SELF_FAULT\n' "$id" "$desc"
@@ -301,6 +424,10 @@ guard_absent() {
   done
 
   local raw filtered
+  # VACUOUS 自检：absent 型守卫的「扫描目标」= 它实际 grep 到的源文件数。
+  # 目录存在但里面一个 .kt 都没有时，grep 退出码 1 ⇒ 会被判成「无命中 = OK」，
+  # 而它其实什么都没看。这一行让那种形态变成 VACUOUS。
+  scan_declare "$(scan_file_count "$with_kts" "${paths[@]}")"
   raw="$(mktemp)"; filtered="$(mktemp)"
   # ⚠️ 关键：grep 的 rc 必须在这里捕获，绝不让管道参与（纪律 2）
   grep "${GREP_COMMON[@]}" "${glob[@]}" "$re" "${paths[@]}" > "$raw" 2>&1
@@ -349,6 +476,10 @@ guard_present() {
     guard_fault "$id" "$desc" "目标文件不存在：$file"
     return
   fi
+  # VACUOUS 自检：present 型守卫的判定对象就是**这一个文件**，文件缺失已由上一行判
+  # SELF_FAULT ⇒ 走到这里目标集恒为 1，不存在「扫空集」形态。显式声明而不是省略，
+  # 是为了让「本守卫参与空转自检」这件事在代码里可查（省略会被 guard_ok 判红）。
+  scan_declare 1
   local raw rc
   raw="$(mktemp)"
   grep -nE "$re" "$file" > "$raw" 2>&1
@@ -371,6 +502,9 @@ g1() {
   grep "${GREP_COMMON[@]}" "${KT_GLOB[@]}" \
     'okhttp3|java\.net|URL\(' . > "$raw" 2>&1
   local rc=$?
+  # VACUOUS 自检：G1 的判定对象是「全仓 .kt 里出现网络栈的那些行」，
+  # 目标集 = 被 grep 的源文件数（0 个文件时「无命中」不构成合规证据）。
+  scan_declare "$(scan_file_count 0 .)"
   case "$rc" in
     0)
       # 允许：core-net/ 之内（全仓唯一允许发 HTTP 的模块）
@@ -431,6 +565,8 @@ g4() {
   raw="$(mktemp)"
   grep -nE '^(room|hilt|dagger|koin|retrofit|coil|sqldelight|ksp|kapt)' gradle/libs.versions.toml > "$raw" 2>&1
   rc=$?
+  # VACUOUS 自检：目标集 = 版本目录里被逐行比对的条目数（文件缺失已由上面判 SELF_FAULT）
+  scan_declare "$(grep -c '' gradle/libs.versions.toml 2>/dev/null | tr -d ' ')"
   case "$rc" in
     0) guard_violation "G4b" "禁依赖黑名单(toml)" "$(sed 's/^/      /' "$raw")" ;;
     1) guard_ok "G4b" "禁依赖黑名单(toml)" ;;
@@ -478,6 +614,8 @@ g6() {
     done
     unset IFS
   done
+  # VACUOUS 自检：目标集 = 实际比对了多少个模块的禁止边表（表被清空 ⇒ 本守卫失去意义）
+  scan_declare "${#FORBIDDEN_EDGES[@]}"
   if [ "$bad" -eq 0 ]; then
     guard_ok "G6" "模块边界" "${#FORBIDDEN_EDGES[@]} 个模块的禁止边均未命中"
   else
@@ -526,6 +664,8 @@ g9() {
     fi
   done
   local arr_len="${#MODULES[@]}"
+  # VACUOUS 自检：目标集 = 参与三方比对的模块数
+  scan_declare "$arr_len"
 
   if [ "${#detail[@]}" -gt 0 ]; then
     guard_violation "G9" "模块数一致" "${detail[@]}" \
@@ -545,7 +685,7 @@ g9() {
 # G10 行数闸门（表驱动）
 # =============================================================================
 g10() {
-  local bad=0 detail=() total_all=0
+  local bad=0 detail=() total_all=0 total_files=0
   local entry mod fcap tcap dir n files f lines mod_total
   for entry in "${LINE_CAPS[@]}"; do
     mod="${entry%%|*}"; entry="${entry#*|}"
@@ -564,6 +704,7 @@ g10() {
       continue
     fi
     mod_total=0
+    total_files=$((total_files + $(printf '%s\n' "$files" | wc -l | tr -d ' ')))
     while IFS= read -r f; do
       [ -z "$f" ] && continue
       n="$(wc -l < "$f" 2>/dev/null | tr -d ' ')"
@@ -585,6 +726,8 @@ g10() {
     bad=$((bad + 1))
     detail+=("全仓 main 源集合计 $total_all 行 > 上限 $TOTAL_LINE_CAP")
   fi
+  # VACUOUS 自检：目标集 = 实际被数了行数的 .kt 文件数（全仓 0 个 ⇒ 行数闸门无事可做）
+  scan_declare "$total_files"
   if [ "$bad" -eq 0 ]; then
     guard_ok "G10" "行数闸门" "$(printf '%s' "${#LINE_CAPS[@]}") 个模块 / 合计 $total_all 行（上限 $TOTAL_LINE_CAP）"
   else
@@ -632,6 +775,8 @@ g11() {
         }' "$f"
     done
   done > "$raw" 2>&1
+  # VACUOUS 自检：目标集 = 被逐文件扫过方法体积的 .kt 文件数
+  scan_declare "$(scan_file_count 0 "${MAIN_PATHS[@]}")"
   if [ -s "$raw" ]; then
     guard_violation "G11" "方法体积" "$(cat "$raw")" \
       "⇒ 上限 $MAX_METHOD_LINES 行；超限 = 拆方法，不是加注释（roadmap G11）"
@@ -650,6 +795,7 @@ g12() {
     return
   fi
   local n; n="$(wc -l < "$AGENT_RUNNER_PATH" | tr -d ' ')"
+  scan_declare 1   # 目标集 = 这一个门面文件（缺失已在上方判 SELF_FAULT）
   if [ "$n" -gt "$AGENT_RUNNER_CAP" ]; then
     guard_violation "G12" "AgentRunner 门面" \
       "$AGENT_RUNNER_PATH = $n 行 > 上限 $AGENT_RUNNER_CAP" \
@@ -693,6 +839,8 @@ g13() {
         }
       }' "$f"
   done <<< "$tests" > "$raw" 2>&1
+  # VACUOUS 自检：目标集 = 被逐行解析的测试文件数（0 个已在上面判 SELF_FAULT，这里再声明一次）
+  scan_declare "$(printf '%s\n' "$tests" | wc -l | tr -d ' ')"
   if [ -s "$raw" ]; then
     guard_violation "G13" "测试方法形态" "$(cat "$raw")"
   else
@@ -712,6 +860,9 @@ g14() {
   fi
   local n; n="$(grep -c '<issue' "$LINT_BASELINE_PATH" 2>/dev/null | tr -d ' ')"
   [ -z "$n" ] && n=0
+  # VACUOUS 自检：目标集 = 这一个 baseline 文件。**条目数为 0 是合法终态**（存量清零），
+  # 不是「扫空集」—— 棘轮此时仍在做一次真实判定（0 ≤ 冻结值）。故记 1 而不是 n。
+  scan_declare 1
   if [ "$n" -gt "$LINT_BASELINE_MAX_ISSUES" ]; then
     guard_violation "G14" "lint baseline 只缩" \
       "$LINT_BASELINE_PATH 有 $n 条 > 冻结值 $LINT_BASELINE_MAX_ISSUES" \
@@ -805,6 +956,8 @@ g15c() {
     guard_violation "$id" "$desc" "$(printf '%s\n' "${probs[@]}")" \
       "⇒ 四条一起判：allowBackup=false 是开关，dataExtractionRules + 规则文件 + 两个关键词是开关被打开时的第二道闸（理由见 $DATA_EXTRACTION_RULES）"
   else
+    # VACUOUS 自检：四条子判据的锚是 manifest 这一个文件（规则文件缺失已进 probs）
+    scan_declare 1
     guard_ok "$id" "$desc" "$(printf '%s' "${hits[0]}" | cut -c1-60)"
   fi
 }
@@ -850,6 +1003,9 @@ g16() {
   done
   local cand; cand="$(mktemp)"
   cjk_scan > "$cand" 2>&1
+  # VACUOUS 自检：目标集 = 含字符串字面量的**候选行数**（剥注释后）。
+  # 候选为 0 ⇒ 全仓没有字面量可判，「0 处 ≤ 基线 0」是一句没有信息量的话。
+  scan_declare "$(grep -c . "$cand" 2>/dev/null | tr -d ' ')"
 
   # CJK 判定：优先 grep -P（PCRE，能写 \x{4e00}-\x{9fff}）；
   # 不支持时回落 UTF-8 首字节区间（E4–E9 覆盖 U+4E00–U+9FFF），并显式告知。
@@ -927,6 +1083,8 @@ g17() {
         if (t ~ /^@Serializable/) pending=1
       }' "$f"
   done > "$raw" 2>&1
+  # VACUOUS 自检：目标集 = 被逐文件解析 @Serializable 类的 .kt 文件数
+  scan_declare "$(scan_file_count 0 "$dir")"
   if [ -s "$raw" ]; then
     guard_violation "G17" "禁密钥字段" "$(cat "$raw")" \
       "⇒ 密钥不进可序列化契约：改由 EndpointSecretStore 现取（03-contracts.md §一）"
@@ -943,6 +1101,10 @@ g18() {
   local raw; raw="$(mktemp)"
   grep "${GREP_COMMON[@]}" "${KT_GLOB[@]}" '\.generate\(' "${MAIN_PATHS[@]}" > "$raw" 2>&1
   local rc=$?
+  # VACUOUS 自检：目标集 = 实际命中的引擎调用点行数。
+  # 若全仓一个 .generate( 调用点都没有（例如内核改走别的事件通道），
+  # 「调用点只在 core-agent/loop/」就成了空话 ⇒ 应报 VACUOUS 而不是 OK。
+  scan_declare "$(grep -c . "$raw" 2>/dev/null | tr -d ' ')"
   case "$rc" in
     0)
       # 允许：core-agent 的 loop/ 之内（主循环是唯一该驱动引擎的地方）
@@ -1063,21 +1225,165 @@ g19() {
       "⇒ 日志只许出现**键名**（如 Authorization），不许出现值：密钥一旦进日志就等于出网" \
       "⇒ 修法：把日志点挪到 header 装配之前，且只打 endpointId / header 名，不打 header 值"
   else
+    # VACUOUS 自检：目标集 = **日志调用点个数**（不是文件数）。
+    # 这是本机制的第一个真实用户：core-engine 至今零日志调用点 ⇒ 本守卫守的是空集，
+    # 它对现役代码判不出任何东西，灵敏度只由 selftest 的变异自证保证。
+    scan_declare "$nlog"
     guard_ok "$id" "$desc" "$nlog 个日志调用点，0 处拼接凭据"
   fi
   rm -f "$raw" "$hits" 2>/dev/null
 }
 
 # =============================================================================
+# G20 挂账不丢失（W6 新增）
+# =============================================================================
+# 背景：四份交接各自末尾一张挂账表，没有汇总、没有状态字段 ⇒ 27 条里 **7 条静默丢失**
+# （占 26%），丢的全是「不产生新代码的收口活」。最贵的 W3-05（journal / FreezeClock）
+# 丢了之后，「从能跑到跑不死」这条线被搁置四波，W5 真机又用一个 33.8K vs 32K 的事故
+# 重新发现了同一片未覆盖的面。
+#
+# 判据（三条一起）：
+#   ① `docs/handoff-*.md` 里出现的**每一个** `W<数字>-<数字>` 形态 ID，都必须在
+#      `docs/06-deferred-ledger.md` 里有一行（开立记录不能凭空消失）；
+#   ② 台账里每条 `CLOSED` 行的「证据」列必须非空（关闭必须有可指认的东西）；
+#   ③ 台账里每行的「状态」只允许 OPEN / CARRIED / CLOSED 三值。
+#
+# 三个必须做对的点：
+#   · **提取 ID 用全文扫描而不是解析表格**：表格解析对格式极敏感（列数一变就漏），
+#     而「ID 出现在 handoff 正文里」本身就该被登记 —— 全文扫描更严，且不会因为
+#     某份 handoff 把挂账写成 `### W3-05` 小标题而失明。
+#   · **台账 ID 只认表格第一列且形如 W<数字>-<数字>**：正文里提到的编号（例如
+#     「见 W5-01」）不算开立，否则删掉表格行仍会被正文蒙过去。
+#   · **不许为了变绿删 handoff 里的 ID**：handoff 是历史记录，改它等于篡改开立事实。
+g20() {
+  local id="G20" desc="挂账不丢失"
+  if [ ! -f "$LEDGER_PATH" ]; then
+    guard_fault "$id" "$desc" "台账不存在：$LEDGER_PATH —— 挂账没有单一来源，本条无法行使，判红"
+    return
+  fi
+  local files
+  files="$(find docs -maxdepth 1 -type f -name 'handoff-*.md' 2>/dev/null | sort)"
+  if [ -z "$files" ]; then
+    guard_fault "$id" "$desc" "找不到任何 docs/handoff-*.md —— 没有开立记录可对账，判红（改名/搬迁？）"
+    return
+  fi
+
+  local handoff_ids ledger_ids
+  # shellcheck disable=SC2086  # 需要按词展开（多份 handoff）
+  handoff_ids="$(grep -ohE 'W[0-9]+-[0-9]+' $files 2>/dev/null | sort -u)"
+  # 台账解析：**先保护 `\|`（markdown 表格里的转义竖线）再按 `|` 切**。
+  # 踩过的坑：直接用 `awk -F'|'` 时，证据列里写成 `"*Journal*\|*FreezeClock*"` 的
+  # 一行会被多切出几段 ⇒ 状态列读到错位内容 ⇒ 报「非法状态值」，而真实状态是合法的。
+  # 这不是台账写错，是解析器不认识 markdown 的转义规则。
+  ledger_ids="$(awk '
+    {
+      line = $0
+      if (line !~ /^\|/) next
+      gsub(/\\\|/, "\001", line)
+      n = split(line, f, /\|/)
+      v = f[2]
+      gsub(/[`[:space:]]/, "", v)
+      if (v ~ /^W[0-9]+-[0-9]+$/) print v
+    }' "$LEDGER_PATH" | sort -u)"
+
+  local missing="" hid
+  while IFS= read -r hid; do
+    [ -n "$hid" ] || continue
+    printf '%s\n' "$ledger_ids" | grep -qx -- "$hid" || missing="$missing${missing:+ }$hid"
+  done <<< "$handoff_ids"
+
+  local bad_rows
+  bad_rows="$(awk '
+    {
+      line = $0
+      if (line !~ /^\|/) next
+      gsub(/\\\|/, "\001", line)
+      n = split(line, f, /\|/)
+      idv = f[2]
+      gsub(/[`[:space:]]/, "", idv)
+      if (idv !~ /^W[0-9]+-[0-9]+$/) next
+      if (n != 8) {
+        printf "%s: 台账行格式错（按 | 切成 %d 段，应为 6 列 + 首尾空段 = 8）—— 若这是文档里别的表，请把首列改成不以 ID 开头\n", idv, n
+        next
+      }
+      st = f[5]
+      gsub(/[`[:space:]]/, "", st)
+      if (st != "OPEN" && st != "CARRIED" && st != "CLOSED") {
+        printf "%s: 非法状态值「%s」（只允许 OPEN / CARRIED / CLOSED）\n", idv, st
+        next
+      }
+      if (st == "CLOSED") {
+        e = f[7]
+        gsub(/[[:space:]]/, "", e)
+        if (e == "" || e == "-" || e == "—")
+          printf "%s: CLOSED 行「证据」列为空（关闭必须能指到 文件:行 或提交号）\n", idv
+      }
+    }' "$LEDGER_PATH")"
+
+  local n_ids
+  n_ids="$(printf '%s\n' "$handoff_ids" | grep -c . | tr -d ' ')"
+  [ -n "$n_ids" ] || n_ids=0
+  # VACUOUS 自检：目标集 = 从 handoff 里提取到的**去重 ID 数**。
+  # 为 0 意味着开立记录里一个编号都没有 ⇒ 本条对账无事可做（那本身就是异常，但
+  # 它的形态是「空集」而不是「违规」，所以走 VACUOUS 而不是编一个假红）。
+  scan_declare "$n_ids"
+
+  # ⚠️ 问题行必须**逐条作为独立实参**传给 guard_violation（它按换行拆行）。
+  #    此前写成未加引号的 `${bad_rows:-}` ⇒ 被词分割成一堆碎片，输出里每条问题
+  #    被拆成「W3-05:」/「非法状态值「」（只允许」/「OPEN」/「/」… —— 排障时完全读不懂。
+  local -a probs=()
+  [ -n "$missing" ] && probs+=("台账缺 ID（handoff 里有、台账里没有）：$missing")
+  local ln
+  while IFS= read -r ln; do
+    [ -n "$ln" ] && probs+=("$ln")
+  done <<< "$bad_rows"
+
+  if [ "${#probs[@]}" -gt 0 ]; then
+    guard_violation "$id" "$desc" "${probs[@]}" \
+      "⇒ 挂账唯一来源是 $LEDGER_PATH；新开一条挂账 = 同时加一行（见该文件 §三 纪律 1）"
+  else
+    guard_ok "$id" "$desc" "$n_ids 个 handoff ID 全在台账内，CLOSED 行证据均非空"
+  fi
+}
+
+# =============================================================================
+# G21 空转棘轮（W6 新增，**meta 守卫**）
+# =============================================================================
+# 这是唯一一条判「其它守卫的状态」而不是判树的守卫：`VACUOUS` 条数只许减不许增。
+# 为什么必须棘轮：VACUOUS 本身不判红，一旦有人新增一条守空集的守卫，「装了烟感但没火」
+# 的条数就会从 1 变成 N，而输出里只是一行字 —— 与 G14（lint baseline）/G16（中文棘轮）
+# 同款处置：**只许减，不许增**。
+# 它的「扫描目标」= 本轮已产出结论的守卫条数（非空由构造保证，所以它自己不可能是 VACUOUS）。
+g21() {
+  local id="G21" desc="空转棘轮"
+  local seen=$((OK_COUNT + VACUOUS_COUNT + VIOLATION_COUNT))
+  scan_declare "$seen"
+  if [ "$VACUOUS_COUNT" -gt "$VACUOUS_BASELINE" ]; then
+    guard_violation "$id" "$desc" \
+      "VACUOUS=$VACUOUS_COUNT > 基线 $VACUOUS_BASELINE（${VACUOUS_IDS[*]:-}）" \
+      "⇒ 空转条数只许减不许增：每一条 VACUOUS 都是一条「装了烟感但没火」的守卫。" \
+      "⇒ 处置：要么给它接上真实的扫描目标（例：给 core-engine 接日志，让 G19 真开火），" \
+      "   要么把守卫连同判据一起删掉。**不要靠调大 VACUOUS_BASELINE 变绿**。"
+  else
+    guard_ok "$id" "$desc" "VACUOUS=$VACUOUS_COUNT ≤ 基线 $VACUOUS_BASELINE（${VACUOUS_IDS[*]:-无}）"
+  fi
+}
+
+# =============================================================================
 # 主流程
 # =============================================================================
-echo "================ arch-guard（24 条） ================"
+echo "================ arch-guard（26 条） ================"
 echo "root = $ROOT"
 hr
 g1; g2; g3; g4; g5; g6; g7; g8; g9
 g10; g11; g12; g13; g14; g15; g16; g17; g18; g19
+g20; g21
 hr
-printf 'OK=%s  VIOLATION=%s  SELF_FAULT=%s\n' "$OK_COUNT" "$VIOLATION_COUNT" "$FAULT_COUNT"
+printf 'OK=%s  VACUOUS=%s  VIOLATION=%s  SELF_FAULT=%s\n' \
+  "$OK_COUNT" "$VACUOUS_COUNT" "$VIOLATION_COUNT" "$FAULT_COUNT"
+if [ "${#VACUOUS_IDS[@]}" -gt 0 ]; then
+  printf '空转项（VACUOUS，不判红但必须可见）：%s\n' "${VACUOUS_IDS[*]}"
+fi
 if [ "${#FAILED_IDS[@]}" -gt 0 ]; then
   printf '违规项：%s\n' "${FAILED_IDS[*]}"
 fi
@@ -1086,8 +1392,8 @@ if [ "${#FAULT_IDS[@]}" -gt 0 ]; then
 fi
 
 if [ "$VIOLATION_COUNT" -eq 0 ] && [ "$FAULT_COUNT" -eq 0 ]; then
-  echo "[arch-guard] result=PASS ok=$OK_COUNT violation=0 fault=0"
+  echo "[arch-guard] result=PASS ok=$OK_COUNT vacuous=$VACUOUS_COUNT violation=0 fault=0"
   exit 0
 fi
-echo "[arch-guard] result=FAIL ok=$OK_COUNT violation=$VIOLATION_COUNT fault=$FAULT_COUNT"
+echo "[arch-guard] result=FAIL ok=$OK_COUNT vacuous=$VACUOUS_COUNT violation=$VIOLATION_COUNT fault=$FAULT_COUNT"
 exit 1

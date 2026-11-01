@@ -44,11 +44,17 @@ sealed interface GenerationEvent {
      * [retryable] 是 adapter / engine 的判定，**不是**内核的重试判据：
      * 内核还要叠「是否已 emit 过 TextDelta」与重试次数。
      * 两者分开是因为「可重试」是协议属性，「该不该重试」是运行状态属性。
+     *
+     * [contextLimitHint]：服务端在 400 里回报的**真实窗口**（`maximum context length is N`
+     * 里的 N）。`null` = 本次失败没有携带这个信息（非 400 / 文案不匹配 / 非本族格式）。
+     * 它与 [EngineErrorKind.CONTEXT_OVERFLOW] 是两个判据：那个说「为什么失败」，
+     * 这个说「真实上限是多少」。默认 `null` ⇒ 既有构造点无需改动。
      */
     data class Failed(
         val kind: EngineErrorKind,
         val message: String,
         val retryable: Boolean,
+        val contextLimitHint: Int? = null,
     ) : GenerationEvent
 }
 

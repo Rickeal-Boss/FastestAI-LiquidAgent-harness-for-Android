@@ -18,9 +18,16 @@ import com.rickeal.liquidharness.core.model.AgentEvent
  * |---|---|
  * | 组装 system 提示词（循环外一次） | [systemTextFor] |
  * | 轮头闸门 | [RoundHeadGate] |
+ * | **硬预算兜底（原地收缩 / 熔断）** | [PreStepBudget]（每步之前一行委托） |
  * | 单轮生成 + 重试 | [GenerationRound]（内部经 [ContextBudget] 判预算） |
  * | 工具批执行 | [ToolCallExecutor]（W2 已接线） |
  * | 零调用收尾 | [RunTermination.emitFinished] |
+ *
+ * ## 为什么硬预算在**循环顶部**而不是工具批之后
+ *
+ * 工具批执行完，循环回到顶部 ⇒ 顶部位置天然覆盖了「工具结果提交后」这个时点，
+ * 同时还能覆盖**首轮**：一条超长的用户输入必须在发出第一个请求之前就被拦下
+ * （`PreStepBudget` 的判据 T3 断言 `generateCount == 0`）。挂在工具批之后永远满足不了它。
  *
  * ## W2 的能力边界
  *
@@ -32,6 +39,14 @@ class TurnLoop(
     private val gate: RoundHeadGate = RoundHeadGate(),
     private val generation: GenerationRound = GenerationRound(),
     private val termination: RunTermination = RunTermination(),
+    /**
+     * 每步之前的**硬预算**判定（原地收缩 / 熔断）。判据逻辑全在 [PreStepBudget] 里 ——
+     * 本类的 `while` 体只加**一行**委托，类头 KDoc 的「零业务逻辑」纪律不变。
+     *
+     * 默认值与 [termination] 同实例：熔断的终态事件必须只有**一个出口**
+     * （`RunTermination` 的类头纪律），不能因为多了一个判定点就多一条 emit 路径。
+     */
+    private val preStep: PreStepBudget = PreStepBudget(termination),
 ) {
 
     suspend fun run(ctx: TurnContext): Step {
@@ -42,6 +57,7 @@ class TurnLoop(
         val executor = ToolCallExecutor(ToolApprovalFlow(ctx.approvalCache ?: ToolApprovalCache()))
         while (true) {
             ctx.checkActive()
+            if (preStep.enforce(ctx)) return Step.Terminated
 
             when (val verdict = gate.check(ctx)) {
                 is GateVerdict.Trip -> {

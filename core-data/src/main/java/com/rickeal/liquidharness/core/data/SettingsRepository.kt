@@ -66,6 +66,36 @@ class SettingsRepository(
         }
     }
 
+    /**
+     * 是否允许内核自动压缩上下文。**默认 `true`**（与 `AgentPolicy.compressContext` 的默认同源）。
+     *
+     * ## 为什么这个开关必须存在（W6）
+     *
+     * 它此前是 `AgentPolicy.compressContext` 里**零写入点**的声明 —— 本仓第 4 个
+     * 「声明了没消费者」的开关（前三个：`autoApproveDangerous` / `EngineCapabilities` /
+     * 技能导入回调）。接上它同时清掉这条挂账。
+     *
+     * 更要紧的是**设备侧 1M 长上下文测试**离不开它：软预算 =
+     * `(windowEffective − maxOutputTokens) × compressThreshold`，1M 窗口 + 4096 输出预留下
+     * ≈746k 就触发压缩 ⇒ 990k 的干草堆会被压掉一大截，测出来的不是 1M 请求而是「压完的请求」。
+     *
+     * ## 关掉它的代价必须写清楚
+     *
+     * 关掉之后内核**没有任何兜底**：超出窗口的请求会直接吃端点 400（并且因为
+     * `verifiedContextLength` 学习链仍在，400 反而会把真实窗口写回端点）。所以设置页那一行
+     * 只在 **debug 变体**出现，副标题明写「仅用于长上下文验证」。
+     *
+     * 注意：本开关只影响**自动**压缩。用户手动点「压缩上下文」不受它约束 ——
+     * 手动压缩是用户显式动作，与「内核是否自作主张丢历史」是两件事。
+     */
+    val compressContext: Flow<Boolean> = safeData().map { prefs ->
+        prefs[KEY_COMPRESS_CONTEXT] ?: DEFAULT_COMPRESS_CONTEXT
+    }
+
+    suspend fun setCompressContext(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[KEY_COMPRESS_CONTEXT] = enabled }
+    }
+
     suspend fun setSkillEnabled(name: String, enabled: Boolean) {
         if (name.isBlank()) return
         dataStore.edit { prefs ->
@@ -100,6 +130,10 @@ class SettingsRepository(
         private val KEY_ONBOARDED = booleanPreferencesKey("has_completed_onboarding")
         private val KEY_DISABLED_SKILLS = stringSetPreferencesKey("disabled_skills")
         private val KEY_MAX_CONTEXT_TOKENS = intPreferencesKey("max_context_tokens")
+        private val KEY_COMPRESS_CONTEXT = booleanPreferencesKey("compress_context")
+
+        /** 与 `AgentPolicy.compressContext` 的默认值同源（true），改一处必须改两处并加断言。 */
+        const val DEFAULT_COMPRESS_CONTEXT: Boolean = true
 
         /** 与 `AgentPolicy.maxContextTokens` 的默认值同源（32 000），改一处必须改两处并加断言。 */
         const val DEFAULT_MAX_CONTEXT_TOKENS: Int = 32_000

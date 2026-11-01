@@ -146,6 +146,23 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
 
     override fun isTerminal(event: SseEvent): Boolean = event.data.trim() == DONE_MARKER
 
+    /**
+     * 从 400 错误体里解析真实窗口（W5-02）。
+     *
+     * 文案出处：`docs/notes/w5-provider-matrix.md:89-93`，9 次观测字符串完全一致 ——
+     * `This model's maximum context length is 1000000 tokens ...`。所以只钉这一句，
+     * 不做「猜任意数字」的宽松匹配：把 `max_tokens` 之类的数字当窗口会写出**更错**的预算，
+     * 比不写回更糟（预算一旦写错，下一次请求的判据全部失真，且没有任何报错）。
+     *
+     * 大小写与多余空白放宽（部分网关会改写措辞），数字必须紧跟 `context length is`。
+     */
+    override fun contextLimitHint(errorBody: String): Int? {
+        if (errorBody.isEmpty()) return null
+        val match = CONTEXT_LIMIT_PATTERN.find(errorBody) ?: return null
+        val value = match.groupValues[1].toIntOrNull() ?: return null
+        return if (value > 0) value else null
+    }
+
     override fun finish(state: AdapterStreamState): GenerationEvent.Finished =
         GenerationEvent.Finished(terminationReason(state))
 
@@ -357,5 +374,15 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
 
         /** 与 `core-net` 的 `SseEventParser.DONE_MARKER` 同值；此处独立声明避免反向依赖语义。 */
         const val DONE_MARKER = "[DONE]"
+
+        /**
+         * 超窗 400 的真实窗口。`maximum` 前缀可选（部分网关只写 `context length is N`），
+         * 其余逐字钉死 —— 宽松匹配会把别的数字（`max_tokens` / `requested N tokens`）
+         * 误当成窗口，写出一个**更错**的预算。
+         */
+        val CONTEXT_LIMIT_PATTERN = Regex(
+            """(?:maximum\s+)?context length is (\d+)""",
+            RegexOption.IGNORE_CASE,
+        )
     }
 }

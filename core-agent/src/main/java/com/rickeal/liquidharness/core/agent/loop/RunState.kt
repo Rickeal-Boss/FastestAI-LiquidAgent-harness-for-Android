@@ -70,6 +70,63 @@ class RunState(
         private set
 
     /**
+     * **上一次 provider 真实回报的** `prompt_tokens`（单次请求，不是累计）。0 = 还没有真值。
+     *
+     * ## 为什么它是独立字段，而不是复用 [promptTokens]
+     *
+     * [promptTokens] 是**本 run 累计**（门控真值，`maxRunPromptTokens` 用）。而估算校准要的是
+     * 「上一次发出去的那条请求实际多大」—— 累计值会把前几轮也算进来，锚点立刻失效。
+     *
+     * ## 为什么锚点 + 增量仍然不够（W6 写在这里，防下一个 agent 误判）
+     *
+     * 锚点修的是**静态部分**：历史里那一大段已经被 provider 数过一次，之后不再重复低估。
+     * 但 W5-01 事故的增量**本身就是被低估的那一段**（工具结果正文，估算 4 字符/token、
+     * 实际 ≈2）⇒ 锚点对本例**一次都拦不住**。真正的判据是字符量纲的
+     * `HardBudgetShrinker` / `hardCharsPerToken`。别看到这里就以为修完了。
+     */
+    var lastReportedPrompt: Int = 0
+        private set
+
+    /**
+     * [lastReportedPrompt] 那次请求的**消息条数**（已 sanitize 的整条请求，含 system）。
+     *
+     * 估算式是 `lastReportedPrompt + estimate(本次请求.drop(lastReportedAtMessageCount))`，
+     * 所以它必须与真值同源、同一时刻记下。压缩会改写历史 ⇒ 锚点必须置 0
+     * （见 [invalidatePromptAnchor]），否则会拿压缩前的真值去估压缩后的历史。
+     */
+    var lastReportedAtMessageCount: Int = 0
+        private set
+
+    /**
+     * 最近一次失败携带的「真实窗口」（`maximum context length is N` 里的 N）。
+     *
+     * 只是**传递载体**：`GenerationRound` 写、`RunTermination.emitFailed` 读、宿主的
+     * run 收尾写回端点（`AppContainer.recordContextLimit`）。内核不在这里做任何判断。
+     */
+    var contextLimitHint: Int? = null
+        private set
+
+    /**
+     * **实测** chars/token：上一次请求的 `发送字符数 ÷ provider 回报的 prompt_tokens`。
+     *
+     * `0f` = 本 run 还没有真值（首轮 / 刚压缩过）⇒ 硬预算回落
+     * `policy.hardCharsPerToken`（floor 1.8）。
+     *
+     * ## 为什么这个比值必须被测量，而不是写死一个常数
+     *
+     * chars/token 是**内容相关**的：英文散文实测 5.73～5.75，代码 / JSON ≈2.0。
+     * 固定 1.8 在散文会话里会把可用字符空间砍到 1/3（可感知的信息损失），
+     * 固定 5.75 又会在代码会话里超窗。所以只能按**本 run 的真实内容**标定。
+     *
+     * ## 为什么它偏小（方向安全）
+     *
+     * 分子只算 `messages` 的字符，分母含 `body.tools` 的 token ⇒ 比值偏低 ⇒ cap 偏小。
+     * 已知偏差，由 `policy.maxCalibratedCharsPerToken`（6.0）兜住上界。
+     */
+    var measuredCharsPerToken: Float = 0f
+        private set
+
+    /**
      * 本轮 system 文本缓存。**每 run 只渲染一次**（`00-brief.md` A8 硬规则 1）。
      *
      * 缓存放这里而不是 `TurnLoop` 局部变量：压缩会改 `working`，但**不许**借机重渲染
@@ -192,6 +249,46 @@ class RunState(
         executedToolCount += 1
     }
 
+    /**
+     * 记下 provider 回报的真值，作为下一次估算的锚点（W6 / T5）与 chars/token 的标定源（T7）。
+     *
+     * @param prompt 本次请求的 `prompt_tokens`（**单次**，不是累计）。
+     * @param messageCount 本次请求实际发出去的消息条数（含 system），用于算「其后新增的部分」。
+     * @param charsSent 本次请求 `messages` 的字符总量。用来标定 [measuredCharsPerToken]。
+     *   只算 messages（不含 `body.tools`）⇒ 比值偏低 ⇒ cap 偏小 ⇒ 安全侧。
+     *
+     * 只接受 `prompt > 0`：provider 漏报时 adapter 会给 0（缺省），拿 0 当锚点会让下一次
+     * 估算**从零开始**，比不用锚点更糟（低估得更狠）；标定同理，除零会得到 Inf。
+     */
+    fun recordReportedPrompt(prompt: Int, messageCount: Int, charsSent: Int = 0) {
+        if (prompt <= 0 || messageCount < 0) return
+        lastReportedPrompt = prompt
+        lastReportedAtMessageCount = messageCount
+        if (charsSent > 0) measuredCharsPerToken = charsSent.toFloat() / prompt
+    }
+
+    /**
+     * 锚点与标定**同时**失效（压缩之后必须调）。
+     *
+     * 压缩改了历史的前半段，`lastReportedAtMessageCount` 指向的下标随之失去意义 ——
+     * 继续用它会让「新增部分」把压缩后重排的整段历史当成增量，估算暴涨到误熔断。
+     *
+     * chars/token 也一并置 0：压缩会大幅改变内容构成（旧的历史被摘要替换），
+     * 上一次测得的比值不再代表这一份内容。回落到 floor 是**保守**方向 ——
+     * 宁可多收缩一次，也不要在压缩后的第一轮就超窗。
+     */
+    fun invalidatePromptAnchor() {
+        lastReportedPrompt = 0
+        lastReportedAtMessageCount = 0
+        measuredCharsPerToken = 0f
+    }
+
+    /** 记下失败携带的真实窗口（只在下一次 run 收尾时被读走，不做判断）。 */
+    fun recordContextLimitHint(hint: Int?) {
+        if (hint == null || hint <= 0) return
+        contextLimitHint = hint
+    }
+
     /** 给 `AgentEvent.Finished` 用的用量快照。一个 token 都没记账时返回 null（不伪造 0）。 */
     fun usage(): TokenUsage? {
         if (promptTokens == 0 && completionTokens == 0) return null
@@ -207,8 +304,10 @@ class RunState(
     /**
      * 可运行时长（毫秒）。
      *
-     * ⚠️ W1 用**单调时钟**，不扣冻结时间：`FreezeClock` 是 W3 才接的机制，
-     * 且它在 API 路径上的行为**尚未验证**（`03-contracts.md` §五 #19）。
+     * ⚠️ 用**单调时钟**，不扣冻结时间。`FreezeClock`（设备 cgroup 冻结感知时钟）
+     * **尚未落地**，挂账 W3-05 —— 全仓零实现，别在别处引用它当成已接机制。
+     * 落地之前，墙钟 HARD（`wallClockHardMillis`）在设备被系统冻结时有**误杀风险**：
+     * 冻结期间单调时钟照走，解冻后一算就是「超时」，而模型其实什么都没做。
      * 这里如实按单调时钟算，不假装已经做了冻结剔除。
      */
     fun elapsedMillis(): Long = (nowNanos() - startedAtNanos) / 1_000_000L

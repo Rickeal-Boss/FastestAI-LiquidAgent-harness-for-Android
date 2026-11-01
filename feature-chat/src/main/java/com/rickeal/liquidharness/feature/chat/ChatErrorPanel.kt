@@ -156,16 +156,17 @@ private fun ApprovalCard(
  * 错误卡。
  *
  * 不设 `maxLines`：失败原因可能很长（含原始异常），截断成一行会让用户彻底看不懂。
- * `NO_ENDPOINT` 是内核侧的 ASCII 错误码，上屏前换成完整句子（守卫 G16 的同一纪律）。
+ * 两个 ASCII 错误码（[NO_ENDPOINT] / [MANUAL_COMPRESS_NOOP]）上屏前换成完整句子
+ * （守卫 G16 的同一纪律：Kotlin 里不留中文，文案全在 `strings.xml`）。
  */
 @Composable
 private fun ErrorCard(message: String, onDismiss: () -> Unit) {
     val colors = LocalGlassColors.current
     val tokens = LocalGlassTokens.current
-    val text = if (message == NO_ENDPOINT) {
-        stringResource(R.string.chat_error_no_endpoint)
-    } else {
-        stringResource(R.string.chat_error_generic, message)
+    val text = when (message) {
+        NO_ENDPOINT -> stringResource(R.string.chat_error_no_endpoint)
+        MANUAL_COMPRESS_NOOP -> stringResource(R.string.chat_error_manual_compress_noop)
+        else -> stringResource(R.string.chat_error_generic, message)
     }
     GlassCard(
         material = GlassMaterial.THICK,
