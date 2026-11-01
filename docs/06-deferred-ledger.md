@@ -76,7 +76,7 @@
 | W4-06 | `feature-settings` 只有 1 条测试 | W4 | `CLOSED` | 关闭于 W5 | 实测 21 条（`grep -rnE '^\s*@Test\b' feature-settings` = 21），含窗口档位边界钳制 |
 | W4-07 | 会话级 `maxContextTokens` 对已缓存 runner 不生效 | W4 | `CLOSED` | 关闭于 W5 | `core-data/RunnerCache.kt:21` `RunnerKey(endpoint, maxContextTokens)` ⇒ 档位进键即重建。⚠️ 残留窄窗口（`AppContainer.kt:327` 的 `runners.remove()` 绕过 `keepWhile`），见 W6-04 |
 | W5-01 | 压缩判定点下沉（轮头 → 工具结果提交后 / pre-step 单点） | W5 | `OPEN` | W6 A 流实施中 | 真机证据 `handoff-20261101-wave5.md` §五.1：32K 档预算 32 000，实发 **33 800 token** 且零压缩；根因订正见 `docs/notes/w6-plan.md` §2.1（判定点位置**不是充分原因**，M1 估算器低估 + M2 压缩器无损放弃同时成立） |
-| W5-02 | `contextLength` 超报（1 048 576 vs 实测 1 000 000 含输出） | W5 | `OPEN` | W6 A 流实施中 | `docs/notes/w5-provider-matrix.md`（1 000 083 → HTTP 400，9 次复现；999 662 + 338 = 1 000 000 顶死）；预算算式 `core-kernel/.../context/ContextCompressor.kt:37-41` 已减 `maxOutputTokens`，缺的是 `verifiedContextLength` 写回 |
+| W5-02 | `contextLength` 超报（1 048 576 vs 实测 1 000 000 含输出） | W5 | `OPEN` | W6 A 流实施中 | `docs/notes/w5-provider-matrix.md`（1 000 083 → HTTP 400，9 次复现；999 662 + 338 = 1 000 000 顶死）；预算算式 `core-kernel/.../context/ContextCompressor.kt:37-41` 已减 `maxOutputTokens`。**写回链现状（W6 复验，取代此前「零调用点」的判断）**：四跳全接 —— `ChatViewModel` → `ConversationOps` → `core-data/ContextLimitWriteback.offer(...)`（**在 `:core-data`，不是 UI 层**，`record` 是注入式 lambda）→ `AppContainer.recordContextLimit`；判据 = 三跳各有断言 + 第四跳 `ContextLimitWritebackTest` **5 条纯 JVM 用例**（「恰好一次 + 参数正确」/ hint 为 null、0、-1 零调用 / 端点 id 为 null 或空白零调用 / 普通异常静默），**另 1 条「`record` 抛 `CancellationException` 原样重抛」已写但尚未跑验** ⇒ 该项待验前不计入已闭合 |
 | W5-03 | MCP 真机联调（承接 W3-03 / W4-02） | W5 | `OPEN` | 平台阻塞：需 https 夹具或 cleartext 例外**裁决**（安全取舍，单独出裁决文档） | `app/src/main/AndroidManifest.xml:25` `usesCleartextTraffic="false"`（G15b 要求，**不为测试放开**）⇒ 明文 http 被平台拒（`error: transport_error`） |
 | W5-04 | 设备侧 1M 行使（承接 W3-06 / W4-03） | W5 | `OPEN` | 阻塞：无批量题面注入通道（W6 C 流的「会话导入」是解锁器） | PC 侧 994 998 命中（`docs/notes/w5-provider-matrix.md`）；设备侧最大只跑到 2.5k。`handoff-20261101-wave5.md:135` D12 = ⛔ vacuous |
 | W5-05 | `autoApproveDangerous` 无消费点 | W5 | `OPEN` | W7 限期二选一：接线（UI 开关 + 审计账行 + 三条用例转正式消费点）或连字段带用例一起删 | `core-kernel/.../policy/AgentPolicy.kt:115` 仅定义；生产消费点 **0**（复验：`grep -rn autoApproveDangerous --include=*.kt` 只命中定义 + `core-agent/.../ApprovalChokepointAuditTest.kt:241,276,300` 三条警报用例）。⚠️ 那三条是「一旦有人接线就立刻红」的**警报**，不是「防护已生效」 |
@@ -88,12 +88,14 @@
 | W6-04 | `saveEndpoint` 的 `runners.remove()` 绕过 `keepWhile`（W4-07 残留窄窗口） | W6 | `CLOSED` | 关闭于 W6（A 流） | 已改为 `core-data/AppContainer.kt:333` `runners.removeIfIdle(normalized.id) { it.isBusy }`（`recordContextLimit` 同样处理，`:369`）；实现 `core-data/RunnerCache.kt:93` `removeIfIdle`；钉住用例 `core-data/.../RunnerCacheTest.kt:107,118`。⚠️ 残留（有意保留）：`deleteEndpoint` 仍走 `runners.remove(id)`（`:376`）—— 端点已删，在途 run 的引擎指向已删端点属另一类问题。来源：`03-w5-review-and-next.md` §二 P2 |
 | W6-05 | `allowClipboardRead` 缺设置页开关（保存后下一次 run 生效） | W2.5 | `OPEN` | 推 W7（与 `ApprovalPolicyScreen` 同波） | 字段有真消费点：`core-agent/.../ClipboardTool.kt:78` `if (!policy.allowClipboardRead && actionOf(...) == Action.GET) READ_DISABLED`；但**全仓无 UI/无 setter 写入它**（`grep -rn allowClipboardRead` 只命中 ClipboardTool + 3 个测试文件）。**原交接 W2.5 §八.4 只写了「W7 挂账」，未给编号 ⇒ 本条是本台账补的编号**（无编号的挂项在抄写中必丢） |
 | W6-06 | `arch-guard.sh` 一次全量跑出现 G7/G8/G9 各打印两遍（`OK=26` 虚高 3），**不可复现** | W6 | `OPEN` | 待复现；再现时按 `scripts/arch-guard.sh` 头部 K3 的三步查（函数调用次数 / 同 id 两次 guard_ok / 是否有第二进程写同一输出文件） | 2026-11-01 20:47 一次全量跑实测（W6 首次接入 VACUOUS 之后，当次 rc=1）；之后 4 次全量跑（含最终验收 `OK=25 VACUOUS=1 VIOLATION=0`）**均未复现**，根因未定位。**登记理由：不可复现 ≠ 不存在**，不登记则下次出现会被当成新 bug 从头排查。详见 `arch-guard.sh` 头部 K3 |
+| W6-07 | `core-kernel` 行数触顶（1 790 / 1 800，余 10）⇒ 拆分 `context/` 为 `:core-context` | W6 | `OPEN` | 下一波第一件事拆；本波只冻结 + 登记 | 现量（守卫口径，`LINE_CAPS` 表 + `wc -l`）：`core-kernel` **1 790 / 1 800**（余 **10**）；三分目录 `context/` **1 387**、`policy/` **235**、`log/` **168**。峰值到过 1 849（W6 加 T7 那阵子），已由 A 流压回 1 790（压掉的是 W6 新增的重复 KDoc，三条判据锚一个没删）。**性质 = 预算到期，不是 W6 违规**：1 800 是 W5 拆分时按「搬过去的 1 557 行 + 余量」给的，被 W6 正常用掉。**处置方向**：`core-kernel/context/` 整体下沉为 `:core-context`，`core-kernel` 只留 `policy/` + `log/`。**三条硬约束（防下一波把它当扩容）**：① `TOTAL_LINE_CAP` **保持 42 500 不动** —— 这才是 W5 铁律 3「不许变胖」的真判据（实测全仓 main = **34 983 / 42 500**，余 **7 517**）；② per-module 上限之和 1 800 → **1 900**，**其中 +100 是拆分开销**（两个模块各自的文件头 + KDoc），必须同时写进台账项与提交信息；③ **禁止「凑 1 800」的分法** —— 那会给 `core-context` 留 13 行，等于把死结从一处搬到另一处。两种合理分法（各自余 45~65 行，之和都是 1 900）：`core-kernel` 上限 450（235+168=403，余 47）+ `core-context` 上限 1 450（1 387，余 63）；或 `core-kernel` 上限 300（仅 policy 235，余 65）+ `core-context` 上限 1 600（1 387+168=1 555，余 45）。**触发条件**：任何往 `core-kernel` 新增代码的 PR ⇒ 先拆再加。**同一病的另外三处（本波只登记不处置，数字为守卫口径实测）**：`feature-chat` 3 459 / 3 500（余 **41**）、`feature-settings` 2 921 / 3 000（余 **79**）、`core-design` 12 439 / 12 600（余 **161** —— 它同时是**全仓最大模块**：占全仓 35.6%、是 `core-agent` 5 326 的 2.3 倍 ⇒ 下一波若要找「哪里该瘦」，收益远大于 `core-kernel` 那 10 行余量） |
 
-> **为什么是 33 条而不是外审说的 27 条**：27 = 四份 handoff 挂账表里的编号条数（G20 逐条核对的那 27 个）。
-> 另 6 条是：W6-01 / W6-02（本波新发现的「声明了没消费者」第 3、4 例）、W6-03（守卫空转清单）、
+> **为什么是 34 条而不是外审说的 27 条**：27 = 四份 handoff 挂账表里的编号条数（G20 逐条核对的那 27 个）。
+> 另 7 条是：W6-01 / W6-02（本波新发现的「声明了没消费者」第 3、4 例）、W6-03（守卫空转清单）、
 > W6-04（外审 §二 P2，代码里确实存在但从未进过任何挂账表，本波已由 A 流修掉）、
-> W6-05（W2.5 §八.4 的无编号挂项）、W6-06（守卫自身的一次不可复现异常）。
-> 后三条正是「没有编号 / 没进表 ⇒ 没人跟踪」的活样本。
+> W6-05（W2.5 §八.4 的无编号挂项）、W6-06（守卫自身的一次不可复现异常）、
+> W6-07（`core-kernel` 行数预算到期 —— 从未进过任何挂账表，靠 G10 判红才被发现）。
+> 后四条正是「没有编号 / 没进表 ⇒ 没人跟踪」的活样本。
 
 ---
 
@@ -103,8 +105,8 @@
 |---|---|---|
 | `CLOSED` | 9 | W26-01 / W26-04 / W26-05 / W3-08 / W4-01 / W4-05 / W4-06 / W4-07 / W6-04 |
 | `CARRIED` | 6 | W26-03 / W3-03 / W3-06 / W4-02 / W4-03 / W4-04 |
-| `OPEN` | 18 | W26-02 / W3-01 / W3-02 / W3-04 / W3-05 / W3-07 / W5-01 / W5-02 / W5-03 / W5-04 / W5-05 / W5-06 / W5-07 / W6-01 / W6-02 / W6-03 / W6-05 / W6-06 |
-| **合计** | **33** | 四份 handoff 的 27 条 + 本波新开 6 条 |
+| `OPEN` | 19 | W26-02 / W3-01 / W3-02 / W3-04 / W3-05 / W3-07 / W5-01 / W5-02 / W5-03 / W5-04 / W5-05 / W5-06 / W5-07 / W6-01 / W6-02 / W6-03 / W6-05 / W6-06 / W6-07 |
+| **合计** | **34** | 四份 handoff 的 27 条 + 本波新开 7 条 |
 
 **老化最久的三条**（都必须有归宿，不许无限期挂着）：
 
