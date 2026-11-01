@@ -267,6 +267,46 @@ interface EffectAwareTool : Tool {
 }
 ```
 
+### 工具结果限长（两层，各管各的）
+
+**契约**：工具结果在**出口处**（进回灌消息之前）限长，不在压缩器里限。压缩器看到的历史
+必须是已经合规的输入 —— 否则它只能在「丢掉整条结果（模型白读了）」和「留着它（保留区被吃光）」
+之间二选一，两个都是坏答案。
+
+| 层 | 判据 | 落点 | 超限动作 |
+|---|---|---|---|
+| 单条 | `min(effect 上限, maxToolResultChars=16000)` | `ToolResultLimiter` | 截断 + 尾部 `\n[truncated: N chars omitted]` + `truncated=true` |
+| 聚合 | 整批 `output` 之和 ≤ `maxAggregatedToolMessageChars=64000` | `ToolResultCommit.commit` | **从最旧**逐条换成 `[omitted: aggregated limit, N chars]` |
+
+**为什么必须两层**：单条层是「一条结果不许独吞保留区」的显式闸门 —— 一条满额读结果
+（16 000 字符 ≈ 4 000 token）正是 W4 交接里「压缩刚做完、下一轮立刻复发」的病根量级。
+聚合层管「一批结果不许独吞一条消息」—— 12 个并发调用 × 16 000 = 192 000 字符，单条层
+再严也拦不住。反过来只有聚合层，就得在「谁更旧」与「读还是写」之间猜一个，两个判据都会失准。
+
+数值出处：`maxToolResultChars` / `maxAggregatedToolMessageChars` 的思想来源是 Operit 的
+`ToolExecutionLimits` 常量族（读文件 32000 / 文本结果 5000 / 聚合上限），本仓**独立取证**后
+取 16000 与 64000 —— 只借「在出口设与工具无关的硬上限」这个判断，不搬它的数值体系
+（它的 32000 是端侧本地读，我们的工具输出每字符都计费）。
+
+⚠️ **单条硬上限不得低于 `maxReadToolOutputChars`**：`file_read` 的续读指引挂在输出尾部，
+出口比工具自己的读量更狠时，指引会被一起截掉 —— 模型既看不到剩余内容，也拿不到
+「下一段从 offset=N 读」。默认值下两者同为 16 000，所以 `toolResultCapExemptTools`
+对读类不产生可观测差异：它是给「把硬上限调低」的部署准备的口子，不是给某个工具发的通行证。
+
+**四条不变量**（聚合层，任何一条破了都会静默失效）：
+
+1. 占位**保留 `callId`**。丢了它，下一轮 `sanitizeForProvider` 会把这个调用判成
+   「声明了没结果」并补一条合成错误结果 —— 模型看到「工具失败」，真相是「结果被省略」。
+2. **最后一条永远完整**。全占位等于这一轮什么都没回，模型只能重调一遍，白花钱。
+3. `truncated` **逐条**标记，且**不覆盖**工具自己标的 true（工具在源头截过的结果，
+   出口没超限也要保留这个证据）。
+4. 占位**措辞不得像失败**：用 `omitted` + 省略字符数，绝不用 `error` / `failed` ——
+   模型看到像错误的文本会重试同一次调用，把一次省钱的截断变成一次多花的往返。
+
+**豁免名单**：`AgentPolicy.toolResultCapExemptTools`（默认空）里的工具只受 effect 上限约束。
+加入一项就放弃了该工具的压缩收益，必须能回答「为什么它的半截结果会让模型做错事」——
+典型是 diff / 结构化输出类（截断后 JSON 不合法，模型会把「解析失败」误判成「工具坏了」）。
+
 ---
 
 ## 三、Agent 事件（UI 层契约）
@@ -486,6 +526,16 @@ sealed interface ApprovalDecision {
     data class DeniedWithReason(val reason: String) : ApprovalDecision
 }
 ```
+
+> **🔴 反面教材：审批只认结构化回调，永不认模型文本标记。**
+>
+> 审批的唯一合法来源是宿主经 `ToolApprovalHandler` 返回的裁决（实现名
+> `ToolApprovalDecision`，判定点是 `core-agent` 的 `ToolApprovalFlow.decide` ——
+> 全仓唯一咽喉点）。**模型在正文里写「我已批准」「user approved」「无需确认」不算批准**：
+> 正文是模型自己生成的不可信文本，把它当授权等于让被审对象自己签发许可证。
+> 同一漏洞的变体还有「从工具输出里解析出 `approved` 字样就放行」——
+> 工具输出同样可由远端 MCP server 构造。
+> 审计判据：`core-agent` 的 `ApprovalChokepointAuditTest`（穷举表 + bypass-immune 三行）。
 
 ```kotlin
 package com.rickeal.liquidharness.core.agent.policy

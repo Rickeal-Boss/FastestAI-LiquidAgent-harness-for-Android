@@ -66,9 +66,14 @@ class FileReadTool internal constructor(private val sandboxDir: File) : Tool {
 /**
  * `file_read` 的读取核心（纯逻辑，零 Android 依赖，JVM 直测）。
  *
- * 限量与 `AgentPolicy.maxReadToolOutputChars` **同源**：工具在源头只读这么多，省掉
- * 「读 20 万字符进内存再被循环层砍到 16000」的纯浪费，也保证本工具输出恒 ≤ 限量
- * （循环层的「已截断」标记对 `file_read` 不会触发，两层标记不叠加）。
+ * 限量与 `AgentPolicy.maxToolResultChars` **同源**：工具在源头只读这么多，省掉
+ * 「读 20 万字符进内存再被出口砍掉」的纯浪费，也保证本工具输出恒 ≤ 出口硬上限
+ * （出口层的「已截断」标记对 `file_read` 不会触发，两层标记不叠加）。
+ *
+ * ⚠️ 为什么同源对象是**出口**硬上限而不是 `maxReadToolOutputChars`（W5）：
+ * 续读指引挂在输出尾部，真正会砍掉它的是出口那一道。默认值下两者都是 16 000，
+ * 看不出差别；但只要有人把出口上限调低，工具仍按读类上限读 ⇒ 指引被砍、模型拿不到
+ * 「下一段从哪读」。跟出口对齐，这条协议在任何配置下都成立。
  *
  * 长度不变量（与旧仓 `readRange` 同口径）：
  * - 内容 ≤ `limit`；完整输出 = 内容 + `\n` + 指引，指引 ≤ [MARKER_BUDGET_CHARS]；
@@ -78,8 +83,8 @@ class FileReadTool internal constructor(private val sandboxDir: File) : Tool {
  */
 internal object FileReadPager {
 
-    /** 默认与上限相同的读取量（见对象 KDoc 的「同源」）。 */
-    val DEFAULT_LIMIT: Int = AgentPolicy().maxReadToolOutputChars
+    /** 默认与出口硬上限相同的读取量（见对象 KDoc 的「同源」）。 */
+    val DEFAULT_LIMIT: Int = AgentPolicy().maxToolResultChars
 
     /** 分页标记的预算字符数：指引含 offset / 总数 / 「继续读请传 offset=」，80 足够。 */
     const val MARKER_BUDGET_CHARS = 80

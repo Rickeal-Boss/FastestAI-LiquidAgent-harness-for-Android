@@ -24,11 +24,66 @@ data class AgentPolicy(
     /** 单个工具超时。旧仓 15s（端侧工具全是本地 IO）。MCP 工具是远端调用 ⇒ 60s。 */
     val toolTimeoutMillis: Long = 60_000L,
 
-    /** 读类工具输出截断上限。旧仓统一 4000；远程侧按 effect 分开：读是工作材料，写是回执。 */
+    /**
+     * 读类工具输出截断上限。旧仓统一 4000；远程侧按 effect 分开：读是工作材料，写是回执。
+     *
+     * ⚠️ 实际生效值还要与 [maxToolResultChars] 取小 —— 分档管「读和写不一样」，
+     * 硬上限管「谁都不许独吞保留区」，两者不是同一个问题。
+     */
     val maxReadToolOutputChars: Int = 16_000,
 
     /** 写类工具输出截断上限（回执类，几百字符足够）。 */
     val maxWriteToolOutputChars: Int = 2_000,
+
+    /**
+     * **单条**工具结果的硬上限（字符），在工具出口处执行（`ToolResultLimiter`）。
+     *
+     * ## 为什么它与 effect 分档并存，而不是取代它
+     *
+     * [maxReadToolOutputChars] 的 16 000 字符 ≈ 4 000 token，正是「一条满额读结果」的量级
+     * （W4 交接记录里的复发形态：压缩刚做完，下一轮就被它吃光保留区）。所以 16 000
+     * **就是设计值**，这里取同值不是巧合 —— 它把「单条结果不许超过 X」从 effect 分档里
+     * 独立成一个显式常量，于是有三件事可以挂靠到同一个数字上：
+     * ① 写类（2 000）天然低于它，分档继续管「读是材料、写是回执」；
+     * ② 运维可以整体调低它（比逐个 effect 上限好讲），而不动分档结构；
+     * ③ [toolResultCapExemptTools] 有明确的豁免对象 —— 豁免的是**这一条**，不是分档。
+     *
+     * 思想出处是 Operit 的 `ToolExecutionLimits` 常量族（读文件 32 000 / 文本结果 5 000）；
+     * 本仓**独立取证**后取 16 000，只借「在出口设与工具无关的硬上限」这个判断，
+     * 不搬它的数值体系 —— 它的 32 000 是端侧本地读，我们的工具输出每一字符都计费。
+     *
+     * ⚠️ 不要把它调到低于 [maxReadToolOutputChars]：`file_read` 的**续读指引挂在输出尾部**，
+     * 出口比工具自己的读量更狠时，指引会被一起截掉，模型既看不到剩余内容也拿不到续读位置。
+     *
+     * 超限时尾部追加 `[truncated: N chars omitted]` 并置 `truncated = true`：
+     * 不标记的截断会让模型以为自己看到了全文（静默截断比不截断更糟）。
+     */
+    val maxToolResultChars: Int = 16_000,
+
+    /**
+     * **聚合**工具消息的上限（字符）：一条 `role=tool` 里所有结果之和。
+     *
+     * 单条限住了，整批仍会爆：并发 12 个调用 × 单条 16 000 = 192 000，远超任何模型的
+     * 一次合理输入。64 000 ≈ 4 条满额读结果，正好是「模型这一轮真正用得上的证据量」。
+     * 量级推算同 [maxToolResultChars] 的出处思想（Operit 的聚合上限常量族），数值本仓独立取证。
+     *
+     * 超限的处理在 `ToolResultCommit.commit`：**从最旧（列表头部）开始**换成占位，
+     * 因为模型最需要的是最近那批结果；最后一条永远保持完整（否则这一轮等于什么都没回）。
+     */
+    val maxAggregatedToolMessageChars: Int = 64_000,
+
+    /**
+     * 免于 [maxToolResultChars] 截断的工具名（按 `ToolSpec.name` 精确匹配）。
+     *
+     * **默认空**。加入一项就等于放弃该工具的压缩收益，所以必须能回答
+     * 「为什么这个工具的半截结果会让模型做错事」—— 典型是 diff / 结构化输出类：
+     * 截断后 JSON 不合法，模型会把「解析失败」误判成「工具坏了」而不是「结果被截断」。
+     *
+     * 豁免只跳过 [maxToolResultChars]，per-effect 上限（读 16 000 / 写 2 000）仍然生效。
+     * 在当前默认值下两者相等，所以豁免对读类**不产生可观测差异** —— 它是给「把硬上限
+     * 调低」的部署准备的口子，不是给某个工具发的通行证。别因为「顺手」就往里塞工具。
+     */
+    val toolResultCapExemptTools: Set<String> = emptySet(),
 
     /**
      * 同一工具**连续**失败多少次触发熔断（`ToolExecutionGuard` 的 `failureStreakLimit`）。
@@ -100,7 +155,23 @@ data class AgentPolicy(
     /** 墙钟 HARD：到点熔断。旧仓 300s；远程侧重试会拉长链路 ⇒ 600s。 */
     val wallClockHardMillis: Long = 600_000L,
 
-    /** 单轮生成超时（旧仓 300s，端侧 2s/token）。远程侧首字节前 120s 足够。【推断】 */
+    /**
+     * 首字节看门狗：从开始收流到**第一个事件**之间的等待上限。
+     *
+     * **已接线，消费点 `GenerationRound.attemptOnce`**（W4 之前本字段只有声明、零消费点，
+     * 那是「声明了但没接线」的反例，别再让它退化回去）。超时 ⇒ 取消 collect +
+     * `Attempt.Fatal`（`EngineErrorKind.TIMEOUT`），不重试。
+     *
+     * 只覆盖**首字节之前**：首个事件到达即解除。之后的慢流由 `readTimeout` 与
+     * [wallClockHardMillis] 管 —— 两者的辖区不能混（`01-architecture.md` §6.1）。
+     *
+     * 计时用墙钟，**不接 `FreezeClock`**：本字段防的是「远端不响应」，不是「设备被冻结」。
+     * 冻结时协程与 `delay` 一起停摆，看门狗不会因此提前开火，不需要冻结感知。
+     *
+     * `<= 0` = 关闭看门狗（只给明确不要它的调用方 / 单测用）。
+     *
+     * 120s：旧仓 300s 是端侧 2s/token 的量级；远程侧首字节前 120s 足够【推断，W4 未真机校准】。
+     */
     val generationTimeoutMillis: Long = 120_000L,
 
     /**

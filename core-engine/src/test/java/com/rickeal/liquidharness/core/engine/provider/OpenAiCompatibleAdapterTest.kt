@@ -260,6 +260,40 @@ class OpenAiCompatibleAdapterTest {
         assertEquals(8, usage.cachedPrompt)
     }
 
+    /**
+     * `cached_tokens` 的**三态透传**：缺字段 ⇒ `null`（未上报），显式 0 ⇒ 0（未命中），
+     * 有值 ⇒ 值。
+     *
+     * 旧实现在这里写 `?: 0`，把「供应商没报」压成「0 命中」—— 两者处置相反
+     * （查端点是否支持该字段 vs 查前缀是否稳定），压平之后下游再也不可能分开。
+     */
+    @Test
+    fun cachedTokensArePassedThroughAsThreeStates() {
+        fun cachedOf(usageJson: String): Int? {
+            val events = adapter.decodeEvent(SseEvent("""{"choices":[],"usage":$usageJson}"""))
+            return (events.single() as GenerationEvent.Usage).cachedPrompt
+        }
+
+        // 1) 整个 prompt_tokens_details 缺失 ⇒ 未上报。
+        assertNull(cachedOf("""{"prompt_tokens":10,"completion_tokens":5}"""))
+        // 2) 明细对象在、但里面没有 cached_tokens ⇒ 同样算未上报（不是 0）。
+        assertNull(cachedOf("""{"prompt_tokens":10,"completion_tokens":5,"prompt_tokens_details":{}}"""))
+        // 3) 显式 0 ⇒ 上报了，且确实没命中。
+        assertEquals(
+            0,
+            cachedOf(
+                """{"prompt_tokens":10,"completion_tokens":5,"prompt_tokens_details":{"cached_tokens":0}}"""
+            ),
+        )
+        // 4) 命中值原样透传。
+        assertEquals(
+            64,
+            cachedOf(
+                """{"prompt_tokens":10,"completion_tokens":5,"prompt_tokens_details":{"cached_tokens":64}}"""
+            ),
+        )
+    }
+
     @Test
     fun finishReasonIsMapped() {
         fun reason(raw: String): FinishReason {

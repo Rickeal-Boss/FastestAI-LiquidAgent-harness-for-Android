@@ -38,13 +38,22 @@ enum class FinishReason {
  * Anthropic `cache_read_input_tokens`、Gemini `cachedContentTokenCount`），
  * 由 adapter 归一到这里。它是 00-brief A8「保住 prompt cache」唯一可观测的判据 ——
  * 没有这个字段，「缓存有没有命中」就只能靠猜。
+ *
+ * **三态，不是 Int**：`null` = provider 没上报这个字段，`0` = 上报了且没命中，
+ * `>0` = 命中。W4 之前这里是 `Int = 0`，把「没上报」压成了「0 命中」——
+ * 两件事的处置相反（前者查端点是否支持该字段，后者查前缀是否稳定），
+ * 同形展示会让排查方向直接反掉（design §2.4）。
+ * `@Serializable` 兼容性：旧 journal 里缺这个字段 ⇒ 反序列化为 `null`，正是想要的语义。
+ *
+ * TODO(W6)：DeepSeek 把命中量平铺在 `usage.prompt_cache_hit_tokens`（不在
+ * `prompt_tokens_details` 里），当前 adapter 读不到 ⇒ 该类端点恒为 `null`（未上报）。
  */
 @Serializable
 data class TokenUsage(
     val prompt: Int = 0,
     val completion: Int = 0,
     val total: Int = 0,
-    val cachedPromptTokens: Int = 0,
+    val cachedPromptTokens: Int? = null,
     /** true = 本地 `TokenEstimator` 兜底（provider 未回报 usage）。 */
     val estimated: Boolean = false,
 ) {

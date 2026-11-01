@@ -49,7 +49,9 @@ class RetryPolicy(
      * - [EngineErrorKind.PROTOCOL]：同一份畸形响应重发大概率还是畸形；
      * - [EngineErrorKind.CONTEXT_OVERFLOW]：重发同样长度的上下文必然再次溢出，
      *   正确动作是压缩后重发（由内核做，不是这里）；
-     * - [EngineErrorKind.CONFIG]：本地配置错，重试一万次也一样。
+     * - [EngineErrorKind.CONFIG]：本地配置错，重试一万次也一样；
+     * - [EngineErrorKind.TIMEOUT]：首字节看门狗已经让用户干等了一个完整超时窗口，
+     *   重试只会把这个窗口再来一遍（内核侧同一判定：`Attempt.Fatal`）。
      */
     fun isRetryable(kind: EngineErrorKind): Boolean = when (kind) {
         EngineErrorKind.RATE_LIMIT,
@@ -61,6 +63,7 @@ class RetryPolicy(
         EngineErrorKind.PROTOCOL,
         EngineErrorKind.CONTEXT_OVERFLOW,
         EngineErrorKind.CONFIG,
+        EngineErrorKind.TIMEOUT,
         EngineErrorKind.UNKNOWN,
         -> false
     }

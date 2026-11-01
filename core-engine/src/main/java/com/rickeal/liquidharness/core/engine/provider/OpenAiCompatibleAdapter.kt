@@ -136,7 +136,9 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
         if (usage != null) {
             val prompt = AgentJson.intOrNull(usage, "prompt_tokens") ?: 0
             val completion = AgentJson.intOrNull(usage, "completion_tokens") ?: 0
-            val cached = AgentJson.intOrNull(usage["prompt_tokens_details"] as? JsonObject, "cached_tokens") ?: 0
+            // 缺失 ⇒ null（未上报），不是 0（未命中）：这两件事的处置相反，
+            // 在解析层压平之后下游再也不可能分开（design §2.4 的三处失真之一）。
+            val cached = AgentJson.intOrNull(usage["prompt_tokens_details"] as? JsonObject, "cached_tokens")
             out.add(GenerationEvent.Usage(prompt, completion, cached))
         }
         return out

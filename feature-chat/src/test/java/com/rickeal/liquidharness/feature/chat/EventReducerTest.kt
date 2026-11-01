@@ -297,8 +297,8 @@ class EventReducerTest {
 
     @Test
     fun usageLabelShowsZeroCachedExplicitly() {
-        // 「0 命中」必须与「字段缺失」在展示层可区分（虽然类型层还分不出）：
-        // 只要 prompt > 0，就必须出现 "(0 cached, 0.0%)"，而不是什么都不显示。
+        // 「0 命中」必须与「字段缺失」在展示层可区分：
+        // 上报了 0 ⇒ 必须出现 "(0 cached, 0.0%)"，而不是什么都不显示。
         val state = EventReducer.reduce(
             initial,
             AgentEvent.UsageUpdated(prompt = 1000, completion = 10, cachedPrompt = 0),
@@ -315,6 +315,97 @@ class EventReducerTest {
         )
         assertTrue(state.usageLabel.orEmpty().contains("600 cached"))
         assertTrue(state.usageLabel.orEmpty().contains("60.0%"))
+    }
+
+    /**
+     * 三态的第三态：`null` = provider **没上报**这个字段。
+     *
+     * 它不能显示成 `0.0%` —— 那会让人去查「前缀为什么不稳定」，而真实原因可能是
+     * 「这个端点根本不报缓存字段」。两件事的处置相反，展示必须不同形（design §2.4）。
+     * 用 `n/a` 而不是中文：`usageLabel` 是纯 ASCII 的（守卫 G16），中文只在 `strings.xml`。
+     */
+    @Test
+    fun usageLabelMarksUnreportedCacheAsUnknown() {
+        val state = EventReducer.reduce(
+            initial,
+            AgentEvent.UsageUpdated(prompt = 1000, completion = 10, cachedPrompt = null),
+        )
+        assertTrue(state.usageLabel.orEmpty().contains("n/a"))
+        // 关键否定断言：不许把「未上报」算成一次 0% 的命中。
+        assertFalse(state.usageLabel.orEmpty().contains("0.0%"))
+        assertFalse(state.usageLabel.orEmpty().contains("cached"))
+    }
+
+    // ---------------------------------------------------------------- 等待首字节
+
+    /** run 启动（每轮开始）⇒ 进入等待态。用户需要知道「请求发出去了，但还没回」。 */
+    @Test
+    fun roundStartedEntersWaitingFirstByte() {
+        val state = EventReducer.reduce(initial, AgentEvent.RoundStarted(round = 1, maxRounds = 12))
+        assertEquals(ChatStatus.WAITING_FIRST_BYTE, state.status)
+    }
+
+    /** 首个正文增量 ⇒ 离开等待态（回到「正在输出」的既有态，状态行为空）。 */
+    @Test
+    fun firstTextDeltaLeavesWaitingState() {
+        var state = EventReducer.reduce(initial, AgentEvent.RoundStarted(round = 1, maxRounds = 12))
+        state = EventReducer.reduce(state, AgentEvent.TextDelta("he"))
+        assertNull(state.status)
+        assertEquals("he", state.streaming.text)
+    }
+
+    /**
+     * 思考通道同样算「开口了」：推理模型先吐 thinking 再吐正文，若不清等待态，
+     * 状态行会在思考块上方一直涨秒数，看起来像没响应。
+     */
+    @Test
+    fun firstReasoningDeltaLeavesWaitingState() {
+        var state = EventReducer.reduce(initial, AgentEvent.RoundStarted(round = 1, maxRounds = 12))
+        state = EventReducer.reduce(state, AgentEvent.ReasoningDelta("thinking"))
+        assertNull(state.status)
+    }
+
+    /** 工具优先的模型一个正文字都不吐：首个工具调用到达也必须离开等待态。 */
+    @Test
+    fun firstToolCallLeavesWaitingState() {
+        var state = EventReducer.reduce(initial, AgentEvent.RoundStarted(round = 1, maxRounds = 12))
+        state = EventReducer.reduce(state, AgentEvent.ToolCallStarted(call = readCall(), spec = readSpec()))
+        assertNull(state.status)
+    }
+
+    /**
+     * 取消 ⇒ 离开等待态，并落到「已停止（本轮没有产出内容）」。
+     *
+     * 不能回到 null：那样提问气泡下面空着，看起来像回答丢了 —— 而实际是用户自己停的。
+     */
+    @Test
+    fun cancelWhileWaitingFallsBackToCancelledEmpty() {
+        var state = EventReducer.reduce(initial, AgentEvent.RoundStarted(round = 1, maxRounds = 12))
+        state = EventReducer.reduce(state, AgentEvent.Cancelled(partialText = ""))
+        assertEquals(ChatStatus.CANCELLED_EMPTY, state.status)
+        assertFalse(state.isStreaming)
+    }
+
+    /**
+     * 失败也要离开等待态。首字节超时（看门狗）**就是在等待态里失败**的：
+     * 不清状态行的话，「正在等待模型响应… 120s」会一直跳，旁边还挂着一条错误。
+     */
+    @Test
+    fun failureWhileWaitingClearsStatus() {
+        var state = EventReducer.reduce(initial, AgentEvent.RoundStarted(round = 1, maxRounds = 12))
+        state = EventReducer.reduce(state, AgentEvent.Failed(message = "timeout: no response"))
+        assertNull(state.status)
+        assertEquals("timeout: no response", state.errorMessage)
+    }
+
+    /** 状态行的秒数：整秒向下取整、非负。文案本体在 `strings.xml`（守卫 G16）。 */
+    @Test
+    fun waitingLabelCountsWholeSeconds() {
+        assertEquals(0, waitingSeconds(0L))
+        assertEquals(0, waitingSeconds(999L))
+        assertEquals(1, waitingSeconds(1_000L))
+        assertEquals(3, waitingSeconds(3_400L))
+        assertEquals(0, waitingSeconds(-1L))
     }
 
     private fun readCall(): ToolCall =

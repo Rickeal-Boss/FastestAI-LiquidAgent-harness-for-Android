@@ -3,14 +3,19 @@ package com.rickeal.liquidharness.core.agent.loop
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
 import com.rickeal.liquidharness.core.model.AgentEvent
 import com.rickeal.liquidharness.core.model.ChatMessage
+import com.rickeal.liquidharness.core.model.EngineErrorKind
 import com.rickeal.liquidharness.core.model.FinishReason
 import com.rickeal.liquidharness.core.model.GenerationEvent
 import com.rickeal.liquidharness.core.model.GenerationRequest
 import com.rickeal.liquidharness.core.model.TokenEstimator
 import com.rickeal.liquidharness.core.model.ToolCall
 import com.rickeal.liquidharness.core.model.ToolCallFragmentTracker
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * 单轮生成：组装请求 → 收流 → 转发事件 → 失败重试一次 → 给出本轮结论。
@@ -31,6 +36,10 @@ import kotlinx.coroutines.delay
  *
  * 另外「空输出」也走重试：模型既不调工具也不吐字，通常是一次抖动（旧仓实测：
  * 端侧偶发空流，重试一次就好）。两次都空 ⇒ 判失败，不许静默当成正常结束。
+ *
+ * **首字节超时是这条规则的反例**（见 [attemptOnce] 的看门狗）：它虽然满足条件 2
+ * （一个字都没吐），但**不重试** —— 用户已经等满一个超时窗口，再等一个只是把等待翻倍。
+ * 判 `Attempt.Fatal` + `EngineErrorKind.TIMEOUT`。
  *
  * @param maxRetries 重试次数上限。默认 1（任务口径：重试一次）。
  * @param backoff 退避注入点 —— 单测传 `{}` 即零等待，不必用虚拟时钟。
@@ -95,7 +104,30 @@ class GenerationRound(
     private suspend fun buildMessages(ctx: TurnContext, systemText: String): List<ChatMessage> =
         budget.prepare(ctx, systemText)
 
-    /** 单次尝试。**所有流式事件在这里转发**，事件顺序即 provider 的到达顺序。 */
+    /**
+     * 单次尝试。**所有流式事件在这里转发**，事件顺序即 provider 的到达顺序。
+     *
+     * ## 首字节看门狗（`AgentPolicy.generationTimeoutMillis` 的唯一消费点）
+     *
+     * 计时窗口是「开始 collect」到「收到第一个事件」之间。到点还没事件 ⇒ 取消 collect
+     * 并判 [Attempt.Fatal]（`EngineErrorKind.TIMEOUT`）：用户已经干等了整整一个窗口，
+     * 再重试一次只是把「卡住」变成「卡住两倍」。首个事件到达即解除，后续慢流不受影响 ——
+     * 那一段是 `readTimeout` 与墙钟 HARD 的辖区。
+     *
+     * 用**墙钟**计时，刻意不接 `FreezeClock`：看门狗保护的是「远端不响应」，
+     * 不是「设备冻结后误判」。设备被 cgroup 冻结时协程整体停摆，`delay` 与被监视的
+     * 流**一起**暂停，冻结多久都不会让本看门狗提前开火；反过来，用冻结感知时钟去
+     * 「扣除」冻结时长会让「对端真的 120s 不吐字节」这个唯一要抓的形态漏掉。
+     * 别拿 FreezeClock 的反证条款来混这两件事。
+     *
+     * ## 取消的生效时延（如实记录，别当 bug 修）
+     *
+     * 到点只取消协程，**不调 `engine.stop()`**：`stop()` 会把取消翻成
+     * `Completed(CANCELLED)`（引擎的 `stopRequested` 分支），超时判据反而被它吞掉，
+     * 下游会把「没响应」当成「用户停止」。代价是：若对端正卡在一次阻塞读里，
+     * `coroutineScope` 要等它返回（≤ `readTimeout`，60s）才真正收尾。
+     * 方向站在安全侧 —— 用户看到的是「超时失败」，不是「静默重试」。
+     */
     private suspend fun attemptOnce(
         ctx: TurnContext,
         messages: List<ChatMessage>,
@@ -113,42 +145,86 @@ class GenerationRound(
             idempotencyKey = ctx.request.endpoint.id + "#" + ctx.state.runId + "#" + ctx.state.round,
         )
         val promptBefore = ctx.state.promptTokens
-        // 「这次尝试确实建立过连接」的判据：至少收到过一个事件。为 false 时一个字节都没到，
-        // 记账会把「连接都没建起来」算成一次真实请求（那是另一种失真）。
-        var sawAnyEvent = false
+        // 「这次尝试确实发过请求」的判据：收到过事件，或首字节看门狗已到点（请求发出去了、
+        // 对端一个字节都没回）。为 false 时连请求都没发出去，记账会把「连接都没建起来」
+        // 算成一次真实请求（那是另一种失真）。
+        //
+        // `AtomicBoolean` 而不是普通 `var`：看门狗协程与 collect 协程**并发读写**它，
+        // 且两者之间没有 join 关系（join 只发生在收尾时）。普通 var 在跨线程调度下
+        // 可能读到旧值 ⇒ 看门狗把「已经响应了」判成「没响应」，砍掉一条正常的 run。
+        val requestSent = AtomicBoolean(false)
+        // 只由看门狗写、只在 `coroutineScope` 结束后读：join 已建立可见性，不需要原子。
+        var firstByteTimedOut = false
+        // 只在 collect 这一个收集器里读写 ⇒ 不需要原子。
+        var firstByteSeen = false
         try {
-            ctx.engine.generate(request).collect { event ->
-                sawAnyEvent = true
-                ctx.checkActive()
-                when (event) {
-                    is GenerationEvent.TextDelta -> {
-                        ctx.state.appendText(event.text)
-                        ctx.emit(AgentEvent.TextDelta(event.text))
+            coroutineScope {
+                val scope = this
+                val timeoutMillis = ctx.policy.generationTimeoutMillis
+                // `<= 0` = 关闭看门狗。policy 默认 120s；关掉的口子只给「明确不要它」的调用方。
+                val watchdog = if (timeoutMillis > 0) launch {
+                    delay(timeoutMillis)
+                    // 事件刚到、取消还没生效的窗口：再看一眼，别把「已响应」判成「没响应」。
+                    if (requestSent.get()) return@launch
+                    firstByteTimedOut = true
+                    AgentLogStore.warn(
+                        "first byte timeout: no event within " + timeoutMillis + "ms (attempt=" + attempt + ")"
+                    )
+                    scope.cancel()
+                } else null
+                try {
+                    ctx.engine.generate(request).collect { event ->
+                        // 只在**第一个**事件上解除：放在 checkActive() 之前，取消检查抛异常时
+                        // 看门狗也必须已经解除，否则 finally 之前还会多跑一次到点判定。
+                        if (!firstByteSeen) {
+                            firstByteSeen = true
+                            requestSent.set(true)
+                            watchdog?.cancel()
+                        }
+                        ctx.checkActive()
+                        when (event) {
+                            is GenerationEvent.TextDelta -> {
+                                ctx.state.appendText(event.text)
+                                ctx.emit(AgentEvent.TextDelta(event.text))
+                            }
+
+                            is GenerationEvent.ReasoningDelta -> {
+                                // 思考也计入「已产出」：只计数不落历史（见 RunState.appendReasoning）。
+                                ctx.state.appendReasoning(event.text)
+                                ctx.emit(AgentEvent.ReasoningDelta(event.text))
+                            }
+
+                            is GenerationEvent.ToolCallDelta ->
+                                fragments.onDelta(event.index, event.id, event.name, event.argumentsFragment)
+
+                            is GenerationEvent.Usage -> {
+                                ctx.state.recordUsage(event.prompt, event.completion, event.cachedPrompt)
+                                ctx.emit(AgentEvent.UsageUpdated(event.prompt, event.completion, event.cachedPrompt))
+                            }
+
+                            is GenerationEvent.Finished -> finished = event.reason
+
+                            is GenerationEvent.Failed -> failure = event
+                        }
                     }
-
-                    is GenerationEvent.ReasoningDelta -> {
-                        // 思考也计入「已产出」：只计数不落历史（见 RunState.appendReasoning）。
-                        ctx.state.appendReasoning(event.text)
-                        ctx.emit(AgentEvent.ReasoningDelta(event.text))
-                    }
-
-                    is GenerationEvent.ToolCallDelta ->
-                        fragments.onDelta(event.index, event.id, event.name, event.argumentsFragment)
-
-                    is GenerationEvent.Usage -> {
-                        ctx.state.recordUsage(event.prompt, event.completion, event.cachedPrompt)
-                        ctx.emit(AgentEvent.UsageUpdated(event.prompt, event.completion, event.cachedPrompt))
-                    }
-
-                    is GenerationEvent.Finished -> finished = event.reason
-
-                    is GenerationEvent.Failed -> failure = event
+                } finally {
+                    watchdog?.cancel()
                 }
             }
         } catch (c: CancellationException) {
-            // 挂起点必须前置：`runCatching` / `catch (t: Throwable)` 吞掉它会让 Job
-            // 从 cancelled 变 completed（AGENTS.md §五.4，旧仓真实事故）。
-            throw c
+            // 看门狗取消的是**内层 coroutineScope**（collect 那一段），不是 run 的 Job ——
+            // 所以这里能把「远端不响应」翻成失败。用户取消走下面的 rethrow：
+            // 吞掉 CancellationException 会让 Job 从 cancelled 变 completed（AGENTS.md §五.4）。
+            if (!firstByteTimedOut) throw c
+            requestSent.set(true)
+            // 归类成 `EngineErrorKind.TIMEOUT` 后走**与 provider 失败同一条收尾路径**：
+            // 多一条 `return Attempt.Fatal(...)` 就是第二个出口，将来改收尾逻辑时必漏一处。
+            // `retryable = false` 是看门狗的判定本身（不重试），不是协议属性。
+            failure = GenerationEvent.Failed(
+                EngineErrorKind.TIMEOUT,
+                firstByteTimeoutMessage(ctx.policy.generationTimeoutMillis),
+                retryable = false,
+            )
         } catch (t: Throwable) {
             val message = "stream failed: " + (t.message ?: t::class.simpleName ?: "unknown")
             AgentLogStore.error(message + " (attempt=" + attempt + ")")
@@ -156,7 +232,7 @@ class GenerationRound(
         } finally {
             // 放在 finally 而不是正常收尾之后：中途 IOException 直接跳 catch，那一轮的
             // prompt 就永远进不了账本 —— `maxRunPromptTokens` 门控会系统性低估，熔断迟到。
-            if (sawAnyEvent) recordEstimatedUsage(ctx, messages, promptBefore, attempt)
+            if (requestSent.get()) recordEstimatedUsage(ctx, messages, promptBefore, attempt)
         }
 
         failure?.let { failed ->
@@ -171,8 +247,9 @@ class GenerationRound(
 
     /**
      * provider 未回报 usage 时的估算兜底。**在 [attemptOnce] 的 `finally` 里调用**，
-     * 条件是「本次尝试至少收到过一个事件」—— 流正常结束、中途抛 IOException、被取消
-     * 三条路径都会记账（取消时请求已经发出去了，token 已经花了，不记就是漏账）。
+     * 条件是「本次尝试确实把请求发出去了」—— 流正常结束、中途抛 IOException、被取消、
+     * 首字节看门狗到点四条路径都会记账（取消与超时时请求已经发出去了，token 已经花了，
+     * 不记就是漏账）。
      *
      * 只在「本轮**确实发了请求**（`promptTokens` 没有增长）」时记一次：
      * [RunState.recordEstimatedPrompt] 是**累加**，每轮都记会把同一条历史重复计进账本，
@@ -203,6 +280,16 @@ class GenerationRound(
                 " (attempt=" + attempt + ")"
         )
     }
+
+    /**
+     * 首字节超时的失败文案。**纯 ASCII**：`core-agent` 的 main 源集不许有中文字面量
+     * （守卫 G16），用户可见的中文由 UI 层按错误类映射（`strings.xml`）。
+     *
+     * 措辞里保留 `timeout` 这个词：它既是 `EngineErrorKind.TIMEOUT` 的 grep 锚点，
+     * 也是「发生了什么」的全部信息 —— 不写内部词（引擎 / 会话 / SSE）。
+     */
+    private fun firstByteTimeoutMessage(timeoutMillis: Long): String =
+        "timeout: no response from provider within " + timeoutMillis + "ms"
 
     /**
      * 「有内容但无 `finish_reason`」= 被截断，不是正常结束（`AGENTS.md` §五.6）。

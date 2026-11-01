@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# arch-guard.sh — LiquidAgent harness-v2 架构守卫（23 条判据，表驱动）
+# arch-guard.sh — LiquidAgent harness-v2 架构守卫（24 条判据，表驱动）
 #
 # 用法：
-#   bash scripts/arch-guard.sh            # 跑全部 23 条判据
+#   bash scripts/arch-guard.sh            # 跑全部 24 条判据
 #   bash scripts/arch-guard.sh --verbose  # 额外回显每条扫了多少文件
 #   bash scripts/arch-guard.sh --help
 #
@@ -14,7 +14,7 @@
 # -----------------------------------------------------------------------------
 # 编号约定
 # -----------------------------------------------------------------------------
-# 本脚本用 docs/02-roadmap.md §五 的 **G1..G18** 为准（CI 与文档都引用这套编号）。
+# 本脚本用 docs/02-roadmap.md §五 的 **G1..G19** 为准（CI 与文档都引用这套编号）。
 # ⚠️ 源码注释里另有一套旧编号 N1/N3/N7（历史遗留，别按它找守卫）：
 #      N1 = G1  网络栈收口
 #      N3 = G16 中文硬编码棘轮
@@ -48,7 +48,7 @@
 #      全仓逐条告警 = 没有告警。
 #
 # -----------------------------------------------------------------------------
-# 退出码：0 = 23 条全 OK；1 = 有 VIOLATION 或 SELF_FAULT（两者都判红）
+# 退出码：0 = 24 条全 OK；1 = 有 VIOLATION 或 SELF_FAULT（两者都判红）
 # =============================================================================
 set -uo pipefail
 
@@ -72,7 +72,7 @@ done
 # ---- G9：模块清单（必须与 settings.gradle.kts 的 include 数、实际目录数三者相等）
 # 新增模块时**先改这里**，G9 会立刻告诉你另外两处是否同步。
 MODULES=(
-  core-model core-net core-engine core-agent core-skills core-mcp
+  core-model core-net core-engine core-kernel core-agent core-skills core-mcp
   core-data core-design feature-chat feature-settings feature-tools app
 )
 
@@ -83,6 +83,10 @@ LINE_CAPS=(
   "core-model|300|2600"
   "core-net|400|1200"
   "core-engine|500|2600"
+  # W5：core-agent 实测 6495/6500 触顶 ⇒ 把 policy/log/context 三层下沉到 :core-kernel
+  # （同包名搬迁，零 import 改动）。仍是「拆分而不是调大上限」。
+  # 1800 而非 1400：只搬 context 时编译红（它反向依赖 policy 与 log），三层合计 1557。
+  "core-kernel|400|1800"
   "core-agent|400|6500"
   "core-skills|300|1000"
   "core-mcp|400|1400"
@@ -100,6 +104,9 @@ LINE_CAPS=(
 # 42500 = 11 个模块时代的 39900 + :feature-tools 的 2600（W4 新增模块，预算随模块走）。
 # ⚠️ 这个数是**预算合计**，不是「可以涨到的水位」：G10 判的是实际行数，
 #    触顶的处理永远是拆分，不是调大本常量。
+# W5 拆出 :core-kernel 时**没有**调高本常量：那 1198 行是从 core-agent 搬过来的，
+# 全仓实际总量没变。给新模块加预算却同时抬高总量上限，等于把「拆分」当成
+# 「扩容」用 —— 拆分只该让单个模块变轻，不该让全仓变胖。
 TOTAL_LINE_CAP=42500
 
 # ---- G6：模块边界（禁止的 Gradle 依赖边）
@@ -113,6 +120,9 @@ FORBIDDEN_EDGES=(
   "core-model|core-net,core-engine,core-agent,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
   "core-net|core-agent,core-engine,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
   "core-engine|core-agent,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
+  # W5 新增 :core-kernel —— 上下文工程只依赖纯契约 :core-model，
+  # 不认识引擎/网络/持久化；驱动引擎的 EngineBackedSummarizer 刻意留在 core-agent/loop/（G18）。
+  "core-kernel|core-net,core-engine,core-agent,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
   "core-agent|core-net,core-engine,core-data,core-design,core-skills,core-mcp,feature-chat,feature-settings,feature-tools,app"
   "core-skills|core-net,core-engine,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
   "core-mcp|core-engine,core-skills,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
@@ -729,7 +739,7 @@ g14() {
 #   ④ 规则文件必须同时含 `harness/secrets` 与 `device-transfer` 两个关键词
 #      （前者 = 密钥密文确实被排除；后者 = D2D 段确实写了，只写 cloud-backup 时
 #       换机流程仍然会把密文带走）。
-# 四条**合并成一次 OK / 一次 VIOLATION**：判据数保持 23 条（CI 与文档都按这个数对齐），
+# 四条**合并成一次 OK / 一次 VIOLATION**：判据数保持 24 条（CI 与文档都按这个数对齐），
 # 且不因为「一处文件缺失连带报三条」把 OK/VIOLATION 计数打乱。
 # 语义边界（如实申报）：排除 ≠ 加密。文件仍在应用私有目录，root/调试版可读；
 # 这里只回答「系统级备份与换机迁移要不要把它们带走」。
@@ -953,13 +963,119 @@ g18() {
 }
 
 # =============================================================================
+# G19 日志不得拼接凭据
+# =============================================================================
+# 背景（来自 OpenShell 的时序思想）：凭据在**出网前**注入 header，所以日志点必须
+# 位于 header 装配**之前**；且日志里只允许出现**键名**（`Authorization`），
+# 不允许出现**值**。一旦 `log("Authorization=" + secret)` 落进树里，密钥就会进
+# logcat / bug report / 崩溃上报 —— 而它同时是一条「用户看不见的外带通道」。
+#
+# 判据（只扫 core-engine/src/main —— 全仓唯一持有 `SecretProvider` 的模块）：
+#   日志调用（`log(` / `logLine(` / `println(` / `Log.v|d|i|w|e(` / `.info|warn|error|debug|trace(`）
+#   的同一行里出现凭据标识符，两种形态都抓：
+#     ① 字符串模板：`log("auth=$secret")`、`log("${req.apiKey}")`
+#     ② 字符串拼接：`log("auth=" + secret)`、`log("k=" + secrets.secretFor(id))`
+#
+# 三个必须做对的点（都踩过）：
+#   · **钉代码形态，不钉裸子串**（纪律 4）：整行注释 / KDoc 先跳过，行尾注释在
+#     扫描时按「引号感知」剥掉 —— 裸 grep 会把 `// log("Authorization=" + secret)`
+#     这句**讲这个规则的注释本身**判成违规。
+#   · **只认值形态**：`log("Authorization")`（只打键名）必须绿。做法是把不含 `$`
+#     的纯字面量整段剥掉，剩下的才是「真的被拼进去的标识符」。反过来若直接匹配
+#     标识符，会连「说明性文案」一起判红，守卫第一天就没人看。
+#   · **`token` 要带词边界**：`max_tokens` / `promptTokens` / `tokens=` 都不是凭据。
+#     无边界匹配会让每个记账日志都变红。
+#
+# ⚠️ 当前 core-engine **没有任何日志调用点**（本判据的 LOG 计数实测为 0）⇒ 本守卫在
+#    真实树上是「0 命中 = OK」。它**不为**「让守卫有意义」而去给引擎加日志（那是倒因
+#    为果，日志该由真正需要诊断的 adapter 决定）；它的灵敏度由
+#    `arch-guard-selftest.sh` 的 `G19` 变异自证保证（注入 `log("Authorization=" + secret)`
+#    必判红）。**未来给 core-engine 接日志时，这条守卫自动开始干活。**
+#
+# 输出：每个日志调用点打一行 `LOG\t<file>:<line>`（用于回显「看过了几个点」，
+# 区分「没命中」与「根本没在看」），违规行打 `<file>:<line>  日志拼接凭据: <原文>`。
+g19() {
+  local id="G19" desc="日志不拼凭据"
+  local dir="core-engine/src/main"
+  if [ ! -d "$dir" ]; then
+    guard_fault "$id" "$desc" "扫描目标不存在：$dir —— 守卫会永远绿，故判红（目录被改名？）"
+    return
+  fi
+  local raw hits
+  raw="$(mktemp)"; hits="$(mktemp)"
+  local f rc
+  for f in $(find "$dir" -type f -name '*.kt' 2>/dev/null | sort); do
+    awk -v F="$f" '
+      # 引号感知地剥掉行尾注释与「不含插值的纯字面量」：
+      # 剩下的 code 里若还有凭据标识符，说明它真的是被拼进日志的参数。
+      function strip_line(s,   i, n, c, out, buf, inq, esc, hasdollar) {
+        n = length(s); out = ""; buf = ""; inq = 0; esc = 0; hasdollar = 0
+        for (i = 1; i <= n; i++) {
+          c = substr(s, i, 1)
+          if (inq) {
+            if (esc) { buf = buf c; esc = 0; continue }
+            if (c == "\\") { buf = buf c; esc = 1; continue }
+            if (c == "\"") {
+              inq = 0
+              if (hasdollar) { out = out " " buf " " }   # 模板串保留内容
+              buf = ""; hasdollar = 0
+              continue
+            }
+            if (c == "$") hasdollar = 1
+            buf = buf c
+            continue
+          }
+          if (c == "\"") { inq = 1; buf = ""; hasdollar = 0; continue }
+          if (c == "/" && substr(s, i + 1, 1) == "/") break
+          out = out c
+        }
+        return out
+      }
+      {
+        line = $0; sub(/\r$/, "", line)
+        t = line; sub(/^[[:space:]]+/, "", t)
+        if (t ~ /^(\/\/|\*|\/\*)/) next        # 整行注释 / KDoc
+        code = strip_line(line)
+        islog = 0
+        if (code ~ /(^|[^A-Za-z0-9_])(log|logLine|logInfo|logWarn|logError|logDebug|println|print)[[:space:]]*\(/) islog = 1
+        if (code ~ /(^|[^A-Za-z0-9_])Log\.[vdiwe][[:space:]]*\(/) islog = 1
+        if (code ~ /\.(info|warn|error|debug|trace)[[:space:]]*\(/) islog = 1
+        if (!islog) next
+        printf "LOG\t%s:%d\n", F, NR
+        if (code ~ /(^|[^A-Za-z0-9_])(secrets|secret|apiKeys|apiKey|apikey|api_key|apiSecret|Authorization|authorization|Bearer|bearer|password|passwd|credentials|credential|token)([^A-Za-z0-9_]|$)/)
+          printf "%s:%d  日志拼接凭据: %s\n", F, NR, t
+      }' "$f" >> "$raw" 2>&1
+    rc=$?
+    if [ "$rc" -ge 2 ]; then
+      guard_fault "$id" "$desc" "awk 退出码 $rc（$f 不可读 / 判据程序写坏）—— 守卫会永远绿，故判红"
+      rm -f "$raw" "$hits" 2>/dev/null
+      return
+    fi
+  done
+
+  grep -v '^LOG' "$raw" > "$hits" 2>/dev/null
+  local nlog nhit
+  nlog="$(grep -c '^LOG' "$raw" 2>/dev/null | tr -d ' ')"; [ -n "$nlog" ] || nlog=0
+  nhit="$(grep -c . "$hits" 2>/dev/null | tr -d ' ')"; [ -n "$nhit" ] || nhit=0
+
+  if [ "$nhit" -gt 0 ]; then
+    guard_violation "$id" "$desc" "$(cat "$hits")" \
+      "⇒ 日志只许出现**键名**（如 Authorization），不许出现值：密钥一旦进日志就等于出网" \
+      "⇒ 修法：把日志点挪到 header 装配之前，且只打 endpointId / header 名，不打 header 值"
+  else
+    guard_ok "$id" "$desc" "$nlog 个日志调用点，0 处拼接凭据"
+  fi
+  rm -f "$raw" "$hits" 2>/dev/null
+}
+
+# =============================================================================
 # 主流程
 # =============================================================================
-echo "================ arch-guard（23 条） ================"
+echo "================ arch-guard（24 条） ================"
 echo "root = $ROOT"
 hr
 g1; g2; g3; g4; g5; g6; g7; g8; g9
-g10; g11; g12; g13; g14; g15; g16; g17; g18
+g10; g11; g12; g13; g14; g15; g16; g17; g18; g19
 hr
 printf 'OK=%s  VIOLATION=%s  SELF_FAULT=%s\n' "$OK_COUNT" "$VIOLATION_COUNT" "$FAULT_COUNT"
 if [ "${#FAILED_IDS[@]}" -gt 0 ]; then

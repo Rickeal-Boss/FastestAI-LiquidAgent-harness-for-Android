@@ -20,6 +20,8 @@
     <string name="chat_action_attach">添加图片</string>
     <string name="chat_status_retrying">网络抖动，正在重试…</string>
     <string name="chat_status_cancelled">已停止（本轮没有产出内容）</string>
+    <!-- %1$d = 已等待的整秒数。秒数由 UI 每秒累加（见 ChatScreen.waitingStatusText）。 -->
+    <string name="chat_status_waiting">正在等待模型响应… %1$ds</string>
     <string name="chat_action_remove_attachment">移除附件</string>
     <string name="chat_action_stop">停止</string>
 

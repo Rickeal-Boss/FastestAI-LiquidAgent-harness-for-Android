@@ -31,6 +31,8 @@ class RetryPolicyTest {
         assertFalse(policy.isRetryable(EngineErrorKind.PROTOCOL))
         assertFalse(policy.isRetryable(EngineErrorKind.CONTEXT_OVERFLOW))
         assertFalse(policy.isRetryable(EngineErrorKind.CONFIG))
+        // 首字节看门狗已经让用户等满一个完整窗口：重发等于把窗口再来一遍。
+        assertFalse(policy.isRetryable(EngineErrorKind.TIMEOUT))
         assertFalse(policy.isRetryable(EngineErrorKind.UNKNOWN))
     }
 

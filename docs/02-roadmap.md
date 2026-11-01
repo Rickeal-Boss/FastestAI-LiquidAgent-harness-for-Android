@@ -631,6 +631,53 @@ C 组（首字节看门狗 / 等待期进度 / `cachedReported` 三态）设计�
 
 ---
 
+## 二sexies、W5 — 真机解锁 + 观测/护栏收口 + 供应商矩阵（2026-11-01）
+
+> 交接：`docs/handoff-20261101-wave5.md`｜网络排查：`docs/notes/w5-network-triage.md`
+> 供应商实测：`docs/notes/w5-provider-matrix.md`
+
+### 本波最重要的一条：W4-01 的归因被证伪
+
+W4 写的是「设备→OpenRouter 请求不收敛，**应用侧**连接/流式路径有问题」。
+本波四个对照实验推翻了它：ping 通 → TCP 443 通 → **应用打 NVIDIA（故意留旧密钥）拿到 401**
+（说明连接/TLS/请求/响应四步全通）→ 应用打 OpenRouter（真实密钥）**连接正常 1850 ms + 真实往返**。
+
+⇒ 同样的应用、同样的域名，现在能通。**不是修好了，是当初归因不对。**
+W4 的记录不假，按纪律记「无法证伪」，不写成「已证伪」。
+
+### 交付
+
+| 能力 | 落点 | 真机 |
+|---|---|---|
+| 首字节看门狗 | `generationTimeoutMillis` 首次有消费点（GenerationRound） | ⛔ 需慢端点 |
+| 等待态 | `ChatStatus.WAITING_FIRST_BYTE` + 状态行秒数 | ⛔ 同上 |
+| `cachedReported` 三态 | `TokenUsage.cachedPromptTokens: Int?`（null = 未上报） | ✅ 用量行三态 |
+| 工具结果限长 | `ToolResultLimiter`（默认 **16 000**，非 roadmap 的 5 000） | ✅ |
+| 聚合工具消息上限 | `ToolResultCommit` 64 000，从最旧占位、保 callId | ✅ |
+| runner 失效（W4-07） | `AppContainer` 版本号，改档下次 run 生效 | ✅ 32K 档重启后生效 |
+| 审批咽喉点审计 | `ApprovalChokepointAuditTest`（穷举 10 行） | — |
+| `feature-settings` 补课（W4-06） | **1 → 20 条**，含边界钳制 | — |
+| G19 日志不拼凭据 | `arch-guard.sh` + 变异自证 | — |
+| 模块拆分 | 新增 `:core-kernel`（policy/log/context，1557 行） | — |
+
+### 闸门
+
+- `fulltest` **593 / 0 / 0 / 0**（13 模块；544 → +49）
+- `arch-guard` **24 / 0 / 0**（23 + G19）
+- `@Test` 分布：core-agent 205 / core-kernel 48 / core-model 47 / feature-chat 49 /
+  core-engine 43 / core-net 39 / core-mcp 36 / core-skills 32 / core-design 31 /
+  core-data 26 / feature-settings 21 / app 8 / feature-tools 8
+
+### 明确未做（不许写成通过）
+
+- **压缩水位线真机未触发**：窗口 32K（水位线 19 200）下实际发出 **33 800 token** 且未压缩 ——
+  根因是**判定只在轮头**，单轮内并行工具结果暴增可整体越线，而那一轮就是最后一轮。
+  记 W5-01，是本波发现的**真缺口**（不是参数问题）。
+- 设备侧 1M 行使（无批量题面通道）、MCP 真机联调（明文仍被 G15b 拒）。
+
+---
+
+
 ## 三、W3–W8 概要
 
 ### W3 — 内核硬化
@@ -818,7 +865,7 @@ C 组（首字节看门狗 / 等待期进度 / `cachedReported` 三态）设计�
 | G6 | 模块边界 | `core-agent` ↛ `core-net`/`core-engine`/`core-data`/`core-design`/`core-skills`/`core-mcp` | 旧仓 #10 |
 | G7 | 设计系统零业务 | `core-design` 无 `com.rickeal.liquidharness.core.model` / `.core.agent` 引用 | 旧仓 #2 |
 | G8 | 契约层纯 Kotlin | `core-model` 无 `android.` / `androidx.` / `java.net` | 旧仓 #3 |
-| G9 | 模块数一致 | `settings.gradle.kts` 的 include 数 == 守卫脚本 `MODULES` 数组长度 == 实际目录数（W4 起为 **12 个模块**，新增 `:feature-tools`） | 旧仓「模块存在性」断言 |
+| G9 | 模块数一致 | `settings.gradle.kts` 的 include 数 == 守卫脚本 `MODULES` 数组长度 == 实际目录数（W5 起为 **13 个模块**：W4 新增 `:feature-tools`，W5 新增 `:core-kernel`） | 旧仓「模块存在性」断言 |
 | G10 | **行数闸门（表驱动）** | 一张 `path<TAB>cap` 表 + 循环；缺文件判红（不是跳过）。W4 起 **12 行**表，合计上限 **42 500**（= 11 模块时代的 39 900 + `:feature-tools` 的 2600） | 旧仓 #25 家族（21 条压成 1 条） |
 | G11 | 方法体积 | 单方法 ≤ 120 行（`fun` 到下一条 4 空格 `}` 的行差） | 旧仓 #12（阈值从 550 降到 120） |
 | G12 | `AgentRunner` 门面 | `AgentRunner.kt` ≤ 200 行 | 旧仓 #31（阈值 2900→200） |

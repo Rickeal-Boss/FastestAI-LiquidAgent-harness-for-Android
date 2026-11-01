@@ -56,8 +56,13 @@ class RunState(
     var completionTokens: Int = 0
         private set
 
-    /** 本 run 累计 prompt cache 命中量（A8 唯一可观测判据）。 */
-    var cachedPromptTokens: Int = 0
+    /**
+     * 本 run 累计 prompt cache 命中量（A8 唯一可观测判据）。
+     *
+     * `null` = **至今没有任何一次 provider 上报过该字段**；`0` = 上报过、且一次都没命中。
+     * 两者不可合并（design §2.4）：合并后「端点不支持缓存字段」会被读成「缓存全失效」。
+     */
+    var cachedPromptTokens: Int? = null
         private set
 
     /** 已执行的工具调用计数（W2 起用；W1 恒 0）。 */
@@ -167,11 +172,14 @@ class RunState(
      *
      * 语义是**累加**：一轮一次 `Usage` 事件，一个 run 多轮 ⇒ 账本按轮累加。
      * provider 漏报 usage 时由调用侧走 [recordEstimatedPrompt] 兜底。
+     *
+     * @param cachedPrompt `null` = provider 未上报该字段 ⇒ **不累加、也不把账本置 0**
+     *   （置 0 就是把「不知道」写成「没命中」）。只要有任何一次上报过，账本从此有值。
      */
-    fun recordUsage(prompt: Int, completion: Int, cachedPrompt: Int) {
+    fun recordUsage(prompt: Int, completion: Int, cachedPrompt: Int?) {
         promptTokens += prompt
         completionTokens += completion
-        cachedPromptTokens += cachedPrompt
+        if (cachedPrompt != null) cachedPromptTokens = (cachedPromptTokens ?: 0) + cachedPrompt
     }
 
     /** provider 未回报 usage 时的估算兜底（标记 `estimated = true`，供校准告警使用）。 */

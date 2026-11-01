@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -22,6 +25,7 @@ import com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision
 import com.rickeal.liquidharness.core.design.GlassScaffold
 import com.rickeal.liquidharness.core.design.LocalBottomBarOverlay
 import com.rickeal.liquidharness.core.design.LocalGlassColors
+import kotlinx.coroutines.delay
 
 /**
  * 对话页。
@@ -128,6 +132,51 @@ fun ChatScreen(
 }
 
 /**
+ * 输入区上方那一行状态提示。三种状态**共用同一个渲染槽**（不新开 UI 通道）：
+ * 两行状态叠在一起时，用户不知道该看哪一行，而且槽位高度会跳。
+ */
+@Composable
+private fun StatusLine(status: ChatStatus) {
+    Text(
+        text = when (status) {
+            ChatStatus.RETRYING -> stringResource(R.string.chat_status_retrying)
+            ChatStatus.WAITING_FIRST_BYTE -> waitingStatusText()
+            ChatStatus.CANCELLED_EMPTY -> stringResource(R.string.chat_status_cancelled)
+        },
+        style = MaterialTheme.typography.labelSmall,
+        color = LocalGlassColors.current.onGlassSubtle,
+        textAlign = TextAlign.End,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(end = 20.dp),
+    )
+}
+
+/**
+ * 「正在等待模型响应… Ns」。秒数**在 UI 侧**每秒跳。
+ *
+ * 为什么不进 `ChatUiState`：那会给归约器加上时间维度（每个事件都要先算一次秒），
+ * 而它现在是纯函数、事件序列可以任意重放。等待秒数是纯展示，随组合存在与消失。
+ *
+ * 状态离开等待态 ⇒ 本 composable 离开组合 ⇒ 协程被取消、`remember` 归零，
+ * 下一轮等待从 0 重新数（不会把上一轮的秒数带过来）。
+ */
+@Composable
+private fun waitingStatusText(): String {
+    var elapsedMillis by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(WAITING_TICK_MILLIS)
+            elapsedMillis += WAITING_TICK_MILLIS
+        }
+    }
+    return stringResource(R.string.chat_status_waiting, waitingSeconds(elapsedMillis))
+}
+
+/** 状态行每秒一跳：更快的跳动只是耗电，更慢会让「卡住」看起来像「没在计时」。 */
+private const val WAITING_TICK_MILLIS = 1_000L
+
+/**
  * 输入区上方的「状态 → 用量 → 上下文表 → 输入栏」四段。
  *
  * 抽出来只为守 G11（单方法 ≤120 行）：加一行重试提示就把 `ChatScreen` 顶到 122 行，
@@ -146,20 +195,7 @@ private fun ChatBottomArea(
 ) {
     val status = state.status
     if (status != null) {
-        Text(
-            text = stringResource(
-                when (status) {
-                    ChatStatus.RETRYING -> R.string.chat_status_retrying
-                    ChatStatus.CANCELLED_EMPTY -> R.string.chat_status_cancelled
-                }
-            ),
-            style = MaterialTheme.typography.labelSmall,
-            color = LocalGlassColors.current.onGlassSubtle,
-            textAlign = TextAlign.End,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(end = 20.dp),
-        )
+        StatusLine(status)
     }
     val usage = state.usageLabel
     if (!usage.isNullOrBlank()) {

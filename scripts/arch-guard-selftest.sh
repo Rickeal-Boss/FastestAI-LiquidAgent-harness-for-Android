@@ -15,7 +15,7 @@
 #      ⚠️ ③ 是必须的：只看「ID 变红」无法区分「红的正是这次变异」和「它本来就红」。
 #      本仓在 8186db9 时点 G1/G6/G11/G16/G18 在真实树上就是红的（树正在被并行修），
 #      没有 ③ 的话这些 case 会变成恒真的装饰。
-#      Verified as of 2026-10-30（baeb574 之后）：真实树 23 条全绿，但这不改变 ③ 的
+#      Verified as of 2026-10-30（baeb574 之后）：真实树 24 条全绿，但这不改变 ③ 的
 #      必要性 —— 守卫「今天红」只是巧合证据，「注入后必须红」才是判据。
 #
 # -----------------------------------------------------------------------------
@@ -34,8 +34,8 @@
 #                    个变异落在不同文件/不同守卫的判据域），证据串按守卫区段隔离，
 #                    归因强度与逐条跑等价，但耗时是 1/N。
 #                    理由：本仓在 Windows/Git Bash 上一次 arch-guard 实测 50~220s
-#                    （进程创建开销），23 条逐条跑 = 20 分钟起步 ⇒ 必然没人跑。
-#   --per-case      每条变异一棵独立临时树 + 一次 arch-guard（23 次）。最严格，适合
+#                    （进程创建开销），24 条逐条跑 = 20 分钟起步 ⇒ 必然没人跑。
+#   --per-case      每条变异一棵独立临时树 + 一次 arch-guard（24 次）。最严格，适合
 #                    夜间/本地深度验证。CI 用默认 batch。
 #
 #   其他参数：
@@ -87,13 +87,13 @@ START_EPOCH="$(date +%s)"
 # =============================================================================
 # case 表：id|一句话说明|变异函数|期望证据（空 = 由变异函数动态写入 $EV_DIR/<id>）
 #
-# 覆盖口径 = arch-guard.sh 实际产出的**全部 23 个 ID**：
-#   G1 G1b G2 G3 G4a G4b G5a G5b G6 G7 G8 G9 G10 G11 G12 G13 G14 G15a G15b G15c G16 G17 G18
+# 覆盖口径 = arch-guard.sh 实际产出的**全部 24 个 ID**：
+#   G1 G1b G2 G3 G4a G4b G5a G5b G6 G7 G8 G9 G10 G11 G12 G13 G14 G15a G15b G15c G16 G17 G18 G19
 #   （G1/G4/G5/G15 各拆了 a/b/c 子判据 —— 子判据是独立的断言，必须各自自证，
 #     否则拆出来的那一半会变成没人看的分支。故「G 编号」数 ≠ 判据数。）
 #   ⚠️ G15c 有**两条 case**（同一 ID，两种变异形态）：① 把 allowBackup 改成 true；
 #      ② 删掉 dataExtractionRules 属性（W2 外审 §四.1 加的「排除面」那一半）。
-#      判据编号仍是 23 个，case 数 24 —— 判据数与 case 数本来就不同源。
+#      判据编号仍是 24 个，case 数 25 —— 判据数与 case 数本来就不同源。
 # =============================================================================
 CASES=(
   "G1|网络栈收口：core-model 里 import okhttp3（只许在 core-net）|m_g1|__SelftestG1.kt:3:import okhttp3.OkHttpClient"
@@ -107,10 +107,12 @@ CASES=(
   "G6|模块边界：core-model 依赖 :core-net（禁止边）|m_g6|core-model/build.gradle.kts -> :core-net"
   "G7|设计系统零业务：core-design 引用 core.model|m_g7|__SelftestG7.kt:3:import com.rickeal.liquidharness.core.model.GenerationRequest"
   "G8|契约层纯 Kotlin：core-model 里 import android.content|m_g8|__SelftestG8.kt:3:import android.content.Context"
-  # ⚠️ G9 的证据串里含**模块总数 + 1**（当前 12 个模块 ⇒ 注入 ghost-module 后 include=13）。
-  #    新增/删除模块时必须同步改这个数，否则 case 会以「判红了但证据串不匹配」失败 ——
+  # ⚠️ G9 的证据串里含**模块总数 + 1**。W5 加 :core-kernel 时这里写死的 `13` 立刻过期，
+  #    以「判红了但证据串不匹配」的形式失败（守卫没错，是夹具的数字漂了）。
+  #    现在改成由 m_g9 现算（`ev G9 "settings include = $n"`），静态串只留前缀兜底 ——
+  #    凡是「随代码规模变化」的数字，一律现算，不写死。原注释保留在这里当事故记录：
   #    那**不是**守卫失效，是自证夹具没跟上模块数。改完务必真跑一次本脚本。
-  "G9|模块数一致：settings 多一个 include(:ghost-module)|m_g9|settings include = 13"
+  "G9|模块数一致：settings 多一个 include(:ghost-module)|m_g9|settings include ="
   "G10|行数闸门：core-model 放一个 400 行文件（上限 300）|m_g10|__SelftestG10.kt = 400 行 > 单文件上限 300"
   "G11|方法体积：core-model 放一个 130 行方法（上限 120）|m_g11|__SelftestG11.kt:3  selftestBig() = 130 行"
   "G12|AgentRunner 门面：把 AgentRunner.kt 撑到 210 行（上限 200）|m_g12|"
@@ -123,6 +125,7 @@ CASES=(
   "G16|中文硬编码棘轮：core-model 里写死一句中文文案|m_g16|__SelftestG16.kt:3:val selftestCjk = \"自证中文字面量\""
   "G17|禁密钥字段：@Serializable 类里加 val apiKey|m_g17|__SelftestG17.kt:7  @Serializable 类内出现密钥字段: apiKey"
   "G18|引擎调用点收口：core-model 里调 engine.generate(|m_g18|__SelftestG18.kt:3:fun selftestDrive(engine: Any) { engine.generate(1) }"
+  "G19|日志不得拼接凭据：core-engine 里 log(\"Authorization=\" + secret)|m_g19|__SelftestG19.kt:4  日志拼接凭据"
 )
 
 if [ "$LIST_ONLY" -eq 1 ]; then
@@ -309,7 +312,13 @@ EOF
 }
 
 m_g9() {
-  append_line "$1" "settings.gradle.kts" 'include(":ghost-module")'
+  append_line "$1" "settings.gradle.kts" 'include(":ghost-module")' || return 1
+  # 证据串里的模块数**现算**：写死会在每次新增模块时漂掉（W5 加 :core-kernel 时正是如此）。
+  local n
+  n="$(grep -cE '^include\(' "$1/settings.gradle.kts" 2>/dev/null | tr -d ' ')"
+  [ -n "$n" ] && [ "$n" -gt 0 ] || return 1
+  ev G9 "settings include = $n"
+  return 0
 }
 
 m_g10() {
@@ -447,6 +456,21 @@ m_g18() {
 package com.rickeal.liquidharness.core.model
 
 fun selftestDrive(engine: Any) { engine.generate(1) }
+EOF
+}
+
+# G19 的变异形态选**字符串拼接**（`"Authorization=" + secret`），不选模板串：
+# 模板串（`"k=$secret"`）已在 arch-guard.sh 的判据里由「保留含 $ 的字面量」覆盖，
+# 两种形态的解析路径不同（模板靠保留、拼接靠剥字面量后残留标识符），
+# 用拼接形态注入能同时证明「剥字面量那一步没把代码一起剥掉」。
+# 注：`log(` 在这里**不解析、不编译** —— 守卫只 grep/awk 文本，selftest 副本不参与构建。
+m_g19() {
+  mk_file "$1" "core-engine/src/main/java/com/rickeal/liquidharness/core/engine/__SelftestG19.kt" <<'EOF'
+package com.rickeal.liquidharness.core.engine
+
+internal fun selftestG19(secret: String) {
+    log("Authorization=" + secret)
+}
 EOF
 }
 

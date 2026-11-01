@@ -288,10 +288,10 @@ class ContextBudget(
      * `usage` 还不存在。本请求的命中量由 `GenerationRound` 的 `Usage` 分支记（那一行是
      * per-request 真值）。本字段在这里的价值是「这个 run 至今有没有任何命中」。
      * 一个 token 都没回报过 ⇒ `n/a`，不伪装成 0（「未上报」与「0 命中」不可分辨是本仓
-     * 已判死的失真形态，design §2.4）。
+     * 已判死的失真形态，design §2.4）。provider 报了 usage 但没报缓存字段时同样是 `n/a`。
      */
     private fun cachedLabel(ctx: TurnContext): String =
-        if (ctx.state.promptTokens == 0) "n/a" else ctx.state.cachedPromptTokens.toString()
+        if (ctx.state.promptTokens == 0) "n/a" else (ctx.state.cachedPromptTokens?.toString() ?: "n/a")
 
     /**
      * system 消息：**id 用 `sys:<runId>` 稳定派生**，每轮复用同一个 id。

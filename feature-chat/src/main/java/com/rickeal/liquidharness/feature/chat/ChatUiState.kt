@@ -48,10 +48,31 @@ enum class ChatStatus {
      *  用户看到的是「三个点永远在跳」，无法区分「慢」与「死」。 */
     RETRYING,
 
+    /**
+     * 请求已发出、**首个字节还没到**。
+     *
+     * 与 [RETRYING] 分开的理由：重试是「已经在动，只是重来一次」，等待是「一个字节都还没回」。
+     * 前者用户能做的是等，后者用户可能需要检查网络 —— 而且等待会一直涨秒数，
+     * 涨到 `generationTimeoutMillis` 就会变成失败。混成一句话会让「卡死」看起来像「在重试」。
+     *
+     * 进入：`RoundStarted`。离开：首个 `TextDelta` / `ReasoningDelta` / `ToolCallStarted`，
+     * 或任何终态事件。
+     */
+    WAITING_FIRST_BYTE,
+
     /** 用户主动停止且本轮没有任何正文产出 —— 需要一个「已停止」的落点，
      *  否则提问气泡下面空着，看起来像回答丢失。 */
     CANCELLED_EMPTY,
 }
+
+/**
+ * 等待态状态行的秒数：毫秒 → 整秒（向下取整，下限 0）。
+ *
+ * 抽成纯函数是为了能在 JVM 单测里断言「秒数怎么跳」—— Compose 侧只负责每秒累加
+ * 1000ms 再喂给它。文案本体（含中文）在 `strings.xml`（守卫 G16），本函数只产出数字。
+ */
+internal fun waitingSeconds(elapsedMillis: Long): Int =
+    (elapsedMillis / 1_000L).toInt().coerceAtLeast(0)
 
 /** 工具轨迹状态。RUNNING 与 FAILED **永不折叠**（见 `ToolTraceGroup`）。 */
 enum class ToolTraceStatus { RUNNING, OK, FAILED, SKIPPED }
@@ -161,7 +182,7 @@ data class ChatUiState(
      * 发送失败时**不清空**（否则用户要重新选一次图）。
      */
     val attachments: List<Attachment> = emptyList(),
-    /** 非空 = 输入区上方渲染一行状态提示（重试中 / 已停止）。 */
+    /** 非空 = 输入区上方渲染一行状态提示（重试中 / 等待首字节 / 已停止）。 */
     val status: ChatStatus? = null,
 ) {
     /** 发送按钮可用性：非流式、有输入或有附件、已配置端点。 */

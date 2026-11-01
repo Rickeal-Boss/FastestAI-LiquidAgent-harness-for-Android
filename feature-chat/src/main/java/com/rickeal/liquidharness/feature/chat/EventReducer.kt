@@ -35,7 +35,13 @@ import java.util.Locale
 object EventReducer {
 
     fun reduce(state: ChatUiState, event: AgentEvent): ChatUiState = when (event) {
-        is AgentEvent.RoundStarted -> state.copy(round = event.round, maxRounds = event.maxRounds)
+        // 新一轮开始 ⇒ 请求已发出、一个字节都还没回。每轮都要重新进入：工具阶段之后的
+        // 第二轮同样要等首字节，不进入就会显示「上一轮的正文」而实际上什么都没在跑。
+        is AgentEvent.RoundStarted -> state.copy(
+            round = event.round,
+            maxRounds = event.maxRounds,
+            status = ChatStatus.WAITING_FIRST_BYTE,
+        )
         is AgentEvent.TextDelta -> appendText(state, event.text)
         is AgentEvent.ReasoningDelta -> appendReasoning(state, event.text)
         is AgentEvent.ToolCallStarted -> startTrace(state, event.call)
@@ -102,6 +108,9 @@ object EventReducer {
                 isStreaming = true,
             ),
             isStreaming = true,
+            // 思考也是「模型开口了」：等待态必须立刻退出，否则状态行会在思考块上方
+            // 一直涨秒数，看起来像「没响应」——用户会去点停止。
+            status = null,
         )
     }
 
@@ -143,7 +152,12 @@ object EventReducer {
             name = call.name,
             arguments = call.argumentsJson,
         )
-        return state.copy(toolTraces = state.toolTraces + trace)
+        return state.copy(
+            toolTraces = state.toolTraces + trace,
+            // 首个工具调用到达 = 模型已经开口（工具优先的模型常常一个正文字都不吐）。
+            // 不清掉等待态，这一轮会一直显示「正在等待模型响应」而工具卡已经在跑了。
+            status = null,
+        )
     }
 
     /**
@@ -251,36 +265,39 @@ object EventReducer {
             errorMessage = message,
             pendingApproval = null,
             terminatedBy = terminatedBy,
+            // 失败必须清状态行：首字节超时就是在等待态里失败的，不清的话
+            // 「正在等待模型响应… 120s」会一直跳，旁边还挂着一条错误 —— 用户不知道该信哪个。
+            status = null,
         )
     }
 
-    /** `1.2k in / 340 out (200 cached)`。纯 ASCII：中文文案一律走 `strings.xml`。 */
     /**
-     * 上下文用量标签。
+     * 上下文用量标签。**纯 ASCII**：中文文案一律走 `strings.xml`（守卫 G16）。
      *
-     * ## 为什么 `cached` 恒显示（含 0）
+     * ## `cached` 是三态，不是「有值 / 没值」
      *
-     * 旧实现只在 `cached > 0` 时追加 "(N cached)" ⇒ 「缓存没命中」与「provider 没报这个字段」
-     * 在界面上**完全同形**，而这两件事的处置相反（前者查前缀，后者查端点）。所以：
-     * - `prompt > 0` ⇒ 恒输出 `(N cached, R%)`，0 也输出 `(0 cached, 0.0%)`；
-     * - `prompt <= 0` ⇒ 只输出 `(N cached)`（分母未知时算不出比率，不编一个 0.0%）。
+     * - `null` ⇒ `(cache n/a)`：provider **没上报**这个字段。下一步该查端点是否支持缓存字段，
+     *   而不是查前缀 —— 把它显示成 `0.0%` 会让人去优化一个根本不存在的命中率。
+     * - `0` ⇒ `(0 cached, 0.0%)`：上报了，确实没命中。下一步查前缀是否稳定。
+     * - `>0` ⇒ `(600 cached, 60.0%)`：命中。
+     *
+     * 这三条是**三种不同的处置**，界面上必须长得不一样（design §2.4 / §A.8）。
+     * `prompt <= 0` 时算不出比率（分母未知），只输出命中量，不编一个 0.0%。
      *
      * ⚠️ 能力边界：本标签只回答「**这次请求有没有命中**」，不回答「为什么没命中」。
      * 缓存命中的最小前缀长度是**端点侧性质**（GLM-4.7 实测 ≈4096 token），短前缀下
      * `0.0%` 是**正确值**，不是缺陷。诊断时要先看上下文总量再看命中率。
-     *
-     * ⚠️ **不许**用本标签区分「命中 0」与「provider 未报告该字段」：
-     * `OpenAiCompatibleAdapter` 在解析层就把缺失的 `cached_tokens` 压成了 `0`（`:136`），
-     * 类型一路是 `Int`。要能区分必须把契约改成 `Int?` / `cachedReported`，属 W6；
-     * 在那之前，任何「0 cached 就是没命中」的断言都不成立。
      */
-    private fun buildUsageLabel(prompt: Int, completion: Int, cached: Int): String {
+    private fun buildUsageLabel(prompt: Int, completion: Int, cached: Int?): String {
         if (prompt <= 0 && completion <= 0) return ""
-        val cachePart = if (prompt > 0) {
-            val rate = cached * 100.0 / prompt
-            " (" + cached + " cached, " + String.format(Locale.US, "%.1f", rate) + "%)"
-        } else {
-            " (" + cached + " cached)"
+        val cachePart = when {
+            cached == null -> " (cache n/a)"
+            prompt > 0 -> {
+                val rate = cached * 100.0 / prompt
+                " (" + cached + " cached, " + String.format(Locale.US, "%.1f", rate) + "%)"
+            }
+
+            else -> " (" + cached + " cached)"
         }
         return compact(prompt) + " in / " + compact(completion) + " out" + cachePart
     }

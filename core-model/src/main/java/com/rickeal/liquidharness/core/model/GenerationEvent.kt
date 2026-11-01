@@ -31,7 +31,12 @@ sealed interface GenerationEvent {
         val argumentsFragment: String,
     ) : GenerationEvent
 
-    data class Usage(val prompt: Int, val completion: Int, val cachedPrompt: Int) : GenerationEvent
+    /**
+     * 用量。[cachedPrompt] 是**三态**（与 [TokenUsage.cachedPromptTokens] 同源）：
+     * `null` = provider 没上报缓存字段，`0` = 上报了且没命中，`>0` = 命中。
+     * adapter 不许把缺失压成 0 —— 那会让「端点不支持该字段」与「前缀没命中」在界面上同形。
+     */
+    data class Usage(val prompt: Int, val completion: Int, val cachedPrompt: Int?) : GenerationEvent
 
     data class Finished(val reason: FinishReason) : GenerationEvent
 
@@ -65,6 +70,19 @@ enum class EngineErrorKind {
 
     /** 连接失败 / 首字节前超时 —— 可重试。 */
     NETWORK,
+
+    /**
+     * 首字节看门狗到点：请求发出去了，但**一个事件都没回来**。
+     *
+     * 为什么不复用 [NETWORK]：两者的处置不同。NETWORK 是「连接没建起来」，可以立刻重发；
+     * 本类意味着对端接了连接却一直不吐字节，用户已经干等了整整一个
+     * `generationTimeoutMillis`（120s）—— 内核把它判 `Fatal`，不再重试
+     * （再等一个 120s 只是把「卡住」变成「卡住两倍」）。
+     * 分类分开，排查时才能一眼看出是「连不上」还是「连上了不说话」。
+     *
+     * 消费点：`core-agent` 的 `GenerationRound`（首字节看门狗）。
+     */
+    TIMEOUT,
 
     /** SSE 畸形 / JSON 解析失败 —— 不可重试。 */
     PROTOCOL,

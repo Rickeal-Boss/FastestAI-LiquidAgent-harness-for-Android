@@ -70,6 +70,8 @@
 core-model   ← core-net ← core-engine
 core-model   ← core-skills
 core-model   ← core-net ← core-mcp
+core-model   ← core-kernel           （策略 / 日志 / 上下文工程，只依赖纯契约）
+core-kernel  ← core-agent            （W5 拆分：core-agent 不再自己实现这三层）
 core-model   ← core-agent            （core-agent 不依赖 net/engine/skill/mcp）
 core-agent   ← core-skills            （适配器 → 端口）
 core-agent   ← core-mcp
@@ -99,7 +101,8 @@ app          ← 全部
 | `:core-model` | 数据契约 + 纯函数工具（estimator / redactor / accumulator） | 300 | 2600 | core-model 4360，其中端侧专属 ~2600 丢弃 |
 | `:core-net` | HTTP 传输、SSE 字节级分帧、JSON-RPC 编解码、URL 安全校验 | 400 | 1200 | 无（旧仓全仓禁网络栈） |
 | `:core-engine` | 三族 adapter、请求构造、流解码、工具增量装配、重试、取消 | 500 | 2600 | core-engine 4662（端侧 4200 丢弃） |
-| `:core-agent` | 内核：工具契约、主循环、审批、压缩、账本、记忆、计划、子代理 | **400** | 6500 | core-agent 8989（文本协议 286 + 热保护 44 + history 333 + 主循环膨胀） |
+| `:core-kernel` | 纯逻辑基座：策略（AgentPolicy）、日志（AgentLogStore）、上下文工程（压缩/前缀指纹/结构化摘要） | 400 | 1800 | 无（W5 从 `:core-agent` 下沉 1557 行） |
+| `:core-agent` | 内核：工具契约、主循环、审批、prompt 组装、记忆/技能工具 | **400** | 6500 | core-agent 8989（文本协议 286 + 热保护 44 + history 333 + 主循环膨胀） |
 | `:core-skills` | SKILL.md 解析、三级披露、来源扫描、导入校验 | 300 | 1000 | 无 |
 | `:core-mcp` | MCP Client：双 era 握手、tools/list、tools/call、命名空间 | 400 | 1400 | 无 |
 | `:core-data` | AppContainer、持久化、Keystore 信封、日志落盘 | **400** | 4500 | core-data 6818（模型下载 463 + 仓储 475 + 沙箱扫描 357 等丢弃） |
@@ -109,7 +112,8 @@ app          ← 全部
 | `:feature-tools` | 文件浏览页 + 工具页（W4 从 `:feature-settings` 拆出） | 600 | 2600 | 无（W4 新增） |
 | `:app` | Application、导航、首启引导 | 350 | 1600 | app 3100（LiquidAgentApp 1342 必须拆） |
 
-**合计上限 ≈ 42 500 行**（旧仓 main 源集 54 138 行，报告 §基线）。差额主要来自：端侧引擎 4200 + 端侧 model 2600 + 模型管理/下载/预设 UI ~2500 + 文本协议/热保护/history ~660 + 后台保活/OEM ~800。
+**合计上限 ≈ 42 500 行**（W5 拆出 `:core-kernel` 时**未调高**：那 1557 行是从 `:core-agent`
+搬过来的，全仓实际总量不变。给新模块加预算同时抬高总量上限，等于把「拆分」当「扩容」用。）（旧仓 main 源集 54 138 行，报告 §基线）。差额主要来自：端侧引擎 4200 + 端侧 model 2600 + 模型管理/下载/预设 UI ~2500 + 文本协议/热保护/history ~660 + 后台保活/OEM ~800。
 
 > **`42 500` 的来历**：11 个模块时代是 `39 900`；W4 把「文件浏览 + 工具页」从
 > `:feature-settings` 拆出成 `:feature-tools`（该模块 3451 行 > 3000 触顶）时，
@@ -197,7 +201,7 @@ sealed interface GenerationEvent {
     data class TextDelta(val text: String) : GenerationEvent
     data class ReasoningDelta(val text: String) : GenerationEvent
     data class ToolCallDelta(val index: Int, val id: String?, val name: String?, val argumentsFragment: String) : GenerationEvent
-    data class Usage(val prompt: Int, val completion: Int, val cachedPrompt: Int) : GenerationEvent
+    data class Usage(val prompt: Int, val completion: Int, val cachedPrompt: Int?) : GenerationEvent
     data class Finished(val reason: FinishReason) : GenerationEvent
     data class Failed(val kind: EngineErrorKind, val message: String, val retryable: Boolean) : GenerationEvent
 }
@@ -207,6 +211,7 @@ enum class EngineErrorKind {
     RATE_LIMIT,      // 429 —— 可重试（遵守 Retry-After）
     SERVER,          // 5xx —— 可重试
     NETWORK,         // 连接失败/超时（首字节前）—— 可重试
+    TIMEOUT,         // 首字节看门狗到点（连上了但不吐字节）—— 不重试
     PROTOCOL,        // SSE 畸形 / JSON 解析失败 —— 不可重试
     CONTEXT_OVERFLOW,// 400 且文案命中窗口超限 —— 不可重试，触发压缩后重发一次
     UNKNOWN,
@@ -519,6 +524,7 @@ class AgentGraph(
 | 层 | 类型 | 处理 | 用户可见文案 |
 |---|---|---|---|
 | 传输 | 连接失败/超时（首字节前） | 重试 ≤ 2，指数退避 | 「网络连接失败，正在重试（2/3）」→ 最终「无法连接到 <端点名>，请检查网络或端点地址」 |
+| 传输 | 首字节超时（看门狗，`generationTimeoutMillis`） | **不重试**，`Attempt.Fatal` + `EngineErrorKind.TIMEOUT` | 「模型 120 秒没有响应，请检查网络后重试」 |
 | 传输 | 超时（首字节后） | **不重试**（会重复输出） | 「响应中断，已保留已收到的内容」 |
 | 协议 | 401/403 | 不重试，标记端点 `authFailed` | 「API Key 无效或已过期，请到设置里更新」 |
 | 协议 | 429 | 重试，遵守 `Retry-After`（上限 60s） | 「请求过于频繁，<n> 秒后重试」 |
@@ -530,6 +536,8 @@ class AgentGraph(
 | 内核 | 工具失败 | 回灌 `ToolResult(ok=false)` 给模型 | 不打断用户；4 连击才熔断 |
 | 内核 | 审批被拒 | 回灌拒绝原因给模型 | 卡片上显示 |
 | 数据 | journal 写失败 | 吞异常（best-effort），记 warn | 不可见 |
+
+**两条超时的辖区不能重叠**：首字节看门狗只管「开始收流 → 第一个事件」，首个事件到达即解除；之后的长静默归 `readTimeout`（`core-net`）与墙钟 HARD（`RunState`）。看门狗用墙钟计时，**不接 `FreezeClock`** —— 它保护的是「远端不响应」，不是「设备被冻结后误判」；冻结时协程与计时器一起停摆，本来就不会提前开火。
 
 **统一原则（沿用旧仓）**：错误文案只陈述「发生了什么 + 下一步怎么做」，不提内部词（引擎/会话/native/SSE）。旧仓 `CONCURRENT_GENERATION_BUSY_MESSAGE`（`EngineContract.kt:90-91`）是这个原则的样板，新仓照抄这个措辞纪律。
 

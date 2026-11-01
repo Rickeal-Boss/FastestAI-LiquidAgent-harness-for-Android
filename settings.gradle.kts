@@ -25,12 +25,13 @@ dependencyResolutionManagement {
 
 rootProject.name = "FastestAI-Harness"
 
-// ---- 12 个模块，按依赖拓扑排序（下层在前） ----
+// ---- 13 个模块，按依赖拓扑排序（下层在前） ----
 include(":core-model")
 include(":core-net")
 // :core-engine 在 core-net 之后、core-agent 之前：依赖 core-model + core-net，
 // 被 core-agent 的 LlmEngine 端口反向实现（core-agent ← core-engine，方向不可逆）。
 include(":core-engine")
+include(":core-kernel")
 include(":core-agent")
 include(":core-skills")
 include(":core-mcp")

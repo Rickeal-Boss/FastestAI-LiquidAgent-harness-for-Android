@@ -90,8 +90,11 @@ sealed interface AgentEvent {
     /**
      * 用量。**新仓新增**（旧仓没有）：API 路径下 token 等于钱，
      * 且 provider 回报的 usage 是权威值（旧仓 litertlm 从不回报 usage）。
+     *
+     * [cachedPrompt] 三态：`null` = provider 没上报该字段，`0` = 上报了且没命中，`>0` = 命中。
+     * UI 必须把三者渲染成不同的文字 —— 否则「端点不支持缓存字段」会被读成「缓存失效」。
      */
-    data class UsageUpdated(val prompt: Int, val completion: Int, val cachedPrompt: Int) : AgentEvent
+    data class UsageUpdated(val prompt: Int, val completion: Int, val cachedPrompt: Int?) : AgentEvent
 
     /** 技能被加载。**新仓新增**：UI 要显示「本回答用了哪个技能」，否则技能是隐形的。 */
     data class SkillLoaded(val name: String) : AgentEvent

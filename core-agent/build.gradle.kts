@@ -36,6 +36,10 @@ kotlin {
 
 dependencies {
     api(project(":core-model"))
+    // W5：策略 / 日志 / 上下文工程下沉到 :core-kernel（core-agent 触顶 G10 6500 行的
+    // 处置是拆分，不是调大上限）。用 api 而非 implementation：TurnContext /
+    // AgentPolicy / 压缩器的类型出现在下游模块的公开签名里，必须可见。
+    api(project(":core-kernel"))
 
     // ⚠️ 刻意**不依赖** :core-net / :core-engine / :core-skills / :core-mcp。
     // 方向是「适配器 → 端口」：那四个模块依赖 :core-agent（或只依赖 :core-model），

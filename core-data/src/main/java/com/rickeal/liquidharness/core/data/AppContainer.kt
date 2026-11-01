@@ -19,7 +19,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 手写 DI 的唯一装配点（禁 Hilt / Koin）。
@@ -41,8 +40,11 @@ import java.util.concurrent.ConcurrentHashMap
  * **但 runner 不能每次 new**：`AgentRunner.runMutex` 是**实例字段**，每次调用都造
  * 一个新实例等于每次发一把新锁 —— 连发两次就是两条并发 run，互斥形同不存在。
  * 旧实现正是每次 new（而单测复用同一个实例，所以一直绿：典型的「判据空转」）。
- * 现在按 endpointId 缓存，配置变更时由 [saveEndpoint] / [deleteEndpoint] 显式失效，
- * 否则旧 runner 的引擎仍指向旧 baseUrl / modelId。
+ * 现在按 endpointId 缓存，**缓存键带配置指纹**（[RunnerKey]）：端点配置或窗口档位一变，
+ * 下一次取用就重建 —— 否则旧 runner 的引擎仍指向旧 baseUrl / modelId，
+ * 而用户在设置页改的窗口档位永远不生效（W4-07）。[saveEndpoint] / [deleteEndpoint]
+ * 里的显式失效保留：那是「配置已落盘」与「缓存已清」同一时刻发生的保证，比等下一次
+ * 取用时才比对更早一步，也更省一次比对。
  */
 class AppContainer(context: Context) {
 
@@ -216,11 +218,10 @@ class AppContainer(context: Context) {
     fun toolRegistry(): ToolRegistry = tools
 
     /**
-     * 内核门面：**按 endpointId 缓存**。
+     * 内核门面：**按 endpointId 缓存**，配置指纹变了就重建（[RunnerCache]）。
      *
      * 缓存是互斥语义的前提，不是性能优化：`runMutex` 在实例里，
      * 每次 new 就等于每次换一把锁（见类头的事故说明）。
-     * `getOrPut` 在 `ConcurrentMap` 上是 putIfAbsent 语义，并发首建也只会有一个赢家。
      *
      * ## 端点不支持工具时给**空注册表**，不是 null
      *
@@ -233,20 +234,30 @@ class AppContainer(context: Context) {
      * 首次求值 [tools] 会做 `workspace.mkdirs()` + `appContext.getSystemService()`，
      * 两者都是**阻塞**调用（磁盘 IO / 系统服务握手）。旧签名是普通函数，而调用点是
      * `viewModelScope`（`Main.immediate`）⇒ 首帧主线程上做磁盘 IO，冷启动有掉帧风险。
-     * 现在整段包进 `withContext(Dispatchers.IO)`：`getOrPut` 的 lambda 里构造
+     * 现在整段包进 `withContext(Dispatchers.IO)`：`getOrBuild` 的构造 lambda 里建
      * [AgentRunner] 也会读 `tools`，所以它必须一起在 IO 段内。
      *
      * 构造期仍然**不碰**任何系统服务（`tools` 是 `by lazy`，W78 纪律不变）——
      * 变的只是「第一次真的要跑 run 时落在哪个线程」。
      */
-    private val runners = ConcurrentHashMap<String, AgentRunner>()
+    private val runners = RunnerCache<AgentRunner>()
 
+    /**
+     * 取本端点可用的 runner。
+     *
+     * **每次调用都现读一次窗口档位**并把它算进缓存键：用户改「上下文窗口」之后，
+     * 下一次 run 就拿到新预算（W4-07 的缺陷正是「不换端点不重启就永远不生效」）。
+     *
+     * ⚠️ 这不是热更新：policy 依旧是 run 级快照，在途 run 手里那份 [AgentPolicy]
+     * 不会被改写 —— 一次 run 中途改预算会让「这一轮压不压缩」在轮与轮之间跳变，
+     * 那是最难排查的一类不一致。这里保证的只是「下一次 run 用新值」。
+     */
     suspend fun agentRunnerFor(endpoint: RemoteEndpoint): AgentRunner = withContext(Dispatchers.IO) {
-        // 窗口上限在**建 runner 时**读一次：改设置对已缓存的 runner 不生效，
-        // 换端点或重启后生效。不做实时监听是刻意的 —— 一次 run 中途改预算会让
-        // 「这一轮压不压缩」在轮与轮之间跳变，那是最难排查的一类不一致。
         val windowCap = settings.maxContextTokens.first()
-        runners.getOrPut(endpoint.id) {
+        // keepWhile：**在途 run 未结束就绝不换实例**。换掉等于换掉 `runMutex` ——
+        // 新实例的锁是空闲的，此时再发一次就是两条并发 run 写同一份历史。
+        // 新配置不会丢，只是推迟到这一轮跑完后的下一次取用才生效。
+        runners.getOrBuild(RunnerKey(endpoint, windowCap), keepWhile = { it.isBusy }) {
             AgentRunner(
                 engine = RemoteEngineBridge(engineFor(endpoint)),
                 tools = if (endpoint.supportsTools) tools else ToolRegistry(),
