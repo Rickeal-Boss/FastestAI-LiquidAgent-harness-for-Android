@@ -94,6 +94,8 @@
 | W7-02 | **前缀缓存命中率验证**（承接 W5 缓存结论） | W7 | `OPEN` | 与 W7-01 同波（同一批请求可同时取数） | W6 多模型实测（`docs/notes/w6-provider-matrix.md` §六.3）：`nv-vl` 三连发 `0 → 0 → 4336`（写入延迟 ≥2 次）、`dots` 恒 0、`north` 恒 0 ⇒ **缓存不可依赖**。待证：本仓前缀逐字节稳定时，第 3 次请求 `cached_tokens > 0`；且**不得为凑缓存加长 system**（800 全价 vs 4096×0.5 当量） |
 | W7-03 | **手动压缩 / 会话导入真机验收** | W7 | `OPEN` | 与 W7-01 同波 | 仅单测（`ManualCompressTest` 10 条 / `ChatImportTest` 6 条 / `SessionImportParserTest` 19 条）。待证：① 压缩后历史条数下降 + 分隔卡出现 + `manual_compress dropped=N kept=M cache_invalidated=true` 落盘 + 下一请求 `cached_tokens=0`（**双向**，别只看归零）；② 导入 20 条 ⇒ 20 个气泡；带 `role=tool` 的文件显示丢弃计数；8 MiB+ 被拒且提示具体原因；release 包看不到该入口 |
 | W7-04 | 8 条恒绿占位测试（`SmokeTest.placeholder` = `assertTrue(true)`） | W6 | `OPEN` | W7 与 W7-01 同波删；删后 `EXPECTED_TESTS` 666→658 | `grep -rn "assertTrue(true)" --include=SmokeTest.kt` = **8**（`app`/`core-agent`/`core-data`/`core-design`/`core-mcp`/`core-skills`/`feature-chat`/`feature-settings`，W6 逐文件复验：每个恰好 1 个 `@Test` + 唯一断言 `assertTrue(true)`）⇒ **行为判据实为 658 条**。**本波刻意不删**（W1 骨架存量、非 W6 回归；删完需改 `EXPECTED_TESTS` + 重跑全量 + 重推 + 等 CI，而收益只是数字更诚实 —— 已如实登记；风险是某模块可能因此变 `NO-SOURCE`）。**口径约束**：关闭前任何引用 666 处必须同时写「其中 8 条为占位，真实断言 658」（已写进 `.github/workflows/build.yml` 的 `EXPECTED_TESTS` 注释）。**若删，三件必须同一次提交**：① 删 8 个 `SmokeTest.kt`；② 常量 666 → 658；③ 跑全量确认 `658 / 0 / 0` 且无模块 `NO-SOURCE` —— 分两步做中间态必红（先删文件 ⇒ 基线 666 / 实跑 658；先改基线 ⇒ 基线 658 / 实跑 666） |
+| W7-05 | `PreStepBudget` 的 sanitize 上界只有论证、没有实测 | W6 | `CARRIED` | 推 W7（与 W7-01 同批真机时顺手取数） | `sanitizeForProvider` 会给「声明了没结果」的调用补合成结果，而 L3 字符判据量的是 `state.working()`（**sanitize 之前**）⇒ 实发字符可略超 `charCap`。上界式已写进 `PreStepBudget` 类头（`实发 ≤ charCap + 未配对数 × 模板长度`），但**没有任何用例验证过这个上界**。W6 裁决「接受 + 写清，不改结构」（改结构要多调一次 `prepare`）。**风险低**：合成结果字符量小、只在压缩丢宿主/调用中断时出现、方向固定（只会多算）。**耦合**：一旦把 `hardCharsPerToken` 调到接近 1.0，余量消失 ⇒ 必须改成 prepare 之后终检 |
+| W7-06 | 两条「仅绿」可见性判据 + 正确检查顺序 | W6 | `OPEN` | 推 W7；**顺序必须先确认权限、再看设置项** | ①「release 包看不到「导入会话（调试）」」：实现是 `ApplicationInfo.FLAG_DEBUGGABLE` 注入回调，但 `:app` 只有 debug 变体可装 ⇒ **该判据在本仓不可执行**（W6 未验）；②「关掉压缩开关后请求真的接近窗口」：**假绿风险高** —— `ContextBudget.prepare` 在 `compressContext=false` 时直接返回全量，不写任何可观测输出，同时 provider 的 `context_overflow` 失败也会显示成「context 压缩没生效」的同一个样子。**必须先 grep 出「压缩是否真的没发生」的独有证据再跑**，否则会把 400 读成通过 |
 
 > **为什么是 38 条而不是外审说的 27 条**：27 = 四份 handoff 挂账表里的编号条数（G20 逐条核对的那 27 个）。
 > 另 **8 条 W6 系列**：W6-01 / W6-02（本波新发现的「声明了没消费者」第 3、4 例）、W6-03（守卫空转清单）、
@@ -139,3 +141,11 @@
 4. **不许为了让 G20 变绿而删 handoff 里的 ID**：handoff 是历史记录，改它等于篡改开立事实。
 5. **`VACUOUS` 不是通过**。G19 现在就是 `VACUOUS`（守空集），它出现在输出里是为了
    让「装了烟感但没火」可见；`VACUOUS_BASELINE` 只许减。
+6. **本文件只由 CI 流（单人）落笔**。其他流**只在 handoff / 消息里报「要开一条」**，
+   由 CI 流统一编号并入表。**为什么**：W6 同一晚**重复编号两次**（`W6-01`、`W7-04`），
+   两次都是并行流各按自己的计数起号。
+   🔴 **保证强度（如实）**：这条是**约定，不是判据** —— 守卫判不出「谁写的」。
+   G20 只能判「引用存在、`CLOSED` 有证据」，判不出「两个 `W6-01` 指两件事」。
+   想让它可判，得另加「ID 唯一」判据（W6 收口期已加检查，自证见 `scripts/arch-guard.sh`）。
+7. **恒绿断言不是判据**。`assertTrue(true)` 一类的占位**永远不可能红**，它只能证明「test 源集非空」。
+   新增占位等于给计数锚注水 —— 本仓 `EXPECTED_TESTS` 因此只有「计数」含义，没有「判据数」含义（见 W7-04）。
