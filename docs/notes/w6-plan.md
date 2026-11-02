@@ -22,13 +22,12 @@
 > 剩余三项待办：§2.4「已知残余」（team-lead 裁决为"接受 + 写上界"，已落 KDoc）、§2.7 的 `runCatching`、
 > 以及下面的「第四跳判据」与「core-kernel 余量」。
 >
-> 🔴 **第四跳判据：已补，一条待验**（2026-11-02 更正 —— 本文初稿说"测试没写"是**错的**，当时只 grep 了
-> `feature-chat/src/test`，而该类已迁到 `:core-data`）。现状：`core-data/src/test/.../ContextLimitWritebackTest.kt`
-> **6 条**（原有 5 条覆盖「正常值恰调一次 / `null`·非正值·空白 id 零调用 / 普通异常只 WARN」，W6 补第 6 条
-> `cancellationIsRethrownNotSwallowed` 用**引用同一性**钉住 `CancellationException` 原样重抛）。
-> 第 6 条**尚未跑验证**（写者正在让出构建窗口）⇒ 记「已写、待验」，**不许记成已验证**。
-> 方法论教训：判"某个缝有没有判据"必须**全仓 grep 类名**，不能只 grep 记忆中的那个模块 ——
-> 这正是 `AGENTS.md` §二.2「报告查的是它那一版的树」的同款错误。
+> ✅ **第四跳判据：已验证（6/6）**。本文初稿说"测试没写"是**错的** —— 当时只 grep 了类的旧位置
+> `feature-chat/src/test`。现状：`core-data/src/test/.../ContextLimitWritebackTest.kt` **6 条**
+> （原有 5 条 + W6 补 `cancellationIsRethrownNotSwallowed`，用**引用同一性**钉住 `CancellationException` 原样重抛）。
+> **产物证据**：`core-data/build/test-results/testDebugUnitTest/TEST-…ContextLimitWritebackTest.xml`
+> `tests="6" failures="0" errors="0"`（mtime 21:56:07）；源 mtime 21:52:04 **早于**产物 ⇒ 产物反映当前源码。
+> 方法论教训：判"某个缝有没有判据"必须**全仓 grep 类名**，只 grep 记忆中的模块会得出相反的结论。
 >
 > ⚠️ **`core-kernel` 1790 / 1800 —— 只剩 10 行余量**（cap 见 `arch-guard.sh:135`），正是 `AGENTS.md` §五.1
 > 点名要避免的死结形态（旧仓 2838/2900、W5 的 core-agent 6495/6500）。处置只能是拆分、不是加 cap。
@@ -344,55 +343,7 @@ contextBudgetTokens     = hardContextBudgetTokens × policy.compressThreshold  /
 
 ---
 
-## 九、`core-kernel` 触顶的拆分方案（下一波用，本波只登记）
+## 九、`core-kernel` 触顶的拆分方案 → 见 `docs/notes/w6-kernel-split.md`
 
-**现状**：1 790 / 1 800（`arch-guard.sh:135`），余量 **10 行**。构成：`context/` 1 387 + `policy/` 235 + `log/` 168。
-
-**方案 A（推荐，本波执行）**：冻结 core-kernel 新增 + 台账登记。W6 剩余改动一律不往 core-kernel 加行；拆分写成带 ID 的台账项，下一波第一件事。理由：拆分要同动 G9 `MODULES` + `LINE_CAPS` 两处基线、并额外确认 `TOTAL_LINE_CAP` 不动，与"先真机、再推仓 + CI"的顺序冲突；而登记能防住 W3-05 那种"被挤掉四波无人发现"。
-
-**方案 B（拆分，下一波执行）**：`core-kernel/context/` 1 387 行整体下沉为 `:core-context`。
-
-**先把账算清（初稿的 1 850 与"两模块之和 ≤ 1 800"都不成立）**：
-
-| 分法 | core-kernel 实/上限 | core-context 实/上限 | 上限之和 |
-|---|---|---|---|
-| log 留在 kernel | 403 / **450**（余 47） | 1 387 / **1 450**（余 63） | **1 900** |
-| log 随 context 走 | 235 / **300**（余 65） | 1 555 / **1 600**（余 45） | **1 900** |
-| 强行凑 1 800 | 403 / 450 | 1 387 / **1 400**（余 **13**） | 1 850 |
-
-⇒ 两种合理分法都是 **1 900**；能凑到 1 800 的分法只剩 **13 行**余量，**等于把死结从一处搬到另一处**。另一变体 `kernel|300 + context|1500` **装不下**（`log/` 留 kernel ⇒ 403>300；随 context 走 ⇒ 1 555>1 500）。
-
-**真正的判据是 `TOTAL_LINE_CAP`，不是"per-module 上限之和"**：全仓 main 实测 **34 983** / 上限 **42 500**（`arch-guard.sh:156`），**余量 7 517**。W5 铁律 3 的实质内容是"**不要抬高 `TOTAL_LINE_CAP`**"，而不是"per-module 上限之和必须不增" —— 后者在模块数增加时数学上不可能（每个模块至少要有几十行头部余量）。所以下一波拆分的正确写法：
-
-> ⚠️ **这个数必须带口径，否则会算错一倍**（2026-11-02 实测）：守卫 G10 的口径是
-> `find <mod>/src/main -type f -name '*.kt'` **逐文件** `wc -l < "$f"` 再累加（`arch-guard.sh:700-717`），
-> **不是** `xargs wc -l`。本树用 `xargs wc -l` 会被切成 **2 批**，输出 **2 个 `total` 行**
-> （17 074 + 17 909）；`| tail -1` 只取到 **17 909** —— 这就是"全仓 18 473"那个数的来源（漏了第一批）。
-> 复算必须用两种独立方式对齐：逐文件累加 = **34 983**，`find … -print0 | xargs -0 cat | wc -l` = **34 983**。
-
-- `TOTAL_LINE_CAP` **保持 42 500 不变**；
-- per-module 上限之和 1 800 → 1 900，**+100 是拆分开销**（两个模块各自的文件头 + 各自的 KDoc），
-  在台账项与提交信息里写明；
-- **不许**用"凑 1 800"的分法（余量 13 行 = 立刻复现同一个死结）。
-
-**方向合法性**：`core-context → core-kernel`（context 依赖 policy/log，不反向），无环。W5 只搬 `context/` 时编译红，是因为当时 `policy`/`log` 还在 `core-agent`；现在它们已在 kernel 里，同样的搬法这次能过。
-**二次风险**：`ContextCompressor.kt` 已 337 行（单文件上限 400，余 63）；拆分不解决单文件余量，下一波若还要动它，先按"拆不调上限"处理。
-
-### 9.1 全模块余量表（2026-11-02 实测，G10 口径）
-
-| 模块 | 实测 | 模块上限 | **余量** | 最大单文件 / 单文件上限 |
-|---|---|---|---|---|
-| `core-kernel` | 1 790 | 1 800 | **10** 🔴 | `ContextCompressor.kt` 337 / 400 |
-| `feature-chat` | 3 459 | 3 500 | **41** 🔴 | `ChatViewModel.kt` **484 / 500（余 16）** |
-| `feature-settings` | 2 921 | 3 000 | **79** 🔴 | `McpServerEditScreen.kt` 377 / 500 |
-| `core-design` | 12 439 | 12 600 | **161** ⚠️ | `LiquidBottomTabs.kt` 1 012 / 600（已登记例外） |
-| **合计** | **34 983** | **42 500** | 7 517 | — |
-
-余量充裕的 9 个模块（无需动作）：`app` 262 ｜ `core-net` 410 ｜ `core-skills` 581 ｜ `core-mcp` 642 ｜ `core-model` 1 161 ｜ `core-agent` 1 174 ｜ `core-engine` 1 519 ｜ `feature-tools` 1 653 ｜ `core-data` 2 224。
-
-**三个模块余量 < 100 行，其中两个正是本波在改的**：UI 侧本波一直在往 `ChatViewModel.kt`（**484/500，余 16**）加跳，而 `feature-chat` 模块总量只剩 41 行 ⇒ **下一个 UI 提交就可能撞 G10**，而且会先撞**单文件**上限（16 行），再撞模块上限（41 行）。
-⇒ 本波 UI 收口的硬约束：**`ChatViewModel` 不得再加行**，新逻辑一律外提（本波已有先例：`ContextLimitWriteback` / `ConversationOps` / `ChatContextWindow` 都是这么外提的）。`feature-settings` 同理（余 79，加一组设置行就会撞）。
-
-> ⚠️ **口径自证（这条是抓错的关键，建议进交接）**：任何**求和**类命令，**输出里出现多于一个 `total` 行就是被截断了**。
-> 必须让命令自己暴露这件事（例如 `… | xargs wc -l | grep -c total` 必须等于 **1**），而不是用 `| tail -1` 把它藏起来 ——
-> 本波两人各踩一次（17 074 与 16 498 两批被静默丢掉）。三要素说"怎么写对"，这条说"写错了怎么发现"。
+**现状**：1 790 / 1 800（`arch-guard.sh:135`），余量 **10 行**。处置建议 **A（本波冻结新增 + 台账登记，不拆）**；
+拆分施工图、四种分法的账、全模块余量表、行数口径三要素与三条自证判据，全部移到 `docs/notes/w6-kernel-split.md`。
