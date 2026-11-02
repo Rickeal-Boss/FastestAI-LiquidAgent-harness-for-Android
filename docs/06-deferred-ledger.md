@@ -88,17 +88,23 @@
 | W6-04 | `saveEndpoint` 的 `runners.remove()` 绕过 `keepWhile`（W4-07 残留窄窗口） | W6 | `CLOSED` | 关闭于 W6（A 流） | 已改为 `core-data/AppContainer.kt:333` `runners.removeIfIdle(normalized.id) { it.isBusy }`（`recordContextLimit` 同样处理，`:369`）；实现 `core-data/RunnerCache.kt:93` `removeIfIdle`；钉住用例 `core-data/.../RunnerCacheTest.kt:107,118`。⚠️ 残留（有意保留）：`deleteEndpoint` 仍走 `runners.remove(id)`（`:376`）—— 端点已删，在途 run 的引擎指向已删端点属另一类问题。来源：`03-w5-review-and-next.md` §二 P2 |
 | W6-05 | `allowClipboardRead` 缺设置页开关（保存后下一次 run 生效） | W2.5 | `OPEN` | 推 W7（与 `ApprovalPolicyScreen` 同波） | 字段有真消费点：`core-agent/.../ClipboardTool.kt:78` `if (!policy.allowClipboardRead && actionOf(...) == Action.GET) READ_DISABLED`；但**全仓无 UI/无 setter 写入它**（`grep -rn allowClipboardRead` 只命中 ClipboardTool + 3 个测试文件）。**原交接 W2.5 §八.4 只写了「W7 挂账」，未给编号 ⇒ 本条是本台账补的编号**（无编号的挂项在抄写中必丢） |
 | W6-06 | `arch-guard.sh` 一次全量跑出现 G7/G8/G9 各打印两遍（`OK=26` 虚高 3），**不可复现** | W6 | `OPEN` | 待复现；再现时按 `scripts/arch-guard.sh` 头部 K3 的三步查（函数调用次数 / 同 id 两次 guard_ok / 是否有第二进程写同一输出文件） | 2026-11-01 20:47 一次全量跑实测（W6 首次接入 VACUOUS 之后，当次 rc=1）；之后 4 次全量跑（含最终验收 `OK=25 VACUOUS=1 VIOLATION=0`）**均未复现**，根因未定位。**登记理由：不可复现 ≠ 不存在**，不登记则下次出现会被当成新 bug 从头排查。详见 `arch-guard.sh` 头部 K3 |
-| W6-07 | `core-kernel` 行数触顶（1 790 / 1 800，余 10）⇒ 拆分 `context/` 为 `:core-context` | W6 | `OPEN` | 下一波第一件事拆；本波只冻结 + 登记 | 现量（守卫口径，`LINE_CAPS` 表 + `wc -l`）：`core-kernel` **1 790 / 1 800**（余 **10**）；三分目录 `context/` **1 387**、`policy/` **235**、`log/` **168**。峰值到过 1 849（W6 加 T7 那阵子），已由 A 流压回 1 790（压掉的是 W6 新增的重复 KDoc，三条判据锚一个没删）。**性质 = 预算到期，不是 W6 违规**：1 800 是 W5 拆分时按「搬过去的 1 557 行 + 余量」给的，被 W6 正常用掉。**处置方向**：`core-kernel/context/` 整体下沉为 `:core-context`，`core-kernel` 只留 `policy/` + `log/`。**三条硬约束（防下一波把它当扩容）**：① `TOTAL_LINE_CAP` **保持 42 500 不动** —— 这才是 W5 铁律 3「不许变胖」的真判据（实测全仓 main = **34 983 / 42 500**，余 **7 517**）；② per-module 上限之和 1 800 → **1 900**，**其中 +100 是拆分开销**（两个模块各自的文件头 + KDoc），必须同时写进台账项与提交信息；③ **禁止「凑 1 800」的分法** —— 那会给 `core-context` 留 13 行，等于把死结从一处搬到另一处。两种合理分法（各自余 45~65 行，之和都是 1 900）：`core-kernel` 上限 450（235+168=403，余 47）+ `core-context` 上限 1 450（1 387，余 63）；或 `core-kernel` 上限 300（仅 policy 235，余 65）+ `core-context` 上限 1 600（1 387+168=1 555，余 45）。**触发条件**：任何往 `core-kernel` 新增代码的 PR ⇒ 先拆再加。**同一病的另外三处（本波只登记不处置，数字为守卫口径实测）**：`feature-chat` 3 459 / 3 500（余 **41**）、`feature-settings` 2 921 / 3 000（余 **79**）、`core-design` 12 439 / 12 600（余 **161** —— 它同时是**全仓最大模块**：占全仓 35.6%、是 `core-agent` 5 326 的 2.3 倍 ⇒ 下一波若要找「哪里该瘦」，收益远大于 `core-kernel` 那 10 行余量） |
+| W6-07 | `core-kernel` 行数触顶（1 790 / 1 800，余 10）⇒ 拆分 `context/` 为 `:core-context` | W6 | `OPEN` | 下一波第一件事拆；本波只冻结 + 登记 | 现量（守卫口径，`LINE_CAPS` 表 + 逐文件 `wc -l` 累加）：`core-kernel` **1 790 / 1 800**（余 **10**）；三分目录 `context/` **1 387**、`policy/` **235**、`log/` **168**。峰值到过 1 849（W6 加 T7 那阵子），已由 A 流压回 1 790（压掉的是 W6 新增的重复 KDoc，三条判据锚一个没删）。**性质 = 预算到期，不是 W6 违规**：1 800 是 W5 拆分时按「搬过去的 1 557 行 + 余量」给的，被 W6 正常用掉。**处置方向**：`core-kernel/context/` 整体下沉为 `:core-context`，`core-kernel` 只留 `policy/` + `log/`。**三条硬约束（防下一波把它当扩容）**：① `TOTAL_LINE_CAP` **保持 42 500 不动** —— 这才是 W5 铁律 3「不许变胖」的真判据（实测全仓 main = **34 983 / 42 500**，余 **7 517**）；② per-module 上限之和 1 800 → **1 900**，**其中 +100 是拆分开销**（两个模块各自的文件头 + KDoc），必须同时写进台账项与提交信息；③ **禁止「凑 1 800」的分法** —— 那会给 `core-context` 留 13 行，等于把死结从一处搬到另一处。两种合理分法（各自余 45~65 行，之和都是 1 900）：`core-kernel` 上限 450（235+168=403，余 47）+ `core-context` 上限 1 450（1 387，余 63）；或 `core-kernel` 上限 300（仅 policy 235，余 65）+ `core-context` 上限 1 600（1 387+168=1 555，余 45）。**触发条件**：任何往 `core-kernel` 新增代码的 PR ⇒ 先拆再加。**同一病的另外三处（本波只登记不处置，数字为守卫口径实测）**：`feature-chat` 3 459 / 3 500（余 **41**）、`feature-settings` 2 921 / 3 000（余 **79**）、`core-design` 12 439 / 12 600（余 **161** —— 它同时是**全仓最大模块**：占全仓 35.6%、是 `core-agent` 5 326 的 2.3 倍 ⇒ 下一波若要找「哪里该瘦」，收益远大于 `core-kernel` 那 10 行余量） |
+| W6-08 | G10 的行数口径对「缺尾换行的 `.kt`」静默少算 1 行 | W6 | `OPEN` | 下一波做「可见性断言」（G10 顺带输出 `缺尾换行=N`，**不判红**，与 G19 的 VACUOUS 同一思路）；本波不动 G10 | `wc -l` 数的是**换行符**，故缺尾换行的文件少算 1 行且不告警。**现役不受影响（已复验）**：13 个模块 `src/main` 的 `.kt` 里缺尾换行 = **0 个**，且三种求和在现役树上一致 = **34 983**（逐文件 `wc -l` 累加 / `grep -c ''` 求和 / `find -print0 \| xargs -0 cat \| wc -l`）。影响量级 = 模块内文件数 × 1 行，对 `core-kernel`（余 10）而言 1 行 = 10% 余量误差 ⇒ 下一波补可见性即可。**两态齐全**（绿态 = 现役 0；红态可构造 = 手动去掉尾换行），所以它**可以是真判据**，但代价是给非标准编辑器保存的人一个额外红 ⇒ 先做可见性、不做判红 |
 | W7-01 | **上下文压缩真机重放**（承接 W5-01 的真机部分） | W7 | `OPEN` | 下一波第一件事；阻塞已解除（端点可常驻密钥，见下） | 待证判据：32K 档 + 并行读 5×16 KB ⇒ 请求实发 ≤ `hardContextBudgetTokens = 27 904`（或出现 `hard_budget_shrunk` 且最终仍 ≤ 27 904）。W6 已备好夹具：5 个 16.3 KB 文件已推入设备沙箱 `files/harness/workspace/module_{1..5}.kt`；失败现场 `_w6/d12.png`（`SocketTimeoutException`）。**下一波必须先换掉免费模型**（OR `dots-3-note-preview:free` 在该输入规模下超时），NVIDIA 端点已核实可用 |
 | W7-02 | **前缀缓存命中率验证**（承接 W5 缓存结论） | W7 | `OPEN` | 与 W7-01 同波（同一批请求可同时取数） | W6 多模型实测（`docs/notes/w6-provider-matrix.md` §六.3）：`nv-vl` 三连发 `0 → 0 → 4336`（写入延迟 ≥2 次）、`dots` 恒 0、`north` 恒 0 ⇒ **缓存不可依赖**。待证：本仓前缀逐字节稳定时，第 3 次请求 `cached_tokens > 0`；且**不得为凑缓存加长 system**（800 全价 vs 4096×0.5 当量） |
 | W7-03 | **手动压缩 / 会话导入真机验收** | W7 | `OPEN` | 与 W7-01 同波 | 仅单测（`ManualCompressTest` 10 条 / `ChatImportTest` 6 条 / `SessionImportParserTest` 19 条）。待证：① 压缩后历史条数下降 + 分隔卡出现 + `manual_compress dropped=N kept=M cache_invalidated=true` 落盘 + 下一请求 `cached_tokens=0`（**双向**，别只看归零）；② 导入 20 条 ⇒ 20 个气泡；带 `role=tool` 的文件显示丢弃计数；8 MiB+ 被拒且提示具体原因；release 包看不到该入口 |
+| W7-04 | 8 条模块级恒绿占位（`assertTrue(true)`）的处置：删掉 or 保留并写清口径 | W7 | `OPEN` | 下一波裁；**删则必须与 `EXPECTED_TESTS` 同一次提交** | 全仓 `@Test` = **666**，其中 **8 条恒绿占位**：`app` / `core-agent` / `core-data` / `core-design` / `core-mcp` / `core-skills` / `feature-chat` / `feature-settings` 各一个 `SmokeTest.kt`，每个恰好 1 个 `@Test` + 唯一断言 `assertTrue(true)`（全仓 `assertTrue(true)` 计数 = **8**，逐文件复验）。**行为判据实为 658 条**。它们永远不可能红，按本仓「仅绿 = 注释」不构成判据，历史作用只是让模块 test 源集非空（避免 NO-SOURCE）。**本波决定只改口径不改文件**（W1 存量、非 W6 回归；收口期动 8 个文件 + 一处 CI 基线，一旦并发构建很难区分「删多了」与「daemon 抖动」）。口径已写进 `.github/workflows/build.yml` 的 `EXPECTED_TESTS` 注释。**若删**：① 删 8 个 `SmokeTest.kt`；② `EXPECTED_TESTS` 666 → 658；③ 跑全量确认 `658 / 0 / 0` 且无模块 NO-SOURCE —— **三件必须同一次提交**（先删文件 ⇒ 666/658 红；先改基线 ⇒ 658/666 红） |
+| W7-04 | 8 条恒绿占位测试（`SmokeTest.placeholder` = `assertTrue(true)`） | W6 | `OPEN` | W7 与 W7-01 同波删；删后 `EXPECTED_TESTS` 666→658 | `grep -rn "assertTrue(true)" --include=SmokeTest.kt` = **8**（`app`/`core-agent`/`core-data`/`core-design`/`core-mcp`/`core-skills`/`feature-chat`/`feature-settings`）。**本波刻意不删**：删完需改 `EXPECTED_TESTS` 并重跑全量 + 重推 + 等 CI，而收益只是数字更诚实（已如实登记）；风险是某模块可能因此变 `NO-SOURCE`。**口径约束**：关闭前任何引用 666 处必须同时写"其中 8 条为占位，真实断言 658" |
 
-> **为什么是 34 条而不是外审说的 27 条**：27 = 四份 handoff 挂账表里的编号条数（G20 逐条核对的那 27 个）。
-> 另 7 条是：W6-01 / W6-02（本波新发现的「声明了没消费者」第 3、4 例）、W6-03（守卫空转清单）、
+> **为什么是 38 条而不是外审说的 27 条**：27 = 四份 handoff 挂账表里的编号条数（G20 逐条核对的那 27 个）。
+> 另 **8 条 W6 系列**：W6-01 / W6-02（本波新发现的「声明了没消费者」第 3、4 例）、W6-03（守卫空转清单）、
 > W6-04（外审 §二 P2，代码里确实存在但从未进过任何挂账表，本波已由 A 流修掉）、
 > W6-05（W2.5 §八.4 的无编号挂项）、W6-06（守卫自身的一次不可复现异常）、
-> W6-07（`core-kernel` 行数预算到期 —— 从未进过任何挂账表，靠 G10 判红才被发现）。
-> 后四条正是「没有编号 / 没进表 ⇒ 没人跟踪」的活样本。
+> W6-07（`core-kernel` 行数预算到期 —— 从未进过任何挂账表，靠 G10 判红才被发现）、
+> W6-08（G10 对缺尾换行静默少算 1 行）。
+> 另 **3 条 W7 系列**：W7-01 / W7-02 / W7-03 —— 由 team-lead 在 W6 收口时开立（真机重放类：
+> 上下文压缩 / 前缀缓存命中率 / 手动压缩与会话导入），本文件只登记不判定。
+> 其中 W6-05 / W6-07 / W6-08 三条正是「没有编号 / 没进表 ⇒ 没人跟踪」的活样本。
 
 ---
 
@@ -108,8 +114,8 @@
 |---|---|---|
 | `CLOSED` | 9 | W26-01 / W26-04 / W26-05 / W3-08 / W4-01 / W4-05 / W4-06 / W4-07 / W6-04 |
 | `CARRIED` | 6 | W26-03 / W3-03 / W3-06 / W4-02 / W4-03 / W4-04 |
-| `OPEN` | 19 | W26-02 / W3-01 / W3-02 / W3-04 / W3-05 / W3-07 / W5-01 / W5-02 / W5-03 / W5-04 / W5-05 / W5-06 / W5-07 / W6-01 / W6-02 / W6-03 / W6-05 / W6-06 / W6-07 |
-| **合计** | **34** | 四份 handoff 的 27 条 + 本波新开 7 条 |
+| `OPEN` | 24 | W26-02 / W3-01 / W3-02 / W3-04 / W3-05 / W3-07 / W5-01 / W5-02 / W5-03 / W5-04 / W5-05 / W5-06 / W5-07 / W6-01 / W6-02 / W6-03 / W6-05 / W6-06 / W6-07 / W6-08 / W7-01 / W7-02 / W7-03 / W7-04 |
+| **合计** | **39** | 四份 handoff 的 27 条 + W6 新开 8 条 + W7 开立 4 条 |
 
 **老化最久的三条**（都必须有归宿，不许无限期挂着）：
 

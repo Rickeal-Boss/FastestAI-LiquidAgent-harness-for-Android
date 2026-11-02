@@ -111,7 +111,22 @@ env:
   #   → 480（W3 能力批：多模态 6 / 记忆 11 / Skill 10 / MCP 35 / I1 8 / 存储 7 / TTS 7 …）。
   #   → 544（W4 上下文二期 + UI 补齐：前缀指纹 / L2 摘要 / :feature-tools 8 条）。
   #   → 593（W5：审批咽喉点审计 10 行 + feature-settings 1→20 + :core-kernel 拆分后补齐）。
-  #   同一口径 `grep -rE '^\s*@Test'` 实测 593，与本地 fulltest 的 tests=593 双向对账成立。
+  #   → 665（W6：A 流上下文正确性 —— 判定点下沉 / 硬预算 / 预算算式 / contextLimit 写回）。
+  #   → 666（W6 收口：C 流最后一条边界用例）。
+  #   同一口径 `grep -rnE '^\s*@Test\b' --include=*.kt`（排除 build/.gradle/.kotlin/.git）实测 **666**，
+  #   与本地 fulltest 的 tests=666 双向对账成立（W6 收口时用本文件的对账 job 本体跑过，rc=0）。
+  #
+  # 🔴 【666 里只有 658 条是行为判据】另外 8 条是**模块级恒绿占位**：
+  #   `app` / `core-agent` / `core-data` / `core-design` / `core-mcp` / `core-skills` /
+  #   `feature-chat` / `feature-settings` 各一个 `SmokeTest.kt`，每个恰好 1 个 `@Test` +
+  #   唯一断言 `assertTrue(true)`（全仓 `assertTrue(true)` 计数 = 8，W6 已逐文件复验）。
+  #   它们**永远不可能红**，按本仓「仅绿 = 注释」的元判据**不构成判据**，历史作用只是让模块的
+  #   test 源集非空（避免 NO-SOURCE）。
+  #   ⇒ **读这个数字时不要以为「666 条都被验证过」**：行为判据是 **658** 条。
+  #   删除动作已登记 `docs/06-deferred-ledger.md` 的 `W7-04`。真要删必须**同一次提交**完成三件事：
+  #   ① 删 8 个 `SmokeTest.kt`；② 本常量 666 → 658；③ 跑一次全量确认 `658 / 0 / 0` 且
+  #   **没有模块变成 NO-SOURCE**。分两步做，中间态必红（先删文件 ⇒ 基线 666 / 实跑 658；
+  #   先改基线 ⇒ 基线 658 / 实跑 666）。
   #
   # 【W6 起：本常量是**单一写口**】W6 三流并行（A 改内核 / B 挂账与守卫 / C 改 UI），
   #   只有 B 流改这一行；A/C 只**报告**自己新增的 @Test 数，由 B 收口时一次改到位。

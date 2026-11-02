@@ -9,13 +9,25 @@
 
 | 流 | 状态 | 证据 |
 |---|---|---|
-| A 上下文正确性 | **代码已落地**（工作树，未提交） | `core-agent/loop/PreStepBudget.kt`（判定点在 `TurnLoop.kt:60` 循环体顶部）、`core-kernel/context/{BudgetFormula,HardBudgetShrinker}.kt`、`GenerationRound.kt:219` `recordContextLimitHint`、`RunTermination.kt:114` 透传、`ContextBudget.kt:249-252` 锚点 |
+| A 上下文正确性 | ✅ **已提交**（`5f95969` feat(w6)） | `core-agent/loop/PreStepBudget.kt`（判定点在 `TurnLoop.kt:60` 循环体顶部）、`core-kernel/context/{BudgetFormula,HardBudgetShrinker}.kt`、`GenerationRound.kt:219` `recordContextLimitHint`、`RunTermination.kt:114` 透传、`ContextBudget.kt:249-252` 锚点 |
 | A 的判据 | **T1–T7 全部落地** | `PreStepBudgetTest`（T1 字符/T2 占位/T3 `generateCount==0`/T7 标定）、`BudgetFormulaTest:33`（T4 `995_904`）、`OpenAiCompatibleAdapterTest:336` + `RemoteLlmEngineContextLimitTest:58`（T6 第一跳）、`EndpointStoreTest:30`（T6 第二跳）、`ContextBudgetTest:316`（T5 锚点） |
-| A 的**宿主写回跳** | ✅ **四跳全接**，第四跳**判据待补** | `ChatViewModel.kt:394` → `ConversationOps.kt:50` → `AppContainer.recordContextLimit` → `EndpointStore`；语义边界在 `ContextLimitWriteback.kt:20-32`。前三跳有判据（见上一行 T6），**第四跳零 `@Test`** |
+| A 的**宿主写回跳** | ✅ **四跳全接**，第四跳 **6 条判据已验证** | `ChatViewModel.kt:394` → `ConversationOps.kt:50` → `AppContainer.recordContextLimit` → `EndpointStore`；`ContextLimitWritebackTest` 6/6（产物 `tests="6" failures="0"`，源 mtime 21:52 < 产物 21:56） |
 | A 的 **UI 同源口径**（§2.7） | ✅ **已修**，一处待改 | 分母已换 `hardContextBudgetTokens`（`ChatContextWindow.kt:50-55`，`ChatContextWindowTest.kt` 6 条 JVM 用例含 `nearFullTriggersExactlyAtSoftBudget`）；`:25` 的 `runCatching { …first() }` 仍会吞 `CancellationException`（AGENTS.md §五.4），已报属主 |
-| B 台账 / G20 / VACUOUS | 进行中（`build.yml` 已有改动） | — |
+| B 台账 / G20 / VACUOUS | ✅ 台账已建（`06-deferred-ledger.md`，37 条）；G20/VACUOUS 见 `d460ad1` | `build.yml:120` `EXPECTED_TESTS: '666'` 与实跑 **666** 双向一致 |
 | C 手动压缩 / 会话导入 | 内核壳已接（`ChatViewModel.kt:303,312` → `ConversationOps`） | 页面入口与真机待验 |
 | D 矩阵 | 部分开跑（长上下文/散文比值已有数据，见 `w6-provider-matrix.md` §六.2） | **判定"超没超窗"的格仍必须等 A 合并** |
+
+> ⚠️ **"666 tests 全绿"里含 8 条恒绿占位**（2026-11-02 实测，收口报告必须按此口径写）：
+> 8 个模块各有一个 `SmokeTest.kt`，内容均为 `assertTrue(true)`，KDoc 自陈「骨架占位……业务实现落地后由真实单测替换」。
+> **这 8 个模块现在都已有真实单测**（非 SmokeTest 文件数：app 1 / core-agent 28 / core-data 7 / core-design 3 /
+> core-mcp 2 / core-skills 4 / feature-chat 6 / feature-settings 2）⇒ 占位已可删且**不会触发 NO-SOURCE**。
+> ⇒ 正确口径是「**658 条行为判据 + 8 条模块级占位（恒绿，仅防 NO-SOURCE）**」，不是"666 条判据全绿"。
+> 若删除：`EXPECTED_TESTS` 必须**同一次提交**改成 658（`build.yml:120`，CI 在 `:511` 已写明这条要求）。
+>
+> **这一类失真的性质（与"读错对象"并列，但更危险）**：`EXPECTED_TESTS` 与实跑数**完全一致**（666 == 666），闸门全绿，
+> 没有任何一个数字是错的 —— **失真发生在"数字的含义"这一层，不在"数字的值"这一层**。所以任何只看值的判据都抓不到它；
+> 只能靠"这个数字是从哪来的"发现。推论：`EXPECTED_TESTS` **天然无法**判别"登记的这条是不是判据"，
+> 想让它有判别力只能从源头不给恒绿断言（删占位），加计数判据无效 —— **删是根治，改措辞是止血**。
 
 > 本文的 §2 是**设计依据**（含根因证伪），不是实施记录。实施与本文的偏差请回写本表。
 > 收口复核（2026-11-02）：T1/T2/T3/T7 四条**通过**；T7 的 `5 750` 门槛已改 `20 000`（`PreStepBudgetTest.kt:294`）。
