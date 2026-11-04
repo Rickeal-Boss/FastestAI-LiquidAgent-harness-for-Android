@@ -90,9 +90,9 @@ START_EPOCH="$(date +%s)"
 # =============================================================================
 # case 表：id|一句话说明|变异函数|期望证据（空 = 由变异函数动态写入 $EV_DIR/<id>）
 #
-# 覆盖口径 = arch-guard.sh 实际产出的**全部 26 个 ID**：
+# 覆盖口径 = arch-guard.sh 实际产出的**全部 28 个 ID**：
 #   G1 G1b G2 G3 G4a G4b G5a G5b G6 G7 G8 G9 G10 G11 G12 G13 G14 G15a G15b G15c
-#   G16 G17 G18 G19 G20 G21
+#   G16 G17 G18 G19 G20 G21 G22 G23
 #   （G1/G4/G5/G15 各拆了 a/b/c 子判据 —— 子判据是独立的断言，必须各自自证，
 #     否则拆出来的那一半会变成没人看的分支。故「G 编号」数 ≠ 判据数。）
 #   ⚠️ G15c 有**两条 case**（同一 ID，两种变异形态）：① 把 allowBackup 改成 true；
@@ -134,6 +134,8 @@ CASES=(
   "G18|引擎调用点收口：core-model 里调 engine.generate(|m_g18|__SelftestG18.kt:3:fun selftestDrive(engine: Any) { engine.generate(1) }"
   "G19|日志不得拼接凭据：core-engine 里 log(\"Authorization=\" + secret)|m_g19|__SelftestG19.kt:4  日志拼接凭据"
   "G20|挂账不丢失：从台账副本删掉 W3-05 那一行|m_g20|"
+  "G22|切换守卫被调用：删掉 SettingsViewModel 里全部 evaluateSwitch 调用行|m_g22|0 处「val x = evaluateSwitch("
+  "G23|自动压缩被调用：删掉 ChatViewModel 里 .autoCompactOnSettled( 调用行|m_g23|调用 = 0 处（要求恰好 1）"
 )
 
 if [ "$LIST_ONLY" -eq 1 ]; then
@@ -499,6 +501,29 @@ m_g20() {
   ev G20 "台账缺 ID（handoff 里有、台账里没有）：W3-05"
 }
 
+# ⚠️ m_g22/m_g23 必须定义在执行循环**之前**（bash 顺序执行；W7 实摔：插到文件尾部
+# 的 VACUOUS 段前 ⇒ batch 段 :625 调用时 command not found，逐条段报「变异未能注入」）。
+m_g22() {
+  # 删掉 SettingsViewModel 里全部「= evaluateSwitch(」赋值调用 ⇒ G22 必红。
+  local abs="$1/feature-settings/src/main/java/com/rickeal/liquidharness/feature/settings/SettingsViewModel.kt"
+  [ -f "$abs" ] || return 1
+  grep -q '= evaluateSwitch(' "$abs" || return 1
+  sed -i '/= evaluateSwitch(/d' "$abs"
+  if grep -q '= evaluateSwitch(' "$abs"; then return 1; fi   # 没删干净 ⇒ 无法归因
+  ev G22 "feature-settings/src/main 内 0 处「val x = evaluateSwitch(」赋值调用"
+}
+
+m_g23() {
+  # 删掉 ChatViewModel 里 .autoCompactOnSettled( 调用行 ⇒ G23 必红（调用 0 ≠ 1；
+  # 守卫已剥注释，KDoc 里的提及不计入，删调用后 calls=0）。
+  local abs="$1/feature-chat/src/main/java/com/rickeal/liquidharness/feature/chat/ChatViewModel.kt"
+  [ -f "$abs" ] || return 1
+  grep -q '\.autoCompactOnSettled(' "$abs" || return 1
+  sed -i '/\.autoCompactOnSettled(/d' "$abs"
+  if grep -q '\.autoCompactOnSettled(' "$abs"; then return 1; fi
+  ev G23 ".autoCompactOnSettled( 调用 = 0 处（要求恰好 1）"
+}
+
 # =============================================================================
 # fixture 归一化
 # =============================================================================
@@ -535,8 +560,11 @@ normalize_fixture() { # $1 = 树
 # =============================================================================
 preflight() { # $1 = 树
   local t="$1" m miss=()
-  for m in core-model core-net core-engine core-agent core-skills core-mcp \
-           core-data core-design feature-chat feature-settings feature-tools app; do
+  # W7：补齐 W6 漏掉的 core-kernel，并加入新模块 core-context（与 MODULES 14 个对齐）。
+  # 这份清单是「副本结构完整性」的前置断言，漏项不会判红但会让该模块的 case 无人看守。
+  for m in core-model core-net core-engine core-kernel core-context core-agent \
+           core-skills core-mcp core-data core-design feature-chat feature-settings \
+           feature-tools app; do
     [ -f "$t/$m/build.gradle.kts" ] || miss+=("$m/build.gradle.kts")
   done
   for m in settings.gradle.kts gradle/libs.versions.toml "$APP_MANIFEST" "$LINT_BASELINE" "$AGENT_RUNNER" "$LEDGER"; do

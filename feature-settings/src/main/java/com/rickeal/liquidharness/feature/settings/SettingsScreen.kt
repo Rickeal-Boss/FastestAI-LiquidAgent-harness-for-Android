@@ -276,18 +276,20 @@ private fun ValueText(text: String) {
 /**
  * 上下文窗口档位（W4）。
  *
- * ## 为什么是四个档位而不是一个输入框
+ * ## 为什么是六个档位而不是一个输入框
  *
  * 这个数字直接决定单次请求的**费用上限**（1M 档在 $0.15/M 的端点上约 ¥1/次）。
- * 自由输入框会让用户在不知道代价的情况下填一个七位数；四个档位把「能力 / 代价」
+ * 自由输入框会让用户在不知道代价的情况下填一个七位数；六个档位把「能力 / 代价」
  * 的取舍摊开在选择面上，且每个档位都能被截图核对。
+ * （W7 用户追加：192K / 256K 两档 —— 免费节点常见声明窗口落在 128K–512K 之间，
+ * 原四档跨度过粗。）
  *
  * 当前档位用「已选」标出而不是高亮整行：`GlassSettingRow` 没有选中态，
  * 为一个只在此处用到的样式再加一套行样式不划算。
  */
 @Composable
 private fun ContextWindowRows(current: Int, onPick: ((Int) -> Unit)?) {
-    val presets = listOf(32_000, 128_000, 512_000, 1_000_000)
+    val presets = listOf(32_000, 128_000, 192_000, 256_000, 512_000, 1_000_000)
     presets.forEachIndexed { index, value ->
         GlassSettingRow(
             title = windowLabel(value),

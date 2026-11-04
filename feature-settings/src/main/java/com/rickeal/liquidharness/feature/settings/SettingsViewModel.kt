@@ -3,6 +3,8 @@ package com.rickeal.liquidharness.feature.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.rickeal.liquidharness.core.agent.context.SwitchState
+import com.rickeal.liquidharness.core.agent.context.evaluateSwitch
 import com.rickeal.liquidharness.core.data.AppContainer
 import com.rickeal.liquidharness.core.data.EndpointSaveError
 import com.rickeal.liquidharness.core.data.EndpointSaveException
@@ -54,6 +56,22 @@ data class SettingsUiState(
      * 由**保存结果**驱动，不能由点击驱动。
      */
     val saveCompleted: Boolean = false,
+    /**
+     * W7 切换守卫：BLOCKED（当前会话装不进目标生效窗口）拦下时上屏的原因卡。
+     * null = 无。消费方调 [SettingsViewModel.consumeSwitchNotice]，由 `SwitchDialogs` 渲染。
+     */
+    val switchNotice: SwitchNotice? = null,
+    /**
+     * W7 切换守卫：放行（含 VACUOUS）后的**二次确认待办**。确认（[SettingsViewModel.confirmSwitch]）
+     * 才真正写盘；dismiss 丢弃。刻意不含 `SAVE_ENDPOINT` —— 明文 key 不进 state
+     * （类头纪律），编辑页保存只做 BLOCKED 硬拦（见 [SettingsViewModel.save]）。
+     */
+    val pendingSwitch: PendingSwitch? = null,
+    /**
+     * W7 切换守卫：按当前会话字符数预计算的「装不下」端点 id 集合，列表页据此置灰。
+     * `load()` 时用 [blockedEndpointIds] 现算，不持久化。
+     */
+    val blockedIds: Set<String> = emptySet(),
 )
 
 /**
@@ -88,6 +106,26 @@ class SettingsViewModel(
     fun save(endpoint: RemoteEndpoint, apiKey: String?) {
         viewModelScope.launch {
             _state.update { it.copy(saveError = null, saveCompleted = false) }
+            // W7 切换守卫：仅当这次保存会改变活跃端点（编辑当前端点 / 首存自动激活，
+            // `AppContainer.saveEndpoint` 对 activeId==null 会 setActive）时才判容量；
+            // 编辑非当前端点不改变本会话目标 ⇒ 不过守卫（否则长会话连「新增端点」都被挡）。
+            // CONFIRM 不走 pendingSwitch（明文 key 不进 state，类头纪律）：BLOCKED 硬拦、
+            // 放行直存；「编辑当前端点的放行二次确认框」因此裁掉，登记见 W7 波 handoff。
+            val activeIdNow = container.settings.activeEndpointId.first()
+            if (endpoint.id == activeIdNow || activeIdNow == null) {
+                val committed = container.sessionFootprint.current()
+                val verdict = evaluateSwitch(committed, endpoint, _state.value.maxContextTokens, 0f)
+                if (verdict.state == SwitchState.BLOCKED) {
+                    _state.update {
+                        it.copy(
+                            switchNotice = noticeOf(
+                                verdict, SwitchKind.SAVE_ENDPOINT, endpoint.id, committed, true,
+                            ),
+                        )
+                    }
+                    return@launch
+                }
+            }
             try {
                 container.saveEndpoint(endpoint, apiKey)
                 load()
@@ -116,10 +154,44 @@ class SettingsViewModel(
     }
 
     fun setActive(id: String) {
-        viewModelScope.launch {
-            container.settings.setActiveEndpointId(id)
-            load()
+        val target = _state.value.endpoints.firstOrNull { it.id == id }
+        if (target == null) {
+            // 目标端点不在清单里（竞态：刚被删）。set 一个悬空 id 会让下一次 run 建不出
+            // runner，保守拦下并刷新列表。
+            refresh()
+            return
         }
+        // W7：换活跃端点 = 换模型，三形态里最直接的一条。BLOCKED ⇒ 原因卡、不写盘；
+        // 其余（含 VACUOUS）⇒ 二次确认后才写（前缀缓存会从头重建，代价必须可见）。
+        guardSwitch(SwitchKind.SET_ACTIVE, target, _state.value.maxContextTokens, id)
+    }
+
+    /** 二次确认通过，真正写盘。密钥类动作（SAVE_ENDPOINT）不走这条（见 [save]）。 */
+    fun confirmSwitch() {
+        val pending = _state.value.pendingSwitch ?: return
+        _state.update { it.copy(pendingSwitch = null) }
+        viewModelScope.launch {
+            when (pending.kind) {
+                SwitchKind.SET_ACTIVE -> {
+                    container.settings.setActiveEndpointId(pending.endpointId)
+                    load()
+                }
+                SwitchKind.SET_WINDOW -> {
+                    val tokens = pending.tokens ?: return@launch
+                    container.settings.setMaxContextTokens(tokens)
+                    _state.update { it.copy(maxContextTokens = tokens) }
+                }
+                SwitchKind.SAVE_ENDPOINT -> Unit
+            }
+        }
+    }
+
+    fun dismissSwitch() {
+        _state.update { it.copy(pendingSwitch = null) }
+    }
+
+    fun consumeSwitchNotice() {
+        _state.update { it.copy(switchNotice = null) }
     }
 
     /**
@@ -162,6 +234,7 @@ class SettingsViewModel(
                 activeId = active,
                 maxContextTokens = window,
                 compressContext = compress,
+                blockedIds = blockedEndpointIds(list, container.sessionFootprint.current(), window),
                 loaded = true,
             )
         }
@@ -175,10 +248,18 @@ class SettingsViewModel(
      * 但改动后立刻回写 state，让用户看到选择已被记住。
      */
     fun setMaxContextTokens(tokens: Int) {
-        viewModelScope.launch {
-            container.settings.setMaxContextTokens(tokens)
-            _state.update { it.copy(maxContextTokens = tokens) }
+        val activeId = _state.value.activeId
+        val target = activeId?.let { id -> _state.value.endpoints.firstOrNull { it.id == id } }
+        if (target == null) {
+            // 无活跃端点：档位只是本应用的钱包上限，不存在「当前会话装不装得下」语义，直接写。
+            viewModelScope.launch {
+                container.settings.setMaxContextTokens(tokens)
+                _state.update { it.copy(maxContextTokens = tokens) }
+            }
+            return
         }
+        // W7：调档位 = 改当前端点的生效硬预算。降档可能让现有会话装不下 ⇒ 过守卫。
+        guardSwitch(SwitchKind.SET_WINDOW, target, tokens, activeId)
     }
 
     /**
@@ -186,12 +267,44 @@ class SettingsViewModel(
      *
      * 与 [setMaxContextTokens] 同一条纪律：写盘后立刻回写 state（否则开关会「弹回去」，
      * 用户以为没生效）。真正生效点在下一次建 runner 时 —— `AppContainer.agentRunnerFor`
-     * 用 `AgentPolicy(compressContext = ...)` 读它（那一行由主理人接）。
+     * 用 `AgentPolicy(compressContext = ...)` 读它（W6 已接线，台账 W6-01 CLOSED）。
      */
     fun setCompressContext(enabled: Boolean) {
         viewModelScope.launch {
             container.settings.setCompressContext(enabled)
             _state.update { it.copy(compressContext = enabled) }
+        }
+    }
+
+    /**
+     * W7 三处写入点共用的判定 + 分流。`calibratedCharsPerToken = 0f` 是**刻意的**：
+     * 设置页没有在途 run，无会话级标定真值 ⇒ floor 1.8 保守档（reason 带
+     * `char_floor_unmeasured`），不许伪造真值。BLOCKED ⇒ 原因卡、不写盘；
+     * 其余（含 VACUOUS）⇒ 二次确认待办、不硬绿。
+     */
+    private fun guardSwitch(
+        kind: SwitchKind,
+        target: RemoteEndpoint,
+        maxContextTokens: Int,
+        targetId: String?,
+    ) {
+        val committed = container.sessionFootprint.current()
+        val verdict = evaluateSwitch(committed, target, maxContextTokens, 0f)
+        when (decideSwitch(verdict).action) {
+            SwitchAction.BLOCK -> _state.update {
+                it.copy(switchNotice = noticeOf(verdict, kind, targetId, committed, true))
+            }
+            SwitchAction.CONFIRM -> _state.update {
+                it.copy(
+                    pendingSwitch = PendingSwitch(
+                        kind = kind,
+                        endpointId = targetId,
+                        tokens = if (kind == SwitchKind.SET_WINDOW) maxContextTokens else null,
+                        vacuous = verdict.state == SwitchState.VACUOUS,
+                        reason = verdict.reason,
+                    ),
+                )
+            }
         }
     }
 

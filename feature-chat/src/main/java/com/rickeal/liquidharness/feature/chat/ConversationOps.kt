@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.feature.chat
 
 import com.rickeal.liquidharness.core.agent.context.contextBudgetTokens
+import com.rickeal.liquidharness.core.agent.context.shouldApply
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
 import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.data.AppContainer
@@ -12,6 +13,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/**
+ * 自动压缩本身的字符成本当量（分隔卡 / 切点指针 / 一行落账诊断串）。
+ *
+ * 取 256：与 `MIN_SAVINGS_CHARS = 460` 同量级且小于其一半，保证「净收益达阈值」
+ * 不会被成本本身吃掉。这是**字符量纲**，与 W6 的 L3 硬预算同源，不是 token 估算，
+ * 也不调用 `TokenEstimator` 自证（W5-01 的 33.8K 假绿形态）。
+ */
+private const val AUTO_COMPACT_COST_CHARS = 256
 
 /**
  * 「整段会话级」的两个动作：**手动压缩**与**会话导入**。
@@ -54,6 +64,76 @@ internal class ConversationOps(
     /** 事件里带 `contextLimitHint` 时写回。**异步、静默**，不阻塞事件处理。 */
     fun offerContextLimit(endpointId: String?, verified: Int?) {
         scope.launch { limitWriteback.offer(endpointId, verified) }
+    }
+
+    /**
+     * 会话级自动压缩（W7，用户裁决 (a)：正常结束只是**评估时点**，真压由体积 + 收益阈值定）。
+     *
+     * ## 唯一调用点
+     *
+     * `ChatViewModel.runOnce` 的 `collect` 内 `if (shouldEvaluate(event)) ops.autoCompactOnSettled()`
+     * —— **绝不挂 `finally`**（`:395-403` 无条件置 `isStreaming = false`），也不能只看
+     * streaming 归零：`EventReducer.kt:62/64` 的 `Finished` 与 `Cancelled` 共用 `finish(...)`，
+     * 只有 `Finished(ModelStopped)` 才是「正常运行结束」。CI 席 G23 会钉
+     * `.autoCompactOnSettled(` 恰好一处 + selftest 变异自证（删调用 ⇒ 判红）。
+     *
+     * ## 与手动压缩的区别（不许照抄静默返回）
+     *
+     * [compressContext] 的三条前置拒绝静默 return（那是用户主动点按钮，UI 已禁用入口）；
+     * 自动路径每次评估**都要落一条可见的账**（noop 也写 reason），否则「评估了但没压」
+     * 与「根本没接上」在日志上无法区分（W6 `ConversationOps.kt:88` 的教训）。
+     *
+     * 开关 `settings.compressContext` 关 ⇒ 本策略直接 return（内核那套由 `RunnerKey` 管），
+     * **手动压缩仍可用**：显式用户动作不受自动策略约束。
+     *
+     * ## 量纲分工
+     *
+     * 触发 / 收益判据 [shouldApply] 用**字符**（`COMPACT_TRIGGER_CHARS` / `MIN_SAVINGS_CHARS`）；
+     * 压缩目标 `compressBubbles(budgetTokens)` 仍走现役 **token 软预算**（与手动同源）。
+     * 两者各有出处，不可混用：字符量纲保证「不依赖估算器正确性」，token 预算保证
+     * 「压完不会立刻再触发内核自动压缩」。
+     */
+    fun autoCompactOnSettled() {
+        val snapshot = state.value
+        // ⚠️ 不判 `isStreaming`：本方法只在 `collect` 收到 `Finished(ModelStopped)` 时被调，
+        // 而 `EventReducer.finish` 不清 streaming（清它是 `runOnce` 的 `finally`，发生在
+        // collect 完成之后）⇒ 此刻 `isStreaming` 必为 true。W7 真机实摔：判了它，
+        // 自动压缩被静默早退，连 noop 账都不落（`files/harness/logs` 目录根本不创建）。
+        if (snapshot.bubbles.isEmpty()) return
+        scope.launch {
+            if (!container.settings.compressContext.first()) return@launch
+            val endpoint = container.activeEndpoint() ?: return@launch
+            val windowCap = runCatching { container.settings.maxContextTokens.first() }
+                .getOrDefault(AgentPolicy().maxContextTokens)
+            val budget = contextBudgetTokens(endpoint, AgentPolicy(maxContextTokens = windowCap))
+            // 试算：compressBubbles 是纯 suspend 函数，不改 state；只有 shouldApply 判
+            // applied=true 才把产物落到 compressedUpTo（未压轮次保留严格前缀 ⇒ 缓存可能命中）。
+            val outcome = compressBubbles(snapshot.bubbles, budget)
+            val committedChars = committedCharsOf(snapshot.bubbles, snapshot.compressedUpTo)
+            val savingChars = committedChars - committedCharsOf(snapshot.bubbles, outcome.compressedUpTo)
+            val decision = shouldApply(
+                committedChars,
+                savingChars,
+                AUTO_COMPACT_COST_CHARS,
+                snapshot.compressedUpTo != null,
+            )
+            if (!decision.applied) {
+                val line = "auto_compact=noop reason=" + decision.reason
+                AgentLogStore.warn(line)
+                persist(line)
+                return@launch
+            }
+            val ledger = "auto_compact dropped=" + outcome.droppedMessages +
+                " kept=" + outcome.keptMessages.size + " cache_invalidated=true"
+            AgentLogStore.info(ledger)
+            persist(ledger)
+            state.update {
+                it.copy(
+                    compressedUpTo = outcome.compressedUpTo,
+                    compressedSavingTokens = outcome.savingTokens,
+                )
+            }
+        }
     }
 
     /**

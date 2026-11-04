@@ -38,9 +38,10 @@
 
     <!-- 自动压缩开关（W6 调试项；仅 debuggable 安装包可见）。
          开关 checked 语义与标题同向：checked = 自动压缩开着。
+         W7：这个开关同时控制内核每轮压缩与正常结束后的会话级压缩（两处），
          副标题必须写明关掉之后的代价（超出窗口直接 400），不许只写「仅用于测试」。 -->
     <string name="settings_debug_auto_compress">自动压缩上下文（调试）</string>
-    <string name="settings_debug_auto_compress_hint">关闭后超出窗口的请求会直接 400，仅用于长上下文验证</string>
+    <string name="settings_debug_auto_compress_hint">同时控制内核每轮压缩与正常结束后的会话级压缩（两处）；关闭后超出窗口的请求会直接 400，仅用于长上下文验证</string>
 
     <!-- 会话导入（W6 调试通道；仅 debuggable 安装包可见，见 SessionImportRow） -->
     <string name="settings_import_session">导入会话（调试）</string>    <string name="settings_import_session_hint">JSONL（每行 role / text）或 markdown（## user / ## assistant）。上限：8 MiB、5000 条、单条 4 MiB</string>
@@ -82,4 +83,16 @@
     <string name="settings_save_error_unsafe_url">这个地址被安全策略拒绝：只允许公网 https，且不能带账号密码。</string>
     <string name="settings_save_error_secret_write_failed">API Key 没能写入本机加密存储，端点未保存。请重试或检查系统密钥库。</string>
     <string name="settings_save_error_save_failed">保存失败（写入本机配置出错），端点未保存。</string>
+
+    <!-- W7 切换守卫：三处写入点共用的拒绝 / 二次确认文案。
+         措辞复用 feature-chat 的 chat_compress_warning（压缩的固有代价），不新造语义。 -->
+    <string name="settings_switch_blocked_title">无法切换</string>
+    <string name="settings_switch_blocked_body">当前会话 %1$d 字符 > 目标可用 %2$d 字符。可先开新对话、手动压缩到范围内后重试，或换更大的窗口档位。\n诊断：%3$s</string>
+    <string name="settings_switch_blocked_body_fallback">当前会话装不进目标窗口。可先开新对话、手动压缩到范围内后重试，或换更大的窗口档位。\n诊断：%1$s</string>
+    <string name="settings_switch_confirm_title">确认切换</string>
+    <string name="settings_switch_confirm_body">切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。</string>
+    <string name="settings_switch_confirm_ok">确认切换</string>
+    <string name="settings_switch_vacuous_hint">目标窗口尚未经实测验证，请确认后再切换。\n诊断：%1$s</string>
+    <string name="settings_action_set_active_blocked">装不下</string>
+    <string name="settings_action_close">知道了</string>
 </resources>

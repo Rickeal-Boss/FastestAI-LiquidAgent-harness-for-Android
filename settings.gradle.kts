@@ -25,13 +25,18 @@ dependencyResolutionManagement {
 
 rootProject.name = "FastestAI-Harness"
 
-// ---- 13 个模块，按依赖拓扑排序（下层在前） ----
+// ---- 14 个模块，按依赖拓扑排序（下层在前） ----
 include(":core-model")
 include(":core-net")
 // :core-engine 在 core-net 之后、core-agent 之前：依赖 core-model + core-net，
 // 被 core-agent 的 LlmEngine 端口反向实现（core-agent ← core-engine，方向不可逆）。
 include(":core-engine")
 include(":core-kernel")
+// W7 开波第一件事（关闭挂账 W6-07）：context/ 从 :core-kernel 下沉为 :core-context。
+// 方向单向固定为 core-context → core-kernel（policy/log 留在原处）：BudgetFormula 依赖
+// AgentPolicy、两个压缩器依赖 AgentLogStore，没有这条边编译立刻红。放在 core-agent 之前
+// 是因为 core-agent 同时 api() 依赖两者，拓扑上必须先声明下层。
+include(":core-context")
 include(":core-agent")
 include(":core-skills")
 include(":core-mcp")

@@ -119,6 +119,8 @@ fun NavGraphBuilder.settingsGraph(
             // 非 debug 时 screen 不渲染该行（「回调 null = 不摆假入口」的既有纪律）。
             onSetCompressContext = if (debugTools) viewModel::setCompressContext else null,
         )
+        // W7 切换守卫：档位切换的 BLOCKED 原因卡与放行二次确认（setMaxContextTokens 内判定）。
+        SwitchDialogs(state = state, viewModel = viewModel)
     }
     // 子图拆分只为守 G11（单方法 ≤120 行）；路由语义不变，仍挂在同一个 graph 下。
     endpointGraph(navController, container)
@@ -147,6 +149,8 @@ private fun NavGraphBuilder.endpointGraph(
             onSetActive = viewModel::setActive,
             onDelete = viewModel::delete,
         )
+        // W7 切换守卫：「设为当前」的 BLOCKED 原因卡与放行二次确认。
+        SwitchDialogs(state = state, viewModel = viewModel)
     }
 
     composable(
@@ -192,6 +196,8 @@ private fun NavGraphBuilder.endpointGraph(
                 navController.popBackStack()
             },
         )
+        // W7 切换守卫：编辑当前端点 / 首存时容量不足的 BLOCKED 原因卡（save 内判定）。
+        SwitchDialogs(state = state, viewModel = viewModel)
     }
 }
 

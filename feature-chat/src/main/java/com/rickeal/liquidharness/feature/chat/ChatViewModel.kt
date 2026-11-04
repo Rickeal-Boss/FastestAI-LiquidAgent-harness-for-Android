@@ -8,6 +8,7 @@ import com.rickeal.liquidharness.core.agent.AgentRunner
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalCache
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
+import com.rickeal.liquidharness.core.agent.context.shouldEvaluate
 import com.rickeal.liquidharness.core.data.AppContainer
 import com.rickeal.liquidharness.core.data.AttachmentImporter
 import com.rickeal.liquidharness.core.model.AgentEvent
@@ -108,6 +109,7 @@ class ChatViewModel(
     private val ops = ConversationOps(container, _state, viewModelScope)
 
     init {
+        observeSessionFootprint(state, container, viewModelScope)
         viewModelScope.launch { refreshEndpoint() }
         // MCP 工具清单同步：一次会话一次（失败不影响对话）。
         // 放在 init 而不是每次 send：远端 `tools/list` 是网络往返，每发一条消息等它一次
@@ -389,6 +391,7 @@ class ChatViewModel(
                     if (event is AgentEvent.Failed) {
                         ops.offerContextLimit(endpoint.id, event.contextLimitHint)
                     }
+                    if (shouldEvaluate(event)) ops.autoCompactOnSettled()
                     onEvent(event, generation)
                 }
             }

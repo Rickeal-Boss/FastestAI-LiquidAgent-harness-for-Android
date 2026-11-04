@@ -119,6 +119,9 @@ fun EndpointListScreen(
                     EndpointCard(
                         endpoint = endpoint,
                         active = endpoint.id == state.activeId,
+                        // W7：按当前会话体积预计算的「装不下」集合 —— 文案换成「装不下」，
+                        // 点击仍走守卫（会弹原因卡），不禁用：让用户知道为什么。
+                        blocked = endpoint.id in state.blockedIds,
                         onClick = { onEdit(endpoint.id) },
                         onSetActive = { onSetActive(endpoint.id) },
                         onDelete = { onDelete(endpoint.id) },
@@ -139,6 +142,7 @@ fun EndpointListScreen(
 private fun EndpointCard(
     endpoint: RemoteEndpoint,
     active: Boolean,
+    blocked: Boolean,
     onClick: () -> Unit,
     onSetActive: () -> Unit,
     onDelete: () -> Unit,
@@ -178,7 +182,10 @@ private fun EndpointCard(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (!active) {
                     GlassChip(
-                        text = stringResource(R.string.settings_action_set_active),
+                        text = stringResource(
+                            if (blocked) R.string.settings_action_set_active_blocked
+                            else R.string.settings_action_set_active,
+                        ),
                         onClick = onSetActive,
                     )
                 }

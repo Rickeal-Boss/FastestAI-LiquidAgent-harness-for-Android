@@ -40,6 +40,11 @@ dependencies {
     // 处置是拆分，不是调大上限）。用 api 而非 implementation：TurnContext /
     // AgentPolicy / 压缩器的类型出现在下游模块的公开签名里，必须可见。
     api(project(":core-kernel"))
+    // W7（关闭挂账 W6-07）：kernel 1790/1800 触顶 ⇒ 再把 context/ 下沉为 :core-context，
+    // kernel 只留 policy/ + log/。core-agent 与 feature-chat 直接 import core.agent.context，
+    // 故这里必须 api() 暴露新模块（下游靠 api 传递可见）。:core-context 自身
+    // api(:core-kernel)，依赖链 core-model → kernel → context → agent 单向无环。
+    api(project(":core-context"))
 
     // ⚠️ 刻意**不依赖** :core-net / :core-engine / :core-skills / :core-mcp。
     // 方向是「适配器 → 端口」：那四个模块依赖 :core-agent（或只依赖 :core-model），

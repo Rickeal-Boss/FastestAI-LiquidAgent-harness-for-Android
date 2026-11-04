@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# arch-guard.sh — LiquidAgent harness-v2 架构守卫（26 条判据，表驱动）
+# arch-guard.sh — LiquidAgent harness-v2 架构守卫（28 条判据，表驱动）
 #
 # 用法：
-#   bash scripts/arch-guard.sh            # 跑全部 26 条判据
+#   bash scripts/arch-guard.sh            # 跑全部 28 条判据
 #   bash scripts/arch-guard.sh --verbose  # 额外回显每条扫了多少文件
 #   bash scripts/arch-guard.sh --help
 #
@@ -142,7 +142,7 @@ done
 # ---- G9：模块清单（必须与 settings.gradle.kts 的 include 数、实际目录数三者相等）
 # 新增模块时**先改这里**，G9 会立刻告诉你另外两处是否同步。
 MODULES=(
-  core-model core-net core-engine core-kernel core-agent core-skills core-mcp
+  core-model core-net core-engine core-kernel core-context core-agent core-skills core-mcp
   core-data core-design feature-chat feature-settings feature-tools app
 )
 
@@ -153,17 +153,38 @@ LINE_CAPS=(
   "core-model|300|2600"
   "core-net|400|1200"
   "core-engine|500|2600"
-  # W5：core-agent 实测 6495/6500 触顶 ⇒ 把 policy/log/context 三层下沉到 :core-kernel
-  # （同包名搬迁，零 import 改动）。仍是「拆分而不是调大上限」。
-  # 1800 而非 1400：只搬 context 时编译红（它反向依赖 policy 与 log），三层合计 1557。
-  "core-kernel|400|1800"
+  # W5：core-agent 6495/6500 触顶 ⇒ policy/log/context 三层下沉到 :core-kernel。
+  # W7（关闭挂账 W6-07）：kernel 1790/1800（余 10）触顶 ⇒ 再把 context/ 下沉为
+  # :core-context，kernel 只留 policy(235) + log(168) = 403。
+  #   · 拆分开销 +100：两者之和原 1900 = 原 1800 + 100（两个模块各自文件头 + KDoc）；
+  #     TOTAL_LINE_CAP 42500 保持不动 —— 拆分不是扩容（W5 铁律 3 的真判据是总量）。
+  #   · 禁止「凑 1800」的分法（那会给 core-context 只留 13 行 = 把死结搬家）：
+  #     450（403 实占，余 47）+ 1450（1387 实占，余 63），各自都留真实余量。
+  #   · W7 新增功能 +200：core-context 1450 → 1650，容纳 W7 的 SwitchGuard.kt /
+  #     SettledCompressPolicy.kt（共 185 行真实功能代码 + KDoc 证据链）。
+  #     ⚠️ 与上面的 +100 拆分开销**分开记账**：1900 → 2100 = 1800 + 100(拆分) + 200(功能)。
+  #     1450 是 W6-07 按「搬迁 1387 + 拆分开销」给的，从未给新功能留空间；
+  #     保留源码 KDoc 比压成 41 行更有价值。TOTAL_LINE_CAP 42500 仍不动
+  #     （全仓 main 以 S2 全量重跑日志为准；W6 历史基线 34983 / 42500），
+  #     故不构成「把拆分当扩容」。
+  #   · context 仍反向依赖 policy/log ⇒ :core-context → :core-kernel 单向，
+  #     反方向由 G6 的禁止边钉住（见 FORBIDDEN_EDGES）。
+  "core-kernel|400|450"
+  "core-context|400|1650"
   "core-agent|400|6500"
   "core-skills|300|1000"
   "core-mcp|400|1400"
   "core-data|400|4500"
   "core-design|600|12600"
-  "feature-chat|500|3500"
-  "feature-settings|500|3000"
+  # W7 功能增量 +400/+400：本波要在这两个模块接「会话级自动压缩」「模型切换守卫」
+  # 「committedChars 纯函数」「切换确认框与原因文案」。原 3500/3000 是 W2U 搬完 UI 后
+  # 按存量给的余量（41 / 79 行），从未给新功能留空间。
+  # ⚠️ 与 core-context 的 +200 同属「W7 功能增量」合计 +1000，与 W6-07 的
+  #    +100 拆分开销**分开记账**；TOTAL_LINE_CAP 42500 一律不动，全仓 main 仍约
+  #    3.5 万 / 42500。单文件 500 上限不动 ⇒ 新逻辑必须外提新文件
+  #    （ChatViewModel 484/500 余 16，只许加一行委托）。
+  "feature-chat|500|3900"
+  "feature-settings|500|3400"
   # W4 从 :feature-settings 拆出（设置模块 3451 > 3000 触顶 ⇒ 拆分，不是调大上限）。
   # 单文件 600 与 feature-settings 同档：两个页面的原文件都在 300~480 行，
   # 600 是「单个 Screen 文件」的合理上限；2600 是模块预算，不是「先给足再填」。
@@ -177,6 +198,9 @@ LINE_CAPS=(
 # W5 拆出 :core-kernel 时**没有**调高本常量：那 1198 行是从 core-agent 搬过来的，
 # 全仓实际总量没变。给新模块加预算却同时抬高总量上限，等于把「拆分」当成
 # 「扩容」用 —— 拆分只该让单个模块变轻，不该让全仓变胖。
+# W7 拆出 :core-context 同样**没有**调高：1387 行是从 core-kernel 搬过来的，
+# 全仓 main 的历史基线为 34983 / 42500（W6 时点，逐文件累加与 cat 管道两法对拍一致，
+# 209 文件）；W7 新增功能后的现值以 S2 全量重跑日志为准，不在此写死。
 TOTAL_LINE_CAP=42500
 
 # ---- G6：模块边界（禁止的 Gradle 依赖边）
@@ -190,9 +214,13 @@ FORBIDDEN_EDGES=(
   "core-model|core-net,core-engine,core-agent,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
   "core-net|core-agent,core-engine,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
   "core-engine|core-agent,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
-  # W5 新增 :core-kernel —— 上下文工程只依赖纯契约 :core-model，
+  # W5 新增 :core-kernel —— 纯逻辑基座只依赖纯契约 :core-model，
   # 不认识引擎/网络/持久化；驱动引擎的 EngineBackedSummarizer 刻意留在 core-agent/loop/（G18）。
-  "core-kernel|core-net,core-engine,core-agent,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
+  # W7：kernel **禁止**反向依赖 :core-context（context → kernel 单向，成环即编译失败）。
+  "core-kernel|core-context,core-net,core-engine,core-agent,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
+  # W7 新增 :core-context —— 只允许 :core-kernel（policy/log 留在原处）与 :core-model
+  # （经 kernel 的 api 传递可见）。其余一律禁止，防止把内核回环或反向依赖 UI。
+  "core-context|core-net,core-engine,core-agent,core-skills,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
   "core-agent|core-net,core-engine,core-data,core-design,core-skills,core-mcp,feature-chat,feature-settings,feature-tools,app"
   "core-skills|core-net,core-engine,core-mcp,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
   "core-mcp|core-engine,core-skills,core-data,core-design,feature-chat,feature-settings,feature-tools,app"
@@ -283,15 +311,22 @@ KTS_GLOB=(--include=*.kts --include=*.kt)
 #    加模块时改的是 `MODULES` / `LINE_CAPS` / G9 三处，**没人回头看 MAIN_PATHS**。
 #    ⇒ 纪律：**新增模块时同步检查 MAIN_PATHS / CJK_SCAN_PATHS**（G9 只保证模块数一致，
 #       不保证每个模块都被扫）。
+#    W7 按同一纪律补 `core-context/src/main`，并同步补齐 CJK_SCAN_PATHS（见该处注释）。
 MAIN_PATHS=(core-model/src/main core-net/src/main core-engine/src/main core-agent/src/main
-            core-kernel/src/main
+            core-kernel/src/main core-context/src/main
             core-skills/src/main core-mcp/src/main core-data/src/main core-design/src/main
             feature-chat/src/main feature-settings/src/main feature-tools/src/main
             app/src/main)
 # G16 只扫业务模块的 main 源集（app 的文案允许进 strings.xml，且 app 不在棘轮范围）
+# W7 按头部纪律「新增模块时同步检查 MAIN_PATHS / CJK_SCAN_PATHS」补齐三处：
+#   · core-context/src/main —— 新模块，不能对 G16 失明；
+#   · core-kernel/src/main、feature-tools/src/main —— W6 补 MAIN_PATHS 时漏掉的历史项。
+# 扩面前用 G16 等价逻辑（awk 剥注释 → grep -P CJK 区）预检：候选行 55 / 1 / 16，
+# CJK 命中全部为 0 ⇒ 扩面不引入新红，G16 基线 0 保持不动。
 CJK_SCAN_PATHS=(core-model/src/main core-net/src/main core-engine/src/main core-agent/src/main
+                core-kernel/src/main core-context/src/main
                 core-skills/src/main core-mcp/src/main core-data/src/main core-design/src/main
-                feature-chat/src/main feature-settings/src/main)
+                feature-chat/src/main feature-settings/src/main feature-tools/src/main)
 
 OK_COUNT=0
 VIOLATION_COUNT=0
@@ -1404,14 +1439,66 @@ g21() {
 }
 
 # =============================================================================
+# G22 / G23：W7 新增的两个「被调用」判据（W4 铁律：新增组件必须配被调用判据）。
+# =============================================================================
+# G22：切换守卫（容量判据）被 UI 行使。`evaluateSwitch` 是 :core-context 顶层函数，
+# UI 席约定写入点统一写 `val verdict = evaluateSwitch(...)` 的**赋值形态**。
+# 存在型判据：feature-settings/src/main 至少 1 处。钉赋值形态而非裸符号 ——
+# KDoc / 测试 / import 里也会出现裸名（假绿）。
+g22() {
+  local id="G22" desc="切换守卫被调用（evaluateSwitch 赋值形态）"
+  local n
+  n=$(grep -rnE '^[[:space:]]*val[[:space:]]+[A-Za-z0-9_]+[[:space:]]*=[[:space:]]*evaluateSwitch\(' \
+      feature-settings/src/main --include='*.kt' 2>/dev/null \
+      | sed 's/^[^:]*:[0-9]*://' | grep -cvE '^[[:space:]]*(\*|//)')
+  scan_declare "$n"
+  if [ "$n" -ge 1 ]; then
+    guard_ok "$id" "$desc" "feature-settings 内 evaluateSwitch 赋值调用 = $n 处"
+  else
+    guard_violation "$id" "$desc" \
+      "feature-settings/src/main 内 0 处「val x = evaluateSwitch(」赋值调用" \
+      "⇒ 切换守卫（容量判据）没有任何 UI 写入点行使 ⇒「装不下禁止切换」是空转。" \
+      "⇒ 处置：在 SettingsViewModel 三处写入点接 evaluateSwitch，或连策略与测试一起删除。" \
+      "   不要靠放宽本守卫变绿（知识库：守卫报红 ≠ 守卫真命中）。"
+  fi
+}
+
+# G23：会话级自动压缩被调用，且**唯一**调用点在事件分流内。
+# `autoCompactOnSettled` 定义在 ConversationOps（`fun ` 前缀，不含 `.`），
+# 唯一合法调用点 = ChatViewModel.runOnce 的 collect 内 `.autoCompactOnSettled()`；
+# `shouldEvaluate(` 是分流入口（只认 Finished(ModelStopped)）。两件同时成立才 OK。
+g23() {
+  local id="G23" desc="会话级自动压缩被调用（唯一调用点 + 事件分流）"
+  local calls evals
+  # 剥「文件:行号」前缀与注释行（KDoc 里也会提到这个方法名，W7 实摔：不剥 ⇒ 3 处假违规；
+  # 二次实摔：grep -r 不带 -n 时输出无行号，sed 的「path:行号:」剥离落空 ⇒ 管道整体失效）。
+  calls=$(grep -rn '\.autoCompactOnSettled(' feature-chat/src/main --include='*.kt' 2>/dev/null \
+      | sed 's/^[^:]*:[0-9]*://' | sed 's/^[[:space:]]*//' \
+      | grep -cvE '^(\*|/\*|//)')
+  evals=$(grep -rn 'shouldEvaluate(' feature-chat/src/main --include='*.kt' 2>/dev/null \
+      | sed 's/^[^:]*:[0-9]*://' | sed 's/^[[:space:]]*//' \
+      | grep -cvE '^(\*|/\*|//)')
+  scan_declare "$calls"
+  if [ "$calls" -eq 1 ] && [ "$evals" -ge 1 ]; then
+    guard_ok "$id" "$desc" ".autoCompactOnSettled( = $calls 处（唯一）、shouldEvaluate( = $evals 处"
+  else
+    guard_violation "$id" "$desc" \
+      ".autoCompactOnSettled( 调用 = $calls 处（要求恰好 1）；shouldEvaluate( = $evals 处（要求 ≥1）" \
+      "⇒ 自动压缩要么没接上（空转，W4 第 5 例形态），要么被多处调用（重复评估/重复压缩）。" \
+      "⇒ 处置：唯一调用点 = ChatViewModel.runOnce 的 collect 内 if (shouldEvaluate(event)) 一行；" \
+      "   绝不挂 finally（它无条件清 streaming，会把取消/失败误判成正常结束）。"
+  fi
+}
+
+# =============================================================================
 # 主流程
 # =============================================================================
-echo "================ arch-guard（26 条） ================"
+echo "================ arch-guard（28 条） ================"
 echo "root = $ROOT"
 hr
 g1; g2; g3; g4; g5; g6; g7; g8; g9
 g10; g11; g12; g13; g14; g15; g16; g17; g18; g19
-g20; g21
+g20; g21; g22; g23
 hr
 printf 'OK=%s  VACUOUS=%s  VIOLATION=%s  SELF_FAULT=%s\n' \
   "$OK_COUNT" "$VACUOUS_COUNT" "$VIOLATION_COUNT" "$FAULT_COUNT"

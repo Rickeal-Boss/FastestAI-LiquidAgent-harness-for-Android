@@ -65,6 +65,14 @@ class AppContainer(context: Context) {
 
     val settings: SettingsRepository = SettingsRepository.create(appContext)
 
+    /**
+     * 当前会话已物化上下文的字符数（W7）。`feature-chat/ChatViewModel` 写、
+     * `feature-settings/SettingsViewModel` 读 —— 两端分属不同 `feature-*` 且
+     * `AGENTS.md` §四禁止 feature-* 互依，故经本进程级快照中转。
+     * 详见 [SessionFootprintStore] 的语义边界。
+     */
+    val sessionFootprint: SessionFootprintStore = SessionFootprintStore()
+
     val logs: AgentLogFileStore = AgentLogFileStore(File(dataDir, "logs"))
 
     private val transport: HttpTransport = HttpTransport()

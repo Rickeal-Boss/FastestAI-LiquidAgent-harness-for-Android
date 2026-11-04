@@ -155,10 +155,10 @@ class ContextBudget(
         val estimated = estimatePrompt(ctx, full, toolTokens)
         observePrefix(ctx, systemText, full, specs, estimated)
         if (!ctx.policy.compressContext) {
-            // 压缩总开关是**第 4 个「声明了没消费者」的字段**（`AgentPolicy.compressContext`：
-            // 默认 true，全仓零写入点）。一旦有人把它接进设置页并默认关，全部压缩会
-            // **静默消失**且无任何日志 —— 那是最难排查的形态（账单不会变，只是每次请求都超窗）。
-            // 这一行就是那种情况下的唯一证据，别删。
+            // 压缩总开关（`AgentPolicy.compressContext`，默认 true）。W6 已把设置页开关
+            // → SettingsRepository → AppContainer → AgentPolicy 全链接线（台账 W6-01
+            // 已 CLOSED），不再是「声明了没消费者」。关掉后本行日志是唯一可见证据，别删：
+            // 没有它，压缩静默跳过只能靠账单猜（账单不会变，只是每次请求都超窗）。
             AgentLogStore.info("compress=disabled_by_policy prompt=" + estimated + " budget=" + budget)
             return full
         }
