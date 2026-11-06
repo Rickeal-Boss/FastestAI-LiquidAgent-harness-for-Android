@@ -17,7 +17,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -165,14 +164,12 @@ private fun ChatRoute(
     )
     // W8（NEW-D / 台账 W3-07）：图片入口闸门 —— 端点声明支持图片输入才接回调；
     // 未启用时**保留禁用态入口 + 无障碍原因**（不静默隐藏，D6 正确文本）。
-    // W9-00 P0-3：不再拿 state.endpointLabel 作 effect key —— 编辑当前端点只勾图片时
-    // 显示名不变 ⇒ effect 不重跑 ⇒ 返回对话页入口仍禁用。改成由端点快照直接派生：
-    // key ≥ endpointId + supportsVision，重返本页 / 活跃端点变化都会重读端点内容。
-    val activeId by container.settings.activeEndpointId.collectAsStateWithLifecycle(null)
-    val endpointGate = produceState<RemoteEndpoint?>(initialValue = null, activeId, container) {
-        value = container.activeEndpoint()
-    }
-    val visionEnabled = endpointGate.value?.supportsVision == true
+    // W9-01 P1-3：活跃端点的能力位（supportsVision）必须进重读判据。旧实现 key=(activeId, container)
+    // 漏掉能力位 ⇒ 编辑当前端点只勾图片（activeId 不变、不导航）时入口仍禁用。
+    // 改成直接 collect 活跃端点流（EndpointStore 落盘即更新 ⇒ 能力变化立即重读；
+    // AppContainer.activeEndpointFlow 由 activeEndpointId + 端点清单组合而成）。
+    val endpointGate by container.activeEndpointFlow.collectAsStateWithLifecycle(null)
+    val visionEnabled = endpointGate?.supportsVision == true
 
     ChatScreen(
         state = state,

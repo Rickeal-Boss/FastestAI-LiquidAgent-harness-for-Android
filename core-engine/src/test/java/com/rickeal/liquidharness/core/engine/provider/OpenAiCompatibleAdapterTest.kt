@@ -593,6 +593,26 @@ class OpenAiCompatibleAdapterTest {
         assertEquals(40, adapter.buildBody(request(endpoint = clean))["top_k"]!!.jsonPrimitive.int)
     }
 
+    /**
+     * W9-NEW-1：科学计数法溢出（"1e999" ⇒ Double.POSITIVE_INFINITY）必须按字符串保留，
+     * 不能转成非有限 Double（否则 buildBody 编码时抛异常 ⇒ 整次 run 崩）。
+     * NON_FINITE_SCALARS 只挡字面的 "inf"/"nan"，挡不到 "1e999"，故 `coerceScalar` 的
+     * `isFinite()` 守卫是这道防线的关键补丁。
+     *
+     * **红态自证**：把 `coerceScalar` 改回 `raw.toDoubleOrNull() != null -> JsonPrimitive(raw.toDouble())`，
+     * 本条必红（编码 +Infinity 抛异常）。
+     */
+    @Test
+    fun scientificNotationOverflowIsPreservedAsString() {
+        for (value in listOf("1e999", "-1e999", "1e400", "2.5e308")) {
+            val e = endpoint().copy(
+                customProtocol = CustomProtocol(enabled = true, extraBody = mapOf("foo" to value)),
+            )
+            val body = adapter.buildBody(request(endpoint = e))
+            assertEquals(value, body["foo"]!!.jsonPrimitive.content, "溢出值必须按字符串保留，value=$value")
+        }
+    }
+
     /** F-1：运行时与保存链复用同一张表，值里含凭据形态的键不得进请求体。 */
     @Test
     fun runtimeCustomProtocolSkipsCredentialishValues() {

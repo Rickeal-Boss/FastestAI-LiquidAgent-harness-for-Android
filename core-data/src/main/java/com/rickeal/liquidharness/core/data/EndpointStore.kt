@@ -3,6 +3,11 @@ package com.rickeal.liquidharness.core.data
 import com.rickeal.liquidharness.core.model.ProviderKind
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.model.UiPreset
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.builtins.ListSerializer
@@ -29,6 +34,9 @@ class EndpointStore(
 
     /** 串行化读改写：两个并发的 upsert 各写一次文件会丢掉其中一次修改。 */
     private val mutex = Mutex()
+
+    /** 内存镜像：任何落盘都同步更新，供 [observe] 做响应式端点观察（W9-01 P1-3）。 */
+    private val cache = MutableStateFlow<List<RemoteEndpoint>?>(null)
 
     suspend fun list(): List<RemoteEndpoint> = mutex.withLock { loadOrSeed() }
 
@@ -82,13 +90,28 @@ class EndpointStore(
     /** 读文件；不存在则写入预置并返回预置（只发生一次）。 */
     private suspend fun loadOrSeed(): List<RemoteEndpoint> {
         val stored = files.read(FILE_NAME, ListSerializer(RemoteEndpoint.serializer()))
-        if (stored != null) return stored
+        if (stored != null) {
+            cache.value = stored
+            return stored
+        }
         persist(seeds)
         return seeds
     }
 
     private suspend fun persist(endpoints: List<RemoteEndpoint>) {
         files.write(FILE_NAME, ListSerializer(RemoteEndpoint.serializer()), endpoints)
+        cache.value = endpoints
+    }
+
+    /**
+     * 响应式观察端点清单（W9-01 P1-3）。冷流：订阅即读盘并持续转发后续落盘。
+     * 落盘点（[persist]）同步更新 [cache]，故同一进程内任何 upsert / remove /
+     * recordVerifiedContextLength 都会让订阅者立即拿到新清单 —— 活跃端点能力位
+     * （supportsVision 等）变化不再依赖页面重入才被读到（修复 P1-3 的根因）。
+     */
+    fun observe(): Flow<List<RemoteEndpoint>> = flow {
+        loadOrSeed() // 预热 cache
+        emitAll(cache.filterNotNull())
     }
 
     companion object {

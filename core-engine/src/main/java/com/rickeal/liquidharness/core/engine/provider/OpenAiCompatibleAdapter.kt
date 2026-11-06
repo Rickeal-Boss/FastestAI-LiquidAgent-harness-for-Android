@@ -124,7 +124,10 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
         // JsonPrimitive(Double.NaN) 在 encodeToString 时抛异常 ⇒ 一条 extraBody 让整次 run 崩（P1-3）。
         raw.trim().lowercase() in NON_FINITE_SCALARS -> JsonPrimitive(raw)
         raw.toLongOrNull() != null -> JsonPrimitive(raw.toLong())
-        raw.toDoubleOrNull() != null -> JsonPrimitive(raw.toDouble())
+        // 科学计数法溢出（"1e999" ⇒ +Infinity）经 toDouble() 得非有限 Double，
+        // 编码时抛异常 ⇒ 整次 run 崩（W9-NEW-1）。isFinite 守卫把溢出值也按字符串保留，
+        // 与 NON_FINITE_SCALARS 形成双保险（后者只挡字面的 "inf"/"nan"）。
+        raw.toDoubleOrNull()?.isFinite() == true -> JsonPrimitive(raw.toDouble())
         else -> JsonPrimitive(raw)
     }
 

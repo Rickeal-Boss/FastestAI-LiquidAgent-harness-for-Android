@@ -87,6 +87,33 @@ class JsonFormatCheckTest {
         assertTrue(result is JsonCheckResult.Invalid, "allowFence=false 时带围栏必须判非法")
     }
 
+    // ---- W9-01 P1-1：CRLF 行尾（\r\n）下的围栏裁切（红态自证见本段注释）----
+
+    /**
+     * CRLF 多行合法 JSON：旧实现 `offset += line.length + 1` 把 \r\n 当 1 个字符累加，
+     * 偏移逐行少算 1，多行 JSON 会被提前裁断（丢 `}` 等）→ 误判非法。
+     *
+     * **红态自证**：把 `stripJsonEnvelope` 改回 `offset += line.length + 1` 的逐个 `lineSequence()`
+     * 累加，本条必红（裁出的内容缺尾字符，严格实例拒绝）。
+     */
+    @Test
+    fun crlfMultilineJsonInsideFenceIsValid() {
+        val crlf = "```json\r\n{\r\n  \"a\": 1\r\n}\r\n```\r\n"
+        assertEquals(JsonCheckResult.Valid, checkJsonFormat(crlf))
+    }
+
+    /**
+     * CRLF + JSON 字符串值内含 ```：内层 ``` 不是独立行（前面有 `"x":"` 内容），
+     * 不得被当结束围栏裁掉；旧实现的偏移漂移同样会把它误裁。
+     *
+     * **红态自证**：改回 `offset += line.length + 1` 后，本多行样本会被提前裁断 ⇒ 必红。
+     */
+    @Test
+    fun crlfJsonWithBacktickFenceInsideStringValueIsValid() {
+        val crlf = "```json\r\n{\"x\":\"```\r\ncontent\"}\r\n```\r\n"
+        assertEquals(JsonCheckResult.Valid, checkJsonFormat(crlf))
+    }
+
     // ---- kotlinx 四件（W9-00）：红态样本先证明旧实现必红 ----
 
     @Test

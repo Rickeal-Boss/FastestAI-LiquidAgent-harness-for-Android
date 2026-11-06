@@ -2,6 +2,8 @@ package com.rickeal.liquidharness.core.agent.context
 
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
 import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
+import com.rickeal.liquidharness.core.model.Attachment
+import com.rickeal.liquidharness.core.model.AttachmentKind
 import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.model.Role
@@ -126,6 +128,30 @@ class ContextCompressorTest {
         assertEquals(1, result.size)
         assertEquals("a\n\nb", result.single().text)
         assertEquals(first.id, result.single().id)
+    }
+
+    /**
+     * 纯视觉缺口2：带附件的消息不得参与相邻同角色合并。
+     * 合并会把图片 / base64 塞进「正文」字段，前缀字节与模型可见内容全乱，且视觉消息合并
+     * 无任何语义收益。
+     *
+     * **红态自证**：把 `canMerge` 改回「不查 attachments」（`return previous.text.isNotEmpty() && next.text.isNotEmpty()`），
+     * 本条必红（两条 USER 被并成 "a\n\nb"，size 变 1）。
+     */
+    @Test
+    fun sanitizeDoesNotMergeMessagesCarryingAttachments() {
+        val plain = user("a")
+        val withImage = ChatMessage(
+            role = Role.USER,
+            text = "b",
+            attachments = listOf(Attachment(kind = AttachmentKind.IMAGE, name = "pic.png")),
+        )
+        val result = sanitizeForProvider(listOf(plain, withImage))
+
+        assertEquals(2, result.size, "带附件的消息必须保持独立、不得被合并")
+        assertEquals("a", result[0].text)
+        assertEquals("b", result[1].text)
+        assertEquals(1, result[1].attachments.size)
     }
 
     @Test

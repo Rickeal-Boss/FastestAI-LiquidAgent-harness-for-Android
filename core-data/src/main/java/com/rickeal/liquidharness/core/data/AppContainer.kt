@@ -17,6 +17,7 @@ import com.rickeal.liquidharness.core.net.UnsafeUrlException
 import com.rickeal.liquidharness.core.net.UrlGuard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -64,6 +65,8 @@ class AppContainer(context: Context) {
     )
 
     val settings: SettingsRepository = SettingsRepository.create(appContext)
+    // W9-01 P1-3：活跃端点响应式流（能力位变化即时刷新），实现抽到 ActiveEndpointFlow.kt。
+    val activeEndpointFlow: Flow<RemoteEndpoint?> = activeEndpointFlow(settings.activeEndpointId, endpoints)
 
     /**
      * 当前会话已物化上下文的字符数（W7）。`feature-chat/ChatViewModel` 写、

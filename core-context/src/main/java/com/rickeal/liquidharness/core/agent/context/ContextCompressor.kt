@@ -329,6 +329,9 @@ private fun canMerge(previous: ChatMessage, next: ChatMessage): Boolean {
     // 在 `LayeredContextCompressor.isSummaryMessage`，此处不重复写前缀字面量。
     if (LayeredContextCompressor.isSummaryMessage(previous)) return false
     if (LayeredContextCompressor.isSummaryMessage(next)) return false
+    // 纯视觉缺口2：带附件的消息**绝不合并** —— 合并会把图片 / base64 塞进「正文」字段，
+    // 前缀字节与模型可见内容全乱，且视觉消息的合并无任何语义收益。
+    if (previous.attachments.isNotEmpty() || next.attachments.isNotEmpty()) return false
     return previous.text.isNotEmpty() && next.text.isNotEmpty()
 }
 

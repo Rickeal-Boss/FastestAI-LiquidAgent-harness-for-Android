@@ -70,12 +70,21 @@ private fun stripJsonEnvelope(text: String, allowFence: Boolean): String {
     if (language.isNotEmpty() && language != "json") return s
     s = s.substring(firstNewline + 1)
     // 结束围栏必须是**独立一行**：字符串值里含 ``` 时不能把它当围栏裁掉（kotlinx③）。
-    // 逐行累加字符偏移、取最后一个整行恰为 ``` 的起点 ⇒ 与内容无关的确定性实现。
-    var offset = 0
+    // 逐行累加**真实分隔符长度**、取最后一个整行恰为 ``` 的起点作为裁断点：
+    // CRLF 的分隔符是 \r\n 两个字符，旧实现 `offset += line.length + 1` 漏算 \r，
+    // 多行 JSON 会被提前裁断 / 内容错位（W9-01 P1-1）。`endFence = cursor` 记的是
+    // 该独立行的**起点**（不含前面的换行分隔符），故 substring(0, endFence) 正好截到
+    // 内容尾、不含围栏与任何尾随分隔符。
+    var cursor = 0
     var endFence = -1
-    for (line in s.lineSequence()) {
-        if (line.trim() == "```") endFence = offset
-        offset += line.length + 1
+    while (cursor < s.length) {
+        val nl = s.indexOf('\n', cursor)
+        val lineEnd = if (nl < 0) s.length else nl
+        val line = s.substring(cursor, lineEnd)
+        if (line.trim() == "```") endFence = cursor
+        // 真实分隔符长度：行尾为 \r\n 算 2，单 \n 算 1，末行无分隔算 0。
+        val delim = if (nl < 0) 0 else if (lineEnd > cursor && s[lineEnd - 1] == '\r') 2 else 1
+        cursor = if (nl < 0) s.length else nl + 1
     }
     if (endFence >= 0) s = s.substring(0, endFence)
     return s.trim()

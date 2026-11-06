@@ -7,6 +7,7 @@ import com.rickeal.liquidharness.core.model.ProviderKind
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.net.HttpTransport
 import com.sun.net.httpserver.HttpServer
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import java.net.InetSocketAddress
 import kotlin.test.Test
@@ -75,6 +76,45 @@ class EndpointProbeTest {
                 ),
             ),
         )
+    }
+
+    // ---------------------------------------------------------------- W9-01 P1-2 收束
+
+    /**
+     * 终帧之后泛滥的 `TextDelta` 必须被丢弃：旧实现 `takeWhile` 收至终帧且终帧后仍放行
+     * `TextDelta` ⇒ 全收；异常 / 重放流会拖垮探针（token / 延迟回归）。
+     *
+     * **红态自证**：把 `collectProbeEvents` 改回「收至终帧 + 终帧后放行 TextDelta」的
+     * `takeWhile`，本条必红（最后一帧不再是 `Finished`，且 size 远超上限）。
+     */
+    @Test
+    fun probeStopsCollectingAfterTerminalFrame() {
+        val stream = flowOf(
+            *Array(8) { GenerationEvent.TextDelta("a") },
+            GenerationEvent.Finished(FinishReason.STOP),
+            *Array(200) { GenerationEvent.TextDelta("b") },
+        )
+        val events = runBlocking { collectProbeEvents(stream) }
+
+        // 终帧必须被收到，且是序列的最后一帧（其后泛滥的 delta 被丢弃）。
+        assertTrue(events.any { it is GenerationEvent.Finished })
+        assertTrue(events.last() is GenerationEvent.Finished, "events.last()=" + events.last())
+        // 终帧之后只应留极少事件（最多一格 Usage），绝不应把后续 200 个 delta 收进来。
+        assertTrue(events.size <= 32, "终帧后只应留极少事件，events=" + events.size)
+    }
+
+    /** 终帧同帧的 Usage 仍然被接纳（判据不因收紧而假红）。 */
+    @Test
+    fun probeStillCollectsTrailingUsageAfterTerminal() {
+        val stream = flowOf(
+            GenerationEvent.TextDelta("p"),
+            GenerationEvent.Finished(FinishReason.STOP),
+            GenerationEvent.Usage(10, 5, 0),
+        )
+        val events = runBlocking { collectProbeEvents(stream) }
+
+        assertTrue(events.any { it is GenerationEvent.Usage }, "终帧后的 Usage 必须被接纳")
+        assertEquals(FinishReason.STOP, (events.single { it is GenerationEvent.Finished } as GenerationEvent.Finished).reason)
     }
 
     // ---------------------------------------------------------------- 真 HTTP

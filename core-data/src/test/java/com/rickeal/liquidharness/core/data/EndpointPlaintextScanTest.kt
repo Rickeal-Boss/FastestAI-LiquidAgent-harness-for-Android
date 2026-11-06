@@ -27,13 +27,22 @@ class EndpointPlaintextScanTest {
 
     @Test
     fun knownCredentialMutationIsCaughtByScanner() {
-        // 变异样本：故意绕过校验强行序列化一份含明文凭据 / 保留键的清单 ⇒ 扫描器必须命中。
-        // 若这条不红，后面「0 命中」就是恒绿断言（AGENTS.md §二.3）。
-        val mutated = """[{"id":"ep-1","customProtocol":{"enabled":true,"extraBody":{"foo":"sk-live-leak","max_tokens":"1"}}}]"""
-        assertEquals(2, markers.count { mutated.contains(it) }, "变异样本必须同时命中两个标记")
-        assertTrue(mutated.contains("sk-live-leak"))
-        // 反向样本：干净串不得误报。
-        assertFalse(markers.any { "[{\"id\":\"ep-1\"}]".contains(it) })
+        // 变异样本：强行序列化一份含明文凭据 / 保留键的端点（绕过保存链校验），
+        // 扫描器必须命中**真实序列化产物** —— 而非手写字面量（避免恒真断言，AGENTS.md §二.3）。
+        // 若序列化路径改动导致 extraBody 丢失，本条会立即红（不再「怎么写都绿」）。
+        val leaked = RemoteEndpoint(
+            id = "ep-leak",
+            customProtocol = CustomProtocol(
+                enabled = true,
+                extraBody = mapOf("foo" to "sk-live-leak", "max_tokens" to "1"),
+            ),
+        )
+        val json = serializeAsEndpointsJson(leaked)
+        assertEquals(2, markers.count { json.contains(it) }, "泄漏端点序列化必须同时命中两个标记，json=" + json)
+        assertTrue(json.contains("sk-live-leak"))
+        // 反向样本：干净端点序列化不得误报。
+        val clean = RemoteEndpoint(id = "ep-clean")
+        assertFalse(markers.any { serializeAsEndpointsJson(clean).contains(it) })
     }
 
     @Test
