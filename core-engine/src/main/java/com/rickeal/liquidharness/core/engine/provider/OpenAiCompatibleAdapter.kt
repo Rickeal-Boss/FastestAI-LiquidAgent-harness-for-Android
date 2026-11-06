@@ -2,6 +2,7 @@ package com.rickeal.liquidharness.core.engine.provider
 
 import com.rickeal.liquidharness.core.model.AgentJson
 import com.rickeal.liquidharness.core.model.AttachmentKind
+import com.rickeal.liquidharness.core.model.RESERVED_BODY_KEYS
 import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.FinishReason
 import com.rickeal.liquidharness.core.model.GenerationEvent
@@ -87,8 +88,36 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
                 put("tools", buildJsonArray { tools.forEach { add(toolObject(it)) } })
                 put("tool_choice", "auto")
             }
+            if (endpoint.jsonMode) {
+                // 强制 JSON 模式（端点 jsonMode 开关，用户 W8 需求 B 路）。
+                // north 无 response_format ⇒ 由 UI 侧降级标 ⚠️，adapter 不做能力探测请求。
+                put("response_format", buildJsonObject { put("type", "json_object") })
+            }
             applyReasoningStyle(endpoint, this)
+            // 自定义协议**最后** merge：可追加新键，RESERVED_BODY_KEYS 一律跳过（不许覆盖上面已定的键）。
+            applyCustomProtocol(endpoint, this)
         }
+    }
+
+    /** 族内覆写少量 body 键（用户「自定义协议」）。键白名单由 `validateAdvanced` 钉死，此处再兜一层。 */
+    private fun applyCustomProtocol(endpoint: RemoteEndpoint, body: JsonObjectBuilder) {
+        val cp = endpoint.customProtocol
+        if (!cp.enabled || cp.extraBody.isEmpty()) return
+        val reserved = RESERVED_BODY_KEYS.map { it.lowercase() }.toSet()
+        for ((key, raw) in cp.extraBody) {
+            val k = key.trim()
+            if (k.isEmpty() || k.lowercase() in reserved) continue
+            body.put(k, coerceScalar(raw))
+        }
+    }
+
+    /** 把 `Map<String,String>` 的值转成原始 JSON 标量（数字 / 布尔 / 字符串）。 */
+    private fun coerceScalar(raw: String): JsonElement = when {
+        raw.equals("true", ignoreCase = true) -> JsonPrimitive(true)
+        raw.equals("false", ignoreCase = true) -> JsonPrimitive(false)
+        raw.toLongOrNull() != null -> JsonPrimitive(raw.toLong())
+        raw.toDoubleOrNull() != null -> JsonPrimitive(raw.toDouble())
+        else -> JsonPrimitive(raw)
     }
 
     override fun decodeEvent(event: SseEvent): List<GenerationEvent> {
@@ -169,22 +198,35 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
     // ------------------------------------------------------------------ 请求体
 
     /**
-     * 三种思考参数风格（第四种 [ReasoningStyle.NONE] = 不写任何字段）。
+     * 四种思考参数风格（[ReasoningStyle.NONE] = 不写任何字段）。
      *
      * 后两种（Anthropic / Gemini 的形态）在这里**故意不写**：它们不是本族协议，
      * 由 W2 的 AnthropicAdapter / GeminiAdapter 消费。写在这里只会造出一个
      * 「看起来支持、实际被服务端忽略」的字段。
+     *
+     * W8 新增 [ReasoningStyle.OPENROUTER_REASONING_OBJECT]：OpenRouter 统一 `reasoning` 对象，
+     * 由 `ReasoningBody.buildReasoningObject` 按端点 `thinkingMode` 决定线上形态；
+     * 构造器单独成文件是为了不把 [applyReasoningStyle] 顶过 G11 的 120 行上限。
+     *
+     * 🔴 [ReasoningStyle.REASONING_EFFORT] 与新值都走 [RemoteEndpoint.resolvedEffort]：
+     * 档位经 `normalizeEffort` 归一，第五档 UI 档位 `EXTREME` **永不发 `max`**（显式降级并落 reason）。
+     * 降级 `reason` 由 `RemoteEndpoint.resolvedEffort()` 暴露给 UI / 单测消费，
+     * 本 adapter **不打日志**（G19 扫 `core-engine/src/main` 的日志调用点，保持其 VACUOUS 基线不变）。
      */
     private fun applyReasoningStyle(endpoint: RemoteEndpoint, body: JsonObjectBuilder) {
         when (endpoint.reasoningStyle) {
             ReasoningStyle.NONE -> Unit
             ReasoningStyle.ENABLE_THINKING_BOOL -> body.put("enable_thinking", true)
-            ReasoningStyle.REASONING_EFFORT -> body.put("reasoning_effort", endpoint.reasoningEffort)
+            ReasoningStyle.REASONING_EFFORT -> {
+                val effort = endpoint.resolvedEffort()
+                if (effort.wire != null) body.put("reasoning_effort", effort.wire)
+            }
             ReasoningStyle.CHAT_TEMPLATE_KWARGS ->
                 body.put("chat_template_kwargs", buildJsonObject { put("enable_thinking", true) })
             ReasoningStyle.ANTHROPIC_THINKING_BUDGET,
             ReasoningStyle.GEMINI_INCLUDE_THOUGHTS,
             -> Unit
+            ReasoningStyle.OPENROUTER_REASONING_OBJECT -> buildReasoningObject(endpoint, body)
         }
     }
 

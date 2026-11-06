@@ -62,6 +62,9 @@ fun SettingsScreen(
     onSetContextWindow: ((Int) -> Unit)? = null,
     onImportSession: ((List<ChatMessage>) -> Unit)? = null,
     onSetCompressContext: ((Boolean) -> Unit)? = null,
+    /** W8：定稿气泡 Markdown 渲染（单一真值源 = DataStore，由 SettingsRoute collect 注入）。 */
+    markdownRender: Boolean = false,
+    onSetMarkdownRender: ((Boolean) -> Unit)? = null,
 ) {
     val tokens = LocalGlassTokens.current
     val activeName = state.endpoints.firstOrNull { it.id == state.activeId }?.name
@@ -155,6 +158,8 @@ fun SettingsScreen(
                     compressContext = state.compressContext,
                     onImportSession = onImportSession,
                     onSetCompressContext = onSetCompressContext,
+                    markdownRender = markdownRender,
+                    onSetMarkdownRender = onSetMarkdownRender,
                 )
             }
         }
@@ -169,12 +174,17 @@ fun SettingsScreen(
  *
  * 两个调试项（开关 / 导入）都由「回调是否为 null」决定可见性：宿主只在 debuggable
  * 安装包上注入回调（理由见 `SessionImportRow` 的类头）。不摆假入口是本文件的一贯纪律。
+ *
+ * W8：本卡**还含一项用户功能**（气泡 Markdown 渲染）—— 它**始终显示**、不挂 debugTools，
+ * 与两个调试项的可见性规则不同（回调非 null 判定只用于调试项）。
  */
 @Composable
 private fun DiagnosticsCard(
     compressContext: Boolean,
     onImportSession: ((List<ChatMessage>) -> Unit)?,
     onSetCompressContext: ((Boolean) -> Unit)?,
+    markdownRender: Boolean,
+    onSetMarkdownRender: ((Boolean) -> Unit)?,
 ) {
     Column {
         GroupTitle(stringResource(R.string.settings_section_diagnostics))
@@ -200,6 +210,19 @@ private fun DiagnosticsCard(
                 },
             )
         }
+        // W8：定稿气泡 Markdown 渲染。这是**用户功能**（非调试项）⇒ 不挂 debugTools，
+        // 始终显示。关闭时气泡回落纯文本（现役行为），老用户零回归。
+        GlassSettingRow(
+            title = stringResource(R.string.settings_markdown_render),
+            subtitle = stringResource(R.string.settings_markdown_render_hint),
+            modifier = Modifier.padding(top = 8.dp),
+            trailing = {
+                CyberJoystickSwitch(
+                    checked = markdownRender,
+                    onCheckedChange = onSetMarkdownRender ?: {},
+                )
+            },
+        )
         // 会话导入（W6 调试通道）。
         if (onImportSession != null) {
             SessionImportRow(

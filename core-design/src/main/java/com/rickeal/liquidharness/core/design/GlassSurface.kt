@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.GraphicsLayerScope
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -226,6 +227,12 @@ fun GlassBubble(
     text: String,
     isUser: Boolean,
     modifier: Modifier = Modifier,
+    /**
+     * W8：Markdown 渲染结果。null = 纯文本（现役行为）。
+     * 只在**定稿**气泡传 —— 流式分支恒 null（每 120ms 重解析会掉帧且光标错位）。
+     * 类型是纯 `androidx.compose.ui.text`，不引入 core.model（G8：core-design 零业务依赖）。
+     */
+    annotatedText: AnnotatedString? = null,
     thinking: String? = null,
     /**
      * 思考块标题文案。⚠️ 本模块不放用户可见文案：null（默认）⇒ 只渲染图标与箭头，
@@ -303,6 +310,7 @@ fun GlassBubble(
                 thinkingExpanded = thinkingExpanded,
                 onToggleThinking = onToggleThinking,
                 text = text,
+                annotatedText = annotatedText,
                 isStreaming = isStreaming,
                 errorMessage = errorMessage,
                 usage = usage,
@@ -503,6 +511,7 @@ private fun BubbleContent(
     thinkingExpanded: Boolean,
     onToggleThinking: (() -> Unit)?,
     text: String,
+    annotatedText: AnnotatedString?,
     isStreaming: Boolean,
     errorMessage: String?,
     usage: GlassBubbleUsage?,
@@ -535,7 +544,9 @@ private fun BubbleContent(
                         // 用户消息短，不存在流式重置选区的问题，一并开放选择。
                         SelectionContainer {
                             Text(
-                                text = text,
+                                // W8：非流式定稿气泡走 Markdown（annotatedText 为 null 时回落纯文本，
+                                // 用户气泡与关闭开关时都是纯文本 ⇒ 现役行为零回归）。
+                                text = annotatedText ?: AnnotatedString(text),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = colors.onGlass,
                                 modifier = Modifier.padding(top = if (attachments.isEmpty()) 0.dp else 8.dp),

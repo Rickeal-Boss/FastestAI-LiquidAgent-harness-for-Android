@@ -67,6 +67,10 @@ fun ChatScreen(
     onRemoveAttachment: ((String) -> Unit)? = null,
     onCompressContext: (() -> Unit)? = null,
     onUndoCompress: (() -> Unit)? = null,
+    /** W8：定稿气泡 Markdown 渲染开关（由 AppNavHost 从 DataStore 读入，不进 ChatUiState）。 */
+    renderMarkdown: Boolean = false,
+    /** W8（NEW-D）：端点未声明图片输入 ⇒ 输入栏保留禁用态入口（点击无操作 + 无障碍原因）。 */
+    imageInputLocked: Boolean = false,
 ) {
     // 确认对话框的开关是纯 UI 状态（不进 ChatUiState）：它不影响任何业务判定，
     // 放进状态机只会让归约器多一个与事件无关的字段。
@@ -124,6 +128,8 @@ fun ChatScreen(
                     onStop = onStop,
                     onPickImage = onPickImage,
                     onRemoveAttachment = onRemoveAttachment,
+                    renderMarkdown = renderMarkdown,
+                    imageInputLocked = imageInputLocked,
                 )
             }
         },
@@ -147,6 +153,7 @@ fun ChatScreen(
             compressedUpTo = state.compressedUpTo,
             compressedSavingTokens = state.compressedSavingTokens,
             onUndoCompress = onUndoCompress,
+            renderMarkdown = renderMarkdown,
         )
     }
 
@@ -268,6 +275,8 @@ private fun ChatBottomArea(
     onStop: () -> Unit,
     onPickImage: (() -> Unit)?,
     onRemoveAttachment: ((String) -> Unit)?,
+    renderMarkdown: Boolean,
+    imageInputLocked: Boolean,
 ) {
     val status = state.status
     if (status != null) {
@@ -299,5 +308,6 @@ private fun ChatBottomArea(
         attachments = state.attachments,
         onPickImage = onPickImage,
         onRemoveAttachment = onRemoveAttachment,
+        imageInputLocked = imageInputLocked,
     )
 }

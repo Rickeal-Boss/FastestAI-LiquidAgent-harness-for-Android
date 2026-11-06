@@ -118,6 +118,12 @@ fun NavGraphBuilder.settingsGraph(
             // 自动压缩开关（W6 调试项）：只在 debuggable 安装包上注入回调，
             // 非 debug 时 screen 不渲染该行（「回调 null = 不摆假入口」的既有纪律）。
             onSetCompressContext = if (debugTools) viewModel::setCompressContext else null,
+            // W8：Markdown 渲染开关。**单一真值源 = DataStore**，这里直接 collect 注入
+            // （不绕 SettingsUiState，避免第二份真值）；开关只调 viewModel.setMarkdownRender 写盘。
+            markdownRender = container.settings.markdownRender.collectAsStateWithLifecycle(
+                com.rickeal.liquidharness.core.data.SettingsRepository.DEFAULT_MARKDOWN_RENDER,
+            ).value,
+            onSetMarkdownRender = viewModel::setMarkdownRender,
         )
         // W7 切换守卫：档位切换的 BLOCKED 原因卡与放行二次确认（setMaxContextTokens 内判定）。
         SwitchDialogs(state = state, viewModel = viewModel)

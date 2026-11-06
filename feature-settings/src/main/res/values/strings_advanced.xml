@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- W8 端点高级配置。中文文案集中在此（G16：core-* 只用英文常量，feature-* 进 strings*.xml）。 -->
+    <string name="adv_section">高级配置</string>
+    <string name="adv_expand">展开</string>
+    <string name="adv_collapse">收起</string>
+    <string name="adv_selected">已选</string>
+    <string name="adv_group_capabilities">能力</string>
+    <string name="adv_tools">工具调用</string>
+    <string name="adv_tools_sub">允许端点下发与执行工具</string>
+    <string name="adv_image_input">图片输入</string>
+    <string name="adv_image_input_sub">开启后可随附件发图（未开启保留禁用态入口）</string>
+    <string name="adv_json_mode">JSON 模式</string>
+    <string name="adv_json_mode_sub">请求强制返回 JSON（部分端点不支持会 400）</string>
+    <string name="adv_group_thinking">思考</string>
+    <string name="adv_thinking_mode">思考模式</string>
+    <string name="adv_thinking_mode_sub">关闭会省思考量；仅隐藏不省</string>
+    <string name="adv_allow_hard_off">允许关闭思考</string>
+    <string name="adv_allow_hard_off_sub">端点声明可关后才可真关，否则降级为仅隐藏</string>
+    <string name="adv_default_effort">默认思考强度</string>
+    <string name="adv_supported_efforts">支持的思考强度</string>
+    <string name="adv_supported_efforts_sub">不选 = 端点未声明（按已支持档处理）</string>
+    <string name="adv_reasoning_style">思考参数风格</string>
+    <string name="adv_group_io">输入 / 输出</string>
+    <string name="adv_input_modality">输入模态</string>
+    <string name="adv_output_modality">输出模态</string>
+    <string name="adv_group_custom">自定义协议</string>
+    <string name="adv_custom_enabled">启用自定义协议</string>
+    <string name="adv_custom_hint">每行一条 键=值（保留键不可覆盖）</string>
+    <string name="adv_mode_OFF">关思考</string>
+    <string name="adv_mode_FOLLOW_PROVIDER">跟随服务端</string>
+    <string name="adv_mode_HIDE_ONLY">仅隐藏思考（仍计费）</string>
+    <string name="adv_mode_ON">思考</string>
+    <string name="adv_mode_REASONING_ONLY">仅思考</string>
+    <string name="adv_effort_LOW">低</string>
+    <string name="adv_effort_MEDIUM">中</string>
+    <string name="adv_effort_HIGH">高</string>
+    <string name="adv_effort_XHIGH">超高</string>
+    <string name="adv_effort_EXTREME">极致（自动降级）</string>
+    <string name="adv_modality_TEXT">文本</string>
+    <string name="adv_modality_IMAGE">图片</string>
+    <string name="adv_modality_AUDIO">音频</string>
+    <string name="adv_style_OPENROUTER_REASONING_OBJECT">reasoning 对象（OpenRouter）</string>
+    <string name="adv_style_NONE">无</string>
+    <string name="adv_style_ENABLE_THINKING_BOOL">enable_thinking</string>
+    <string name="adv_style_REASONING_EFFORT">reasoning_effort</string>
+    <string name="adv_style_CHAT_TEMPLATE_KWARGS">chat_template_kwargs</string>
+    <string name="adv_style_ANTHROPIC_THINKING_BUDGET">anthropic budget</string>
+    <string name="adv_style_GEMINI_INCLUDE_THOUGHTS">gemini thoughts</string>
+</resources>

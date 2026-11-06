@@ -40,7 +40,6 @@ import com.rickeal.liquidharness.core.design.GlassTextField
 import com.rickeal.liquidharness.core.design.GlassTopBar
 import com.rickeal.liquidharness.core.design.LocalBottomBarOverlay
 import com.rickeal.liquidharness.core.design.LocalGlassColors
-import com.rickeal.liquidharness.core.model.ProviderKind
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.model.UiPreset
 
@@ -88,20 +87,20 @@ fun EndpointEditScreen(
     var allowPrivate by rememberSaveable(key) {
         mutableStateOf(initial?.allowPrivateNetwork ?: false)
     }
-    // ⚠️ **API Key 不许进 `rememberSaveable`**：它的值会进 `onSaveInstanceState` 的
-    // Bundle（系统持久化、进程死亡恢复、可能落进 bug report 附件）—— 这是 AGENTS.md
-    // §六「五处泄漏面」之外的第**六**处，外审 P1-1 点名。
-    // 配置变更（旋转）时明文丢失是可接受代价：密码框本就不该跨进程死亡恢复。
+    // ⚠️ API Key 不进 rememberSaveable：会进 onSaveInstanceState Bundle（外审 P1-1 点名的第六处泄漏面）。
     var apiKey by remember(key) { mutableStateOf("") }
 
-    val draft = remember(initial, name, baseUrl, modelId, contextLength, allowPrivate) {
-        (initial ?: RemoteEndpoint(preset = UiPreset.CUSTOM)).copy(
+    // W8：高级配置草稿（工具/图片/思考/档位/模态/自定义协议/JSON）。draft 以它为基底 copy，
+    // kind 改由草稿透传（不再硬写）。用 remember（非 Saveable）：旋转丢失可接受。
+    var advanced by remember(key) { mutableStateOf(initial ?: RemoteEndpoint(preset = UiPreset.CUSTOM)) }
+
+    val draft = remember(initial, name, baseUrl, modelId, contextLength, allowPrivate, advanced) {
+        advanced.copy(
             name = name.trim(),
             baseUrl = baseUrl.trim(),
             modelId = modelId.trim(),
             contextLength = contextLength.toIntOrNull() ?: DEFAULT_CONTEXT_LENGTH,
             allowPrivateNetwork = allowPrivate,
-            kind = ProviderKind.OPENAI_COMPATIBLE,
         )
     }
     val valid = name.isNotBlank() && baseUrl.isNotBlank() && modelId.isNotBlank()
@@ -165,6 +164,10 @@ fun EndpointEditScreen(
             PrivateNetworkRow(
                 checked = allowPrivate,
                 onCheckedChange = { allowPrivate = it },
+            )
+            AdvancedConfigSection(
+                initial = advanced,
+                onChange = { advanced = it },
             )
             EndpointActions(
                 valid = valid,

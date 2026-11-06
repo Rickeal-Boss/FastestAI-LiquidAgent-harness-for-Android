@@ -83,6 +83,8 @@ fun ChatMessageList(
     compressedUpTo: String? = null,
     compressedSavingTokens: Int = 0,
     onUndoCompress: (() -> Unit)? = null,
+    /** W8：定稿气泡是否走 Markdown 渲染（false = 纯文本，现役行为）。单一真值源 = DataStore。 */
+    renderMarkdown: Boolean = false,
 ) {
     val tokens = LocalGlassTokens.current
     val atBottom by remember {
@@ -164,6 +166,7 @@ fun ChatMessageList(
                 onToggleThinking = {
                     expandedThinking[bubble.id] = expandedThinking[bubble.id] != true
                 },
+                renderMarkdown = renderMarkdown,
             )
         }
         if (isStreaming) {

@@ -54,7 +54,10 @@ class EndpointProbe(
             val request = GenerationRequest(
                 messages = listOf(ChatMessage(role = Role.USER, text = "ping")),
                 tools = emptyList(),
-                sampling = SamplingParams(maxTokens = 8, temperature = 0.0),
+                // W8（Q15）预算 8 → 256：dots 默认开思考，8-token 预算会被思考吃光 ⇒ 之前
+                // 「思考帧算内容证据」+「8 预算」叠加，出现「关思考时正文空 ⇒ 假红」与
+                // 「开思考时 rtok 算证据 ⇒ 假绿」两个方向的误判。256 覆盖思考 + 短回答。
+                sampling = SamplingParams(maxTokens = 256, temperature = 0.0),
                 endpoint = endpoint,
                 idempotencyKey = newId(),
             )
@@ -63,11 +66,16 @@ class EndpointProbe(
                 // 拿不到「之前的序列」，所以内容证据要在谓词里累积。
                 var sawContent = false
                 val terminal = engine.generate(request).firstOrNull { event ->
-                    val isContent = event is GenerationEvent.TextDelta ||
-                        event is GenerationEvent.ReasoningDelta ||
-                        event is GenerationEvent.Usage
-                    if (isContent) sawContent = true
-                    isContent || event is GenerationEvent.Finished || event is GenerationEvent.Failed
+                    // 🔴 W8（Q15）`ReasoningDelta` 单独**不算**内容证据：dots 默认开思考，
+                    // 把 rtok 算进去会在「思考吃满预算」时假绿。只有正文 / usage 才是
+                    // 「服务端真的回答了」的证据。思考帧**不终止**上游（继续等正文 / 终止帧）。
+                    if (event is GenerationEvent.TextDelta || event is GenerationEvent.Usage) {
+                        sawContent = true
+                    }
+                    event is GenerationEvent.TextDelta ||
+                        event is GenerationEvent.Usage ||
+                        event is GenerationEvent.Finished ||
+                        event is GenerationEvent.Failed
                 }
                 val detail = if (terminal == null) {
                     EMPTY_STREAM_DETAIL
@@ -107,7 +115,9 @@ internal const val EMPTY_STREAM_DETAIL: String = "PROTOCOL: empty stream"
 /**
  * 事件序列 → 连接测试结论（纯函数，JVM 单测直接驱动，不需要真 HTTP）。
  *
- * 「内容证据」= 正文 / 思考 / usage 任一。只有 `Finished` 而无任何内容，说明服务端
+ * 「内容证据」= 正文 / usage 任一。🔴 W8（Q15）**思考帧不算**：dots 默认开思考，
+ * 把 rtok 算进去会在「思考吃满输出预算」时假绿、在 `reasoning:{enabled:false}` 时假红。
+ * 只有 `Finished` 而无任何内容证据，说明服务端
  * 回了 200 但没吐出可解析的 SSE（HTML 错误页、被网关改写的 JSON 都是这种形态）。
  *
  * @return null = 通过；非 null = 失败原因（英文诊断串）。

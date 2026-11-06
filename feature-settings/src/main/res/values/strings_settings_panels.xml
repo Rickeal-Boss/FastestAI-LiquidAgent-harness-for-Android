@@ -60,4 +60,7 @@
     <string name="settings_memory_delete_title">删除这条记忆？</string>
     <string name="settings_memory_delete_message">「%1$s」将从本机删除，模型不再记得它。</string>
 
+    <!-- W8：会话气泡 Markdown 渲染开关（用户功能，非调试项）。 -->
+    <string name="settings_markdown_render">气泡 Markdown 渲染</string>
+    <string name="settings_markdown_render_hint">关闭时按纯文本显示（现役行为）</string>
 </resources>

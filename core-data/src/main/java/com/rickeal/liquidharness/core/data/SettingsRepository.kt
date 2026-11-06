@@ -96,6 +96,21 @@ class SettingsRepository(
         dataStore.edit { prefs -> prefs[KEY_COMPRESS_CONTEXT] = enabled }
     }
 
+    /**
+     * W8：定稿气泡是否走 Markdown 渲染。
+     *
+     * **单一真值源 = DataStore**：AppNavHost 直接 collect 它作参数下传 ChatScreen，
+     * **不进 `ChatUiState` / `ChatViewModel`**（后者余 13 行且 G23 钉死调用点）。
+     * 设置页只写盘 + 从同一 Flow 回显，避免出现第二个真值源。
+     */
+    val markdownRender: Flow<Boolean> = safeData().map { prefs ->
+        prefs[KEY_MARKDOWN_RENDER] ?: DEFAULT_MARKDOWN_RENDER
+    }
+
+    suspend fun setMarkdownRender(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[KEY_MARKDOWN_RENDER] = enabled }
+    }
+
     suspend fun setSkillEnabled(name: String, enabled: Boolean) {
         if (name.isBlank()) return
         dataStore.edit { prefs ->
@@ -131,9 +146,12 @@ class SettingsRepository(
         private val KEY_DISABLED_SKILLS = stringSetPreferencesKey("disabled_skills")
         private val KEY_MAX_CONTEXT_TOKENS = intPreferencesKey("max_context_tokens")
         private val KEY_COMPRESS_CONTEXT = booleanPreferencesKey("compress_context")
+        private val KEY_MARKDOWN_RENDER = booleanPreferencesKey("markdown_render")
 
         /** 与 `AgentPolicy.compressContext` 的默认值同源（true），改一处必须改两处并加断言。 */
         const val DEFAULT_COMPRESS_CONTEXT: Boolean = true
+        /** W8：定稿气泡 Markdown 渲染，默认 **false**（纯文本）⇒ 现役行为零回归。 */
+        const val DEFAULT_MARKDOWN_RENDER: Boolean = false
 
         /** 与 `AgentPolicy.maxContextTokens` 的默认值同源（32 000），改一处必须改两处并加断言。 */
         const val DEFAULT_MAX_CONTEXT_TOKENS: Int = 32_000

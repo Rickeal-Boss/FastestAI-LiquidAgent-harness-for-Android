@@ -156,6 +156,18 @@ private fun ChatRoute(
         viewModel.attachImage(uri, name)
     }
 
+    // W8：Markdown 渲染开关。**单一真值源 = DataStore**，这里直接 collect 作参数下传，
+    // 不进 ChatUiState / ChatViewModel（后者余 13 行且 G23 钉死调用点）。
+    val renderMarkdown = container.settings.markdownRender.collectAsStateWithLifecycle(
+        com.rickeal.liquidharness.core.data.SettingsRepository.DEFAULT_MARKDOWN_RENDER,
+    )
+    // W8（NEW-D / 台账 W3-07）：图片入口闸门 —— 端点声明支持图片输入才接回调；
+    // 未启用时**保留禁用态入口**（不静默隐藏），避免既有端点升级后入口直接消失。
+    val visionEnabled = remember { mutableStateOf(false) }
+    LaunchedEffect(state.endpointLabel) {
+        visionEnabled.value = container.activeEndpoint()?.supportsVision == true
+    }
+
     ChatScreen(
         state = state,
         onInputChange = viewModel::onInputChange,
@@ -167,8 +179,10 @@ private fun ChatRoute(
         onResolveApproval = viewModel::resolveApproval,
         onOpenDrawer = onOpenDrawer,
         onNewConversation = viewModel::newConversation,
-        onPickImage = pickImage,
+        onPickImage = if (visionEnabled.value) pickImage else null,
         onRemoveAttachment = viewModel::removeAttachment,
+        imageInputLocked = !visionEnabled.value,
+        renderMarkdown = renderMarkdown.value,
         // 手动压缩（W6）：入口 → 二次确认（ChatScreen 里）→ ViewModel 压缩。
         onCompressContext = viewModel::compressContext,
         onUndoCompress = viewModel::undoCompress,

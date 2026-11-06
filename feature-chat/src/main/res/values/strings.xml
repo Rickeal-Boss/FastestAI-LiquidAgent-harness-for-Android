@@ -83,4 +83,10 @@
     <string name="chat_compress_collapse">收起</string>
     <string name="chat_compress_undo">撤销</string>
     <string name="chat_error_manual_compress_noop">没有可压缩的内容：历史本来就装得下，或找不到安全的截断点。</string>
+    <!-- W8：模型返回 JSON 格式检查（气泡动作键，只读校验）。 -->
+    <string name="chat_action_check_json">检查 JSON</string>
+    <string name="chat_json_ok">合法 JSON</string>
+    <string name="chat_json_invalid">非法 JSON（第 %1$d 行，第 %2$d 列）</string>
+    <!-- W8（NEW-D）：端点未开启图片输入时保留禁用态入口，无障碍描述给原因（不静默隐藏）。 -->
+    <string name="chat_attach_locked">当前端点未开启图片输入</string>
 </resources>

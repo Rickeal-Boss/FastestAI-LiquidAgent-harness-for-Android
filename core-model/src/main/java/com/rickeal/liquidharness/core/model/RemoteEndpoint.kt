@@ -79,6 +79,16 @@ enum class ReasoningStyle {
 
     /** Gemini: `generationConfig.thinkingConfig.includeThoughts = true`。W2 由 GeminiAdapter 消费。 */
     GEMINI_INCLUDE_THOUGHTS,
+
+    /**
+     * OpenRouter 统一 `reasoning` 对象（W8 新增）。
+     *
+     * 线上形态由 `thinkingMode` 决定：`{"effort": wire}` / `{"enabled": false}` / `{"exclude": true}`。
+     * 🔴 dots 的 `supported_parameters` **无 `reasoning_effort`** ⇒ 现役 [REASONING_EFFORT]
+     * 发的是网关不认的字段，本值是唯一正确的通道（主理人 `w8-provider-probe.md` 实测）。
+     * `effort` 与 `max_tokens` **绝不共存**于同一 reasoning 对象。
+     */
+    OPENROUTER_REASONING_OBJECT,
 }
 
 /**
@@ -128,7 +138,46 @@ data class RemoteEndpoint(
     val supportsTools: Boolean = true,
     val supportsReasoning: Boolean = false,
     val reasoningStyle: ReasoningStyle = ReasoningStyle.NONE,
+    /**
+     * 默认思考档位的**唯一真值源**（被 `OpenAiCompatibleAdapter.applyReasoningStyle` 消费）。
+     *
+     * 🔴 **禁止新增第三个 effort 字段**：`Generation.kt:80` 的 `SamplingParams.reasoningEffort`
+     * 全仓零生产消费点（挂账 W9-06），`reasoningEffort` 只认本字段。档位 UI 值经
+     * `normalizeEffort` 归一，[ReasoningEffort.EXTREME] 永不直接落进这里。
+     */
     val reasoningEffort: String = "medium",
+    /**
+     * 输入模态集合。空集不合法（至少含 TEXT），默认 `setOf(TEXT)` = fail-closed。
+     *
+     * [supportsVision] 是它的派生值，**三处同改**：本字段 + `RemoteLlmEngine.capabilities()`
+     * + `AppNavHost` 的图片入口闸门；任一处漏掉就是「声明了没消费者」的下一例。
+     */
+    val inputModalities: Set<Modality> = setOf(Modality.TEXT),
+    /** 输出模态集合。音频输出本波恒不可达（NV 0 音频类 + `/v1/audio/speech` 404 + 设备仅 iflytek TTS），UI 不摆假入口。 */
+    val outputModalities: Set<Modality> = setOf(Modality.TEXT),
+    /**
+     * 用户思考意图。默认 [ThinkingMode.FOLLOW_PROVIDER]（不发任何开关）保持现役行为、老用户零回归。
+     *
+     * 注意 [ThinkingMode.OFF] 只在 [allowDisableThinking] 为真且 [reasoningStyle] 是
+     * [ReasoningStyle.OPENROUTER_REASONING_OBJECT] 时可达，否则由 adapter **降级 [ThinkingMode.HIDE_ONLY]
+     * 并落 reason**，不静默发无效字段。
+     */
+    val thinkingMode: ThinkingMode = ThinkingMode.FOLLOW_PROVIDER,
+    /** 端点声明「允许真关思考」。来自 OR `reasoning.mandatory` 取反；dots / north 实测均为 `mandatory:false`。 */
+    val allowDisableThinking: Boolean = false,
+    /**
+     * 端点声明的支持档位。**空集 = 未声明**（不是「全支持」），[normalizeEffort] 按已实测四档处理。
+     */
+    val supportedEfforts: Set<ReasoningEffort> = emptySet(),
+    /** 自定义协议（族内覆写少量 body 键）。键白名单与凭据语义由 `validateAdvanced` 钉死。 */
+    val customProtocol: CustomProtocol = CustomProtocol(),
+    /**
+     * 强制 JSON 模式（请求侧发 `response_format: {"type": "json_object"}`）。
+     *
+     * 🔴 与「校验返回文本」是两件事：校验落在 `core-model/JsonFormatCheck.kt`（气泡动作键），
+     * 本字段只管**请求体**。north 的 `supported_parameters` 无 `response_format` ⇒ 对它必须显式降级标 ⚠️。
+     */
+    val jsonMode: Boolean = false,
     val extraHeaders: Map<String, String> = emptyMap(),
     /** 允许指向 RFC1918 / loopback（本地 Ollama / 局域网 vLLM）。默认 false = fail-closed。 */
     val allowPrivateNetwork: Boolean = false,
@@ -143,4 +192,48 @@ data class RemoteEndpoint(
      */
     val requiresApiKey: Boolean
         get() = !(baseUrl.contains("11434") || baseUrl.contains("127.0.0.1") || baseUrl.contains("10.0.2.2"))
+
+    /**
+     * 派生，不持久化：图片输入能力 = 输入模态含 IMAGE。
+     *
+     * 默认 `false`（fail-closed）会让既有端点的图片入口消失 ⇒ UI 侧必须保留**禁用态入口 + 原因提示**，
+     * 不做静默隐藏（W7 真机视觉 ✅ 的现状不能回归）。
+     */
+    val supportsVision: Boolean
+        get() = Modality.IMAGE in inputModalities
+
+    /** 派生：音频输出能力。本波恒 `false`（无供应商 + 无 TTS 通道），保留派生以便 UI 判据覆盖。 */
+    val supportsAudioOutput: Boolean
+        get() = Modality.AUDIO in outputModalities
+
+    /**
+     * 派生：把能力位与用户意图合流。端点不能思考 ⇒ 强制 [ThinkingMode.OFF] 的**语义**无效，
+     * 回落 [ThinkingMode.FOLLOW_PROVIDER]（不发开关，让服务端自己决定）。
+     */
+    val effectiveThinkingMode: ThinkingMode
+        get() = if (!supportsReasoning && thinkingMode != ThinkingMode.FOLLOW_PROVIDER) {
+            ThinkingMode.FOLLOW_PROVIDER
+        } else {
+            thinkingMode
+        }
+
+    /**
+     * 派生：「允许真关思考」是否**可达**。三条件齐备才为真，否则 `OFF` 意图会被 adapter
+     * 降级成 [ThinkingMode.HIDE_ONLY] 并落 `reason=hard_off_unsupported`（不静默发无效字段）。
+     */
+    val canHardOff: Boolean
+        get() = supportsReasoning &&
+            allowDisableThinking &&
+            reasoningStyle == ReasoningStyle.OPENROUTER_REASONING_OBJECT
+
+    /**
+     * 派生：归一后的思考档位 wire 值（可能带降级）。`null` = 本 style 不发 effort 字段。
+     * 消费点唯一：`ReasoningBody` / `OpenAiCompatibleAdapter.applyReasoningStyle`。
+     */
+    fun resolvedEffort(): ResolvedEffort = normalizeEffort(
+        desired = reasoningEffort,
+        supported = supportedEfforts,
+        style = reasoningStyle,
+        maxOut = maxOutputTokens,
+    )
 }

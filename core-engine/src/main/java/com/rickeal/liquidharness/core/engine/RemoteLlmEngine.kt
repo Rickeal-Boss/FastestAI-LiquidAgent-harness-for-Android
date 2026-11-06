@@ -89,7 +89,9 @@ class RemoteLlmEngine(
     suspend fun capabilities(): EngineCapabilities = EngineCapabilities(
         supportsTools = endpoint.supportsTools,
         supportsReasoning = endpoint.supportsReasoning,
-        supportsVision = false,
+        // W8：不再硬编码 false（那是「实现已发图、声明却说不支持」的能力声明打架，台账 W3-07）。
+        // 真实闸门在 AppNavHost 的图片入口（`supportsVision` 为 false 时保留禁用态入口 + 原因提示）。
+        supportsVision = endpoint.supportsVision,
         nativeToolChannel = endpoint.supportsTools,
         maxContextTokens = endpoint.contextLength,
         maxOutputTokens = endpoint.maxOutputTokens,

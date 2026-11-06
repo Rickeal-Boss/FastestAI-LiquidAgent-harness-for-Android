@@ -184,7 +184,9 @@ LINE_CAPS=(
   #    3.5 万 / 42500。单文件 500 上限不动 ⇒ 新逻辑必须外提新文件
   #    （ChatViewModel 484/500 余 16，只许加一行委托）。
   "feature-chat|500|3900"
-  "feature-settings|500|3400"
+  # W8 一次性例外：功能波新增「端点高级配置」（数据驱动压缩后仍净增 ~120 行）⇒ 3400→3500。
+  # 裁决见 docs/notes/w8-line-budget-ruling.md：TOTAL_LINE_CAP 不动、不构成先例、下波触顶仍须先拆。
+  "feature-settings|500|3500"
   # W4 从 :feature-settings 拆出（设置模块 3451 > 3000 触顶 ⇒ 拆分，不是调大上限）。
   # 单文件 600 与 feature-settings 同档：两个页面的原文件都在 300~480 行，
   # 600 是「单个 Screen 文件」的合理上限；2600 是模块预算，不是「先给足再填」。

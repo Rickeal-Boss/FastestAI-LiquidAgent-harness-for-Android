@@ -1,7 +1,9 @@
 package com.rickeal.liquidharness.core.engine.provider
 
 import com.rickeal.liquidharness.core.model.ChatMessage
+import com.rickeal.liquidharness.core.model.CustomProtocol
 import com.rickeal.liquidharness.core.model.FinishReason
+import com.rickeal.liquidharness.core.model.ThinkingMode
 import com.rickeal.liquidharness.core.model.GenerationEvent
 import com.rickeal.liquidharness.core.model.GenerationRequest
 import com.rickeal.liquidharness.core.model.ReasoningStyle
@@ -458,5 +460,117 @@ class OpenAiCompatibleAdapterTest {
             listOf("tool", "tool", "tool"),
             encoded.map { it.jsonObject["role"]!!.jsonPrimitive.content },
         )
+    }
+
+    // ------------------------------------------------------------ W8 高级配置
+
+    /**
+     * Q11：请求体键集合**恰好**等于白名单 —— 多一个键或漏一个键都要红。
+     * 这条是「逐字段断言」的总闸：以后有人加字段忘了同步白名单，这里先红。
+     */
+    @Test
+    fun bodyKeysMatchWhitelistWithoutJsonMode() {
+        val body = adapter.buildBody(
+            request(
+                tools = listOf(ToolSpec(name = "x", description = "d")),
+                sampling = SamplingParams(temperature = 0.5, topP = 0.9, maxTokens = 128, stop = listOf("STOP")),
+                endpoint = endpoint(reasoningStyle = ReasoningStyle.OPENROUTER_REASONING_OBJECT)
+                    .copy(supportsReasoning = true, thinkingMode = ThinkingMode.ON),
+            )
+        )
+        assertEquals(
+            setOf(
+                "model", "messages", "stream", "stream_options", "temperature", "top_p",
+                "max_tokens", "stop", "tools", "tool_choice", "reasoning",
+            ),
+            body.keys,
+        )
+    }
+
+    /** jsonMode 两态：false 不发 response_format；true 发且 type=json_object。 */
+    @Test
+    fun jsonModeTogglesResponseFormat() {
+        val off = adapter.buildBody(request(endpoint = endpoint().copy(jsonMode = false)))
+        assertNull(off["response_format"], "关闭时不得发该字段（部分端点会 400）")
+        val on = adapter.buildBody(request(endpoint = endpoint().copy(jsonMode = true)))
+        assertEquals("json_object", on["response_format"]!!.jsonObject["type"]!!.jsonPrimitive.content)
+    }
+
+    /** 思考四态线上形态（dots 流式实测口径）。 */
+    @Test
+    fun openRouterReasoningObjectEmitsPerThinkingMode() {
+        val orEndpoint = endpoint(reasoningStyle = ReasoningStyle.OPENROUTER_REASONING_OBJECT)
+            .copy(supportsReasoning = true, allowDisableThinking = true)
+
+        val off = adapter.buildBody(request(endpoint = orEndpoint.copy(thinkingMode = ThinkingMode.OFF)))
+        assertFalse(off["reasoning"]!!.jsonObject["enabled"]!!.jsonPrimitive.boolean)
+        assertNull(off["include_reasoning"], "OFF 与 HIDE_ONLY 不得同发")
+
+        val hide = adapter.buildBody(request(endpoint = orEndpoint.copy(thinkingMode = ThinkingMode.HIDE_ONLY)))
+        assertFalse(hide["include_reasoning"]!!.jsonPrimitive.boolean)
+        assertNull(hide["reasoning"], "隐藏 ≠ 关闭：不得发 reasoning 对象")
+
+        val on = adapter.buildBody(
+            request(endpoint = orEndpoint.copy(thinkingMode = ThinkingMode.ON, reasoningEffort = "high"))
+        )
+        assertEquals("high", on["reasoning"]!!.jsonObject["effort"]!!.jsonPrimitive.content)
+        assertNull(on["reasoning"]!!.jsonObject["max_tokens"], "effort 与 max_tokens 绝不共存")
+
+        val follow = adapter.buildBody(
+            request(endpoint = orEndpoint.copy(thinkingMode = ThinkingMode.FOLLOW_PROVIDER))
+        )
+        assertNull(follow["reasoning"])
+        assertNull(follow["include_reasoning"])
+    }
+
+    /** 真关不可达 ⇒ 降级 HIDE_ONLY（不静默发一个网关不认的字段）。 */
+    @Test
+    fun hardOffDegradesToHideOnlyWhenUnsupported() {
+        val e = endpoint(reasoningStyle = ReasoningStyle.OPENROUTER_REASONING_OBJECT)
+            .copy(supportsReasoning = true, allowDisableThinking = false, thinkingMode = ThinkingMode.OFF)
+        val body = adapter.buildBody(request(endpoint = e))
+        assertFalse(body["include_reasoning"]!!.jsonPrimitive.boolean, "降级为 HIDE_ONLY")
+        assertNull(body["reasoning"], "不可达的真关绝不发 reasoning 对象")
+    }
+
+    /** 第五档 EXTREME 永不落 max：预算足降 xhigh、不足降 high。 */
+    @Test
+    fun extremeEffortNeverEmitsMax() {
+        val orEndpoint = endpoint(reasoningStyle = ReasoningStyle.OPENROUTER_REASONING_OBJECT)
+            .copy(supportsReasoning = true, thinkingMode = ThinkingMode.ON)
+        val enough = adapter.buildBody(
+            request(endpoint = orEndpoint.copy(reasoningEffort = "extreme", maxOutputTokens = 8000))
+        )
+        assertEquals("xhigh", enough["reasoning"]!!.jsonObject["effort"]!!.jsonPrimitive.content)
+        val tight = adapter.buildBody(
+            request(endpoint = orEndpoint.copy(reasoningEffort = "extreme", maxOutputTokens = 512))
+        )
+        assertEquals("high", tight["reasoning"]!!.jsonObject["effort"]!!.jsonPrimitive.content)
+    }
+
+    /** 自定义协议：非保留键可追加（值转原始标量），保留键一律跳过。 */
+    @Test
+    fun customProtocolAddsNewKeysButNeverOverridesReserved() {
+        val e = endpoint().copy(
+            customProtocol = CustomProtocol(
+                enabled = true,
+                extraBody = mapOf("top_k" to "40", "flag" to "true", "note" to "hi"),
+            ),
+        )
+        val body = adapter.buildBody(request(endpoint = e))
+        assertEquals(40, body["top_k"]!!.jsonPrimitive.int)
+        assertTrue(body["flag"]!!.jsonPrimitive.boolean)
+        assertEquals("hi", body["note"]!!.jsonPrimitive.content)
+        // max_tokens 仍由 sampling / endpoint 决定，不得被 extraBody 覆盖。
+        assertEquals(4096, body["max_tokens"]!!.jsonPrimitive.int)
+    }
+
+    /** 关闭时 extraBody 完全不参与请求体（fail-closed）。 */
+    @Test
+    fun disabledCustomProtocolEmitsNothing() {
+        val e = endpoint().copy(
+            customProtocol = CustomProtocol(enabled = false, extraBody = mapOf("top_k" to "40")),
+        )
+        assertNull(adapter.buildBody(request(endpoint = e))["top_k"])
     }
 }

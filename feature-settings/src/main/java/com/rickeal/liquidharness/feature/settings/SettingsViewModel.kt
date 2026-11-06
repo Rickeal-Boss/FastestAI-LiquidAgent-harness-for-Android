@@ -277,6 +277,17 @@ class SettingsViewModel(
     }
 
     /**
+     * W8：Markdown 渲染开关。**不回写 state** —— 单一真值源是 DataStore，
+     * 设置页与对话页都从 `container.settings.markdownRender` collect 回显；
+     * 这里只负责写盘（否则会出现「state 与 DataStore 两份真值」）。
+     */
+    fun setMarkdownRender(enabled: Boolean) {
+        viewModelScope.launch {
+            container.settings.setMarkdownRender(enabled)
+        }
+    }
+
+    /**
      * W7 三处写入点共用的判定 + 分流。`calibratedCharsPerToken = 0f` 是**刻意的**：
      * 设置页没有在途 run，无会话级标定真值 ⇒ floor 1.8 保守档（reason 带
      * `char_floor_unmeasured`），不许伪造真值。BLOCKED ⇒ 原因卡、不写盘；

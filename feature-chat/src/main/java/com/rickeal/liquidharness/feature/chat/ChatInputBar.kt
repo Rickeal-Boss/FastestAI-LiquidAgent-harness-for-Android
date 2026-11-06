@@ -58,6 +58,11 @@ internal fun ChatInputBar(
     attachments: List<Attachment> = emptyList(),
     onPickImage: (() -> Unit)? = null,
     onRemoveAttachment: ((String) -> Unit)? = null,
+    /**
+     * W8（NEW-D / 台账 W3-07）：端点未声明图片输入时为 true ⇒ **保留禁用态入口**（不静默隐藏），
+     * 否则既有端点升级后图片入口直接消失（W7 真机视觉 ✅ 的现状回归）。
+     */
+    imageInputLocked: Boolean = false,
 ) {
     val colors = LocalGlassColors.current
     val tokens = LocalGlassTokens.current
@@ -69,14 +74,16 @@ internal fun ChatInputBar(
             )
         }
         GlassBottomBar(modifier = Modifier.fillMaxWidth()) {
-            if (onPickImage != null) {
+            if (onPickImage != null || imageInputLocked) {
                 GlassIconButton(
                     icon = Icons.Filled.Add,
-                    contentDescription = stringResource(R.string.chat_action_attach),
-                    onClick = onPickImage,
+                    contentDescription = stringResource(
+                        if (imageInputLocked) R.string.chat_attach_locked else R.string.chat_action_attach,
+                    ),
+                    onClick = onPickImage ?: {},
                     size = 40.dp,
                     iconSize = 20.dp,
-                    contentColor = colors.onGlass,
+                    contentColor = if (imageInputLocked) colors.onGlassSubtle else colors.onGlass,
                 )
             }
             Box(

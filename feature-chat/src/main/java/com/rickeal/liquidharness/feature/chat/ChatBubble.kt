@@ -14,11 +14,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,7 +37,9 @@ import com.rickeal.liquidharness.core.design.GlassBubble
 import com.rickeal.liquidharness.core.design.GlassBubbleAttachment
 import com.rickeal.liquidharness.core.design.LocalGlassColors
 import com.rickeal.liquidharness.core.model.AttachmentKind
+import com.rickeal.liquidharness.core.model.JsonCheckResult
 import com.rickeal.liquidharness.core.model.Role
+import com.rickeal.liquidharness.core.model.checkJsonFormat
 
 /**
  * 一条气泡。
@@ -48,6 +55,7 @@ internal fun ChatBubbleRow(
     bubble: ChatBubble,
     thinkingExpanded: Boolean,
     onToggleThinking: () -> Unit,
+    renderMarkdown: Boolean,
     modifier: Modifier = Modifier,
 ) {
     when (bubble.role) {
@@ -94,6 +102,7 @@ internal fun ChatBubbleRow(
                         bubble = bubble,
                         thinkingExpanded = thinkingExpanded,
                         onToggleThinking = onToggleThinking,
+                        renderMarkdown = renderMarkdown,
                     )
                 }
             }
@@ -106,10 +115,16 @@ private fun ModelBubble(
     bubble: ChatBubble,
     thinkingExpanded: Boolean,
     onToggleThinking: () -> Unit,
+    renderMarkdown: Boolean,
 ) {
     val context = LocalContext.current
+    // W8：JSON 检查结果只存本条气泡的局部 UI 状态（不进 ChatViewModel：余 13 行且 G23 钉调用点）。
+    var jsonCheck by remember(bubble.id, bubble.text) { mutableStateOf<JsonCheckResult?>(null) }
+    Column {
     GlassBubble(
         text = bubble.text,
+        // W8：定稿气泡走 Markdown；流式分支由 GlassBubble 内部保持纯文本。
+        annotatedText = if (bubble.text.isNotBlank()) bubbleText(bubble.text, renderMarkdown) else null,
         isUser = false,
         thinking = bubble.reasoning.ifBlank { null },
         // 文案由使用方传入：core-design 里不留任何用户可见文案（G16 与 i18n 同一条纪律）。
@@ -120,18 +135,42 @@ private fun ModelBubble(
         // 操作行贴在气泡**外**、不进气泡玻璃：LazyColumn 一屏十几条，
         // 每条再叠一层玻璃控件，模糊成本 ×N。
         actions = {
-            // 只有一枚「复制」：旧仓的第二枚「复制为 Markdown」是为了拿**未经
-            // `<think>` 拆分与 U+FFFD 清洗**的原文，本仓正文不经展示层改写，
-            // 两枚键会复制出完全相同的字符串 —— 那就成了装饰。
+            // W8：仍只有一枚「复制」（正文不经展示层改写，第二枚复制键会复制出相同字符串 = 装饰）；
+            // 新增的是**检查 JSON**（语义不同、产出不同结果，不是装饰）。
             if (bubble.text.isNotBlank()) {
                 BubbleCopyAction(
                     label = stringResource(R.string.chat_action_copy),
                     icon = Icons.Filled.ContentCopy,
                     onClick = { copyToClipboard(context, bubble.text) },
                 )
+                // 需求 ③ A 路：只读校验返回文本是否合法 JSON。不做 agent 工具（触 G18），
+                // 不做全局自动检查（LazyColumn 一屏十几条代价高且无法只查一条）。
+                BubbleCopyAction(
+                    label = stringResource(R.string.chat_action_check_json),
+                    icon = Icons.Filled.Check,
+                    onClick = { jsonCheck = checkJsonFormat(bubble.text) },
+                )
             }
         },
     )
+        // 🔴 只给行列号，不回显原文片段（上屏风险 > 落盘风险）。
+        jsonCheck?.let { result ->
+            Text(
+                text = when (result) {
+                    JsonCheckResult.Valid -> stringResource(R.string.chat_json_ok)
+                    is JsonCheckResult.Invalid ->
+                        stringResource(R.string.chat_json_invalid, result.line, result.column)
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = if (result is JsonCheckResult.Valid) {
+                    LocalGlassColors.current.accent
+                } else {
+                    LocalGlassColors.current.danger
+                },
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+    }
 }
 
 /**
