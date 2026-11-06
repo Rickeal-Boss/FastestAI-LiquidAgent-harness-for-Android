@@ -28,10 +28,10 @@
 | 架构守卫 / 守卫自证 | ✅ `arch-guard.sh`（仓库根、后台）→ **`OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`**，G19 唯一空转项未增（G21 棘轮绿）；**G20 OK**（56 个 handoff ID 全在台账、CLOSED 证据非空）；`arch-guard-selftest.sh` → **`30/30 PASS`（215s）**，变异注入真判红（G17/G18/G19/G20/G22/G23 + 2 个 VAC 段各 PASS） |
 | 出包 / 行数 | ✅ `localbuild.sh` → `BUILD SUCCESSFUL in 48s`，`app-debug.apk` **69529248 B**；模块 main 行数 `feature-settings 3492/3500`（余 8）、`core-model 2038/2600`、`core-engine 1193/2600`、`core-data 2388/4500`、`feature-chat 3777/3900`、`app 1358/1600`；**未调 `LINE_CAPS` / `TOTAL_LINE_CAP=42500` / `VACUOUS_BASELINE`**，未引用 W8 +100 例外。装包 `pm install -r` Success，冷启动 `COLD 1071ms` |
 | 真机四态（D6/D7 及矩阵各项） | ✅ 详见 §三 G5 行：**D6 ✅ / D7 ✅ / D7b ✅ / F-1+A-3 ✅ / M1 抽验 ✅ / M4 ✅ / M5 ✅ / M6 ✅ / M8 ⛔vacuous / M9 ⛔vacuous / M10 ⛔vacuous / M3 ⛔ / M7 ⛔**。关键：**D7 用「只注入能力位、不改端点名」专打 P0-3 旧 `LaunchedEffect(label)` key，入口由禁用态变可点「添加图片」** ⇒ 响应式修复真机行使；视觉往返 NV-VL 答 `Red Blue`（`2.2k in / 48 out`） |
-| CHECKLIST 判读（§四） | ✅ **12 条已逐条编号写死**（§四）。C1–C8、C11、C12 本车判读完成；**C9（push dry-run）/ C10（CI 五项）待 G6 推后补判**。**N1（C11）W8 六项 RED**：Q1 / Q2 / Q3 / Q7′ / Q15 五项**本车源码闭环**（符号与用例均已核实，见 §二 核销）＋ **W3-07 销账由 N2（C12）闭环**（台账 `:74` `CLOSED` + 证据列现役三处）；**C9 回填 1 项按 §六 7 留痕归 W9-10，本车不代做、不转移编号** |
-| push dry-run / CI 五项 | ⏳ 待 G6。主理人推 main 后回填 dry-run 输出与 CI run 五项结论（见 §三 G6 行） |
+| CHECKLIST 判读（§四） | ✅ **12 条已逐条编号写死**（§四），**12/12 全部判读完成**：C1–C8 逐条过（基线复核 / 环境注入 / 编译 / 单测 / EXPECTED_TESTS 双向 / 守卫 / 自证 / 推送前置无敏感文件）；**C9 push dry-run ✅**（`main -> main`）、**C10 CI 五项 ✅**（run `42227092654` 全 success）；**C11 N1 W8 六项 RED**：Q1 / Q2 / Q3 / Q7′ / Q15 五项**本车源码闭环**（符号与用例已核实，见 §二 核销）＋ **W3-07 销账由 C12 N2 闭环**（台账 `:74` `CLOSED` + 证据列现役三处）；**C9 roadmap 回填 1 项按 §六 7 留痕归 W9-10，本车不代做、不转移编号**（不影响 12/12 判读闭合） |
+| push dry-run / CI 五项 | ✅ **G6 完成**：`git push --dry-run` 与实推均输出 **`e7d7a1e..3fcd45e main -> main`**；提交 **`3fcd45e`**（33 files +1669/−169），PAT 仅 URL inline 一次性、推后 `remote set-url` 清干净（config 0 命中）。**CI run `42227092654`（head `3fcd45e`）五项全 `success`**：`Arch guard` / `Assemble Debug (JDK 21)` / `Unit tests`（含 `EXPECTED_TESTS=764` 对账）/ `Secret scan (gitleaks + trufflehog)` / `Lint (baseline gate)`；本车未动 lint baseline（G14 实测 `1 条 ≤ 冻结值 1`），Lint job success 判绿。双工作流核对：build.yml `push.branches:[main]` 命中（代码+文档同车 ⇒ 有 run，非 paths-ignore 0 run）；release.yml `tags: v*` 未打 tag ⇒ 0 run 为预期 |
 
-**占位不等于通过** → 本节已按跑后证据填毕；**C9 / C10 两条 CHECKLIST 与 G6 尚待推送后闭环**，不得当作已全绿。
+**占位不等于通过** → 本节已按跑后证据填毕；**G1–G6 四闸门 + 真机 + 推送 + CI 五项全部行使完成**，CHECKLIST **12/12 判读闭合**（C9 roadmap 回填归 W9-10 留痕，不计入本车判读缺口）。W9-00 出口判据四条全绿，**不构成 W9-01（压缩量纲统一）跳过或顺延**。
 
 ---
 
@@ -131,7 +131,7 @@
 | G3 架构守卫 | `bash scripts/arch-guard.sh`（**必须仓库根目录**，后台跑） | `OK=27 VACUOUS≤1（只许减，G19 唯一）VIOLATION=0 SELF_FAULT=0`；**G20 OK**（所有 handoff ID 在台账内、CLOSED 证据非空） | ✅ **`OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`**；**G20 OK**（**56 个 handoff ID 全在台账**、CLOSED 证据非空）；G16 中文硬编码 **0 处**；G19 唯一空转项未增（G21 棘轮绿）；G22 evaluateSwitch 2 处 / G23 autoCompactOnSettled 1 处 |
 | G4 守卫自证 | `bash scripts/arch-guard-selftest.sh`（后台跑） | `30/30 PASS`（28 CASES + 2 独立 VAC 段）；变异注入须真判红 | ✅ **`selftest: 30/30 PASS`（215s）**，exit 0；变异真判红：G17 加 apiKey / G18 调 engine.generate / G19 拼凭据 / **G20 删台账 W3-05 行** / G22 删 evaluateSwitch / G23 删 autoCompactOnSettled，各 PASS；VAC-G1b、VAC-G21 两独立段 PASS |
 | G5 真机 | 本地 UI + 功能测试 + adb 调试（OPPO PDRM00 / A13） | D6/D7 及矩阵预登记各项四态取证；**真机测过没问题才推** | ✅ **行使完成，详见下表**（OPPO PDRM00 / A13 / SDK33，adb `-P 15037`，W9-00 新包 `pm install -r` Success） |
-| G6 推送 | `git push --dry-run` + `gh run list --branch main`（或 GitHub API） | dry-run 输出 `main -> main`；双工作流触发核对；**「没有 run」≠「绿的」**（paths-ignore 0 run 同形） | ⏳ 待主理人推 main（本波代码 + 文档同车）；推后回填 dry-run 与 CI 五项。注：paths-ignore 挡纯文档，故本抬头必须与代码同车才会触发 run |
+| G6 推送 | `git push --dry-run` + `gh run list --branch main`（或 GitHub API） | dry-run 输出 `main -> main`；双工作流触发核对；**「没有 run」≠「绿的」**（paths-ignore 0 run 同形） | ✅ **dry-run 与实推均 `e7d7a1e..3fcd45e main -> main`**（提交 `3fcd45e`，33 files +1669/−169）。**CI run `42227092654`（head `3fcd45e`）`completed / success`，五 job 全 success**：`Arch guard` / `Assemble Debug (JDK 21)` / `Unit tests`（`EXPECTED_TESTS=764` 对账通过）/ `Secret scan` / `Lint`。双工作流：build.yml `push.branches:[main]` 命中 ⇒ **有 run**（代码+文档同车，非 paths-ignore 0 run）；release.yml `tags: v*` 本波未打 tag ⇒ 0 run 为预期。PAT 仅 URL inline 一次性、推后 `remote set-url` 清干净（config 0 命中） |
 
 **G5 真机四态明细（2026-11-06，W9-00 新包；关键计数已抄入正文，取证截图 `_w9/matrix/dev-*.png` 不入库）**：
 
