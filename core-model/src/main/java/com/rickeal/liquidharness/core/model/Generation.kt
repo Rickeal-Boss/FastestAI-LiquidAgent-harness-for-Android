@@ -76,7 +76,7 @@ data class SamplingParams(
     /** 单轮输出上限。null = 用端点的 `maxOutputTokens`。 */
     val maxTokens: Int? = null,
     val stop: List<String> = emptyList(),
-    /** 仅当端点 `reasoningStyle == REASONING_EFFORT` 时生效。 */
+    /** 未接线，勿用；唯一真值源 = `RemoteEndpoint.reasoningEffort`。 */
     val reasoningEffort: String = "medium",
     val seed: Long? = null,
 )

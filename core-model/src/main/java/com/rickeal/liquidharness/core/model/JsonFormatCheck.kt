@@ -1,7 +1,6 @@
 package com.rickeal.liquidharness.core.model
 
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
 
 /**
  * 模型返回文本的 JSON 格式校验（用户 W8 需求 ③，A 路 = 只读检查）。
@@ -18,9 +17,9 @@ sealed interface JsonCheckResult {
     data object Valid : JsonCheckResult
 
     /**
-     * 非法 JSON。⚠️ **只给行列号与固定描述，不回显原文片段**（`AGENTS.md` §六：
-     * 上屏风险 > 落盘风险，模型输出可能含密钥）。[message] 是 kotlinx 的**结构化**错误描述，
-     * 不含被解析的原文内容，仍裁到 120 字符。
+     * 非法 JSON。⚠️ **只给行列号与描述段，不回显原文片段**（`AGENTS.md` §六：
+     * 上屏风险 > 落盘风险，模型输出可能含密钥）。[message] 是 kotlinx 异常里
+     * `JSON input:` **之前**的描述段，原文整段被丢弃，再裁到 120 字符。
      */
     data class Invalid(val line: Int, val column: Int, val message: String) : JsonCheckResult
 }
@@ -35,15 +34,16 @@ fun checkJsonFormat(text: String, allowFence: Boolean = true): JsonCheckResult {
     val body = stripJsonEnvelope(text, allowFence)
     if (body.isEmpty()) return JsonCheckResult.Invalid(line = 1, column = 1, message = "empty input")
     return try {
-        val element: JsonElement = STRICT_JSON.parseToJsonElement(body)
-        // 严格模式下尾逗号 / 单引号已被拒；这里再挡一层「解析成功但整体不是单个值」的形态。
-        when (element) {
-            is kotlinx.serialization.json.JsonNull -> JsonCheckResult.Valid
-            else -> JsonCheckResult.Valid
-        }
+        // 严格实例自身就拒绝「解析成功后还有尾随内容」；原先
+        // `JsonNull -> Valid; else -> Valid` 两分支同值 = 恒真空判据，删掉不丢任何防线（kotlinx②）。
+        STRICT_JSON.parseToJsonElement(body)
+        JsonCheckResult.Valid
     } catch (e: Exception) {
-        val message = (e.message ?: "invalid json").take(120)
-        val offset = Regex("offset (\\d+)").find(e.message ?: "")?.groupValues?.get(1)?.toIntOrNull()
+        val raw = e.message.orEmpty()
+        // kotlinx 新版异常 message 常带 `JSON input: <整段原文>`；只取它之前的描述段，
+        // 否则模型输出里的凭据会被原样回显到气泡上屏（kotlinx①）。
+        val message = raw.substringBefore("JSON input:").ifBlank { "invalid json" }.take(120)
+        val offset = Regex("offset (\\d+)").find(raw)?.groupValues?.get(1)?.toIntOrNull()
         if (offset == null) {
             JsonCheckResult.Invalid(line = 1, column = 1, message = message)
         } else {
@@ -69,7 +69,14 @@ private fun stripJsonEnvelope(text: String, allowFence: Boolean): String {
     val language = s.substring(3, firstNewline).trim().lowercase()
     if (language.isNotEmpty() && language != "json") return s
     s = s.substring(firstNewline + 1)
-    val endFence = s.lastIndexOf("```")
+    // 结束围栏必须是**独立一行**：字符串值里含 ``` 时不能把它当围栏裁掉（kotlinx③）。
+    // 逐行累加字符偏移、取最后一个整行恰为 ``` 的起点 ⇒ 与内容无关的确定性实现。
+    var offset = 0
+    var endFence = -1
+    for (line in s.lineSequence()) {
+        if (line.trim() == "```") endFence = offset
+        offset += line.length + 1
+    }
     if (endFence >= 0) s = s.substring(0, endFence)
     return s.trim()
 }

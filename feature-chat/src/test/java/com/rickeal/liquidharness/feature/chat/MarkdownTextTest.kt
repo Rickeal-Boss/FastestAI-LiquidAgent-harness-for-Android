@@ -1,5 +1,6 @@
 package com.rickeal.liquidharness.feature.chat
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import kotlin.test.Test
@@ -86,9 +87,30 @@ class MarkdownTextTest {
     }
 
     @Test
-    fun linkShowsAnchorTextOnly() {
-        // 链接**只显示锚文本**：不导航、不加载图片（本波不支持）。
-        assertEquals("点这里", bubbleText("[点这里](https://example.com/a)", true).text)
+    fun headingThreeHashesRenderedWithoutHashes() {
+        // MD-1 选 (a)：`^#{1,6}\s+` 后三级标题要去井号且加粗（旧实现原样显 ###）。
+        val third = bubbleText("### 三级标题", true)
+        assertEquals("三级标题", third.text)
+        assertTrue(hasBold(third))
+    }
+
+    @Test
+    fun headingFourHashesRenderedWithoutHashes() {
+        // MD-1 选 (a)：四级标题同态（旧实现原样显 ####）。
+        val fourth = bubbleText("#### 四级标题", true)
+        assertEquals("四级标题", fourth.text)
+        assertTrue(hasBold(fourth))
+    }
+
+    @Test
+    fun linkShowsAnchorTextAndGreyUrlSuffix() {
+        // MD-2 选 (a)：锚文本后追加灰色小字 URL 尾注 ⇒ 目标可见、不吞字符。
+        val rendered = bubbleText("[点这里](https://example.com/a)", true)
+        assertEquals("点这里 (https://example.com/a)", rendered.text)
+        assertTrue(
+            rendered.spanStyles.any { it.item.color != Color.Unspecified },
+            "URL 尾注必须带灰色 span",
+        )
     }
 
     @Test

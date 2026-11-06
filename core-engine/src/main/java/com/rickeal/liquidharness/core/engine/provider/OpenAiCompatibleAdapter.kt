@@ -2,8 +2,8 @@ package com.rickeal.liquidharness.core.engine.provider
 
 import com.rickeal.liquidharness.core.model.AgentJson
 import com.rickeal.liquidharness.core.model.AttachmentKind
-import com.rickeal.liquidharness.core.model.RESERVED_BODY_KEYS
 import com.rickeal.liquidharness.core.model.ChatMessage
+import com.rickeal.liquidharness.core.model.credentialishExtraBodyViolation
 import com.rickeal.liquidharness.core.model.FinishReason
 import com.rickeal.liquidharness.core.model.GenerationEvent
 import com.rickeal.liquidharness.core.model.GenerationRequest
@@ -99,14 +99,19 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
         }
     }
 
-    /** 族内覆写少量 body 键（用户「自定义协议」）。键白名单由 `validateAdvanced` 钉死，此处再兜一层。 */
+    /**
+     * 族内覆写少量 body 键（用户「自定义协议」）。
+     *
+     * 运行时**复用保存链同一张校验表**（[credentialishExtraBodyViolation]）逐键兜底：
+     * 保留键 / 凭据词表 / 值里的凭据形态。保存链之外再兜一层，是因为端点可能被
+     * 老配置或设备侧注入绕过 UI 直接带进来 —— 组件写完不等于组件被行使（W9-00 F-1）。
+     */
     private fun applyCustomProtocol(endpoint: RemoteEndpoint, body: JsonObjectBuilder) {
         val cp = endpoint.customProtocol
         if (!cp.enabled || cp.extraBody.isEmpty()) return
-        val reserved = RESERVED_BODY_KEYS.map { it.lowercase() }.toSet()
         for ((key, raw) in cp.extraBody) {
             val k = key.trim()
-            if (k.isEmpty() || k.lowercase() in reserved) continue
+            if (k.isEmpty() || credentialishExtraBodyViolation(key, raw) != null) continue
             body.put(k, coerceScalar(raw))
         }
     }
@@ -115,6 +120,9 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
     private fun coerceScalar(raw: String): JsonElement = when {
         raw.equals("true", ignoreCase = true) -> JsonPrimitive(true)
         raw.equals("false", ignoreCase = true) -> JsonPrimitive(false)
+        // NaN / Inf / Infinity 经 toDoubleOrNull() 会成非有限 Double，
+        // JsonPrimitive(Double.NaN) 在 encodeToString 时抛异常 ⇒ 一条 extraBody 让整次 run 崩（P1-3）。
+        raw.trim().lowercase() in NON_FINITE_SCALARS -> JsonPrimitive(raw)
         raw.toLongOrNull() != null -> JsonPrimitive(raw.toLong())
         raw.toDoubleOrNull() != null -> JsonPrimitive(raw.toDouble())
         else -> JsonPrimitive(raw)
@@ -412,6 +420,11 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
     }
 
     private companion object {
+        /** 非有限数值字面量：一律按字符串保留，绝不转成 Double（P1-3）。 */
+        val NON_FINITE_SCALARS = setOf(
+            "nan", "inf", "+inf", "-inf", "infinity", "+infinity", "-infinity",
+        )
+
         const val CHAT_COMPLETIONS_PATH = "/chat/completions"
 
         /** 与 `core-net` 的 `SseEventParser.DONE_MARKER` 同值；此处独立声明避免反向依赖语义。 */

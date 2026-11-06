@@ -17,6 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -30,6 +31,7 @@ import com.rickeal.liquidharness.core.data.AppContainer
 import com.rickeal.liquidharness.core.design.liquid.backdrops.LayerBackdrop
 import com.rickeal.liquidharness.core.design.liquid.backdrops.layerBackdrop
 import com.rickeal.liquidharness.core.model.ChatMessage
+import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.feature.chat.ChatScreen
 import com.rickeal.liquidharness.feature.chat.ChatViewModel
 import com.rickeal.liquidharness.feature.settings.SettingsRoute
@@ -162,11 +164,15 @@ private fun ChatRoute(
         com.rickeal.liquidharness.core.data.SettingsRepository.DEFAULT_MARKDOWN_RENDER,
     )
     // W8（NEW-D / 台账 W3-07）：图片入口闸门 —— 端点声明支持图片输入才接回调；
-    // 未启用时**保留禁用态入口**（不静默隐藏），避免既有端点升级后入口直接消失。
-    val visionEnabled = remember { mutableStateOf(false) }
-    LaunchedEffect(state.endpointLabel) {
-        visionEnabled.value = container.activeEndpoint()?.supportsVision == true
+    // 未启用时**保留禁用态入口 + 无障碍原因**（不静默隐藏，D6 正确文本）。
+    // W9-00 P0-3：不再拿 state.endpointLabel 作 effect key —— 编辑当前端点只勾图片时
+    // 显示名不变 ⇒ effect 不重跑 ⇒ 返回对话页入口仍禁用。改成由端点快照直接派生：
+    // key ≥ endpointId + supportsVision，重返本页 / 活跃端点变化都会重读端点内容。
+    val activeId by container.settings.activeEndpointId.collectAsStateWithLifecycle(null)
+    val endpointGate = produceState<RemoteEndpoint?>(initialValue = null, activeId, container) {
+        value = container.activeEndpoint()
     }
+    val visionEnabled = endpointGate.value?.supportsVision == true
 
     ChatScreen(
         state = state,
@@ -179,9 +185,9 @@ private fun ChatRoute(
         onResolveApproval = viewModel::resolveApproval,
         onOpenDrawer = onOpenDrawer,
         onNewConversation = viewModel::newConversation,
-        onPickImage = if (visionEnabled.value) pickImage else null,
+        onPickImage = if (visionEnabled) pickImage else null,
         onRemoveAttachment = viewModel::removeAttachment,
-        imageInputLocked = !visionEnabled.value,
+        imageInputLocked = !visionEnabled,
         renderMarkdown = renderMarkdown.value,
         // 手动压缩（W6）：入口 → 二次确认（ChatScreen 里）→ ViewModel 压缩。
         onCompressContext = viewModel::compressContext,

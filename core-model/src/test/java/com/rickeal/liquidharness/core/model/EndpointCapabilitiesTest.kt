@@ -234,4 +234,92 @@ class EndpointCapabilitiesTest {
             ).isEmpty(),
         )
     }
+
+    // ------------------------------------------------------------ W9-00 防线接线
+
+    @Test
+    fun credentialishKeyFragmentTokenIsRejectedAtRuntime() {
+        // P2 词表补 token：G17 词表含 token，运行时词表曾漏 ⇒ access_token=leak 必红。
+        val bad = RemoteEndpoint(
+            customProtocol = CustomProtocol(enabled = true, extraBody = mapOf("access_token" to "leak")),
+        )
+        assertTrue(validateAdvanced(bad).isNotEmpty(), "access_token 必须被拒")
+        // 已知必通过样本：同形态但键名不含凭据语义。
+        assertTrue(
+            validateAdvanced(
+                RemoteEndpoint(customProtocol = CustomProtocol(enabled = true, extraBody = mapOf("top_k" to "40"))),
+            ).isEmpty(),
+        )
+    }
+
+    @Test
+    fun credentialishValueAndAllowlistAreEnforced() {
+        // F-1 / A-3：值里塞 sk- 必被拒（含值的凭据形态扫描），未知键被白名单拦下。
+        val withSecretValue = RemoteEndpoint(
+            customProtocol = CustomProtocol(enabled = true, extraBody = mapOf("top_k" to "sk-live-xxxx")),
+        )
+        assertTrue(validateAdvanced(withSecretValue).any { it.contains("value") })
+        val unknownKey = RemoteEndpoint(
+            customProtocol = CustomProtocol(enabled = true, extraBody = mapOf("foo" to "plain")),
+        )
+        assertTrue(validateAdvanced(unknownKey).any { it.contains("allowlisted") })
+        // 干净样本 0 命中（判据自身先验证，避免恒绿断言）。
+        assertTrue(
+            validateAdvanced(
+                RemoteEndpoint(customProtocol = CustomProtocol(enabled = true, extraBody = mapOf("seed" to "7"))),
+            ).isEmpty(),
+        )
+    }
+
+    @Test
+    fun extremeDegradationNeverEmitsAnUnsupportedEffort() {
+        // P1-4 反例：端点只声明 LOW，旧实现无条件发 "high"。
+        val r = normalizeEffort(
+            desired = "extreme",
+            supported = setOf(ReasoningEffort.LOW),
+            style = ReasoningStyle.OPENROUTER_REASONING_OBJECT,
+            maxOut = 8000,
+        )
+        assertTrue(r.wire != "high", "wire=" + r.wire)
+        assertEquals("low", r.wire)
+        assertTrue(r.reason != null, "降级必须落 reason 供上屏")
+        // 无任何可下发档位 ⇒ wire=null，绝不硬发未声明档位。
+        val none = normalizeEffort(
+            desired = "extreme",
+            supported = setOf(ReasoningEffort.EXTREME),
+            style = ReasoningStyle.OPENROUTER_REASONING_OBJECT,
+            maxOut = 8000,
+        )
+        assertNull(none.wire)
+    }
+
+    @Test
+    fun hardOffDowngradeIsVisibleSignal() {
+        // P0-2 / P1-1：用户选 OFF 但不可真关 ⇒ 必须有「已降级」信号上屏（真/假两态）。
+        val unsupported = RemoteEndpoint(
+            supportsReasoning = true,
+            allowDisableThinking = false,
+            reasoningStyle = ReasoningStyle.OPENROUTER_REASONING_OBJECT,
+            thinkingMode = ThinkingMode.OFF,
+        )
+        assertTrue(unsupported.hardOffDowngraded)
+        assertFalse(unsupported.copy(allowDisableThinking = true).hardOffDowngraded, "可真关时不得谎报降级")
+    }
+
+    @Test
+    fun parseExtraBodyKeepsCommaSeparatedPairs() {
+        // P1-2：输入 "a=1, b=2" 两键都在（吞 ", " 后缀会只剩 1 键）。
+        val parsed = parseExtraBody("a=1, b=2")
+        assertEquals(2, parsed.size)
+        assertEquals("1", parsed["a"])
+        assertEquals("2", parsed["b"])
+    }
+
+    @Test
+    fun openAiAdvancedFlagsTrackProviderKind() {
+        // P2 kind 收窄：非 OPENAI_COMPATIBLE 端点上 jsonMode / customProtocol 不静默可用。
+        assertTrue(RemoteEndpoint().supportsOpenAiAdvanced)
+        assertFalse(RemoteEndpoint(kind = ProviderKind.ANTHROPIC).supportsOpenAiAdvanced)
+        assertFalse(RemoteEndpoint(kind = ProviderKind.GEMINI).supportsOpenAiAdvanced)
+    }
 }

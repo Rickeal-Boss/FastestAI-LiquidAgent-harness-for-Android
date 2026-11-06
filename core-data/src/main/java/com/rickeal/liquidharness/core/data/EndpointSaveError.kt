@@ -19,6 +19,12 @@ enum class EndpointSaveError {
 
     /** 其它 IO 失败（清单写盘失败等）。 */
     SAVE_FAILED,
+
+    /**
+     * 高级配置校验未通过（保留键 / 凭据词表 / 值形态 / 允许键白名单）。
+     * W9-00 F-1：保存链**落盘前**拦下，端点不写进 `endpoints.json`、不进请求体。
+     */
+    ADVANCED_INVALID,
 }
 
 /**

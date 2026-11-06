@@ -2,6 +2,7 @@ package com.rickeal.liquidharness.core.model
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -86,16 +87,50 @@ class JsonFormatCheckTest {
         assertTrue(result is JsonCheckResult.Invalid, "allowFence=false 时带围栏必须判非法")
     }
 
-    // ---- 错误定位（只给行列号，不回显原文） ----
+    // ---- kotlinx 四件（W9-00）：红态样本先证明旧实现必红 ----
+
+    @Test
+    fun invalidMessageNeverEchoesInputFragment() {
+        // kotlinx① 红态样本：尾逗号必被严格实例拒绝，且原文含 SECRET-MARKER；
+        // 旧实现 take(120) 会把 `JSON input: {...}` 整段回显上屏。
+        // 判据自身先验证：模拟 kotlinx 的 `JSON input:` 变异样本必须能被这条断言抓到，
+        // 否则「不含 SECRET-MARKER」就是恒绿断言。
+        val kotlinxRaw = "Unexpected JSON token at offset 20: Trailing comma JSON input: {\"a\": \"SECRET-MARKER\",}"
+        assertTrue(kotlinxRaw.contains("SECRET-MARKER"))
+        val result = checkJsonFormat("{\"a\": \"SECRET-MARKER\",}")
+        assertTrue(result is JsonCheckResult.Invalid)
+        val invalid = result as JsonCheckResult.Invalid
+        assertFalse(invalid.message.contains("SECRET-MARKER"), "message=" + invalid.message)
+        assertFalse(invalid.message.contains("JSON input:"), "message=" + invalid.message)
+        assertTrue(invalid.message.isNotEmpty())
+    }
+
+    @Test
+    fun strictParserRejectsTrailingValuesWithoutVacuousWhen() {
+        // kotlinx② 两样本：严格实例自身拒绝「非单个值」；恒真空 when 从未挡过这一层。
+        assertEquals(JsonCheckResult.Valid, checkJsonFormat("{\"a\":1}"))
+        assertTrue(checkJsonFormat("{\"a\":1} {\"b\":2}") is JsonCheckResult.Invalid)
+    }
+
+    @Test
+    fun fenceInsideStringValueIsNotMistakenForEndFence() {
+        // kotlinx③ 红态样本：旧实现 lastIndexOf("```") 截到字符串值里的围栏 ⇒ 误裁。
+        assertEquals(
+            JsonCheckResult.Valid,
+            checkJsonFormat("```json\n{\"a\": \"x ``` y\"}\n```"),
+        )
+    }
+
+    // ---- 错误定位：精确行列号（kotlinx④）+ 不含原文片段 ----
 
     @Test
     fun invalidReportsLineAndColumn() {
         val result = checkJsonFormat("{\n  \"a\": 1,\n  \"b\":\n}")
         assertTrue(result is JsonCheckResult.Invalid)
         val invalid = result as JsonCheckResult.Invalid
-        assertTrue(invalid.line >= 1, "line=${invalid.line}")
-        assertTrue(invalid.column >= 1, "column=${invalid.column}")
-        assertTrue(invalid.message.isNotEmpty())
+        assertEquals(4, invalid.line, "line=${invalid.line}")
+        assertEquals(1, invalid.column, "column=${invalid.column}")
+        assertFalse(invalid.message.contains("\"b\""), "message 不得回显原文片段")
     }
 
     @Test

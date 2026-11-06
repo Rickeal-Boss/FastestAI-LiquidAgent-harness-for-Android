@@ -11,6 +11,7 @@ import com.rickeal.liquidharness.core.data.EndpointSaveException
 import com.rickeal.liquidharness.core.data.ProbeOutcome
 import com.rickeal.liquidharness.core.data.SettingsRepository
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
+import com.rickeal.liquidharness.core.model.validateAdvanced
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,25 +48,14 @@ data class SettingsUiState(
      * null = 没有错误 / 已被下一次保存清掉。
      */
     val saveError: EndpointSaveError? = null,
-    /**
-     * 一次保存**成功**的完成信号。路由用它决定是否退栈。
-     *
-     * 为什么不让 `onSave` 直接 `popBackStack()`：保存是异步的，先退栈再失败
-     * 就等于「页面关了、错误没人看见」—— 而 `UNSAFE_URL` / `SECRET_WRITE_FAILED`
-     * 恰恰是「用户以为存上了其实没有」的高危静默态（外审 P0-2）。所以退栈必须
-     * 由**保存结果**驱动，不能由点击驱动。
-     */
+    /** 一次保存**成功**的完成信号。退栈必须由保存结果驱动，不能由点击驱动（先退栈再失败 = 错误没人看见）。 */
     val saveCompleted: Boolean = false,
     /**
      * W7 切换守卫：BLOCKED（当前会话装不进目标生效窗口）拦下时上屏的原因卡。
      * null = 无。消费方调 [SettingsViewModel.consumeSwitchNotice]，由 `SwitchDialogs` 渲染。
      */
     val switchNotice: SwitchNotice? = null,
-    /**
-     * W7 切换守卫：放行（含 VACUOUS）后的**二次确认待办**。确认（[SettingsViewModel.confirmSwitch]）
-     * 才真正写盘；dismiss 丢弃。刻意不含 `SAVE_ENDPOINT` —— 明文 key 不进 state
-     * （类头纪律），编辑页保存只做 BLOCKED 硬拦（见 [SettingsViewModel.save]）。
-     */
+    /** W7 切换守卫：放行（含 VACUOUS）后的二次确认待办；不含 SAVE_ENDPOINT（明文 key 不进 state）。 */
     val pendingSwitch: PendingSwitch? = null,
     /**
      * W7 切换守卫：按当前会话字符数预计算的「装不下」端点 id 集合，列表页据此置灰。
@@ -106,6 +96,11 @@ class SettingsViewModel(
     fun save(endpoint: RemoteEndpoint, apiKey: String?) {
         viewModelScope.launch {
             _state.update { it.copy(saveError = null, saveCompleted = false) }
+            // F-1：落盘前过高级配置校验，非空即 BLOCKED 上屏、不写盘（唯二生产调用点的保存侧）。
+            if (validateAdvanced(endpoint).isNotEmpty()) {
+                _state.update { it.copy(saveError = EndpointSaveError.ADVANCED_INVALID) }
+                return@launch
+            }
             // W7 切换守卫：仅当这次保存会改变活跃端点（编辑当前端点 / 首存自动激活，
             // `AppContainer.saveEndpoint` 对 activeId==null 会 setActive）时才判容量；
             // 编辑非当前端点不改变本会话目标 ⇒ 不过守卫（否则长会话连「新增端点」都被挡）。
@@ -180,6 +175,7 @@ class SettingsViewModel(
                     val tokens = pending.tokens ?: return@launch
                     container.settings.setMaxContextTokens(tokens)
                     _state.update { it.copy(maxContextTokens = tokens) }
+                    load() // W9-00 P2：降档后重算 blockedEndpointIds，别沿用旧窗口口径。
                 }
                 SwitchKind.SAVE_ENDPOINT -> Unit
             }

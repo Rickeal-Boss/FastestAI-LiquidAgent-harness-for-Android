@@ -573,4 +573,37 @@ class OpenAiCompatibleAdapterTest {
         )
         assertNull(adapter.buildBody(request(endpoint = e))["top_k"])
     }
+
+    // ------------------------------------------------------------ W9-00 运行时防线
+
+    /** P1-3 反例：NaN / Inf / Infinity 转成非有限 Double 会让 buildBody 抛异常。 */
+    @Test
+    fun nonFiniteExtraBodyValuesNeverBreakBuildBody() {
+        for (value in listOf("NaN", "Inf", "Infinity", "-Infinity")) {
+            val e = endpoint().copy(
+                customProtocol = CustomProtocol(enabled = true, extraBody = mapOf("foo" to value)),
+            )
+            val body = adapter.buildBody(request(endpoint = e))
+            assertEquals(value, body["foo"]!!.jsonPrimitive.content, "非有限值必须按字符串保留")
+        }
+        // 已知必通过样本：收紧不得把普通数值也挡掉（防恒绿 / 假红）。
+        val clean = endpoint().copy(
+            customProtocol = CustomProtocol(enabled = true, extraBody = mapOf("top_k" to "40")),
+        )
+        assertEquals(40, adapter.buildBody(request(endpoint = clean))["top_k"]!!.jsonPrimitive.int)
+    }
+
+    /** F-1：运行时与保存链复用同一张表，值里含凭据形态的键不得进请求体。 */
+    @Test
+    fun runtimeCustomProtocolSkipsCredentialishValues() {
+        val e = endpoint().copy(
+            customProtocol = CustomProtocol(
+                enabled = true,
+                extraBody = mapOf("foo" to "sk-live-xxxx", "top_k" to "40"),
+            ),
+        )
+        val body = adapter.buildBody(request(endpoint = e))
+        assertNull(body["foo"], "凭据形态值不得进请求体")
+        assertEquals(40, body["top_k"]!!.jsonPrimitive.int, "干净键仍照常追加")
+    }
 }

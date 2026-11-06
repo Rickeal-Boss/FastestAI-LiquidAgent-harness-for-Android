@@ -293,4 +293,40 @@ class SessionImportParserTest {
         assertEquals(SessionImportParser.Format.JSONL, SessionImportParser.detectFormat("a.bin"))
         assertEquals(SessionImportParser.Format.JSONL, SessionImportParser.detectFormat(null))
     }
+
+    // ------------------------------------------------------------ W9-00 Q2 / Q3
+
+    @Test
+    fun parseBytesStripsUtf8BomBeforeJsonl() {
+        // Q2 夹具 1：BOM + 合法 JSONL。旧实现 bytes.toString(UTF_8) 把 U+FEFF 留在首行 ⇒ 整份 MALFORMED。
+        val bytes = "\uFEFF{\"role\":\"user\",\"text\":\"q\"}\n".toByteArray(Charsets.UTF_8)
+        val parsed = ok(SessionImportParser.parse(bytes, SessionImportParser.Format.JSONL))
+        assertEquals(1, parsed.messages.size)
+        assertEquals("q", parsed.messages[0].text)
+    }
+
+    @Test
+    fun parseTextStillAcceptsBomPrefixedString() {
+        // Q2 夹具 2：文本入口同源剥离（BOM 不只来自字节解码）。
+        val parsed = ok(
+            SessionImportParser.parse(
+                "\uFEFF{\"role\":\"assistant\",\"text\":\"a\"}",
+                SessionImportParser.Format.JSONL,
+            ),
+        )
+        assertEquals(Role.MODEL, parsed.messages[0].role)
+        assertEquals("a", parsed.messages[0].text)
+    }
+
+    @Test
+    fun blankBodyAfterCapDoesNotTripTooManyMessages() {
+        // Q3：5000 条之后再来一条空正文 ⇒ 不得返回 TOO_MANY_MESSAGES（现役顺序必红）。
+        val builder = StringBuilder()
+        for (index in 0 until SessionImportParser.MAX_MESSAGES) {
+            builder.append("""{"role":"user","text":"m""").append(index).append("\"}\n")
+        }
+        builder.append("{\"role\":\"user\",\"text\":\"   \"}\n")
+        val parsed = ok(SessionImportParser.parse(builder.toString(), SessionImportParser.Format.JSONL))
+        assertEquals(SessionImportParser.MAX_MESSAGES, parsed.messages.size)
+    }
 }

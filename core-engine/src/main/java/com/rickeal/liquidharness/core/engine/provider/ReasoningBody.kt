@@ -18,12 +18,15 @@ import kotlinx.serialization.json.put
  * |---|---|---|
  * | [ThinkingMode.OFF] | `reasoning: {"enabled": false}` | rtok=0、正文 `PONG` 连前导换行都消失 |
  * | [ThinkingMode.HIDE_ONLY] | `include_reasoning: false` | delta 不带思考，但 `reasoning_tokens` 照付 |
- * | [ThinkingMode.ON] / REASONING_ONLY | `reasoning: {"effort": wire}` | 正常思考 |
+ * | [ThinkingMode.ON] | `reasoning: {"effort": wire}` | 正常思考 |
  * | [ThinkingMode.FOLLOW_PROVIDER] | 不写任何字段 | dots 默认就开思考 ⇒ **不等于关思考** |
  *
+ * ⚠️ `REASONING_ONLY` 已从 UI 移除（W9-00 选 b）；下面的合并分支只为老配置反序列化兼容，
+ * 不再是「在卖的档位」。
+ *
  * 🔴 **`effort` 与 `max_tokens` 绝不共存**于同一 `reasoning` 对象 —— 本构造器只放 `effort`。
- * 🔴 「关闭思考」不可达时**降级成 HIDE_ONLY 并落 `reason`**（`hard_off_unsupported`），
- * 不静默发一个网关不认的字段 —— 静默发未验证值是 W5-01「判据自身先被验证」的反面。
+ * 🔴 「关闭思考」不可达时**降级成 HIDE_ONLY**：不发网关不认的字段，也**不落 `reason`
+ * 结构化日志**（日志出口归 W9-07）；降级事实由 `hardOffDowngraded` 派生信号在设置页上屏透出。
  */
 internal fun buildReasoningObject(endpoint: RemoteEndpoint, body: JsonObjectBuilder) {
     when (endpoint.effectiveThinkingMode) {
@@ -39,8 +42,8 @@ internal fun buildReasoningObject(endpoint: RemoteEndpoint, body: JsonObjectBuil
         ThinkingMode.HIDE_ONLY -> body.put("include_reasoning", false)
 
         ThinkingMode.ON, ThinkingMode.REASONING_ONLY -> {
-            // REASONING_ONLY 不发服务端开关：它是客户端期望（只展示思考块），
-            // 若正文为空不能判成断流 —— 那是 W9-09 的范围。
+            // REASONING_ONLY 只是存量配置的兼容分支（UI 已不再提供该档，W9-00 选 b）；
+            // 它仍与 ON 同发 effort，不承诺「正文为空不断流」的渲染策略（挂账 W9-09）。
             val effort = endpoint.resolvedEffort()
             if (effort.wire != null) {
                 body.put("reasoning", buildJsonObject { put("effort", effort.wire) })

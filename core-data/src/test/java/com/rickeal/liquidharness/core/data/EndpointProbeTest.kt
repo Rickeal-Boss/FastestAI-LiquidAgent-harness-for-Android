@@ -50,6 +50,33 @@ class EndpointProbeTest {
         assertEquals("PROTOCOL: boom", judgeProbe(failed, sawContent = true))
     }
 
+    // ---------------------------------------------------------------- W9-00 P1-5 事件序列
+
+    /** 关思考序列：只有 ReasoningDelta + Finished ⇒ 零内容证据，必须失败。 */
+    @Test
+    fun reasoningOnlySequenceFailsProbe() {
+        val events = listOf(
+            GenerationEvent.ReasoningDelta("thinking"),
+            GenerationEvent.Finished(FinishReason.STOP),
+        )
+        assertEquals(EMPTY_STREAM_DETAIL, judgeProbeSequence(events))
+    }
+
+    /** 开思考序列：有 TextDelta ⇒ 通过；且 Finished 之后同帧的 Usage 也算证据。 */
+    @Test
+    fun contentSequencePassesProbeIncludingTrailingUsage() {
+        assertNull(judgeProbeSequence(listOf(GenerationEvent.TextDelta("p"))))
+        // 关键反例：decodeEvent 同帧先 Finished 后 Usage，Usage 不得被 firstOrNull 吞掉。
+        assertNull(
+            judgeProbeSequence(
+                listOf(
+                    GenerationEvent.Finished(FinishReason.STOP),
+                    GenerationEvent.Usage(10, 5, 0),
+                ),
+            ),
+        )
+    }
+
     // ---------------------------------------------------------------- 真 HTTP
 
     /** 200 + text/html：零 SSE 事件 ⇒ ok=false，detail 指向空流。 */
@@ -71,6 +98,21 @@ class EndpointProbeTest {
         withServer("text/event-stream; charset=utf-8", body) { port ->
             val outcome = runBlocking { EndpointProbe(HttpTransport()).test(endpointFor(port), null) }
             assertTrue(outcome.ok, "合法 SSE 必须判通过，detail=" + outcome.detail)
+        }
+    }
+
+    /**
+     * W9-00 P1-5 运行时反例：finish_reason 与 usage **同一帧**、无正文。
+     * 旧实现 `firstOrNull` 在 Finished 处就取消上游 ⇒ Usage 不可达 ⇒ 假红。
+     */
+    @Test
+    fun usageInSameFrameAsFinishReasonPassesTheProbe() {
+        val body = "data: {\"choices\":[{\"finish_reason\":\"stop\"}]," +
+            "\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5}}\n\n" +
+            "data: [DONE]\n\n"
+        withServer("text/event-stream; charset=utf-8", body) { port ->
+            val outcome = runBlocking { EndpointProbe(HttpTransport()).test(endpointFor(port), null) }
+            assertTrue(outcome.ok, "同帧 Usage 必须可达，detail=" + outcome.detail)
         }
     }
 

@@ -83,6 +83,7 @@
     <string name="settings_save_error_unsafe_url">这个地址被安全策略拒绝：只允许公网 https，且不能带账号密码。</string>
     <string name="settings_save_error_secret_write_failed">API Key 没能写入本机加密存储，端点未保存。请重试或检查系统密钥库。</string>
     <string name="settings_save_error_save_failed">保存失败（写入本机配置出错），端点未保存。</string>
+    <string name="settings_save_error_advanced_invalid">高级配置校验未通过：含保留键、凭据形态键或值，端点未保存。</string>
 
     <!-- W7 切换守卫：三处写入点共用的拒绝 / 二次确认文案。
          措辞复用 feature-chat 的 chat_compress_warning（压缩的固有代价），不新造语义。 -->

@@ -60,10 +60,7 @@ private const val DEFAULT_CONTEXT_LENGTH = 32_768
  * 文件域内），而把密钥明文画在屏幕上不可接受。宁可这一格视觉上偏离玻璃语言，
  * 也不拿密钥的可见性做取舍。
  *
- * ## 为什么保存前要本地校验
- *
- * `RemoteEndpoint.baseUrl` 空串会让 `chatCompletionsUrl()` 拼出 `/chat/completions`
- * 这种相对地址，请求直接失败在 OkHttp 层，错误文案对用户毫无信息量。
+ * `baseUrl` 空串会拼出相对地址、失败在 OkHttp 层且文案无信息量 ⇒ 保存前本地校验。
  */
 @Composable
 fun EndpointEditScreen(
@@ -282,6 +279,7 @@ private fun EndpointActions(
                         EndpointSaveError.SECRET_WRITE_FAILED ->
                             R.string.settings_save_error_secret_write_failed
                         EndpointSaveError.SAVE_FAILED -> R.string.settings_save_error_save_failed
+                        EndpointSaveError.ADVANCED_INVALID -> R.string.settings_save_error_advanced_invalid
                     },
                 ),
                 style = MaterialTheme.typography.bodySmall,

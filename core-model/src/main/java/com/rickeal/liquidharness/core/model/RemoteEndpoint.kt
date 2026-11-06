@@ -159,8 +159,8 @@ data class RemoteEndpoint(
      * 用户思考意图。默认 [ThinkingMode.FOLLOW_PROVIDER]（不发任何开关）保持现役行为、老用户零回归。
      *
      * 注意 [ThinkingMode.OFF] 只在 [allowDisableThinking] 为真且 [reasoningStyle] 是
-     * [ReasoningStyle.OPENROUTER_REASONING_OBJECT] 时可达，否则由 adapter **降级 [ThinkingMode.HIDE_ONLY]
-     * 并落 reason**，不静默发无效字段。
+     * [ReasoningStyle.OPENROUTER_REASONING_OBJECT] 时可达，否则由 adapter 降级
+     * [ThinkingMode.HIDE_ONLY]；降级由 `hardOffDowngraded` 派生信号上屏，不落结构化日志。
      */
     val thinkingMode: ThinkingMode = ThinkingMode.FOLLOW_PROVIDER,
     /** 端点声明「允许真关思考」。来自 OR `reasoning.mandatory` 取反；dots / north 实测均为 `mandatory:false`。 */
@@ -202,7 +202,7 @@ data class RemoteEndpoint(
     val supportsVision: Boolean
         get() = Modality.IMAGE in inputModalities
 
-    /** 派生：音频输出能力。本波恒 `false`（无供应商 + 无 TTS 通道），保留派生以便 UI 判据覆盖。 */
+    /** 派生：音频输出能力。本波恒 `false`（无供应商 + 无 TTS 通道），UI 已过滤该假入口。 */
     val supportsAudioOutput: Boolean
         get() = Modality.AUDIO in outputModalities
 
@@ -219,7 +219,8 @@ data class RemoteEndpoint(
 
     /**
      * 派生：「允许真关思考」是否**可达**。三条件齐备才为真，否则 `OFF` 意图会被 adapter
-     * 降级成 [ThinkingMode.HIDE_ONLY] 并落 `reason=hard_off_unsupported`（不静默发无效字段）。
+     * 降级成 [ThinkingMode.HIDE_ONLY]（不静默发无效字段）；**不落 `reason` 结构化日志**，
+     * 降级事实由 `hardOffDowngraded` 上屏透出（W9-00，日志出口归 W9-07）。
      */
     val canHardOff: Boolean
         get() = supportsReasoning &&

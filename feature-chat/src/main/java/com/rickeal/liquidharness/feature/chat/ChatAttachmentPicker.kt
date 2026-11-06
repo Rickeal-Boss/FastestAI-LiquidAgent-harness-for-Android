@@ -13,10 +13,10 @@ import androidx.compose.ui.platform.LocalContext
 /**
  * 附件选择（图片 / 音频 / 文本）。
  *
- * ⚠️ **W6 接线，当前 main 源集里没有调用点**：本仓 `ChatMessage` 还没有 attachments
- * 字段、`ChatUiState` 也没有附件通道，`ChatInputBar` 因此不渲染「+」入口。
- * 保留整个文件是为了让 W6 只改「ViewModel 收下 uri → 读成文本 / 图片」这一段，
- * 不必再从旧仓搬一次 SAF 胶水。
+ * W6 已接线：`ChatMessage.attachments`（`core-model`）、`ChatHistoryMapper`、
+ * `ChatViewModel.attachImage`、`OpenAiCompatibleAdapter.contentElement` 都有生产消费点，
+ * `AppNavHost` 用 `rememberImagePicker` 接 SAF 回调。入口被禁用是图片能力闸门
+ * （`supportsVision`）的禁用态，不是「没有调用点」。
  *
  * 用系统 `OpenDocument`（SAF）而不是自己写文件浏览器：
  *  - 零权限弹窗（READ_MEDIA_IMAGES 只在直接读 MediaStore 时才需要）；

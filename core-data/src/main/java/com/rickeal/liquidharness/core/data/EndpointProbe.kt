@@ -14,7 +14,8 @@ import com.rickeal.liquidharness.core.model.newId
 import com.rickeal.liquidharness.core.net.HttpTransport
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.withContext
 
 /**
@@ -22,7 +23,7 @@ import kotlinx.coroutines.withContext
  *
  * 为什么不能只发一个 `HEAD /`：多数兼容端点的根路径返回 404 或 HTML，
  * 而真正要验的是**密钥 + 模型 id + 流式解码**三件事同时成立。所以发一条
- * 极短的 chat 请求，收到第一个事件就主动取消（`firstOrNull {}` 会取消上游，
+ * 极短的 chat 请求，收到终止帧（含其后同帧的 usage）就停（`takeWhile` 结束收集，
  * 引擎的 `finally` 负责关连接）—— 不花用户的 token 钱去等完整回答。
  *
  * ## 判据为什么是「必须收到内容」而不是「没报错」
@@ -62,26 +63,25 @@ class EndpointProbe(
                 idempotencyKey = newId(),
             )
             try {
-                // 「有没有真的收到内容」必须自己记：`first {}` 在**第一个**匹配事件处就取消上游，
-                // 拿不到「之前的序列」，所以内容证据要在谓词里累积。
-                var sawContent = false
-                val terminal = engine.generate(request).firstOrNull { event ->
-                    // 🔴 W8（Q15）`ReasoningDelta` 单独**不算**内容证据：dots 默认开思考，
-                    // 把 rtok 算进去会在「思考吃满预算」时假绿。只有正文 / usage 才是
-                    // 「服务端真的回答了」的证据。思考帧**不终止**上游（继续等正文 / 终止帧）。
-                    if (event is GenerationEvent.TextDelta || event is GenerationEvent.Usage) {
-                        sawContent = true
+                // W9-00 P1-5：`firstOrNull {}` 在**第一个** Finished 处就取消上游，而
+                // `decodeEvent` 同一帧先 emit Finished 后 emit Usage ⇒ Usage 证据恒不可达，
+                // 判据实际只剩 TextDelta。改为收至终帧，并给「终帧之后同帧的 Usage」留一格：
+                // takeWhile 在终帧之后仍放行 Usage / TextDelta，随后才停。
+                // Q15 口径不变：ReasoningDelta **不算**内容证据（思考吃满预算时不得假绿）。
+                val events = ArrayList<GenerationEvent>(4)
+                var terminalSeen = false
+                engine.generate(request)
+                    .takeWhile { event ->
+                        val keep = !terminalSeen ||
+                            event is GenerationEvent.Usage ||
+                            event is GenerationEvent.TextDelta
+                        if (event is GenerationEvent.Finished || event is GenerationEvent.Failed) {
+                            terminalSeen = true
+                        }
+                        keep
                     }
-                    event is GenerationEvent.TextDelta ||
-                        event is GenerationEvent.Usage ||
-                        event is GenerationEvent.Finished ||
-                        event is GenerationEvent.Failed
-                }
-                val detail = if (terminal == null) {
-                    EMPTY_STREAM_DETAIL
-                } else {
-                    judgeProbe(terminal, sawContent)
-                }
+                    .collect { events.add(it) }
+                val detail = judgeProbeSequence(events)
                 ProbeOutcome(
                     ok = detail == null,
                     detail = detail ?: "",
@@ -126,4 +126,24 @@ internal fun judgeProbe(terminal: GenerationEvent, sawContent: Boolean): String?
     terminal is GenerationEvent.Failed -> terminal.kind.name + ": " + terminal.message
     sawContent -> null
     else -> EMPTY_STREAM_DETAIL
+}
+
+/**
+ * 事件序列 → 结论（纯函数，JVM 单测直接驱动，不需要真 HTTP）。
+ *
+ * 与 [judgeProbe] 的差别：内容证据由**序列**归约，而不是由调用方在 `firstOrNull` 谓词里
+ * 累积 —— 这样「`Finished` 之后同帧的 `Usage`」才算得进去（P1-5 的关键反例：
+ * `decodeEvent` 就是先 Finished 后 Usage）。无终帧 = 空流，同样判失败。
+ */
+internal fun judgeProbeSequence(events: List<GenerationEvent>): String? {
+    if (events.isEmpty()) return EMPTY_STREAM_DETAIL
+    val sawContent = events.any {
+        it is GenerationEvent.TextDelta || it is GenerationEvent.Usage
+    }
+    // 没有终止帧但**已有内容证据**也算通过：现役 firstOrNull 的谓词本就包含
+    // TextDelta / Usage，它们会作为 terminal 返回并经 sawContent 判绿，不能收紧成假红。
+    val terminal = events.lastOrNull {
+        it is GenerationEvent.Finished || it is GenerationEvent.Failed
+    } ?: return if (sawContent) null else EMPTY_STREAM_DETAIL
+    return judgeProbe(terminal, sawContent)
 }

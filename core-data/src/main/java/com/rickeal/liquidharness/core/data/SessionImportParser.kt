@@ -136,13 +136,17 @@ object SessionImportParser {
                 "file bytes=" + bytes.size + " cap=" + MAX_BYTES,
             )
         }
-        return parse(bytes.toString(Charsets.UTF_8), format)
+        // Q2：UTF-8 BOM（EF BB BF）解码后是 U+FEFF，留在首行会让第一行 JSON 直接 MALFORMED。
+        return parse(bytes.toString(Charsets.UTF_8).removePrefix("\uFEFF"), format)
     }
 
-    /** 文本入口。 */
-    fun parse(text: String, format: Format): Result = when (format) {
-        Format.JSONL -> parseJsonl(text)
-        Format.MARKDOWN -> parseMarkdown(text)
+    /** 文本入口。同样剥 BOM：它不只来自字节解码（导入通道也可能直接喂 String）。 */
+    fun parse(text: String, format: Format): Result {
+        val clean = text.removePrefix("\uFEFF")
+        return when (format) {
+            Format.JSONL -> parseJsonl(clean)
+            Format.MARKDOWN -> parseMarkdown(clean)
+        }
     }
 
     // ------------------------------------------------------------------ JSONL
@@ -266,14 +270,15 @@ object SessionImportParser {
                 where + ": chars=" + body.length + " cap=" + MAX_MESSAGE_CHARS,
             )
         }
+        // Q3：空正文先跳过（见类头）—— 5000 条之后的空行不该被算成「第 5001 条」
+        // 而误报 TOO_MANY_MESSAGES；条数上限只对**真正会物化的消息**计数。
+        if (body.isBlank()) return null
         if (messages.size >= MAX_MESSAGES) {
             return Result.Rejected(
                 Rejection.TOO_MANY_MESSAGES,
                 where + ": count>" + MAX_MESSAGES,
             )
         }
-        // 空正文跳过（见类头）：它没有内容可发，物化出来是空气泡。
-        if (body.isBlank()) return null
         messages.add(ChatMessage(role = role, text = body))
         return null
     }

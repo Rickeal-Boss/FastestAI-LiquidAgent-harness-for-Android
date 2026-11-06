@@ -39,7 +39,9 @@ enum class Modality {
  * | [HIDE_ONLY] | `include_reasoning: false` | **仍付**（实测 32/42 rtok） |
  * | [ON] | `reasoning: {"effort": wire}` | 正常 |
  * | [FOLLOW_PROVIDER] | 不写任何字段 | dots 默认就开思考 ⇒ **不等于关思考** |
- * | [REASONING_ONLY] | 不发服务端开关 | 客户端期望：只产出思考、正文可空 |
+ *
+ * ⚠️ [REASONING_ONLY] 已在 W9-00 **从 UI 移除**（选 b：半天级插入波不留半套）。
+ * 枚举值保留只为老 `endpoints.json` 能反序列化，不许再摆成可选档位。
  *
  * 🔴 「允许关闭思考」与「仅隐藏思考」是两个语义，UI 文案必须写清 HIDE_ONLY **仍计费**。
  */
@@ -58,10 +60,9 @@ enum class ThinkingMode {
     ON,
 
     /**
-     * **仅思考模式**：要求模型只产出思考、正文可能为空。
-     *
-     * 没有供应商原生的「只思考」开关，它是**客户端期望 + 渲染策略**：把 thinking 块当主答案展示，
-     * 且**不把「正文为空但有思考」判为断流 / 空输出**（关联断流误标 STOP，挂账 W9-09）。
+     * **[已下线] 仅思考模式**（W9-00 选 b）：终帧裁决 / 渲染策略均未接线，
+     * 继续摆在 UI 上就是「卖了没接线的档位」。枚举值**仅保留**用于老配置反序列化 ——
+     * 删枚举值会让含该值的 `endpoints.json` 解析失败并回落 seeds ⇒ 静默清空用户端点。
      */
     REASONING_ONLY,
 }
@@ -174,23 +175,27 @@ fun normalizeEffort(
     }
 
     if (desiredEffort == ReasoningEffort.EXTREME) {
-        return if (ReasoningEffort.XHIGH in effectiveSupported && maxOut >= XHIGH_MIN_OUTPUT_TOKENS) {
-            ResolvedEffort("xhigh", ReasoningEffort.EXTREME, "unsupported_effort_max_ignored")
+        // P1-4：降级目标必须 ∈ effectiveSupported。旧实现无条件发 "high"，
+        // 端点只声明 {LOW} 时会发一个未声明的档位 ⇒ 反例必红。
+        val target = degradeWithin(ReasoningEffort.XHIGH, effectiveSupported, maxOut)
+            ?: return ResolvedEffort(
+                wire = null,
+                degradedFrom = ReasoningEffort.EXTREME,
+                reason = "effort_unsupported_no_lower:" + desiredEffort.name,
+            )
+        val why = if (maxOut < XHIGH_MIN_OUTPUT_TOKENS && target == ReasoningEffort.HIGH) {
+            "output_budget_insufficient:" + maxOut
         } else {
-            val why = if (maxOut < XHIGH_MIN_OUTPUT_TOKENS) {
-                "output_budget_insufficient:" + maxOut
-            } else {
-                "unsupported_effort_max_ignored"
-            }
-            ResolvedEffort("high", ReasoningEffort.EXTREME, why)
+            "unsupported_effort_max_ignored"
         }
+        return ResolvedEffort(target.wireValue(), ReasoningEffort.EXTREME, why)
     }
 
     if (desiredEffort !in effectiveSupported) {
         val fallback = lowerNeighbor(desiredEffort, effectiveSupported)
             ?: return ResolvedEffort(
-                wire = desiredEffort.wireValue(),
-                degradedFrom = null,
+                wire = null,
+                degradedFrom = desiredEffort,
                 reason = "effort_unsupported_no_lower:" + desiredEffort.name,
             )
         return ResolvedEffort(
@@ -201,8 +206,14 @@ fun normalizeEffort(
     }
 
     if (desiredEffort == ReasoningEffort.XHIGH && maxOut < XHIGH_MIN_OUTPUT_TOKENS) {
+        val target = degradeWithin(ReasoningEffort.HIGH, effectiveSupported, maxOut)
+            ?: return ResolvedEffort(
+                wire = null,
+                degradedFrom = ReasoningEffort.XHIGH,
+                reason = "effort_unsupported_no_lower:" + desiredEffort.name,
+            )
         return ResolvedEffort(
-            wire = ReasoningEffort.HIGH.wireValue(),
+            wire = target.wireValue(),
             degradedFrom = ReasoningEffort.XHIGH,
             reason = "output_budget_insufficient:" + maxOut,
         )
@@ -211,16 +222,36 @@ fun normalizeEffort(
     return ResolvedEffort(wire = desiredEffort.wireValue())
 }
 
-/** 就近往低找一档；`LOW` 之下没有了 ⇒ null。 */
+/** 可下发的四档，由高到低；[ReasoningEffort.EXTREME] 只是 UI 档位，永不进这张表。 */
+private val DEGRADE_ORDER: List<ReasoningEffort> = listOf(
+    ReasoningEffort.XHIGH, ReasoningEffort.HIGH, ReasoningEffort.MEDIUM, ReasoningEffort.LOW,
+)
+
+/** 从 `from` 起（含）往低找第一个 ∈ supported 且预算够的档位；找不到 ⇒ null（P1-4）。 */
+private fun degradeWithin(
+    from: ReasoningEffort,
+    supported: Set<ReasoningEffort>,
+    maxOut: Int,
+): ReasoningEffort? {
+    val start = DEGRADE_ORDER.indexOf(from).coerceAtLeast(0)
+    for (i in start until DEGRADE_ORDER.size) {
+        val candidate = DEGRADE_ORDER[i]
+        if (candidate !in supported) continue
+        if (candidate == ReasoningEffort.XHIGH && maxOut < XHIGH_MIN_OUTPUT_TOKENS) continue
+        return candidate
+    }
+    return null
+}
+
+/** 就近往低找一档（不含自身）；`LOW` 之下没有了 ⇒ null。 */
 private fun lowerNeighbor(
     desired: ReasoningEffort,
     supported: Set<ReasoningEffort>,
 ): ReasoningEffort? {
-    val order = ReasoningEffort.DISPLAY_ORDER
-    val idx = order.indexOf(desired)
-    if (idx <= 0) return null
-    for (i in idx - 1 downTo 0) {
-        if (order[i] in supported) return order[i]
+    val idx = DEGRADE_ORDER.indexOf(desired)
+    if (idx < 0) return null
+    for (i in idx + 1 until DEGRADE_ORDER.size) {
+        if (DEGRADE_ORDER[i] in supported) return DEGRADE_ORDER[i]
     }
     return null
 }
@@ -237,3 +268,16 @@ private fun ReasoningEffort.wireValue(): String = when (this) {
 /** [ReasoningStyle] 是否承载「档位」语义（只有新协议族对象与 o 系 style 有档位概念）。 */
 fun ReasoningStyle.carriesEffort(): Boolean = this == ReasoningStyle.OPENROUTER_REASONING_OBJECT ||
     this == ReasoningStyle.REASONING_EFFORT
+
+/**
+ * 「用户选了真关、端点却不可真关」⇒ adapter 会降级成 [ThinkingMode.HIDE_ONLY]（**仍计费**）。
+ *
+ * UI 必须把这个降级**上屏**，不许静默（W9-00 P0-2 / P1-1）。这是纯派生信号，
+ * 不是结构化日志：core-engine 的日志出口归 W9-07，G19 保持 VACUOUS 不越域。
+ */
+val RemoteEndpoint.hardOffDowngraded: Boolean
+    get() = supportsReasoning && thinkingMode == ThinkingMode.OFF && !canHardOff
+
+/** 非 OpenAI 兼容族没有本仓 adapter ⇒ 这几个高级开关不能静默摆成可用（W9-00 P2 kind 收窄）。 */
+val RemoteEndpoint.supportsOpenAiAdvanced: Boolean
+    get() = kind == ProviderKind.OPENAI_COMPATIBLE

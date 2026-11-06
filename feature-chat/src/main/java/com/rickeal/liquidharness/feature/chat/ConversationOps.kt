@@ -103,8 +103,7 @@ internal class ConversationOps(
         scope.launch {
             if (!container.settings.compressContext.first()) return@launch
             val endpoint = container.activeEndpoint() ?: return@launch
-            val windowCap = runCatching { container.settings.maxContextTokens.first() }
-                .getOrDefault(AgentPolicy().maxContextTokens)
+            val windowCap = contextWindowCap(container)
             val budget = contextBudgetTokens(endpoint, AgentPolicy(maxContextTokens = windowCap))
             // 试算：compressBubbles 是纯 suspend 函数，不改 state；只有 shouldApply 判
             // applied=true 才把产物落到 compressedUpTo（未压轮次保留严格前缀 ⇒ 缓存可能命中）。
@@ -177,8 +176,7 @@ internal class ConversationOps(
             // 预算与自动压缩同源（`contextBudgetTokens` + 同一个窗口档位），只是不扣工具面：
             // 工具声明由内核每轮现算，UI 侧复制一份就是第二个真值源。少扣一点 = 多留一点
             // 历史，方向是保守的（真超了还有内核的自动压缩兜底）。
-            val windowCap = runCatching { container.settings.maxContextTokens.first() }
-                .getOrDefault(AgentPolicy().maxContextTokens)
+            val windowCap = contextWindowCap(container)
             val budget = contextBudgetTokens(endpoint, AgentPolicy(maxContextTokens = windowCap))
             val outcome = compressBubbles(snapshot.bubbles, budget)
             if (!outcome.applied) {

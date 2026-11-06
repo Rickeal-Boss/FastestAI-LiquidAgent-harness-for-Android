@@ -231,8 +231,42 @@ class SettingsContractTest {
     @Test
     fun endpointSaveErrorCodesAreStable() {
         assertEquals(
-            listOf("UNSAFE_URL", "SECRET_WRITE_FAILED", "SAVE_FAILED"),
+            listOf("UNSAFE_URL", "SECRET_WRITE_FAILED", "SAVE_FAILED", "ADVANCED_INVALID"),
             EndpointSaveError.values().map { it.name },
         )
+    }
+
+    /**
+     * F-1：「组件写完 ≠ 组件被使用」。`validateAdvanced` 的定义 / 单测 / KDoc 命中都不算，
+     * 只有 **SettingsViewModel.save 落盘前**的那次调用才是生产调用点。
+     */
+    @Test
+    fun saveChainCallsValidateAdvancedBeforePersisting() {
+        val source = File("src/main/java/com/rickeal/liquidharness/feature/settings/SettingsViewModel.kt").readText()
+        val saveBody = source.substringAfter("fun save(endpoint: RemoteEndpoint")
+            .substringBefore("catch (e: EndpointSaveException)")
+        assertTrue(saveBody.contains("validateAdvanced(endpoint)"), "保存链必须调用 validateAdvanced")
+        assertTrue(
+            saveBody.indexOf("validateAdvanced(endpoint)") < saveBody.indexOf("container.saveEndpoint(endpoint"),
+            "校验必须在写盘之前",
+        )
+        assertTrue(source.contains("EndpointSaveError.ADVANCED_INVALID"), "校验失败必须上屏 BLOCKED")
+        // 静态「被调用」判据的反向锚：把校验挪到写盘之后会立刻红。
+        assertTrue(saveBody.contains("container.saveEndpoint(endpoint"))
+    }
+
+    /** W9-00 选 b / P2：UI 不摆假入口（REASONING_ONLY、AUDIO），kind 收窄为禁用态入口 + 原因。 */
+    @Test
+    fun advancedUiDoesNotExposeFakeOrIneffectiveEntries() {
+        val source = File("src/main/java/com/rickeal/liquidharness/feature/settings/EndpointAdvancedConfig.kt").readText()
+        val strings = File("src/main/res/values/strings_advanced.xml").readText()
+        assertFalse(source.contains("R.string.adv_mode_REASONING_ONLY"), "REASONING_ONLY 档位必须从 UI 移除")
+        assertFalse(strings.contains("adv_mode_REASONING_ONLY"), "UI 文案必须连资源一起删")
+        assertTrue(source.contains("it != ThinkingMode.REASONING_ONLY"), "入口集合必须显式过滤该档")
+        assertTrue(source.contains("it != Modality.AUDIO"), "输出模态必须过滤 AUDIO 假入口")
+        assertTrue(source.contains("e.supportsOpenAiAdvanced"), "非 OpenAI 兼容族必须有禁用态判据")
+        assertTrue(source.contains("blockedSubRes"), "禁用态必须带原因，不静默隐藏")
+        assertTrue(source.contains("R.string.adv_hard_off_downgraded"), "硬关降级 reason 必须上屏")
+        assertTrue(source.contains("R.string.adv_effort_downgraded"), "档位降级 reason 必须上屏")
     }
 }

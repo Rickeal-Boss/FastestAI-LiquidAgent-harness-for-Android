@@ -31,7 +31,6 @@
     <string name="adv_mode_FOLLOW_PROVIDER">跟随服务端</string>
     <string name="adv_mode_HIDE_ONLY">仅隐藏思考（仍计费）</string>
     <string name="adv_mode_ON">思考</string>
-    <string name="adv_mode_REASONING_ONLY">仅思考</string>
     <string name="adv_effort_LOW">低</string>
     <string name="adv_effort_MEDIUM">中</string>
     <string name="adv_effort_HIGH">高</string>
@@ -47,4 +46,8 @@
     <string name="adv_style_CHAT_TEMPLATE_KWARGS">chat_template_kwargs</string>
     <string name="adv_style_ANTHROPIC_THINKING_BUDGET">anthropic budget</string>
     <string name="adv_style_GEMINI_INCLUDE_THOUGHTS">gemini thoughts</string>
+    <!-- W9-00：降级 reason 上屏（不写结构化日志）+ 非 OpenAI 兼容族禁用态原因。 -->
+    <string name="adv_hard_off_downgraded">本次已降级为仅隐藏，仍计费</string>
+    <string name="adv_effort_downgraded">本次已降级：%1$s</string>
+    <string name="adv_kind_unsupported">当前端点的协议族没有对应适配器，此开关不可用</string>
 </resources>
