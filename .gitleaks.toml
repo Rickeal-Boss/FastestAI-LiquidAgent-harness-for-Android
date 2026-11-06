@@ -1,0 +1,12 @@
+# 本仓 gitleaks 配置：沿用默认规则集，只对**已知误报**做精确放行。
+# CI 的 Secret scan job 用 `gitleaks detect --exit-code=2` ⇒ 任何 finding 都会让 CI 变红。
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "已知误报：标定值变量名（上下文工程的 chars/token 比值，非密钥）"
+# 分析文档（docs/analysis/）引用代码时会连变量名一起贴出，
+# `measuredCharsPerToken` 被 generic-api-key 的熵检测误判为 api key。
+# 只放行该标识符本身，**不**放行整个目录（避免掩盖真实泄漏）。
+regexes = ['''measuredCharsPerToken''']

@@ -61,8 +61,8 @@
 2. **W7-B** I1 跨轮分裂修复（决定跨轮命中能否从 0 起步）
 3. **W7-C** 命中率一等指标 + 三桶归一（分母口径见 §5）
 4. **W7-D** I2 处置：不为凑缓存注水 system
-5. **W8-01** microcompact（细粒度清旧 tool result 优于粗粒度丢轮）
-6. **W8-03** 多厂商 usage 字段适配（DeepSeek `prompt_cache_hit_tokens`/Kimi/GLM）
+5. **R-1** microcompact（细粒度清旧 tool result 优于粗粒度丢轮）
+6. **R-3** 多厂商 usage 字段适配（DeepSeek `prompt_cache_hit_tokens`/Kimi/GLM）
 
 ---
 
@@ -88,7 +88,7 @@
 ### Tier 0 · 计量先行
 - **W7-C 命中率一等指标** ｜ 目标：把 `cacheRead/cacheWrite/fresh` 三桶做成会话级一等指标，进 UI 状态条/诊断卡 ｜ 依赖：adapter 已解析 cached（~@141）｜ 验证：`Usage` 三桶在各端点均被正确填充 ｜ 验收：`cacheHit%` 与原始 usage JSON 同屏展示，无字段丢失。
 - **W7-02 前缀缓存命中率真机验证** ｜ 目标：在 NV 端点实测跨轮 `cached_tokens>0` 并测出 NV 真实最小前缀长度 ｜ 依赖：设备 NV-VL 密钥已录入、32K 档 ｜ 验证：≥3 轮同前缀请求，第 3 轮 `cached>0` ｜ 验收：产出「NV 命中阈值 + 当前 ~800 前缀是否够」事实表。
-- **W8-03 多厂商 usage 归一** ｜ 目标：兼容 DeepSeek `prompt_cache_hit_tokens`、Kimi 三接口、GLM `cached_tokens`，统一内部 `Usage` ｜ 依赖：W7-C 三桶模型 ｜ 验证：用各厂商 fixture 回放解析 ｜ 验收：单测覆盖 ≥3 家字段语义。
+- **R-3 多厂商 usage 归一** ｜ 目标：兼容 DeepSeek `prompt_cache_hit_tokens`、Kimi 三接口、GLM `cached_tokens`，统一内部 `Usage` ｜ 依赖：W7-C 三桶模型 ｜ 验证：用各厂商 fixture 回放解析 ｜ 验收：单测覆盖 ≥3 家字段语义。
 
 ### Tier 1 · 组装冻结
 - **W7-B 修复 I1 跨轮分裂** ｜ 目标：确立 history 单一真源（工具轨迹进持久 history 或前缀指纹对「重建序列」豁免），使跨轮前缀稳定 ｜ 依赖：核实 `ChatViewModel.send()`@278 重建逻辑 ｜ 验证：连续 ≥3 轮含工具调用，第 3 轮前缀指纹 `HISTORY` 段与前轮逐字节一致 ｜ 验收：跨轮命中从 0 → 非 0（NV 端点）。
@@ -96,16 +96,16 @@
 - **W7-E 组装指纹漂移闸门（新增）** ｜ 目标：把现有 `observePrefix` 指纹升级为「漂移闸门」——非预期变更（非追加/非压缩切点）触发告警/拦截 ｜ 借鉴：minimax `assembly-fingerprint`（保空白、工具规范序、排除历史）｜ 验证：注入一个头部随机值 ⇒ 闸门报漂移；尾部变更 ⇒ 不报 ｜ 验收：CI/真机均能在前缀将失效前预警。
 
 ### Tier 2 · 追加式历史
-- **W8-02 stable/dynamic 分段布局** ｜ 目标：身份/工具/规则在前（stable），日期/记忆检索/动态内容在后（dynamic），为未来显式断点打底 ｜ 依赖：W7-B/W7-D ｜ 验证：分段指纹按 stable/dynamic 分别可识别 ｜ 验收：custom prompt 只跳过 dynamic 段（不撼 stable body）。
+- **R-2 stable/dynamic 分段布局** ｜ 目标：身份/工具/规则在前（stable），日期/记忆检索/动态内容在后（dynamic），为未来显式断点打底 ｜ 依赖：W7-B/W7-D ｜ 验证：分段指纹按 stable/dynamic 分别可识别 ｜ 验收：custom prompt 只跳过 dynamic 段（不撼 stable body）。
 - append-only 事件溯源（dsh 式）标记 **P2/暂不做**（成本高、当前 system 不变不变量已兜底）。
 
 ### Tier 3 · 缓存感知压缩
 - **W7-A 摘要请求复用主前缀（P0）** ｜ 目标：`EngineBackedSummarizer` 逐字节回放 `system+tools+被压区`、指令置尾、带完整 tools（抄 dsh 标杆）｜ 依赖：核实 L2 摘要器当前是否复用 ｜ 验证：摘要请求的前缀指纹与主请求首段逐字节一致 ｜ 验收：压缩触发瞬间缓存不失效（dsh「恰好在对话最大时失去缓存」事故不复现）。
 - **W7-01 压缩真机重放** ｜ 目标：换 **NV-VL** 端点（OR 免费模型 5×16KB 超时），判据 `实发 ≤ 27 904`（32K 档硬预算）｜ 依赖：夹具就位 ｜ 验证：`module_{1..5}.kt` 并行读 5×16KB ⇒ 实发 ≤ 27904 ｜ 验收：工具循环 + 用量行正常。
 - **W7-03 手动压缩真机验收** ｜ 目标：`cached_tokens=0` 双向断言 + 可逆性 + UI「缓存重建、费用更高」明示 ｜ 依赖：W7-C 指标 ｜ 验证：手动压缩后首轮 `cached=0`（前缀重建，符合预期，双向断言）｜ 验收：撤销后下一轮命中恢复。
-- **W8-01 引入 microcompact** ｜ 目标：只清旧 tool result 占位（保 KV 前缀不断裂），优先于全量丢轮 ｜ 默认值（ZCode）：`keepRecentToolResults=5`、触发 `0.9×window + 2000 token buffer`、`minTokenSavings=256`、60min idle ｜ 依赖：W7-A ｜ 验证：`minSavings<256` 时不触发（避免小收益造断点）｜ 验收：清旧结果后前缀指纹不变。
-- **W8-04 压缩↔缓存联合判据** ｜ 目标：「压缩后命中率恢复曲线」基准（dsh `session-corpus` 雏形）｜ 依赖：W7-C + W8-01 ｜ 验证：压缩前后命中率差值在阈值内 ｜ 验收：避免「压了没用/压坏了」。
-- **W8-05 反应式压缩** ｜ 目标：provider `finish_reason=length`/400 `context limit` 归一化触发（ZCode/dsh 溢出触发）；idle 60min 顺手 microcompact ｜ 依赖：W8-01 ｜ 验证：超长请求被拒后自动恢复 ｜ 验收：溢出重试计数封顶不雪崩。
+- **R-1 引入 microcompact** ｜ 目标：只清旧 tool result 占位（保 KV 前缀不断裂），优先于全量丢轮 ｜ 默认值（ZCode）：`keepRecentToolResults=5`、触发 `0.9×window + 2000 token buffer`、`minTokenSavings=256`、60min idle ｜ 依赖：W7-A ｜ 验证：`minSavings<256` 时不触发（避免小收益造断点）｜ 验收：清旧结果后前缀指纹不变。
+- **R-4 压缩↔缓存联合判据** ｜ 目标：「压缩后命中率恢复曲线」基准（dsh `session-corpus` 雏形）｜ 依赖：W7-C + R-1 ｜ 验证：压缩前后命中率差值在阈值内 ｜ 验收：避免「压了没用/压坏了」。
+- **R-5 反应式压缩** ｜ 目标：provider `finish_reason=length`/400 `context limit` 归一化触发（ZCode/dsh 溢出触发）；idle 60min 顺手 microcompact ｜ 依赖：R-1 ｜ 验证：超长请求被拒后自动恢复 ｜ 验收：溢出重试计数封顶不雪崩。
 
 ### Tier 4 · 系统协同
 - 选 radix/token 粒度或解耦哈希粒度引擎、缓存感知路由、容量规划——**对 harness 侧基本 N/A**（路由/块粒度由云厂商控制）；仅在选择供应商时偏好带缓存感知路由者（NV、DeepSeek）。记为 `不适用`，不排工作项。
@@ -149,7 +149,7 @@
 **压缩验证：**
 - 32K 档并行读 5×16KB ⇒ 实发 ≤ 27 904（W7-01）。
 - 手动压缩后首轮 `cached_tokens=0`（前缀重建，符合预期，双向断言 W7-03）。
-- **占位符字节稳定性专项**（W8-01 前置）：同一工具结果跨调用，占位符内容必须字节一致（否则自身成新差异点）；核 `HardBudgetShrinker` 占位符生成是否含随机/时间戳。
+- **占位符字节稳定性专项**（R-1 前置）：同一工具结果跨调用，占位符内容必须字节一致（否则自身成新差异点）；核 `HardBudgetShrinker` 占位符生成是否含随机/时间戳。
 
 ---
 

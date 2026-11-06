@@ -65,7 +65,8 @@
 - Q15 `EndpointProbe` 假绿/假红：预算 8→256 + 谓词改 `TextDelta||Usage`（`ReasoningDelta` 单独不算通过）+ 2 用例。
 - Q1 `runCatching×2` → `contextWindowCap(container)`（取消语义）；Q2 UTF-8 BOM 剥离 + 2 用例；
   Q3 空正文先于条数上限 + 1 用例；Q7/Q7′ 三处「注释与实现打架」订正。
-- Q11 adapter 逐键白名单断言；Q14 编号唯一源（台账头部声明 + 路线草稿 `W8-0x`→`R-0x` 改名）。
+- Q11 adapter 逐键白名单断言；Q14 编号唯一源（台账头部声明 + 路线草稿的 W8 系列编号统一改名为 `R-xx`，
+  使 `docs/notes/` 内不再出现与台账撞号的编号）。
 
 ---
 
