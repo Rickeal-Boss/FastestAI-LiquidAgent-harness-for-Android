@@ -1,7 +1,9 @@
 package com.rickeal.liquidharness.core.agent.context
 
+import com.rickeal.liquidharness.core.model.AttachmentKind
 import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.Role
+import com.rickeal.liquidharness.core.model.TokenEstimator
 
 /**
  * 硬预算兜底动作：**原地收缩**工具结果正文，不删消息、不动 `callId`。
@@ -84,11 +86,42 @@ object HardBudgetShrinker {
     /**
      * 请求里 `messages` 的字符总量。**量纲是字符，不是 token**。
      *
-     * 覆盖范围与 `TokenEstimator.estimateMessages` 一致（文本 / 工具名 / 参数 / 结果正文），
-     * 否则「字符达标」与「真的发出去的字节」会脱节。`output` 为空时线上发的是
-     * `errorMessage`，所以两者取长。
+     * 覆盖面（W9-01 补完）与 `TokenEstimator.estimateMessages` **逐项同源**：
+     * 文本 / 工具名 / 参数 / 结果正文 / **可发送附件**。W10/S4 只给估算面补了附件，
+     * 本处漏补 ⇒ 带图会话软预算已把它算进去、L3 字符硬闸却盲着，
+     * 等于「用一把有偏的尺子证明自己没超」的第四面（外审缺口 1）。
+     *
+     * 图片用**同一把 token 尺**折算成字符：`ESTIMATED_IMAGE_TOKENS ×
+     * CHARS_PER_TOKEN_ASCII`，不另立比例、也不按 base64 原始长度。理由：
+     * ① 估算面与硬闸面共用 [TokenEstimator] 的常量，第三处出现独立比例即违反
+     * W9-01 量纲统一契约；② 按 1.8 的 `hardCharsPerToken` 折回后，4096 字符
+     * 对应约 2275 token > 1024 token 估算值 ⇒ 方向仍是保守的，不会假装没超。
+     * 文本附件按真实正文字符计入。不可发送附件（音频）与 `isSendable=false`
+     * 的图片不计 —— 它们根本不进请求体。
+     *
+     * 🔴 图片**只进预算、不进 `PromptPrefix` 指纹**：指纹每轮重算，把易变的
+     * 图片字节算进去会假报「前缀变了」，正是 A8 要避免的形态。
+     *
+     * `output` 为空时线上发的是 `errorMessage`，所以两者取长。
      */
-    fun promptChars(messages: List<ChatMessage>): Int {
+    fun promptChars(messages: List<ChatMessage>): Int = textChars(messages) + attachmentChars(messages)
+
+    /**
+     * **标定专用**：只算文本 / 工具名 / 参数 / 结果正文的字符，**不含图片当量**。
+     *
+     * 🔴 为什么必须分开（W11 审查席证伪了本波初版的「方向保守」判断）：
+     * `GenerationRound.recordReportedPrompt(... charsSent = ...)` 用这个比值反标定
+     * `measuredCharsPerToken`。图片当量是**本地估算常量**（4096 字符），不是真实
+     * 发出去的字符；某些 provider 一张图只计 85–255 token。若把它算进分子，
+     * 比值会被视觉 token 顶到 `ceiling=6.0`，而 `charCap = hardBudget × cpt`
+     * 相对 floor 1.8 **放大 3.3 倍** —— 这是**超窗方向**，不是保守方向。
+     *
+     * 所以：预算/字符闸用 [promptChars]（含图片，宁可多算），标定用 [calibrationChars]
+     * （只算文本）。两者共用 [textChars] 与 [attachmentChars]，不是两把独立的尺子。
+     */
+    fun calibrationChars(messages: List<ChatMessage>): Int = textChars(messages)
+
+    private fun textChars(messages: List<ChatMessage>): Int {
         var total = 0
         for (message in messages) {
             total += message.text.length
@@ -105,6 +138,23 @@ object HardBudgetShrinker {
         }
         return total
     }
+
+    private fun attachmentChars(messages: List<ChatMessage>): Int {
+        var total = 0
+        for (message in messages) {
+            for (attachment in message.sendableAttachments) {
+                total += when (attachment.kind) {
+                    AttachmentKind.TEXT -> attachment.textContent.length
+                    else -> imageChars
+                }
+            }
+        }
+        return total
+    }
+
+    /** 图片附件的字符当量，与 `TokenEstimator.estimateMessages` 同源。 */
+    private val imageChars: Int =
+        (TokenEstimator.ESTIMATED_IMAGE_TOKENS * TokenEstimator.CHARS_PER_TOKEN_ASCII).toInt()
 
     /** 可收缩位置，**最旧优先**。只有 TOOL 消息里的结果能换占位。 */
     private fun shrinkableSlots(messages: List<ChatMessage>): List<Slot> {

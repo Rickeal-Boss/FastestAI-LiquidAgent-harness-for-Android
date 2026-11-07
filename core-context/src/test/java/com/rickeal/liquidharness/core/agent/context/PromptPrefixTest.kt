@@ -3,6 +3,7 @@ package com.rickeal.liquidharness.core.agent.context
 import com.rickeal.liquidharness.core.model.Attachment
 import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.Role
+import com.rickeal.liquidharness.core.model.ToolCall
 import com.rickeal.liquidharness.core.model.ToolParameter
 import com.rickeal.liquidharness.core.model.ToolSpec
 import kotlin.test.Test
@@ -150,5 +151,38 @@ class PromptPrefixTest {
         )
 
         assertEquals(renderHistoryHead(listOf(first)), renderHistoryHead(listOf(second)))
+    }
+
+    /**
+     * W11 P0：`message.id` **不进请求体**（`OpenAiCompatibleAdapter.messageObject()`
+     * 只写 role / content / tool_calls[].id），所以指纹里含它 = 假漂移。
+     *
+     * 红态：旧实现把 `:${message.id}:` 拼进每行 ⇒ 两条除 id 外完全相同的消息
+     * 渲染结果不同，本例必红。`ChatHistoryMapper.toHistoryMessages()` 每次重建
+     * 都用 `newId()`，正是这个假漂移会稳定复发的现场。
+     */
+    @Test
+    fun historyHeadIgnoresMessageIdThatNeverReachesTheWire() {
+        val first = user("m-aaa", "same text")
+        val second = user("m-bbb", "same text")
+
+        assertEquals(renderHistoryHead(listOf(first)), renderHistoryHead(listOf(second)))
+    }
+
+    /**
+     * 反向自证：`call.id` **确实**作为 `tool_calls[].id` 进请求体，不许跟着一起删。
+     * 判据自身先被验证 —— 上一条只证明「不变量」，这一条证明判据还有灵敏度。
+     */
+    @Test
+    fun historyHeadStillTracksToolCallIdsThatReachTheWire() {
+        val first = ChatMessage(
+            id = "m", role = Role.MODEL,
+            toolCalls = listOf(ToolCall(id = "call-1", name = "file_read", argumentsJson = "{}")),
+        )
+        val second = first.copy(
+            toolCalls = listOf(ToolCall(id = "call-2", name = "file_read", argumentsJson = "{}")),
+        )
+
+        assertNotEquals(renderHistoryHead(listOf(first)), renderHistoryHead(listOf(second)))
     }
 }

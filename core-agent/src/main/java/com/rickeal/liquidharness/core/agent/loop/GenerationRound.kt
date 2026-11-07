@@ -205,16 +205,16 @@ class GenerationRound(
                                 fragments.onDelta(event.index, event.id, event.name, event.argumentsFragment)
 
                             is GenerationEvent.Usage -> {
-                                ctx.state.recordUsage(event.prompt, event.completion, event.cachedPrompt)
+                                ctx.state.recordUsage(event.prompt, event.completion, event.cachedPrompt, event.cacheWrite)
                                 // 估算锚点 + chars/token 标定：真值 + 本次请求条数 + 本次请求字符数。
                                 // 下一轮只用它 + 新增部分的估算，不再对整条历史重跑启发式
                                 // （W6 / T5；标定见 RunState.measuredCharsPerToken）。
                                 ctx.state.recordReportedPrompt(
                                     prompt = event.prompt,
                                     messageCount = messages.size,
-                                    charsSent = HardBudgetShrinker.promptChars(messages),
+                                    charsSent = HardBudgetShrinker.calibrationChars(messages),
                                 )
-                                ctx.emit(AgentEvent.UsageUpdated(event.prompt, event.completion, event.cachedPrompt))
+                                ctx.emit(AgentEvent.UsageUpdated(event.prompt, event.completion, event.cachedPrompt, event.cacheWrite))
                             }
 
                             is GenerationEvent.Finished -> finished = event.reason

@@ -180,14 +180,22 @@ fun renderToolSchema(specs: List<ToolSpec>): String {
 }
 
 /**
- * 历史头部的规范化渲染。含 id：id 变化同样让前缀字节变化（`sanitizeForProvider` 的
- * 补丁 id 之所以要稳定派生，就是这个理由）。
+ * 历史头部的规范化渲染（W11 订正：**只渲染真正进请求体的字节**）。
+ *
+ * 🔴 原实现把 `message.id` 拼进了指纹，但 `OpenAiCompatibleAdapter.messageObject()`
+ * 只写 `role / content / tool_calls[].id`，**不写 message.id**。后果是
+ * `ChatHistoryMapper.toHistoryMessages()` 每次重建用 `newId()` ⇒ 本地指纹假报
+ * 「前缀变了」，而 provider 侧前缀逐字节没变、缓存本该命中。这是「用一把有偏的
+ * 尺子量自己」的又一面：判据必须只覆盖 wire 上的字段。
+ *
+ * 保留 `call.id` / `result.callId`：它们**确实**作为 `tool_calls[].id` /
+ * `tool_call_id` 进请求体，`sanitizeForProvider` 补丁 id 要稳定派生正是为这个。
  */
 fun renderHistoryHead(messages: List<ChatMessage>, k: Int = HISTORY_HEAD_SIZE): String {
     if (messages.isEmpty() || k <= 0) return ""
     val sb = StringBuilder()
     for (message in messages.take(k)) {
-        sb.append(message.role.name).append(':').append(message.id).append(':').append(message.text)
+        sb.append(message.role.name).append(':').append(message.text)
         for (call in message.toolCalls) {
             sb.append("|call:").append(call.id).append(',').append(call.name).append(',').append(call.argumentsJson)
         }

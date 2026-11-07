@@ -3,6 +3,12 @@
 > 主理人（祁研深）亲自产出。来源依据：`docs/handoff-20261107-wave10.md`（W10 进行中快照）+ `docs/notes/w10-plan.md`（端点/施工单/矩阵分派）+ 用户 2026-11-07 新输入（免费节点 key + 至 1M 上下文 + 功能矩阵：多模态输入/音频输出/工作空间文件读写/记忆/skill/MCP/KVcache 命中/手动自动压缩）。
 > 判定四态：✅ 通过 / ⚠️ 部分 / ⛔ 不适用 / ⛔vacuous（判据没被行使）。**「未触发」≠「已验证通过」；PC 侧结论不得写成设备侧可用；1M 档≥2 重放稳定。**
 > 方案席（沈思远）本波 429 配额耗尽失败，按知识库 §6 由主理人接手。
+>
+> 🔄 **W11 第 0 车订正（2026-11-07 晚，主理人）**：本计划写于 W10 交接的「未提交」快照，
+> 与 `HEAD:98916eaa` 的既成事实有三处冲突，已逐条订正（原文保留在 §七 风险留痕）：
+> ① §五.1「提交→推送→CI」改为**核对已推 CI**；② F8/F9 预写 ✅ 收回为「待行使」；
+> ③ §六 C 组误把 `feature-chat` 余 27 写成 `core-context`。另 launcher 以真机实测为准，
+> 不照抄两处互相矛盾的文档。所有行号锚 `HEAD:98916eaa`，工作树已漂移，定位以符号为准。
 
 ---
 
@@ -46,8 +52,8 @@ W11 = **W10 收尾** + **跨免费模型综合功能矩阵验证**。
 | F5 skill | skill_load | 报内置技能列表（两例内置） | journal 记 skill_load + 技能名 | ✅ |
 | F6 MCP | — | `usesCleartextTraffic=false` 不放开 | ⛔ 平台阻断（W5-03）；列不适用 | ⛔ 不适用 |
 | F7 KV cache 命中 | M8 | 长会话稳定前缀 ⇒ `cached_tokens>0`；改首字节 ⇒ 归零（双向） | 首条正向 + 反向归零都取到才算 ✅；OR 恒 0 ⇒ vacuous | nv-vl/mistral ✅；OR ⛔vacuous |
-| F8 手动压缩 | M9 | S3 后：压缩⇒尾部追加摘要 + `dropped=N` 落盘 + 前缀字节稳定（缓存不失效） | 首条 `applied=true` + 前缀 diff 空 | ✅（依赖 S3，已落地） |
-| F9 自动压缩 | M10 | 档位调最小 + 长会话轮次灌到阈值 ⇒ `auto_compact applied=true` | 首条 applied=true；0 命中≠通过 | ✅（依赖 S3） |
+| F8 手动压缩 | M9 | S3 后：压缩⇒尾部追加摘要 + `dropped=N` 落盘 + 前缀字节稳定（缓存不失效） | 首条 `applied=true` + 前缀 diff 空 | **待行使**（原预写 ✅ 已收回；设备侧 M9 至今未取到证据，`cache_invalidated` 二值声明另记 W11-03） |
+| F9 自动压缩 | M10 | 档位调最小 + 长会话轮次灌到阈值 ⇒ `auto_compact applied=true` | 首条 applied=true；0 命中≠通过 | **待行使**（原预写 ✅ 已收回；「未触发」≠「已验证通过」） |
 | F10 长上下文阶梯 | ladder | 4k/32k/128k/512k/1M 各档重放 | 各档 hit + 四元组 | 设备侧 1M ⛔（RoundHeadGate 400k 阻断=W9-11 未解锁）；PC 侧 nv-vl 1M 不稳/ mistral 超时 ⇒ ⚠️ |
 | F11 分块装配 | chunk | 分块边界不丢针 | 分块后首字节命中 | nv-vl/dots ✅ |
 
@@ -56,7 +62,7 @@ W11 = **W10 收尾** + **跨免费模型综合功能矩阵验证**。
 ## 四、设备硬件可行性（OPPO A13 PDRM00 / ColorOS / SDK33）
 
 - `adb -P 15037`（默认 5037 无设备）；`MSYS_NO_PATHCONV=1`；daemon 每命令后退出 ⇒ **命令串行、同 Bash 调用连发**；`exec-out` 读二进制。
-- `adb push` + `pm install -r`（直接 install 报 -99）；launcher = `com.rickeal.liquidharness.debug.MainActivity`。
+- `adb push` + `pm install -r`（直接 install 报 -99）。**W11 真机实测结论**：`cmd package resolve-activity --brief com.rickeal.liquidharness.debug` ⇒ `com.rickeal.liquidharness.debug/com.rickeal.liquidharness.MainActivity`，且 `am start -W -n` 冷启 `LaunchState=COLD / TotalTime=1360ms` 成功 ⇒ **W10 handoff §六正确，本计划原写 `.debug.MainActivity` 错误**，冲突已由实测裁决。
 - 题面 ASCII（`input text` 非 ASCII NPE）；每题先点「新对话」防 `input text` 追加写改题面。
 - uiautomator bounds 不可信 ⇒ 判据以 **journal / logcat / 截图**为准；主模型收不了截图 ⇒ 用 **NV-VL 免费节点**做视觉描述（复用 F1 通道）。
 - 免费节点限速/排队（429/5xx）⇒ 设备侧逐端点串行 + 失败重放一次再定性；NV 冷启慢（step5 600s 窗）。
@@ -66,10 +72,10 @@ W11 = **W10 收尾** + **跨免费模型综合功能矩阵验证**。
 
 ## 五、执行序列
 
-1. **W10 收尾**：G2/G3 复跑（后台跑中）→ 审查席结论（code-quality-reviewer 后台跑中）→ LF 归一 → 提交（S1/S2/S4 量纲 + S3 尾部摘要可分 2-3 commit，EXPECTED_TESTS=778 主理人独占）→ push dry-run → 实推 → CI 五 job 绿。
+1. **W10 收尾（已闭环，改为核对而非重做）**：`98916eaa` 已推 `main`，CI run `42365515962` 五 job 全 success；G2 `tests=778/0/0/0`、G3 `OK=27 VACUOUS=1 VIOLATION=0`、G4 selftest 30/30 均在 W10 跑完。**W11 不再重复提交/推送 W10 内容**，只做：交接口径回填（本文件 + `handoff-20261107-wave10.md` §九）+ 台账 §二-bis 四行回填 + `EXPECTED_TESTS` 由 W11 新增用例一次性改（778 → **798**，主理人独占；严格 @Test 实跑 798 双向对账）。
 2. **设备侧矩阵前置**：装包 + 冷启动 + 注入全部免费端点（endpoints.json）+ 逐端点登记往返（M1）。
 3. **W11 矩阵**：F1→F3/F4/F5→F7→F8/F9→F10/F11；F2/F6 阻断复核单列。每个功能取首条正向证据 + 反向（若适用）落 journal/`_w11/raw/`。
-4. **台账回填**：W9-01 主体完成度；R2 分隔卡顺延；id-波动观察项新开台账行；W9-05（journal/FreezeClock，第 6 次顺延）W11 必须开波或再登记。
+4. **台账回填（W11 已落，结论订正）**：W9-01 补完一处仍 `OPEN` / W9-03 形态拆清仍 `OPEN` / W9-04 关闭 / W9-05 **第 7 次顺延如实登记（未开波）**；R2 → `W11-01`、id 假漂移 → `W11-02`（已闭）、`cache_invalidated` → `W11-03`，另开 `W11-04`（jsonMode × tools）/ `W11-05`（分母按族归一）。**W9-05「W11 必须开波」的先还债项未满足**，理由与 W12 硬截止写在台账 §二-bis，本计划不美化。
 
 ---
 
@@ -77,7 +83,7 @@ W11 = **W10 收尾** + **跨免费模型综合功能矩阵验证**。
 
 - **A 组（收尾提交）**：仅 `git` 操作 + `build.yml` 数字；不碰业务代码。
 - **B 组（设备矩阵脚本）**：`_w11/` 取证夹（`.py`/`.jsonl`/`.png`），新增目录不触现存模块。
-- **C 组（R2 分隔卡，若开工）**：先拆 `ChatMessageList` 子组件（`chatRows` 抽取），再移动分隔卡；同步 G10 core-context 余量（仅 27）— **触顶先下沉**。
+- **C 组（R2 分隔卡，若开工）**：先拆 `ChatMessageList` 子组件（`chatRows` 抽取），再移动分隔卡；余量吃紧的是 **`feature-chat` 3873/3900 余 27**（原文误写 `core-context`，已订正；`core-context` 为 1588/1650 余 62）— **触顶先下沉，禁调 `LINE_CAPS`**。
 - D 组（W9-05 journal/FreezeClock）：独立模块，本波末或顺延。
 
 🔴 派单后 `git status` 核实磁盘产出再采信；子 Agent ≤4 路并行；429 ⇒ 主理人接手不重试。

@@ -343,6 +343,10 @@ class ContextBudget(
      * per-request 真值）。本字段在这里的价值是「这个 run 至今有没有任何命中」。
      * 一个 token 都没回报过 ⇒ `n/a`，不伪装成 0（「未上报」与「0 命中」不可分辨是本仓
      * 已判死的失真形态，design §2.4）。provider 报了 usage 但没报缓存字段时同样是 `n/a`。
+     *
+     * W9-04 口径订正：本标签只有「三态」的展示能力，`n/a` 同时覆盖
+     * `CACHE_FIELDS_NOT_REPORTED` 与 `USAGE_NOT_OBSERVED` 两态。要区分二者请读
+     * `promptCacheStatus(cached, usageObserved)`，不要从这行日志反推缓存归因。
      */
     private fun cachedLabel(ctx: TurnContext): String =
         if (ctx.state.promptTokens == 0) "n/a" else (ctx.state.cachedPromptTokens?.toString() ?: "n/a")

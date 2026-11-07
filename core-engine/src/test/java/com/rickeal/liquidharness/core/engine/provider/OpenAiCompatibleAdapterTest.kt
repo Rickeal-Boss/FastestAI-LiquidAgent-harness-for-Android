@@ -6,6 +6,8 @@ import com.rickeal.liquidharness.core.model.FinishReason
 import com.rickeal.liquidharness.core.model.ThinkingMode
 import com.rickeal.liquidharness.core.model.GenerationEvent
 import com.rickeal.liquidharness.core.model.GenerationRequest
+import com.rickeal.liquidharness.core.model.PromptCacheStatus
+import com.rickeal.liquidharness.core.model.promptCacheStatus
 import com.rickeal.liquidharness.core.model.ReasoningStyle
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.model.Role
@@ -625,5 +627,53 @@ class OpenAiCompatibleAdapterTest {
         val body = adapter.buildBody(request(endpoint = e))
         assertNull(body["foo"], "凭据形态值不得进请求体")
         assertEquals(40, body["top_k"]!!.jsonPrimitive.int, "干净键仍照常追加")
+    }
+
+    /** W9-04 fixture 1：DeepSeek 平铺字段（销 `TODO(W6)` —— 此前该类端点恒 null）。 */
+    @Test
+    fun deepSeekFlatCacheHitFieldIsNormalized() {
+        val events = adapter.decodeEvent(
+            SseEvent(
+                """{"choices":[],"usage":{"prompt_tokens":100,"completion_tokens":5,""" +
+                    """"prompt_cache_hit_tokens":96}}"""
+            )
+        )
+        val usage = events.single() as GenerationEvent.Usage
+        assertEquals(96, usage.cachedPrompt)
+        assertNull(usage.cacheWrite)
+    }
+
+    /** W9-04 fixture 2：三套 write 字段归一，写入量独立存、不并入命中量。 */
+    @Test
+    fun cacheWriteFieldsAreNormalizedAcrossVendors() {
+        fun writeOf(usageJson: String): Int? {
+            val events = adapter.decodeEvent(SseEvent("""{"choices":[],"usage":$usageJson}"""))
+            return (events.single() as GenerationEvent.Usage).cacheWrite
+        }
+        assertEquals(
+            32,
+            writeOf(
+                """{"prompt_tokens":100,"prompt_tokens_details":{"cached_tokens":64,"cache_write_tokens":32}}"""
+            ),
+        )
+        assertEquals(16, writeOf("""{"prompt_tokens":100,"cache_write_tokens":16}"""))
+        assertEquals(
+            8,
+            writeOf(
+                """{"prompt_tokens":100,"cache_read_input_tokens":64,"cache_creation_input_tokens":8}"""
+            ),
+        )
+        assertNull(writeOf("""{"prompt_tokens":100,"prompt_tokens_details":{"cached_tokens":64}}"""))
+    }
+
+    /** W9-04 fixture 3：usage 末帧根本不来 ⇒ 不发 Usage 事件 ⇒ 四态是「未观测」，不是「未命中」。 */
+    @Test
+    fun missingFinalUsageFrameIsNotAMiss() {
+        val events = adapter.decodeEvent(SseEvent("""{"choices":[{"delta":{"content":"x"}}]}"""))
+        assertFalse(events.any { it is GenerationEvent.Usage })
+        assertEquals(
+            PromptCacheStatus.USAGE_NOT_OBSERVED,
+            promptCacheStatus(null, usageObserved = false),
+        )
     }
 }

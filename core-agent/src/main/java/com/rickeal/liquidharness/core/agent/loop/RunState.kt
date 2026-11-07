@@ -65,6 +65,13 @@ class RunState(
     var cachedPromptTokens: Int? = null
         private set
 
+    /**
+     * 本 run 累计的**缓存写入量**（W9-04）。与命中量分开记账：写入同样计费，
+     * 且它是 `cacheHitRatio` 分母的一部分；合并成一个模糊值会让命中率随口径漂移。
+     */
+    var cacheWriteTokens: Int? = null
+        private set
+
     /** 已执行的工具调用计数（W2 起用；W1 恒 0）。 */
     var executedToolCount: Int = 0
         private set
@@ -232,11 +239,14 @@ class RunState(
      *
      * @param cachedPrompt `null` = provider 未上报该字段 ⇒ **不累加、也不把账本置 0**
      *   （置 0 就是把「不知道」写成「没命中」）。只要有任何一次上报过，账本从此有值。
+     * @param cacheWrite W9-04 独立写入量，同样 `null` 不累加；与命中量分开，供
+     *   `cacheHitRatio` 的分母使用。默认 `null` 保证既有调用点零改动。
      */
-    fun recordUsage(prompt: Int, completion: Int, cachedPrompt: Int?) {
+    fun recordUsage(prompt: Int, completion: Int, cachedPrompt: Int?, cacheWrite: Int? = null) {
         promptTokens += prompt
         completionTokens += completion
         if (cachedPrompt != null) cachedPromptTokens = (cachedPromptTokens ?: 0) + cachedPrompt
+        if (cacheWrite != null) cacheWriteTokens = (cacheWriteTokens ?: 0) + cacheWrite
     }
 
     /** provider 未回报 usage 时的估算兜底（标记 `estimated = true`，供校准告警使用）。 */
@@ -298,6 +308,7 @@ class RunState(
             total = promptTokens + completionTokens,
             cachedPromptTokens = cachedPromptTokens,
             estimated = usageEstimated,
+            cacheWriteTokens = cacheWriteTokens,
         )
     }
 

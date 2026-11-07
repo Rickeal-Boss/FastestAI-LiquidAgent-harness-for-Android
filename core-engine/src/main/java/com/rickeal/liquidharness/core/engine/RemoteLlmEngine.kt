@@ -307,6 +307,7 @@ class RemoteLlmEngine(
                 completion = event.completion,
                 total = event.prompt + event.completion,
                 cachedPromptTokens = event.cachedPrompt,
+                cacheWriteTokens = event.cacheWrite,
             )
             is GenerationEvent.ToolCallDelta -> Unit
             is GenerationEvent.Failed -> Unit

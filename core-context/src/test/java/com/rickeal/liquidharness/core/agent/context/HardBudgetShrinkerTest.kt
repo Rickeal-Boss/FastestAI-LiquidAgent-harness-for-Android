@@ -1,7 +1,10 @@
 package com.rickeal.liquidharness.core.agent.context
 
+import com.rickeal.liquidharness.core.model.Attachment
+import com.rickeal.liquidharness.core.model.AttachmentKind
 import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.Role
+import com.rickeal.liquidharness.core.model.TokenEstimator
 import com.rickeal.liquidharness.core.model.ToolCall
 import com.rickeal.liquidharness.core.model.ToolResult
 import kotlin.test.Test
@@ -123,5 +126,107 @@ class HardBudgetShrinkerTest {
         // 已经存在的占位必须**逐字保留**：套娃的形态是「占位的占位」，
         // 一旦发生，原有那条 `[omitted: hard budget, 4000 chars]` 就会消失。
         assertTrue(after.containsAll(before), "placeholder was rewrapped: $after")
+    }
+
+    /**
+     * W9-01 补完的**同源判据**：附件必须同时进「估算面」和「L3 字符硬闸」。
+     *
+     * 红态：删掉 `promptChars` 里的 `sendableAttachments` 遍历 ⇒ 字符增量变 0，
+     * 本例必红。W10/S4 只补了估算面，正是这个用例当时缺的那一半。
+     */
+    @Test
+    fun attachmentsAreCountedOnBothBudgetScales() {
+        val plain = listOf(ChatMessage(id = "u", role = Role.USER, text = "look"))
+        val withImage = listOf(
+            ChatMessage(
+                id = "u",
+                role = Role.USER,
+                text = "look",
+                attachments = listOf(
+                    Attachment(kind = AttachmentKind.IMAGE, mimeType = "image/png", base64 = "AAAA")
+                ),
+            )
+        )
+
+        val imageChars =
+            (TokenEstimator.ESTIMATED_IMAGE_TOKENS * TokenEstimator.CHARS_PER_TOKEN_ASCII).toInt()
+        assertEquals(imageChars, HardBudgetShrinker.promptChars(withImage) - HardBudgetShrinker.promptChars(plain))
+        assertEquals(
+            TokenEstimator.ESTIMATED_IMAGE_TOKENS,
+            TokenEstimator.estimateMessages(withImage) - TokenEstimator.estimateMessages(plain),
+        )
+    }
+
+    /** 文本附件按真实字符计入；不可发送附件与非 USER 消息的图片不计（它们不进请求体）。 */
+    @Test
+    fun promptCharsSkipsAttachmentsThatNeverReachTheWire() {
+        val base = HardBudgetShrinker.promptChars(
+            listOf(ChatMessage(id = "u", role = Role.USER, text = "x"))
+        )
+        val withText = HardBudgetShrinker.promptChars(
+            listOf(
+                ChatMessage(
+                    id = "u",
+                    role = Role.USER,
+                    text = "x",
+                    attachments = listOf(
+                        Attachment(kind = AttachmentKind.TEXT, textContent = "hello")
+                    ),
+                )
+            )
+        )
+        val unsendable = HardBudgetShrinker.promptChars(
+            listOf(
+                ChatMessage(
+                    id = "u",
+                    role = Role.USER,
+                    text = "x",
+                    attachments = listOf(
+                        Attachment(kind = AttachmentKind.AUDIO),
+                        Attachment(kind = AttachmentKind.IMAGE, base64 = ""),
+                    ),
+                )
+            )
+        )
+        val modelCarriesImage = HardBudgetShrinker.promptChars(
+            listOf(
+                ChatMessage(
+                    id = "m",
+                    role = Role.MODEL,
+                    text = "x",
+                    attachments = listOf(
+                        Attachment(kind = AttachmentKind.IMAGE, mimeType = "image/png", base64 = "AAAA")
+                    ),
+                )
+            )
+        )
+
+        assertEquals(base + "hello".length, withText)
+        assertEquals(base, unsendable)
+        assertEquals(base, modelCarriesImage)
+    }
+
+    /**
+     * 标定分子**不得**含图片当量：否则 provider 只计少量视觉 token 时，
+     * `measuredCharsPerToken` 被顶到 ceiling ⇒ `charCap` 放大 ⇒ 超窗方向。
+     * 红态：若 `calibrationChars` 误用 `promptChars`，本例必红。
+     */
+    @Test
+    fun calibrationCharsExcludeTheEstimatedImageAllowance() {
+        val plain = listOf(ChatMessage(id = "u", role = Role.USER, text = "look"))
+        val withImage = listOf(
+            ChatMessage(
+                id = "u",
+                role = Role.USER,
+                text = "look",
+                attachments = listOf(
+                    Attachment(kind = AttachmentKind.IMAGE, mimeType = "image/png", base64 = "AAAA")
+                ),
+            )
+        )
+
+        assertEquals(HardBudgetShrinker.promptChars(plain), HardBudgetShrinker.calibrationChars(plain))
+        assertEquals(HardBudgetShrinker.calibrationChars(plain), HardBudgetShrinker.calibrationChars(withImage))
+        assertTrue(HardBudgetShrinker.promptChars(withImage) > HardBudgetShrinker.calibrationChars(withImage))
     }
 }

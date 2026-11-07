@@ -35,8 +35,19 @@ sealed interface GenerationEvent {
      * 用量。[cachedPrompt] 是**三态**（与 [TokenUsage.cachedPromptTokens] 同源）：
      * `null` = provider 没上报缓存字段，`0` = 上报了且没命中，`>0` = 命中。
      * adapter 不许把缺失压成 0 —— 那会让「端点不支持该字段」与「前缀没命中」在界面上同形。
+     *
+     * 「整个 usage 未到达」不由本事件表达（本事件存在即 usage 到达）：由下游
+     * `promptCacheStatus(cached, usageObserved = false)` 补第四态（W9-04）。
+     *
+     * [cacheWrite]：缓存写入量，默认 `null` 保证既有构造点零改动；三套厂商字段
+     * 由 adapter 归一后填这里。
      */
-    data class Usage(val prompt: Int, val completion: Int, val cachedPrompt: Int?) : GenerationEvent
+    data class Usage(
+        val prompt: Int,
+        val completion: Int,
+        val cachedPrompt: Int?,
+        val cacheWrite: Int? = null,
+    ) : GenerationEvent
 
     data class Finished(val reason: FinishReason) : GenerationEvent
 

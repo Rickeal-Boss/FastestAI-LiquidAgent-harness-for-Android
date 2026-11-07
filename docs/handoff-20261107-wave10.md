@@ -3,7 +3,7 @@
 > 基线 `fc841f8`（W9-01「0 车」快修已推，EXPECTED_TESTS=770）；工作树 18 文件改动 + 新增 `docs/notes/w10-plan.md`（未提交）。
 > 派单口径 `docs/notes/w10-plan.md`；上游依据 `docs/notes/w9-wave-plan.md` + 用户新输入（免费节点 key + 至 1M 上下文 + 功能矩阵）。
 > 提交身份：`-c user.name="Rickeal-Boss" -c user.email="263587600+Rickeal-Boss@users.noreply.github.com"`（用户 2026-11-07 显式指令，与 AGENTS.md §九一致；知识库 §5 已回写订正）。
-> 🔴 **本文件性质 = 进行中快照**：审查席 3 项「重要」已处置（2 修 1 顺延），**尚未提交 / 未推 / 未取 CI**；G2/G3 后台复跑中，跑后结论回填本文件。
+> 🔴 **本文件性质 = W10 跑后版（W11 第 0 车回填，2026-11-07 晚）**：审查席 3 项「重要」已处置（2 修 1 顺延）；**已提交 `98916eaa`、已推 `main`、CI run `42365515962` 五 job 全 success**。原「进行中快照」抬头与 §一「推送/CI ⛔ 未做」是**当时事实**，跑后结论见 §九；历史文本保留不抹，按「回填不篡改」纪律处理。
 > ⚠️ 引用纪律：本文件所有 `文件:行` 已回现役工作树 grep 复核；「未触发」≠「已验证通过」；四态 `✅/⚠️/⛔/⛔vacuous`。
 
 ---
@@ -25,9 +25,9 @@
 | 审查席 | ⚠️ 3 重要：R1 已修 / R2 顺延 / R3 已修（详见 §四） |
 | 真机 | ⚠️ 装包+冷启动 ✅；M1 往返题面已发但 journal 取证未闭环；M8/M9/M10 设备侧未行使 |
 | PC 侧矩阵 | ✅ 见 §三（M8 双向正向证据到手） |
-| 推送 / CI | ⛔ 未做（本波未 commit；N2 人工闸门未过） |
+| 推送 / CI | ✅ 跑后回填：已推 `98916eaa`；CI run `42365515962` 五 job 全 success（见 §九）。写本行时为 ⛔ 未做，属当时事实 |
 
-**本波不构成「已验证通过」的项**：真机 M8/M9/M10（未行使）、R2 分隔卡（顺延）、1M 稳定性（PC 侧 nv-vl 1/2 不稳、mistral 超时）、推送 CI（未做）。
+**本波不构成「已验证通过」的项**：真机 M8/M9/M10（未行使）、R2 分隔卡（顺延）、1M 稳定性（PC 侧 nv-vl 1/2 不稳、mistral 超时）。推送 / CI 已于跑后闭环，不再列为未验证项。
 
 ---
 
@@ -136,3 +136,26 @@
 
 - MCP 真机联调（`usesCleartextTraffic=false` 平台阻塞）；设备侧 1M（双内核阻断，W9-11 未解锁）；音频输出（NV `/v1/audio/speech` 404 平台阻断）；任何新 arch-guard 守卫或 selftest case（本波零新增）；`feature-settings` 零改动（余 8，W9-07/12 开工前先定拆分）。
 - 推送与 CI（本波未 commit；N2 未过，不代做）。
+
+---
+
+## 九、W11 第 0 车跑后回填（2026-11-07 晚，主理人）
+
+> 本节是**跑后订正**，§一/§七 的「未提交 / 未推 / 未取 CI」是写交接当时的真实状态，按
+> 「回填不篡改」纪律保留原文并在此给出结论。行号一律锚 `HEAD:98916eaa`。
+
+| 项 | 跑后事实 | 判据 |
+|---|---|---|
+| 提交 / 推送 | `98916eaa feat(w10)…关 W10 波` 已在 `main` | GitHub API `branches/main` 返回同 SHA，本地 `rev-parse HEAD` 一致（不只看 `origin/main` 本地 ref，它陈旧停在 `767fd47`） |
+| CI | run `42365515962` → `completed / success`；前一次 `42249451709` (`fc841f8`) 亦 success | GitHub API `actions/runs`；五 job 全绿 |
+| G1 出包 | `BUILD SUCCESSFUL`，`app-debug.apk` 70,309,520 B | W10 §一 |
+| G2 全量单测 | `tests=778 failures=0 errors=0 skipped=0`（81 XML） | W10 §一（审查修复后复跑再确认） |
+| G3 架构守卫 | `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0` | W10 §一 |
+| G4 守卫自证 | selftest 30/30 PASS | W10 §一 |
+| 真机 M1 / M8 / M9 / M10 | **仍未闭环**：装包冷启 ✅、M1 题面已发但 journal 未闭环，M8/M9/M10 未行使 | 保持 ⚠️ / ⛔vacuous，不因 W10 已推而升级 |
+| 台账回填 | W9-01（补完一处仍 `OPEN`）/ W9-03（形态拆清仍 `OPEN`）/ W9-04（W11 关闭）/ W9-05（第 7 次顺延，如实）已落 `06-deferred-ledger.md` | 台账 §二-bis；G20 |
+| 新开挂账 | `W11-01` R2 分隔卡 / `W11-02` id 假漂移（W11 已闭）/ `W11-03` `cache_invalidated` 二值过度声明 | 台账 §二-ter |
+
+**本波仍未做（防误读）**：W9-05 journal/FreezeClock 开波；设备侧 1M 真压；MCP 明文联调；
+音频输出（W11 探活席复证 `https://integrate.api.nvidia.com/v1/audio/speech` = 404）；
+R2 分隔卡；尾置 SYSTEM 摘要的端点接受性（R6）。以上在 W11 handoff 逐项给四态。

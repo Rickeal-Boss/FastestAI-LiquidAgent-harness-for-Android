@@ -45,8 +45,12 @@ enum class FinishReason {
  * 同形展示会让排查方向直接反掉（design §2.4）。
  * `@Serializable` 兼容性：旧 journal 里缺这个字段 ⇒ 反序列化为 `null`，正是想要的语义。
  *
- * TODO(W6)：DeepSeek 把命中量平铺在 `usage.prompt_cache_hit_tokens`（不在
- * `prompt_tokens_details` 里），当前 adapter 读不到 ⇒ 该类端点恒为 `null`（未上报）。
+ * W9-04（2026-11-07）：三态在**整个 usage 都没到达**时也会落成 `null`，与「usage 到了
+ * 但缓存字段没上报」同形 ⇒ 由 [promptCacheStatus] 用 `usageObserved` 补出第四态。
+ * DeepSeek 平铺字段 / Anthropic 的 write 量由 adapter 归一，不再有 `TODO(W6)`。
+ *
+ * [cacheWriteTokens]：缓存写入量。它**也是计费输入**，所以进 [cacheHitRatio] 的分母；
+ * 与命中量分开存，绝不合并成一个「缓存 token」模糊值。
  */
 @Serializable
 data class TokenUsage(
@@ -56,10 +60,70 @@ data class TokenUsage(
     val cachedPromptTokens: Int? = null,
     /** true = 本地 `TokenEstimator` 兜底（provider 未回报 usage）。 */
     val estimated: Boolean = false,
+    /** 缓存写入量；`null` = 未上报。旧 journal 缺字段 ⇒ `null`，兼容。 */
+    val cacheWriteTokens: Int? = null,
 ) {
     companion object {
         val Zero: TokenUsage = TokenUsage()
     }
+}
+
+/**
+ * prompt cache 的**四态观测结果**（W9-04；外部研究增量一）。
+ *
+ * 三态 `[TokenUsage.cachedPromptTokens]` 回答不了 W7-02「OR 免费池恒 0 到底是没命中
+ * 还是字段没上报」，因为「整个 usage 末帧没来」与「usage 来了但没带缓存字段」都会
+ * 落成 `null`。两态的处置相反：前者查传输/末帧，后者查端点能力。
+ */
+@Serializable
+enum class PromptCacheStatus {
+    /** 上报了命中量且 > 0。 */
+    HIT,
+
+    /** 上报了命中量且 == 0 ⇒ 真没命中，查前缀稳定性。 */
+    MISS,
+
+    /** usage 到了，但没有任何一家认识的缓存字段 ⇒ 查端点是否支持上报。 */
+    CACHE_FIELDS_NOT_REPORTED,
+
+    /** 整个 usage 都没观测到（流被截 / 端点不回报）⇒ 查传输与末帧，不是缓存结论。 */
+    USAGE_NOT_OBSERVED,
+}
+
+/**
+ * 四态派生。**唯一口径**，不要在 UI / 日志 / 台账里各自 `?: 0` 重算。
+ *
+ * @param usageObserved 本次生成是否收到过 provider 的 usage（不是本地估算兜底）。
+ *   本地估算必须传 `false`，否则会把「没测」写成「没命中」。
+ */
+fun promptCacheStatus(cachedPromptTokens: Int?, usageObserved: Boolean): PromptCacheStatus = when {
+    !usageObserved -> PromptCacheStatus.USAGE_NOT_OBSERVED
+    cachedPromptTokens == null -> PromptCacheStatus.CACHE_FIELDS_NOT_REPORTED
+    cachedPromptTokens > 0 -> PromptCacheStatus.HIT
+    else -> PromptCacheStatus.MISS
+}
+
+/**
+ * 缓存命中率，**分母一次钉死**（W9-04；报告1 §二「分母口径」）。
+ *
+ * 口径 = `cachedPromptTokens / (prompt + cacheWriteTokens ?: 0)`。
+ *
+ * - OpenAI 兼容族 / DeepSeek 归一后的 `prompt` **已包含**命中量，所以**不**再加一次
+ *   `cached`（加了就是双计，命中率随口径漂移）；
+ * - `cacheWriteTokens` 是独立的计费输入，留在分母（deepseek-harness TUI 同口径）；
+ * - 未上报命中量 / 分母 <= 0 ⇒ 返回 `null`（**不伪装成 0%**，与三态纪律一致）；
+ * - 结果钳制在 `[0, 1]`。⚠️ **这是显示上界，不是「100% 命中」的事实声明**：
+ *   DeepSeek 平铺族 / Anthropic 的 `prompt_tokens` 可能**不含**命中量，此时
+ *   原始比值会 > 1，说明该族分母尚未归一（W11-05 待办：按 provider 族归一），
+ *   钳到 1.0 只保证 UI 不显示 600% 这种荒谬值，不得据此写「命中率 100%」。
+ *
+ * 返回 `null` 的四态归因请读 [promptCacheStatus]，不要拿 `null` 当「缓存全失效」。
+ */
+fun cacheHitRatio(usage: TokenUsage): Double? {
+    val read = usage.cachedPromptTokens ?: return null
+    val denominator = usage.prompt + (usage.cacheWriteTokens ?: 0)
+    if (denominator <= 0) return null
+    return (read.toDouble() / denominator).coerceIn(0.0, 1.0)
 }
 
 /**

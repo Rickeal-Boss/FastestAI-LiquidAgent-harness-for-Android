@@ -3,8 +3,10 @@ package com.rickeal.liquidharness.feature.chat
 import com.rickeal.liquidharness.core.model.AgentEvent
 import com.rickeal.liquidharness.core.model.Role
 import com.rickeal.liquidharness.core.model.TerminationReason
+import com.rickeal.liquidharness.core.model.TokenUsage
 import com.rickeal.liquidharness.core.model.ToolCall
 import com.rickeal.liquidharness.core.model.ToolResult
+import com.rickeal.liquidharness.core.model.cacheHitRatio
 import com.rickeal.liquidharness.core.model.newId
 import java.util.Locale
 
@@ -57,7 +59,12 @@ object EventReducer {
         is AgentEvent.ApprovalRequested -> state
         is AgentEvent.UsageUpdated -> state.copy(
             contextTokens = event.prompt,
-            usageLabel = buildUsageLabel(event.prompt, event.completion, event.cachedPrompt),
+            usageLabel = buildUsageLabel(
+                event.prompt,
+                event.completion,
+                event.cachedPrompt,
+                event.cacheWrite,
+            ),
         )
         is AgentEvent.Finished -> finish(state, event.text, event.terminatedBy)
         is AgentEvent.Failed -> fail(state, event.message, event.terminatedBy)
@@ -284,16 +291,24 @@ object EventReducer {
      * 这三条是**三种不同的处置**，界面上必须长得不一样（design §2.4 / §A.8）。
      * `prompt <= 0` 时算不出比率（分母未知），只输出命中量，不编一个 0.0%。
      *
+     * W9-04：命中率**不再自己算**。此前这里是 `cached * 100.0 / prompt`，与账本 / 探针
+     * 的口径分叉且分子分母各写一遍；现在统一调 [cacheHitRatio]，分母一次钉死
+     * （`prompt + cacheWrite`，写入也计费）。UI 因此能显示含写入量的真实命中率。
+     *
      * ⚠️ 能力边界：本标签只回答「**这次请求有没有命中**」，不回答「为什么没命中」。
      * 缓存命中的最小前缀长度是**端点侧性质**（GLM-4.7 实测 ≈4096 token），短前缀下
-     * `0.0%` 是**正确值**，不是缺陷。诊断时要先看上下文总量再看命中率。
+     * `0.0%` 是**正确值**，不是缺陷。诊断时要先看上下文总量再看命中率；
+     * 「为什么没命中」读 `promptCacheStatus` 的四态，不读这个百分比。
      */
-    private fun buildUsageLabel(prompt: Int, completion: Int, cached: Int?): String {
+    private fun buildUsageLabel(prompt: Int, completion: Int, cached: Int?, cacheWrite: Int?): String {
         if (prompt <= 0 && completion <= 0) return ""
         val cachePart = when {
             cached == null -> " (cache n/a)"
             prompt > 0 -> {
-                val rate = cached * 100.0 / prompt
+                val ratio = cacheHitRatio(
+                    TokenUsage(prompt = prompt, cachedPromptTokens = cached, cacheWriteTokens = cacheWrite)
+                )
+                val rate = (ratio ?: 0.0) * 100.0
                 " (" + cached + " cached, " + String.format(Locale.US, "%.1f", rate) + "%)"
             }
 

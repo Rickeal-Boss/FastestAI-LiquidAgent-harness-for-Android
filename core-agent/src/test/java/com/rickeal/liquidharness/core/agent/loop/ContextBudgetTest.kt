@@ -105,9 +105,17 @@ class ContextBudgetTest {
 
     // ── W4：分段前缀指纹 ────────────────────────────────────────────────────
 
-    /** 200 个 ASCII 字符 = 50 token，+4 协议开销 = 54 token/条。 */
+    /**
+     * 200 个 ASCII 字符 = 50 token，+4 协议开销 = 54 token/条。
+     *
+     * W11：正文**尾部带 id**，长度仍恒为 200 ⇒ token 预算不变，但每条内容真的不同。
+     * 原来所有行都是 `"x".repeat(200)`，`compressionInvalidatesThePrefixOnlyOnce`
+     * 断言「压缩后前缀变了」其实只靠 `message.id` 抖动通过；`renderHistoryHead` 去掉
+     * 不进 wire 的 `message.id` 后该断言立刻恒假（⛔vacuous）。判据必须靠**真正进
+     * 请求体的字节**变化来行使，不能靠 id 假漂移。
+     */
     private fun line(id: String, role: Role): ChatMessage =
-        ChatMessage(id = id, role = role, text = "x".repeat(200))
+        ChatMessage(id = id, role = role, text = "x".repeat(200 - id.length) + id)
 
     /** 交替角色：相邻同角色会被 `sanitizeForProvider` 合并，那样就数不清「丢了几条」。 */
     private fun history(count: Int): List<ChatMessage> =

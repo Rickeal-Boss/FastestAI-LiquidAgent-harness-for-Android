@@ -318,6 +318,27 @@ class EventReducerTest {
     }
 
     /**
+     * W9-04：写入量必须进分母（600 / (1000 + 200) = 50.0%）。
+     *
+     * 此前 UI 在这里自己算 `cached * 100 / prompt`，与账本 / 探针口径分叉；
+     * 现在统一调 `cacheHitRatio`。本例删掉分母里的 write ⇒ 显示回 60.0% ⇒ 必红。
+     */
+    @Test
+    fun usageLabelKeepsCacheWriteInTheSingleDenominator() {
+        val state = EventReducer.reduce(
+            initial,
+            AgentEvent.UsageUpdated(
+                prompt = 1000,
+                completion = 10,
+                cachedPrompt = 600,
+                cacheWrite = 200,
+            ),
+        )
+        assertTrue(state.usageLabel.orEmpty().contains("600 cached"))
+        assertTrue(state.usageLabel.orEmpty().contains("50.0%"))
+    }
+
+    /**
      * 三态的第三态：`null` = provider **没上报**这个字段。
      *
      * 它不能显示成 `0.0%` —— 那会让人去查「前缀为什么不稳定」，而真实原因可能是

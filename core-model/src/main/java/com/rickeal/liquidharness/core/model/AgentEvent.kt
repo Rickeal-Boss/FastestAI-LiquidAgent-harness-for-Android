@@ -93,8 +93,16 @@ sealed interface AgentEvent {
      *
      * [cachedPrompt] 三态：`null` = provider 没上报该字段，`0` = 上报了且没命中，`>0` = 命中。
      * UI 必须把三者渲染成不同的文字 —— 否则「端点不支持缓存字段」会被读成「缓存失效」。
+     *
+     * 「整个 usage 未到达」不发本事件 ⇒ 下游用 `promptCacheStatus(usageObserved=false)`
+     * 补第四态（W9-04）。[cacheWrite] 是写入量，进命中率分母；默认 null 兼容旧构造点。
      */
-    data class UsageUpdated(val prompt: Int, val completion: Int, val cachedPrompt: Int?) : AgentEvent
+    data class UsageUpdated(
+        val prompt: Int,
+        val completion: Int,
+        val cachedPrompt: Int?,
+        val cacheWrite: Int? = null,
+    ) : AgentEvent
 
     /** 技能被加载。**新仓新增**：UI 要显示「本回答用了哪个技能」，否则技能是隐形的。 */
     data class SkillLoaded(val name: String) : AgentEvent

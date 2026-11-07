@@ -222,6 +222,9 @@ class StreamAccumulator {
     var usage: TokenUsage? = null
         private set
 
+    /** 四态：usage 为 null ⇒ 未观测（W9-04 生产消费点，无独立状态可漏复位）。 */
+    val cacheStatus get() = promptCacheStatus(usage?.cachedPromptTokens, usageObserved = usage != null)
+
     var finishReason: FinishReason? = null
         private set
 
@@ -247,6 +250,7 @@ class StreamAccumulator {
                 completion = event.completion,
                 total = event.prompt + event.completion,
                 cachedPromptTokens = event.cachedPrompt,
+                cacheWriteTokens = event.cacheWrite,
             )
             is GenerationEvent.Finished -> {
                 finishReason = event.reason

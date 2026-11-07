@@ -5,6 +5,7 @@ import com.rickeal.liquidharness.core.agent.context.sanitizeForProvider
 import com.rickeal.liquidharness.core.model.Role
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -100,14 +101,16 @@ class ManualCompressTest {
         assertEquals(headBefore.map { it.text }, headAfter.map { it.text })
         // 头锚条数本身不变（保序、不插入摘要到头锚区）。
         assertEquals(HEAD_ANCHOR_BUBBLES, headAfter.size)
-        // 缓存稳定判据真值：renderHistoryHead（k=HISTORY_HEAD_SIZE=4）压缩前后**内容段**相同
-        // （审查席 R1：头锚须 ≥ k 才覆盖稳定窗）。renderHistoryHead 行含 `message.id`，而
-        // toHistoryMessages() 每次重建生成新 id（与压缩无关的固有波动）⇒ 剥离 role:id 前缀，
-        // 只比内容段。观察项：id 波动对前缀缓存的真实影响记入 handoff（非 S3 引入）。
-        assertEquals(
-            renderHistoryHead(before).lines().map { it.substringAfter(':').substringAfter(':') },
-            renderHistoryHead(after).lines().map { it.substringAfter(':').substringAfter(':') },
-        )
+        // 缓存稳定判据真值：renderHistoryHead（k=HISTORY_HEAD_SIZE=4）压缩前后**逐字节**相同
+        // （审查席 R1：头锚须 ≥ k 才覆盖稳定窗）。
+        // W11：`renderHistoryHead` 已只渲染进 wire 的字段（去掉 message.id），
+        // `toHistoryMessages()` 每次重建的新 id 不再造成假漂移 ⇒ 整段直接比，
+        // 不再剥前缀。🔴 判据自身先被验证：旧写法「双剥 `role:id:`」在新格式
+        // `ROLE:text` 下会把 text 也剥掉 ⇒ 恒为空串 ⇒ 判据退化成 ⛔vacuous，
+        // 故下面补一条灵敏度自证（改动一个字必须判不等）。
+        assertEquals(renderHistoryHead(before), renderHistoryHead(after))
+        val perturbed = listOf(before.first().copy(text = before.first().text + "!")) + before.drop(1)
+        assertNotEquals(renderHistoryHead(before), renderHistoryHead(perturbed))
         // 摘要消息只在尾部追加，且是 SYSTEM 角色。
         assertTrue(after.last().role == Role.SYSTEM)
         assertTrue(after.last().text.startsWith("[context summary]"))

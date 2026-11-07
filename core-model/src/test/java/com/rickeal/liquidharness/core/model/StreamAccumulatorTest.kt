@@ -107,6 +107,7 @@ class StreamAccumulatorTest {
         assertEquals(150, generation.usage?.total)
         assertEquals(96, generation.usage?.cachedPromptTokens)
         assertEquals(FinishReason.TOOL_CALLS, generation.finishReason)
+        assertEquals(PromptCacheStatus.HIT, accumulator.cacheStatus)
     }
 
     /** 空流 ⇒ 全空结果，不是 null、不是异常。 */
@@ -184,5 +185,42 @@ class StreamAccumulatorTest {
 
         assertEquals("ababcdXY", tracker.text)
         assertEquals(false, tracker.isCumulative)
+    }
+
+    /**
+     * W9-04：整条流没有 usage 帧 ⇒ `usage` 保持 null，四态必须落到
+     * `USAGE_NOT_OBSERVED`，而不是与「字段没上报」同形的 `null` 就完事。
+     * 这是 W7-02 归因链最后一环（末帧缺失的传输面）。
+     */
+    @Test
+    fun noUsageFrameYieldsUnobservedCacheStatus() {
+        val accumulator = StreamAccumulator()
+        accumulator.accept(GenerationEvent.TextDelta("hi"))
+        accumulator.accept(GenerationEvent.Finished(FinishReason.STOP))
+
+        assertNull(accumulator.usage)
+        assertEquals(PromptCacheStatus.USAGE_NOT_OBSERVED, accumulator.cacheStatus)
+
+        // 另外两态也必须在生产路径（StreamAccumulator）可达，而不是只在纯函数单测里。
+        val noFields = StreamAccumulator()
+        noFields.accept(GenerationEvent.Usage(prompt = 10, completion = 1, cachedPrompt = null))
+        assertEquals(PromptCacheStatus.CACHE_FIELDS_NOT_REPORTED, noFields.cacheStatus)
+
+        val explicitZero = StreamAccumulator()
+        explicitZero.accept(GenerationEvent.Usage(prompt = 10, completion = 1, cachedPrompt = 0))
+        assertEquals(PromptCacheStatus.MISS, explicitZero.cacheStatus)
+    }
+
+    /** W9-04：cacheWrite 从流事件一路透传到 `TokenUsage`，不丢字段。 */
+    @Test
+    fun cacheWriteTokensSurviveTheStreamAccumulator() {
+        val accumulator = StreamAccumulator()
+        accumulator.accept(
+            GenerationEvent.Usage(prompt = 100, completion = 5, cachedPrompt = 64, cacheWrite = 16)
+        )
+
+        val usage = accumulator.toGeneration().usage
+        assertEquals(64, usage?.cachedPromptTokens)
+        assertEquals(16, usage?.cacheWriteTokens)
     }
 }

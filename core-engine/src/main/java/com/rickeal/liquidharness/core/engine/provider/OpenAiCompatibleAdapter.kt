@@ -176,10 +176,20 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
         if (usage != null) {
             val prompt = AgentJson.intOrNull(usage, "prompt_tokens") ?: 0
             val completion = AgentJson.intOrNull(usage, "completion_tokens") ?: 0
+            val details = usage["prompt_tokens_details"] as? JsonObject
+            // W9-04：三套厂商字段归一（原 TODO(W6) 只认第一套 ⇒ DeepSeek 平铺族恒 null）。
+            // 顺序 = 协议族优先级；显式 0 会短路 Elvis，不会被后面的字段覆盖成「未上报」。
             // 缺失 ⇒ null（未上报），不是 0（未命中）：这两件事的处置相反，
             // 在解析层压平之后下游再也不可能分开（design §2.4 的三处失真之一）。
-            val cached = AgentJson.intOrNull(usage["prompt_tokens_details"] as? JsonObject, "cached_tokens")
-            out.add(GenerationEvent.Usage(prompt, completion, cached))
+            // 第四态「整个 usage 未到达」不由这里表达，见 promptCacheStatus(usageObserved=false)。
+            val cached = AgentJson.intOrNull(details, "cached_tokens")
+                ?: AgentJson.intOrNull(usage, "cache_read_input_tokens")
+                ?: AgentJson.intOrNull(usage, "prompt_cache_hit_tokens")
+                ?: AgentJson.intOrNull(usage["usageMetadata"] as? JsonObject, "cachedContentTokenCount")
+            val cacheWrite = AgentJson.intOrNull(details, "cache_write_tokens")
+                ?: AgentJson.intOrNull(usage, "cache_write_tokens")
+                ?: AgentJson.intOrNull(usage, "cache_creation_input_tokens")
+            out.add(GenerationEvent.Usage(prompt, completion, cached, cacheWrite))
         }
         return out
     }
