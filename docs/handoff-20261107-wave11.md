@@ -24,10 +24,10 @@ W11 = **W10 收尾核对**（不是重做）+ **第 0 车正确性/口径回填*
 | W9-04 扩容 | usage 四态 + 三套厂商字段 + `cacheWrite` 全链路透传 + 分母一次钉死 + 6 条新 fixture/回归用例 | ✅ `CLOSED` |
 | id 假漂移 | 回源判第三份：`message.id` 不进 wire ⇒ 改指纹而非派生稳定 id；连带修 2 处依赖 id 的假判据 | ✅ `W11-02` 关闭 |
 | 严格 @Test 对账 | **798** ↔ `.github/workflows/build.yml:132` 同提交一次改（主理人独占） | ✅ |
-| 本地闸门 | 出包 / 全量单测 / 架构守卫 / 守卫自证 —— 见 §五（跑后回填） | 见 §五 |
+| 本地闸门 | G1 出包 70,309,888 B；G2 `tests=798/0/0/0`；G3 `arch-guard PASS ok=27 vacuous=1 violation=0`；G4 selftest 30/30 | ✅ |
 | 真机矩阵 | 冷启动 + 往返 + 工具循环 + 审批 + 文件读写 + 设备侧 KV cache 命中全部取到正向证据；详见 §六 | ✅ 部分 |
 | W9-05 journal/FreezeClock | **未开波（第 7 次顺延，如实登记）**，见 §八 | ⛔ |
-| 推送 / CI | 见 §五（跑后回填） | 见 §五 |
+| 推送 / CI | commit **`504ed40`** 已推 `main`；CI run **`42389047452`** `completed/success`，**5 job 全 success**（Unit tests / Assemble Debug / Arch guard / Lint / Secret scan） | ✅ |
 
 ---
 
@@ -137,6 +137,21 @@ API 36 连 `dispatchGesture` 一起挡、Play 把 `isAccessibilityTool` 限给�
 🔴 **两处 G10 触顶按「先下沉/收回，禁调 `LINE_CAPS`」处理**，不是改阈值：第 1 轮 `GenerationRound` 404>400
 （`UsageUpdated` 拆多行）、第 2 轮 `StreamAccumulator` 307>300（`cacheStatus` 字段式）。第 3 轮因会话中断
 只跑了 fulltest；**第 4 轮为最终口径（全绿）**。前三轮红态全部留痕在 `_w11/fulltest*.log` / `archguard*.log`。
+
+### 5.1 推送与 CI（跑后回填）
+
+| 项 | 值 |
+|---|---|
+| commit | `504ed40` `feat(w11): 第 0 车口径回填 + W9-01 补完 + W9-04 四态扩容 + 跨免费模型真机矩阵` |
+| push | `98916ea..504ed40 HEAD -> main`（`--dry-run` 先验连通，PAT 只 URL inline 一次性、不落盘） |
+| CI run | **`42389047452`** = `completed / success` |
+| job 1 | Unit tests — `success` |
+| job 2 | Assemble Debug (JDK 21) — `success` |
+| job 3 | Arch guard (26 guards + mutation selftest) — `success` |
+| job 4 | Lint (baseline gate) — `success` |
+| job 5 | Secret scan (gitleaks + trufflehog) — `success` |
+
+证据：GitHub API `actions/runs/42389047452` + `.../jobs`（本地 `origin/main` ref 陈旧，一律以 API 为准）。
 
 ## 六、真机功能矩阵（OPPO PDRM00 / A13 / SDK33，`adb -P 15037`）
 
