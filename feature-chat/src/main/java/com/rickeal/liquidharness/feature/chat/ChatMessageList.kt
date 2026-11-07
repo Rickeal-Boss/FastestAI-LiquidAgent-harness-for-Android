@@ -54,7 +54,7 @@ private const val SCROLL_TO_TAIL_SLACK = 1_000_000
  *
  * ## 手动压缩区（W6）
  *
- * [compressedUpTo] 非空时，列表顶部插一张**分隔卡**，并且被压缩掉的那段气泡默认**收起**
+ * [compression] 非空时，列表顶部插一张**分隔卡**，并且被压缩区段的气泡默认**收起**
  * （可展开回看）。三条理由：
  * - 收起是「点压缩」这个动作的可见结果 —— 点了之后屏幕上什么都没变，用户会以为按钮坏了；
  * - 气泡仍然保留（数据一条没删），所以「展开查看」是真实的、不是装饰；
@@ -80,8 +80,7 @@ fun ChatMessageList(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
-    compressedUpTo: String? = null,
-    compressedSavingTokens: Int = 0,
+    compression: SessionCompression? = null,
     onUndoCompress: (() -> Unit)? = null,
     /** W8：定稿气泡是否走 Markdown 渲染（false = 纯文本，现役行为）。单一真值源 = DataStore。 */
     renderMarkdown: Boolean = false,
@@ -97,14 +96,27 @@ fun ChatMessageList(
     // 思考块的展开态是纯 UI 状态（不进 ChatUiState）：它不影响任何业务判定，
     // 放进状态机只会让归约器多一个与事件无关的字段。
     val expandedThinking = remember { mutableStateMapOf<String, Boolean>() }
-    // 压缩区默认收起；切点一变（新的压缩 / 撤销）就回到默认态。
-    var compressedExpanded by remember(compressedUpTo) { mutableStateOf(false) }
-    val cutIndex = remember(bubbles, compressedUpTo) {
-        compressedUpTo?.let { id -> bubbles.indexOfFirst { it.id == id } } ?: -1
+    // 压缩区默认收起；压缩状态一变（新的压缩 / 撤销）就回到默认态。
+    var compressedExpanded by remember(compression) { mutableStateOf(false) }
+    val cutIndex = remember(bubbles, compression) {
+        compression?.let { c -> bubbles.indexOfFirst { it.id == c.droppedFromId } } ?: -1
+    }
+    // W10/S3：收起视图 = 头锚 + 压缩区之后的气泡（压缩区段隐藏），头锚保序 ⇒ 前缀缓存命中。
+    // 🔸 待办（R2，UX 顺延）：分隔卡现仍在列表顶部；压缩形态为「头锚 + 压缩区 + 尾部」后，
+    // 卡的视觉位置与压缩区边界错位。改到「头锚之后」会把 ChatMessageList 方法推过 G11
+    // 上限 120（需拆子组件再下沉），本波按「触顶先下沉、UX 顺延」纪律记为下一车待办。
+    val droppedRange = remember(bubbles, compression) {
+        compression?.let { c ->
+            val from = bubbles.indexOfFirst { it.id == c.droppedFromId }
+            val to = bubbles.indexOfFirst { it.id == c.droppedToId }
+            if (from < 0 || to < 0 || to < from) null else from..to
+        }
     }
     // 分隔卡占一个 item，所有「第几个 item」的换算都要带上它。
     val dividerItems = if (cutIndex >= 0) 1 else 0
-    val visible = if (cutIndex >= 0 && !compressedExpanded) bubbles.drop(cutIndex + 1) else bubbles
+    val visible = if (droppedRange != null && !compressedExpanded) {
+        bubbles.filterIndexed { index, _ -> index !in droppedRange }
+    } else bubbles
     val streamingLength = streaming.text.length + streaming.reasoning.length
 
     LaunchedEffect(bubbles.size) {
@@ -147,8 +159,8 @@ fun ChatMessageList(
         if (cutIndex >= 0) {
             item(key = "compressed") {
                 CompressedDivider(
-                    count = cutIndex + 1,
-                    savingTokens = compressedSavingTokens,
+                    count = compression?.droppedBubbleCount ?: 0,
+                    savingTokens = compression?.savingTokens ?: 0,
                     expanded = compressedExpanded,
                     onToggle = { compressedExpanded = !compressedExpanded },
                     onUndo = onUndoCompress,

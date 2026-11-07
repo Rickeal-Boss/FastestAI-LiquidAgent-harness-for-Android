@@ -8,18 +8,19 @@ import com.rickeal.liquidharness.core.model.TerminationReason
  *
  * ## 为什么是「评估一次」而不是「每轮都压」
  *
- * 现役压缩（`ConversationOps.compressContext`）的产物落在 `ChatUiState.compressedUpTo`
- * **单指针**上，`compressedUpTo != null` 时重复压缩静默返回 ⇒ 无条件每轮压从第 2 轮起
- * 就是空操作。更关键的是压缩丢掉最老一段 ⇒ 前缀从第一个字节起变化 ⇒ 下一次
- * `cached_tokens` 必归 0。用户同一次需求里还要「分块缓存命中」，两条不能照字面同时成立。
+ * 现役压缩（`ConversationOps.compressContext`）的产物落在 `ChatUiState.compression`
+ * **压缩区**上，`compression != null` 时重复压缩静默返回 ⇒ 无条件每轮压从第 2 轮起
+ * 就是空操作。W10/S3 起压缩形态 = 保头锚 + 砍中段 + 尾部摘要 ⇒ 头锚字节不动，
+ * 下一次 `cached_tokens` 对头锚段仍 > 0（前缀缓存不整段失效）。
  * 裁决：**正常结束只作触发时点**，是否真压由体积阈值 + 收益阈值决定；只有
- * `applied=true` 才落 `cache_invalidated=true`，未压轮次保留严格前缀单调性。
+ * `applied=true` 才落账（W10/S3 起该账为 `cache_invalidated=false`：头锚保留、前缀
+ * 缓存对头锚段仍命中），未压轮次保留严格前缀单调性。
  *
  * ## 与内核自动压缩是两套机制（复用同一个开关，不复用语义）
  *
  * - 内核压缩：`AgentPolicy.compressContext` → `ContextBudget.prepare`，按软预算压**单次请求的
  *   工作副本**，`RunState` 每 run 新建，产物不落 UI 气泡。
- * - 本策略：压的是**跨 run 的会话历史**（UI 气泡 → `compressedUpTo`），落点只能是
+ * - 本策略：压的是**跨 run 的会话历史**（UI 气泡 → `compression`），落点只能是
  *   `ConversationOps`（内核不暴露跨 run 压缩 API）。
  *
  * `SettingsRepository.compressContext` 这一个开关同时控制两套：`false` ⇒ 两套都停，
@@ -70,7 +71,7 @@ fun shouldEvaluate(event: AgentEvent): Boolean =
  * @param committedChars 当前会话已物化的上下文字符数（与 `evaluateSwitch` 同一取数口径）。
  * @param savingChars 压缩预计能省下的字符数。
  * @param compactCostChars 压缩本身的代价（切点计算 / 摘要 / 落账等字符当量）。
- * @param alreadyCompressed `ChatUiState.compressedUpTo != null`。
+ * @param alreadyCompressed `ChatUiState.compression != null`。
  */
 fun shouldApply(
     committedChars: Int,

@@ -76,25 +76,36 @@ internal fun ChatBubble.toHistoryMessages(): List<ChatMessage> {
 }
 
 /**
- * 整段气泡 → 线上 history，并支持「手动压缩」的切点。
+ * 整段气泡 → 线上 history，并支持「手动压缩」的压缩区（W10/S3）。
  *
- * @param fromId 非空 = 该气泡**及其之前**的气泡不再进 history（手动压缩的产物）。
- *   它们仍留在 [ChatUiState.bubbles] 里给用户读 —— 压缩改变的是「发回模型的字节」，
+ * @param compression 非空 = 压缩产物：头锚 `headBubbleCount` 条 + 压缩区之后的气泡 +
+ *   尾部追加的摘要消息（顺序与压缩前一致，摘要只在最尾）。压缩区段仍留在
+ *   [ChatUiState.bubbles] 里给用户读 —— 压缩改变的是「发回模型的字节」，
  *   不是「用户能看到的内容」，这两件事必须分开。
  *
- * 切点是**气泡级**的，不是消息级：一条 MODEL 气泡可能映射成 `1 + N` 条消息，
+ * 压缩区是**气泡级**的，不是消息级：一条 MODEL 气泡可能映射成 `1 + N` 条消息，
  * 从消息中间切会把 `assistant.tool_calls` 与它的 `tool` 结果拆散 ⇒ 端点 400
  * （`WindowContextCompressor` 的类头同一论证）。气泡边界天然是安全边界。
  *
- * **失效 id 回落到全量**：`fromId` 找不到只有一种成因 —— 气泡列表被整体换掉了
- * （新对话 / 会话导入），而那时 `compressedUpTo` 本来就被重置。真出现不一致时宁可多发
- * 一段历史（可见、可诊断），也不要静默少发一段（模型凭空忘事，且界面上看不出来）。
+ * **头锚字节不动**（最老 [HEAD_ANCHOR_BUBBLES] 条原样保留）⇒ 下一次请求的前缀缓存
+ * 对头锚段仍命中（`cached_tokens > 0` 可观测），这是「压缩 × 缓存命中」解互斥的关键。
+ *
+ * **失效压缩区回落到全量**：`droppedFromId` / `droppedToId` 找不到只有一种成因 ——
+ * 气泡列表被整体换掉了（新对话 / 会话导入），而那时 `compression` 本来就被重置。
+ * 真出现不一致时宁可多发一段历史（可见、可诊断），也不要静默少发一段
+ * （模型凭空忘事，且界面上看不出来）。
  */
-internal fun List<ChatBubble>.toHistoryMessages(fromId: String? = null): List<ChatMessage> {
-    if (fromId == null) return flatMap { it.toHistoryMessages() }
-    val cut = indexOfFirst { it.id == fromId }
-    if (cut < 0) return flatMap { it.toHistoryMessages() }
-    return drop(cut + 1).flatMap { it.toHistoryMessages() }
+internal fun List<ChatBubble>.toHistoryMessages(compression: SessionCompression? = null): List<ChatMessage> {
+    if (compression == null) return flatMap { it.toHistoryMessages() }
+    val from = indexOfFirst { it.id == compression.droppedFromId }
+    val to = indexOfFirst { it.id == compression.droppedToId }
+    if (from < 0 || to < 0 || from < compression.headBubbleCount || to < from) {
+        return flatMap { it.toHistoryMessages() }
+    }
+    val head = subList(0, compression.headBubbleCount.coerceAtMost(size)).flatMap { it.toHistoryMessages() }
+    val tail = if (to + 1 <= size) subList(to + 1, size).flatMap { it.toHistoryMessages() } else emptyList()
+    val summary = ChatMessage(role = Role.SYSTEM, text = compression.summaryText)
+    return head + tail + listOf(summary)
 }
 
 /**

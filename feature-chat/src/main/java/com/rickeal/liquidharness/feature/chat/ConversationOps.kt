@@ -106,15 +106,15 @@ internal class ConversationOps(
             val windowCap = contextWindowCap(container)
             val budget = contextBudgetTokens(endpoint, AgentPolicy(maxContextTokens = windowCap))
             // 试算：compressBubbles 是纯 suspend 函数，不改 state；只有 shouldApply 判
-            // applied=true 才把产物落到 compressedUpTo（未压轮次保留严格前缀 ⇒ 缓存可能命中）。
+            // applied=true 才把产物落到 compression（未压轮次保留严格前缀 ⇒ 缓存可能命中）。
             val outcome = compressBubbles(snapshot.bubbles, budget)
-            val committedChars = committedCharsOf(snapshot.bubbles, snapshot.compressedUpTo)
-            val savingChars = committedChars - committedCharsOf(snapshot.bubbles, outcome.compressedUpTo)
+            val committedChars = committedCharsOf(snapshot.bubbles, snapshot.compression)
+            val savingChars = committedChars - committedCharsOf(snapshot.bubbles, outcome.compression)
             val decision = shouldApply(
                 committedChars,
                 savingChars,
                 AUTO_COMPACT_COST_CHARS,
-                snapshot.compressedUpTo != null,
+                snapshot.compression != null,
             )
             if (!decision.applied) {
                 val line = "auto_compact=noop reason=" + decision.reason
@@ -122,15 +122,13 @@ internal class ConversationOps(
                 persist(line)
                 return@launch
             }
+            // W10/S3：尾部摘要前置形态保留头锚 ⇒ 前缀缓存不整段失效（cache_invalidated=false）。
             val ledger = "auto_compact dropped=" + outcome.droppedMessages +
-                " kept=" + outcome.keptMessages.size + " cache_invalidated=true"
+                " kept=" + outcome.keptMessages.size + " cache_invalidated=false"
             AgentLogStore.info(ledger)
             persist(ledger)
             state.update {
-                it.copy(
-                    compressedUpTo = outcome.compressedUpTo,
-                    compressedSavingTokens = outcome.savingTokens,
-                )
+                it.copy(compression = outcome.compression)
             }
         }
     }
@@ -142,29 +140,29 @@ internal class ConversationOps(
      *
      * history 的真值源就是 [ChatUiState.bubbles]；内核侧没有跨 run 的上下文可压
      * （`RunState` 每 run 新建）。所以压缩必须在这里做，产物落到
-     * [ChatUiState.compressedUpTo] 这个**气泡指针**上 —— 否则下一次 run 又从全量气泡
+     * [ChatUiState.compression] 这个**压缩区描述**上 —— 否则下一次 run 又从全量气泡
      * 重建，压缩等于没做。
      *
      * ## 三条前置拒绝（都静默返回，不弹错误）
      *
      * - 在途 run：压缩会改写「本轮已发出的历史」，而正在跑的 run 手里是另一份副本；
      *   允许它只会造出「界面上已压缩、这次请求没压」的不一致。UI 侧同时禁用入口。
-     * - 已压缩过：切点是单指针，重复压缩没有语义（要再压就先撤销）。
+     * - 已压缩过：切点是压缩区，重复压缩没有语义（要再压就先撤销）。
      * - 没有气泡：没什么可压的。
      *
      * ## 代价必须落账
      *
-     * 成功时记 `manual_compress dropped=N kept=M cache_invalidated=true`（INFO，环形缓冲 +
-     * 落盘两处，见 [persist]）。`cache_invalidated` 不是装饰字段：压缩让前缀从第一个字节起
-     * 变化，下一次请求 provider 侧的缓存必然整段重建、`cached_tokens` 归 0、账单更贵 ——
-     * 这是压缩的固有代价，账上必须能查到「哪一次操作把它打掉了」。
+     * 成功时记 `manual_compress dropped=N kept=M cache_invalidated=false`（INFO，环形缓冲 +
+     * 落盘两处，见 [persist]）。W10/S3 起压缩形态 = 保头锚 + 砍中段 + 尾部摘要 ⇒ 头锚
+     * 字节不动、前缀缓存对头锚段仍 > 0，故不再整段失效（旧码砍头时此值恒 true，
+     * 「压缩 × 缓存命中互斥」已解）。落账意义仍在：可查「哪一次操作改动了前缀」。
      *
      * 无损放弃时记 WARN 并给 [MANUAL_COMPRESS_NOOP] 错误码：用户点了按钮什么都没发生，
      * 必须有一句话解释（否则「压缩按钮坏了」会成为下一个 bug 报告）。
      */
     fun compressContext() {
         val snapshot = state.value
-        if (snapshot.isStreaming || snapshot.compressedUpTo != null || snapshot.bubbles.isEmpty()) {
+        if (snapshot.isStreaming || snapshot.compression != null || snapshot.bubbles.isEmpty()) {
             return
         }
         scope.launch {
@@ -184,16 +182,14 @@ internal class ConversationOps(
                 state.update { it.copy(errorMessage = MANUAL_COMPRESS_NOOP) }
                 return@launch
             }
+            // W10/S3：头锚保留 ⇒ 前缀缓存不整段失效（cache_invalidated=false）。
             val ledger = "manual_compress dropped=" + outcome.droppedMessages +
                 " kept=" + outcome.keptMessages.size +
-                " cache_invalidated=true"
+                " cache_invalidated=false"
             AgentLogStore.info(ledger)
             persist(ledger)
             state.update {
-                it.copy(
-                    compressedUpTo = outcome.compressedUpTo,
-                    compressedSavingTokens = outcome.savingTokens,
-                )
+                it.copy(compression = outcome.compression)
             }
         }
     }
@@ -205,8 +201,8 @@ internal class ConversationOps(
      * 又归零了」时，两次操作的先后顺序就是全部线索。
      */
     fun undoCompress() {
-        if (state.value.compressedUpTo == null) return
-        state.update { it.copy(compressedUpTo = null, compressedSavingTokens = 0) }
+        if (state.value.compression == null) return
+        state.update { it.copy(compression = null) }
         AgentLogStore.info("manual_compress undone cache_invalidated=true")
         persist("manual_compress undone cache_invalidated=true")
     }

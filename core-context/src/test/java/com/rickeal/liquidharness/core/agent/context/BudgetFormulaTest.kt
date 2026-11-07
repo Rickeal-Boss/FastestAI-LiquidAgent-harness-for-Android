@@ -2,6 +2,7 @@ package com.rickeal.liquidharness.core.agent.context
 
 import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
+import com.rickeal.liquidharness.core.model.TokenEstimator
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -50,5 +51,39 @@ class BudgetFormulaTest {
         assertEquals(20_928, contextBudgetTokens(endpoint, policy))
         // 硬预算不许乘水位线：乘了就等于把硬上限砍掉 25%，兜底形同虚设。
         assertEquals(50_227, hardCharCap(endpoint, policy))
+    }
+
+    /**
+     * W10/S1 量纲同源契约：硬闸 floor（`AgentPolicy.hardCharsPerToken`）恒 ≤ 估算尺
+     * （`TokenEstimator.CHARS_PER_TOKEN_ASCII`），且硬闸字符上限按估算尺折回 token 恒不超过
+     * 硬预算本身 —— 硬闸恒保守，两把尺互为上下界，禁第三处独立比例。
+     */
+    @Test
+    fun hardGateFloorNeverExceedsEstimatorRuler() {
+        val floor = AgentPolicy().hardCharsPerToken
+        assertTrue(
+            floor <= TokenEstimator.CHARS_PER_TOKEN_ASCII.toFloat(),
+            "floor=$floor 必须 ≤ 估算尺 " + TokenEstimator.CHARS_PER_TOKEN_ASCII,
+        )
+        val hardTokens = 20_000
+        val capChars = charCapOf(hardTokens, floor)
+        val estimated = TokenEstimator.estimate("a".repeat(capChars))
+        assertTrue(estimated <= hardTokens, "estimated=$estimated capChars=$capChars 不许超硬预算")
+    }
+
+    /**
+     * W10/S2 触发线按档位（补钉非改造）：同一端点、不同 `maxContextTokens` 档位 ⇒
+     * 软预算随档位缩放且数值精确 —— 防回归成「写死单一常量」。
+     */
+    @Test
+    fun softBudgetScalesWithWindowTier() {
+        val endpoint = RemoteEndpoint(id = "ep-1m", contextLength = 1_000_000, maxOutputTokens = 4_096)
+
+        val tier32k = contextBudgetTokens(endpoint, AgentPolicy(maxContextTokens = 32_000))
+        val tier128k = contextBudgetTokens(endpoint, AgentPolicy(maxContextTokens = 128_000))
+
+        assertEquals(20_928, tier32k)   // (32 000 − 4 096) × 0.75
+        assertEquals(92_928, tier128k)  // (128 000 − 4 096) × 0.75
+        assertTrue(tier128k > tier32k, "档位升 ⇒ 触发线必须升")
     }
 }

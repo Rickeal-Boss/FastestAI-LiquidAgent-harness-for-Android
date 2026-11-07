@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * - **进程级、非持久化**：进程被杀后回到 0，此时守卫判 `empty_session` ⇒ `VACUOUS`
  *   而不是「通过」。这是刻意的：没有证据时不许硬绿。
  * - 它只是体积观测通道，**不存任何消息内容、不存密钥**；气泡仍是唯一真值源。
- * - 写入方必须按 `bubbles.toHistoryMessages(compressedUpTo)` 重建后逐条求和；
+ * - 写入方必须按 `bubbles.toHistoryMessages(compression)` 重建后逐条求和；
  *   **压缩 / 撤销 / 新对话后必须重写**，否则守卫会拿旧体积误判（压缩后本该放行却被禁）。
  * - 多个写者会互相覆盖：本仓只有 `ChatViewModel` 一处写，其余全为读。
  */

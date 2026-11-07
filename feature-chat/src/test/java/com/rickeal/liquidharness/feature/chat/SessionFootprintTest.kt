@@ -29,16 +29,24 @@ class SessionFootprintTest {
     }
 
     @Test
-    fun compressedUpToDropsOlderBubbles() {
+    fun compressionExcludesDroppedRangeAndAppendsSummary() {
         val bubbles = listOf(
             ChatBubble(id = "a", role = Role.USER, text = "12345"),
             ChatBubble(id = "b", role = Role.MODEL, text = "67890"),
             ChatBubble(id = "c", role = Role.USER, text = "abc"),
         )
         assertEquals(13, committedCharsOf(bubbles, null))
-        // 切点是气泡 id：b 及其之前不进 history ⇒ 只剩 c 的 3 个字符。
-        assertEquals(3, committedCharsOf(bubbles, "b"))
-        assertTrue(committedCharsOf(bubbles, "b") < committedCharsOf(bubbles, null))
+        // W10/S3：压缩区 [b..b] 不进 history；头锚 [a] + 尾部 [c] + 摘要("S") = 5 + 3 + 1。
+        val compression = SessionCompression(
+            headBubbleCount = 1,
+            droppedFromId = "b",
+            droppedToId = "b",
+            summaryText = "S",
+            droppedBubbleCount = 1,
+            savingTokens = 0,
+        )
+        assertEquals(9, committedCharsOf(bubbles, compression))
+        assertTrue(committedCharsOf(bubbles, compression) < committedCharsOf(bubbles, null))
     }
 
     @Test
@@ -48,15 +56,14 @@ class SessionFootprintTest {
             ChatBubble(id = "b", role = Role.MODEL, text = "67890"),
         )
         val full = committedCharsOf(bubbles, null)
-        assertEquals(5, committedCharsOf(bubbles, "a"))
-        // 撤销 = 清指针 ⇒ 与压缩前逐值相同，不需要回滚任何内容。
+        // 撤销 = 清压缩区 ⇒ 与压缩前逐值相同，不需要回滚任何内容。
         assertEquals(full, committedCharsOf(bubbles, null))
     }
 
     @Test
     fun newConversationIsZero() {
-        // 新对话把 state 重置成 ChatUiState()，气泡为空；压缩指针一并清空。
-        assertEquals(0, committedCharsOf(emptyList(), "stale-id"))
+        // 新对话把 state 重置成 ChatUiState()，气泡为空；压缩区一并清空。
+        assertEquals(0, committedCharsOf(emptyList(), null))
     }
 
     @Test
@@ -98,11 +105,19 @@ class SessionFootprintTest {
     }
 
     @Test
-    fun invalidCompressedIdFallsBackToFullVolume() {
+    fun invalidCompressionFallsBackToFullVolume() {
         val bubbles = listOf(
             ChatBubble(id = "a", role = Role.USER, text = "12345"),
             ChatBubble(id = "b", role = Role.MODEL, text = "67890"),
         )
-        assertEquals(10, committedCharsOf(bubbles, "no-such-bubble"))
+        val stale = SessionCompression(
+            headBubbleCount = 1,
+            droppedFromId = "no-such-bubble",
+            droppedToId = "no-such-bubble",
+            summaryText = "S",
+            droppedBubbleCount = 1,
+            savingTokens = 0,
+        )
+        assertEquals(10, committedCharsOf(bubbles, stale))
     }
 }

@@ -276,8 +276,9 @@ class ChatViewModel(
 
         // 历史取**发送前**的气泡（不含本条输入：本次输入走 AgentRequest.userInput，
         // 内核自己追加到工作副本尾部，见 AgentRequest.userInput 的 KDoc）。
-        // 手动压缩的切点在这里生效：切点及之前的气泡不再进 history（气泡仍在列表里）。
-        val history = snapshot.bubbles.toHistoryMessages(snapshot.compressedUpTo)
+        // 手动压缩的压缩区在这里生效：压缩区气泡不再进 history（气泡仍在列表里，
+        // 头部头锚保序 ⇒ 前缀缓存命中延续）。
+        val history = snapshot.bubbles.toHistoryMessages(snapshot.compression)
 
         val claimed = _state.compareAndSet(
             snapshot,

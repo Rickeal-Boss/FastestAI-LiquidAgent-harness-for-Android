@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
  *
  * ## 口径（改这里之前先读 `ChatHistoryMapper.kt`）
  *
- * 真值源是 `bubbles.toHistoryMessages(compressedUpTo)` **重建后的线上消息**，不是气泡本身：
+ * 真值源是 `bubbles.toHistoryMessages(compression)` **重建后的线上消息**，不是气泡本身：
  * - 正文 `text.length`；
  * - `toolCalls`：id + name + argumentsJson（模型宣告要调什么，会随请求发出）；
  * - `toolResults`：callId + name + output + errorMessage（结果回灌，同样计费）；
@@ -43,8 +43,8 @@ import kotlinx.coroutines.launch
 internal const val ATTACHMENT_CHAR_EQUIVALENT = 0
 
 /** 纯函数：按重建后的线上 history 逐条求字符和。 */
-internal fun committedCharsOf(bubbles: List<ChatBubble>, compressedUpTo: String?): Int =
-    bubbles.toHistoryMessages(compressedUpTo).sumOf(::messageChars)
+internal fun committedCharsOf(bubbles: List<ChatBubble>, compression: SessionCompression?): Int =
+    bubbles.toHistoryMessages(compression).sumOf(::messageChars)
 
 private fun messageChars(message: ChatMessage): Int =
     message.text.length +
@@ -71,7 +71,7 @@ internal fun observeSessionFootprint(
 ): Job = scope.launch {
     states.collect { snapshot ->
         container.sessionFootprint.update(
-            committedCharsOf(snapshot.bubbles, snapshot.compressedUpTo),
+            committedCharsOf(snapshot.bubbles, snapshot.compression),
         )
     }
 }

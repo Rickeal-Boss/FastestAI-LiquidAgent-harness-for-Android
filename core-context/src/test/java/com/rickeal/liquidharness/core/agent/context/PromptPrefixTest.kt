@@ -1,5 +1,6 @@
 package com.rickeal.liquidharness.core.agent.context
 
+import com.rickeal.liquidharness.core.model.Attachment
 import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.Role
 import com.rickeal.liquidharness.core.model.ToolParameter
@@ -130,5 +131,24 @@ class PromptPrefixTest {
         assertEquals(base, renderToolSchema(listOf(spec(category = "filesystem"))))
         // 空工具面渲染成空串 ⇒ 该段不参与哈希（`fingerprintOf` 跳过空段）。
         assertEquals("", renderToolSchema(emptyList()))
+    }
+
+    /**
+     * W10/S4 红线回归钉：附件字节**不进** history 指纹头 —— 同文本不同图 ⇒
+     * `renderHistoryHead` 输出逐字节相同（否则 `measuredCharsPerToken` 被视觉 token 污染、
+     * cached_tokens 分母漂移）。注：现役行为本就正确，本条是防改坏的回归钉（红态不适用）。
+     */
+    @Test
+    fun historyHeadIgnoresAttachmentBytes() {
+        val first = ChatMessage(
+            id = "m1", role = Role.USER, text = "describe",
+            attachments = listOf(Attachment(base64 = "QUJD")),
+        )
+        val second = ChatMessage(
+            id = "m1", role = Role.USER, text = "describe",
+            attachments = listOf(Attachment(base64 = "WFla")),
+        )
+
+        assertEquals(renderHistoryHead(listOf(first)), renderHistoryHead(listOf(second)))
     }
 }

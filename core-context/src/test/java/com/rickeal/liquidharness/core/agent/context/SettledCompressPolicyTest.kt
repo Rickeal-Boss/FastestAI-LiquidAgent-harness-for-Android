@@ -19,10 +19,11 @@ import kotlin.test.assertTrue
  *
  * ## 为什么是「评估一次」而不是「每轮都压」
  *
- * 现役压缩产物落在 `ChatUiState.compressedUpTo` **单指针**上，`compressedUpTo != null`
- * 时重复压缩静默返回 ⇒ 无条件每轮压从第 2 轮起就是空操作；且压缩丢最老一段 ⇒
- * 前缀从首字节变化 ⇒ 下一次 `cached_tokens` 必归 0。用户裁决 (a)：正常结束只作
- * **触发时点**，是否真压由体积阈值 + 收益阈值决定；只有 `applied=true` 才失效缓存，
+ * 现役压缩产物落在 `ChatUiState.compression` **压缩区**上，`compression != null`
+ * 时重复压缩静默返回 ⇒ 无条件每轮压从第 2 轮起就是空操作；W10/S3 起压缩形态 =
+ * 保头锚 + 砍中段 + 尾部摘要 ⇒ 头锚字节不动，下一次 `cached_tokens` 对头锚段仍 > 0。
+ * 用户裁决 (a)：正常结束只作**触发时点**，是否真压由体积阈值 + 收益阈值决定；
+ * 只有 `applied=true` 才落账（W10/S3 起 `cache_invalidated=false`），
  * 未压轮次保留严格前缀单调性。
  *
  * ## 阈值量纲（字符，与 L3 同源）

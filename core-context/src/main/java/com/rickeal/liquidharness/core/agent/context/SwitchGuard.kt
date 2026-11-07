@@ -64,7 +64,7 @@ data class SwitchVerdict(
 
 /**
  * @param committedChars 当前会话已物化的上下文字符数，由 UI 侧按
- *   `bubbles.toHistoryMessages(compressedUpTo)` 重建后逐条求和。**字符量纲**，与 L3 同源。
+ *   `bubbles.toHistoryMessages(compression)` 重建后逐条求和。**字符量纲**，与 L3 同源。
  * @param target 切换后的目标端点。`RemoteEndpoint.maxOutputTokens` 是输出预留的唯一来源。
  * @param maxContextTokens 切换后的会话档位（`SettingsRepository.maxContextTokens`）。
  * @param calibratedCharsPerToken 本轮 provider 实测 chars/token；`<= 0` = 无真值 ⇒ floor 档。

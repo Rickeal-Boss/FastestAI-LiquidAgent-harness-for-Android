@@ -19,8 +19,34 @@ import kotlin.math.ceil
  */
 object TokenEstimator {
 
-    /** 英文/代码的字符- token 比。改这个数字前先看 `RunTokenLedger` 的校准 warn。 */
-    private const val CHARS_PER_TOKEN_ASCII = 4.0
+    /**
+     * 英文/代码的字符-token 比（**估算面**唯一真值源）。改这个数字前先看
+     * `RunTokenLedger` 的校准 warn。
+     *
+     * ## 量纲同源契约（W10/S1：四面统一，禁两处各写一份比例）
+     *
+     * 「字符↔token」在全仓只有**两把尺**，分工写死、互为上下界：
+     *
+     * - **估算面（本常量 4.0）**：近似真实值，用于发送前预算与 usage 兜底。
+     *   散文实测 ≈5.7、代码 ≈2.0，4.0 是有意取的中间偏保守值。
+     * - **硬闸面（`AgentPolicy.hardCharsPerToken`，floor 1.8）**：**下界**保守值，
+     *   用于 L3 字符硬预算 —— 无论对端 tokenizer 多激进都不许超窗。
+     *
+     * 不变量（`BudgetFormulaTest` 钉死）：`hardCharsPerToken ≤ CHARS_PER_TOKEN_ASCII`，
+     * 即硬闸换算出的字符上限换算回 token **恒不超过**硬预算本身（硬闸恒保守）。
+     * 任何第三处出现独立比例 = 违反本契约（W9-01 量纲统一）。
+     */
+    const val CHARS_PER_TOKEN_ASCII = 4.0
+
+    /**
+     * 每张可发送图片的估算 token（经验值，W10/S4 缺口1a）。
+     *
+     * 取 1024：主流供应商视觉 token 计费口径（1568px 内）的经验上界；
+     * 用途是**预算面**（`estimateMessages`），让「带图会话」更早触发压缩判定，
+     * 方向是保守的。⚠️ 红线的另一半：图片只进预算，**不进** `PromptPrefix` 指纹
+     * （`renderHistoryHead` 保持不渲染附件字节，否则 cached_tokens 分母漂移）。
+     */
+    const val ESTIMATED_IMAGE_TOKENS = 1024
 
     /** 每条消息的协议开销。 */
     private const val PER_MESSAGE_OVERHEAD = 4
@@ -52,6 +78,10 @@ object TokenEstimator {
      * 估算一组消息的总 prompt token。
      *
      * 工具调用的 `argumentsJson` 与工具结果文本都计入 —— 它们同样是发出去的字节。
+     *
+     * 附件（W10/S4）：`sendableAttachments` 同样计入 —— 图片按 [ESTIMATED_IMAGE_TOKENS]
+     * 经验值、文本附件按 [estimate] 同尺；不可发送的附件（`isSendable=false`，如音频）
+     * 与 MODEL 消息的附件（编程错误，引擎整段丢弃）不计。只进预算，不进指纹（红线）。
      */
     fun estimateMessages(messages: List<ChatMessage>): Int {
         var total = 0
@@ -64,6 +94,12 @@ object TokenEstimator {
             }
             for (result in message.toolResults) {
                 total += estimate(result.output)
+            }
+            for (attachment in message.sendableAttachments) {
+                total += when (attachment.kind) {
+                    AttachmentKind.TEXT -> estimate(attachment.textContent)
+                    else -> ESTIMATED_IMAGE_TOKENS
+                }
             }
         }
         return total

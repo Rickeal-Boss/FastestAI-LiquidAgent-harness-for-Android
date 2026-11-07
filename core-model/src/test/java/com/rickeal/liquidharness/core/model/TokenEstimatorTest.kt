@@ -119,4 +119,48 @@ class TokenEstimatorTest {
         // 只有描述不同：40/4=10 vs 4000/4=1000。
         assertEquals(1_000 - 10, long - short)
     }
+
+    /** W10/S4 缺口1a：图片附件按经验值进预算（红态样本：旧实现附件盲 ⇒ delta=0 必红）。 */
+    @Test
+    fun imageAttachmentCountsIntoBudget() {
+        val plain = ChatMessage(role = Role.USER, text = "look")
+        val withImage = plain.copy(attachments = listOf(Attachment(base64 = "eA==")))
+
+        val delta = TokenEstimator.estimateMessages(listOf(withImage)) -
+            TokenEstimator.estimateMessages(listOf(plain))
+
+        assertEquals(1024, delta)
+    }
+
+    /** W10/S4：文本附件按内容同尺估算（走 estimate，不吃图片经验值）。 */
+    @Test
+    fun textAttachmentCountsByContent() {
+        val plain = ChatMessage(role = Role.USER, text = "look")
+        val withText = plain.copy(
+            attachments = listOf(Attachment(kind = AttachmentKind.TEXT, textContent = "a".repeat(400)))
+        )
+
+        val delta = TokenEstimator.estimateMessages(listOf(withText)) -
+            TokenEstimator.estimateMessages(listOf(plain))
+
+        assertEquals(100, delta)
+    }
+
+    /** W10/S4：空字节图片（不可发送）与 MODEL 消息的附件（编程错误）都不计入。 */
+    @Test
+    fun unsendableAndModelAttachmentsDoNotCount() {
+        val plain = ChatMessage(role = Role.USER, text = "look")
+        val emptyImage = plain.copy(attachments = listOf(Attachment(base64 = "")))
+        assertEquals(
+            TokenEstimator.estimateMessages(listOf(plain)),
+            TokenEstimator.estimateMessages(listOf(emptyImage)),
+        )
+
+        val modelMsg = ChatMessage(role = Role.MODEL, text = "reply")
+        val modelWithImage = modelMsg.copy(attachments = listOf(Attachment(base64 = "eA==")))
+        assertEquals(
+            TokenEstimator.estimateMessages(listOf(modelMsg)),
+            TokenEstimator.estimateMessages(listOf(modelWithImage)),
+        )
+    }
 }

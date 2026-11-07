@@ -199,15 +199,14 @@ data class ChatUiState(
     /** 非空 = 输入区上方渲染一行状态提示（重试中 / 等待首字节 / 已停止）。 */
     val status: ChatStatus? = null,
     /**
-     * 手动压缩切点（气泡 id）。非空 = 该气泡**及其之前**的气泡不再进 history。
+     * 会话级压缩的产物描述（W10/S3，尾部摘要前置形态）。
      *
+     * 非空 = 压缩区 `[droppedFromId..droppedToId]` 段不再进 history，摘要追加在尾部。
      * 只影响「发回模型的字节」：气泡本体仍留在 [bubbles] 里，用户可以展开回看。
-     * 真值源仍只有一处 —— [bubbles]；本字段只是一个**指针**，不是第二份内容。
+     * 真值源仍只有一处 —— [bubbles]；本字段只是一个**指针描述**，不是第二份内容。
      * 撤销 = 清空本字段（`ChatViewModel.undoCompress`），不需要回滚任何数据。
      */
-    val compressedUpTo: String? = null,
-    /** 手动压缩省下的估算 token。0 = 未压缩 / 没省下。只用于分隔卡上的副标题。 */
-    val compressedSavingTokens: Int = 0,
+    val compression: SessionCompression? = null,
 ) {
     /** 发送按钮可用性：非流式、有输入或有附件、已配置端点。 */
     val canSend: Boolean
@@ -216,15 +215,16 @@ data class ChatUiState(
             endpointLabel != null
 
     /**
-     * 被切点移出 history 的气泡数（分隔卡上的「已压缩 N 条」）。
+     * 被压缩区移出 history 的气泡数（分隔卡上的「已压缩 N 条」）。
      *
      * 派生而不是另存一个计数：多存一个数就多一处会与 [bubbles] 漂移的真值。
-     * 切点失效（id 不在列表里）时返回 0，与 `toHistoryMessages(fromId)` 的回落一致。
+     * 压缩区失效（id 不在列表里）时返回 0，与 `toHistoryMessages(compression)` 的回落一致。
      */
     val compressedBubbleCount: Int
         get() {
-            val id = compressedUpTo ?: return 0
-            val index = bubbles.indexOfFirst { it.id == id }
-            return if (index < 0) 0 else index + 1
+            val c = compression ?: return 0
+            val from = bubbles.indexOfFirst { it.id == c.droppedFromId }
+            val to = bubbles.indexOfFirst { it.id == c.droppedToId }
+            return if (from < 0 || to < 0 || to < from) 0 else to - from + 1
         }
 }

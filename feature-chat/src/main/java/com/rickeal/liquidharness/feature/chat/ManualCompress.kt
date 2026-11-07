@@ -9,7 +9,7 @@ import com.rickeal.liquidharness.core.model.Role
 import com.rickeal.liquidharness.core.model.TokenEstimator
 
 /**
- * 手动压缩：把「气泡映射出的 history」压到预算以内，并给出一个**气泡级**切点。
+ * 手动压缩：把「气泡映射出的 history」压到预算以内，并给出一个**压缩区**描述。
  *
  * ## 为什么压缩必须在 UI 侧做（这条决定了整个设计的形状）
  *
@@ -18,38 +18,80 @@ import com.rickeal.liquidharness.core.model.TokenEstimator
  * 起），`ContextBudget` 是 `GenerationRound` 的私有构造参数，内核不暴露压缩 API。
  * 所以压缩产物必须落回气泡侧，否则下一次 run 又从全量气泡重建 —— 压缩等于没做。
  *
+ * ## 压缩形态：保头锚 + 砍中段 + 尾部追加摘要（W10/S3，台账 W8-01）
+ *
+ * 现行「砍头 + 单指针」让压缩后请求**第一个字节就变**（丢的是最老段 = 前缀锚）⇒
+ * provider 前缀缓存整段重建、`cached_tokens` 归 0 —— 这是「压缩 × 缓存命中互斥」的根。
+ * 本形态三原则（`SessionCompression`）：
+ * 1. **头锚保序**：最老 [HEAD_ANCHOR_BUBBLES] 条气泡原样保留（字节稳定 ⇒ 缓存前缀命中延续）；
+ * 2. **中段砍掉**：`[droppedFromId..droppedToId]` 段不进 history（仍留在气泡里给用户读）；
+ * 3. **尾部摘要**：被压段物化成一条**机械摘要消息**（零 LLM、ASCII 模板）追加在 history
+ *    尾部，不打断保序段 ⇒ 压缩后 `cache_invalidated=false`（前缀改写只发生在摘要之后）。
+ *
  * ## 不新建算法
  *
  * 压缩算法就是现役的 [WindowContextCompressor]，配置与 `ContextBudget` 的默认值同源
- * （水位线 [DEFAULT_COMPRESS_TARGET_RATIO] + [CutPolicy.TURN_ALIGNED]）。本文件只做三件
+ * （水位线 [DEFAULT_COMPRESS_TARGET_RATIO] + [CutPolicy.TURN_ALIGNED]）。本文件只做四件
  * 现役压缩器不做的事：
  *
- * 1. **气泡对齐**：压缩器给的是「消息下标」，而 `compressedUpTo` 是「气泡 id」。
- *    气泡与消息不是一对一（一条 MODEL 气泡带 N 个轨迹 ⇒ 1 + N 条消息），所以切点必须
- *    吸附到**气泡边界**上，否则下一次 `toHistoryMessages(fromId)` 会多保留半条气泡。
- * 2. **无损校验**：压缩器只允许「丢最老的一段」。这里显式验证返回值确实是输入的后缀
- *    （`all.subList(cut) == compressed`）；不是就**放弃**，绝不接受一个被改写的历史。
- * 3. **代价可见**：返回省下的 token 与丢掉的条数，供 UI 与日志使用。
+ * 1. **气泡对齐**：压缩器给的是「消息下标」，压缩区必须吸附到**气泡边界**上；
+ * 2. **无损校验**：保留段必须是输入的**保序子序列**（头锚 + 候选后缀），且摘要只追加、
+ *    不修改任何保留消息的字节 —— 不是就**放弃**，绝不接受被改写的 history；
+ * 3. **代价可见**：返回省下的 token 与丢掉的条数，供 UI 与日志使用；
+ * 4. **前缀守恒**：头锚字节不动，`renderHistoryHead` 的头锚段逐字节不变。
  *
- * ## 前缀缓存必然失效（不许写成「不影响」）
+ * ## 前缀缓存的语义变化（不许照抄旧 KDoc）
  *
- * 压缩把 history 的最老一段整体拿掉 ⇒ 下一次请求的提示前缀**从第一个字节起**就变了 ⇒
- * provider 侧的前缀缓存整段重建，下一次 `cached_tokens = 0`、账单更贵。这是压缩的固有
- * 代价，不是实现缺陷。`ChatViewModel` 为此落一条
- * `manual_compress dropped=N kept=M cache_invalidated=true` 的 INFO 账，确认对话框里也
- * 写死了同一句话。
+ * 压缩保留头锚 ⇒ 下一次请求的**头锚前缀字节不变** ⇒ provider 侧前缀缓存对头锚段仍命中
+ * （`cached_tokens > 0` 可观测）。代价是「中段删除」造成的断点：从被压段之后缓存失效。
+ * `ChatViewModel` 为此落 `manual_compress dropped=N kept=M cache_invalidated=false` 的 INFO 账。
  *
  * ## 纯函数
  *
  * 零 IO、零 Android、零 ViewModel 依赖，只有 `suspend`（压缩器端口是 suspend）。
- * 因此可以在 JVM 单测里用固定预算断言「丢了几条 / 留下什么 / system 段有没有被动过」。
+ * 因此可以在 JVM 单测里用固定预算断言「丢了几条 / 留下什么 / 头锚有没有被动过」。
  */
+
+/**
+ * W10/S3 会话级压缩的产物描述（尾部摘要前置形态）。
+ *
+ * 见 [compressBubbles] 类头的「压缩形态」。真值源仍只有 [ChatUiState.bubbles]；
+ * 本类是**指针描述**，不是第二份内容。
+ *
+ * @param headBubbleCount 头锚气泡数（最老 N 条，字节不动 ⇒ 缓存前缀命中延续）。
+ * @param droppedFromId 被压段起点气泡 id（含）。
+ * @param droppedToId 被压段终点气泡 id（含）。
+ * @param summaryText 尾部追加的摘要消息文本（机械模板，零 LLM，ASCII）。
+ * @param droppedBubbleCount 被压气泡数（分隔卡「已压缩 N 条」）。
+ * @param savingTokens 压缩前 − 压缩后的估算 token。
+ */
+data class SessionCompression(
+    val headBubbleCount: Int,
+    val droppedFromId: String,
+    val droppedToId: String,
+    val summaryText: String,
+    val droppedBubbleCount: Int,
+    val savingTokens: Int,
+)
+
+/**
+ * 头锚气泡数：保留最老的 4 条（两问两答）作为缓存前缀锚。
+ *
+ * 取 4 = `PromptPrefix.HISTORY_HEAD_SIZE`（缓存稳定判据 `renderHistoryHead` 默认读前 4 条
+ * 消息）：头锚 < 4 时压缩后 `renderHistoryHead(after)` 会读到头锚之外的已变动 tail ⇒
+ * HISTORY 段非逐字节稳定、前缀缓存命中窗被截（审查席 R1）。4 气泡 ≥ 4 消息（一气泡至少
+ * 一消息）⇒ 头锚段完整覆盖 k=4 稳定窗。
+ */
+internal const val HEAD_ANCHOR_BUBBLES: Int = 4
+
+/** 摘要消息本身的估算 token 预留（保守值：ASCII 模板 + 截断片段）。 */
+internal const val SUMMARY_TOKENS_RESERVE: Int = 64
+
 internal data class ManualCompressOutcome(
     /**
-     * 气泡级切点：**这个 id 及其之前**的气泡不再进 history（仍留在列表里给用户读）。
-     * `null` = 没有压缩（无损放弃 / 没有可丢的内容）。
+     * 压缩区描述。`null` = 没有压缩（无损放弃 / 没有可丢的内容）。
      */
-    val compressedUpTo: String?,
+    val compression: SessionCompression?,
     /** 被移出 history 的气泡数（= 分隔卡上的「已压缩 N 条」）。 */
     val droppedBubbles: Int,
     /** 被移出 history 的**消息**数（≥ [droppedBubbles]，一条气泡可映射多条消息）。 */
@@ -61,7 +103,7 @@ internal data class ManualCompressOutcome(
     /** ASCII 诊断码：`applied` / [MANUAL_COMPRESS_NOOP]。只进日志与错误码，不上屏。 */
     val reason: String,
 ) {
-    val applied: Boolean get() = compressedUpTo != null
+    val applied: Boolean get() = compression != null
 }
 
 /**
@@ -90,31 +132,50 @@ internal suspend fun compressBubbles(
     systemText: String? = null,
     compressor: ContextCompressor = manualCompressor(),
 ): ManualCompressOutcome {
-    // 每条气泡先映射一次并存下来：既算全量 history，又能在后面把消息切点换算成气泡切点。
     val perBubble = bubbles.map { bubble -> bubble to bubble.toHistoryMessages() }
     val all = perBubble.flatMap { it.second }
     val untouched = ManualCompressOutcome(null, 0, 0, all, 0, MANUAL_COMPRESS_NOOP)
-    if (all.size < 2) return untouched
+    if (all.size < 2 || bubbles.size <= HEAD_ANCHOR_BUBBLES + 1) return untouched
+
+    // 头锚：最老 HEAD_ANCHOR_BUBBLES 条气泡原样保留（字节不动 ⇒ 缓存前缀命中延续）。
+    val head = perBubble.take(HEAD_ANCHOR_BUBBLES)
+    val candidates = perBubble.drop(HEAD_ANCHOR_BUBBLES)
+    val candidateAll = candidates.flatMap { it.second }
+    if (candidateAll.size < 2) return untouched
 
     val historyBudget = (budgetTokens - systemTokens(systemText)).coerceAtLeast(1)
-    val compressed = compressor.compress(all, historyBudget)
-    if (compressed.size >= all.size) return untouched
+    val headTokens = TokenEstimator.estimateMessages(head.flatMap { it.second })
+    val candidatesBudget = (historyBudget - headTokens - SUMMARY_TOKENS_RESERVE).coerceAtLeast(1)
+    val compressed = compressor.compress(candidateAll, candidatesBudget)
+    if (compressed.size >= candidateAll.size) return untouched
 
-    // 压缩器只允许「丢最老的一段」。返回值不是输入的后缀 ⇒ 说明有人改写了历史（例如把
-    // system 摘要塞进来），一律放弃：宁可什么都不压，也不要发一份内容被悄悄改过的历史。
-    val cutMessages = all.size - compressed.size
-    if (all.subList(cutMessages, all.size) != compressed) return untouched
+    // 无损校验：保留段必须是候选的**后缀**（WindowContextCompressor 只丢最老一段）。
+    val cutMessages = candidateAll.size - compressed.size
+    if (candidateAll.subList(cutMessages, candidateAll.size) != compressed) return untouched
 
-    val cutBubbles = bubbleCut(perBubble, cutMessages)
+    val cutBubbles = bubbleCut(candidates, cutMessages)
     if (cutBubbles <= 0) return untouched
 
-    val kept = perBubble.drop(cutBubbles).flatMap { it.second }
-    val saving = TokenEstimator.estimateMessages(all) - TokenEstimator.estimateMessages(kept)
+    val droppedBubbles = candidates.take(cutBubbles)
+    val droppedMessages = droppedBubbles.flatMap { it.second }
+    val headMessages = head.flatMap { it.second }
+    val keptCandidates = candidates.drop(cutBubbles).flatMap { it.second }
+    val summary = ChatMessage(role = Role.SYSTEM, text = summaryOf(droppedBubbles))
+    val keptMessages = headMessages + keptCandidates + listOf(summary)
+    val saving = TokenEstimator.estimateMessages(all) - TokenEstimator.estimateMessages(keptMessages)
+    val compression = SessionCompression(
+        headBubbleCount = HEAD_ANCHOR_BUBBLES,
+        droppedFromId = droppedBubbles.first().first.id,
+        droppedToId = droppedBubbles.last().first.id,
+        summaryText = summary.text,
+        droppedBubbleCount = cutBubbles,
+        savingTokens = saving.coerceAtLeast(0),
+    )
     return ManualCompressOutcome(
-        compressedUpTo = bubbles[cutBubbles - 1].id,
+        compression = compression,
         droppedBubbles = cutBubbles,
-        droppedMessages = cutMessages,
-        keptMessages = kept,
+        droppedMessages = droppedMessages.size,
+        keptMessages = keptMessages,
         savingTokens = saving.coerceAtLeast(0),
         reason = "applied",
     )
@@ -126,9 +187,6 @@ internal suspend fun compressBubbles(
  * 取**最大**的 k 使得前 k 条气泡映射出的消息数 ≤ [cutMessages]：这样保留区一定覆盖
  * 压缩器要保留的全部消息（`kept.size >= compressed.size`），代价是可能多留半条气泡。
  * 反向取（最小 k）会把压缩器决定保留的那条气泡**整条丢掉**，等于压过头。
- *
- * 注意「映射出 0 条消息的气泡」（空正文且无轨迹）会被自然吸进丢弃区 —— 它本来就不进
- * history，留在列表里继续可读。
  */
 private fun bubbleCut(perBubble: List<Pair<ChatBubble, List<ChatMessage>>>, cutMessages: Int): Int {
     var consumed = 0
@@ -140,6 +198,25 @@ private fun bubbleCut(perBubble: List<Pair<ChatBubble, List<ChatMessage>>>, cutM
         cut = index + 1
     }
     return cut
+}
+
+/**
+ * 机械摘要模板（零 LLM，ASCII 安全）。
+ *
+ * 只提取被压段的**结构事实**：条数、角色分布、首条非空正文片段。不调模型、
+ * 不逐条搬运原文（零代码搬运 + 不膨胀请求体）。摘要只追加在 history 尾部，
+ * 供模型理解「中间有一段被压缩过」。
+ */
+private fun summaryOf(dropped: List<Pair<ChatBubble, List<ChatMessage>>>): String {
+    val bubbleCount = dropped.size
+    val userCount = dropped.count { it.first.role == Role.USER }
+    val modelCount = dropped.count { it.first.role == Role.MODEL }
+    val firstText = dropped.firstNotNullOfOrNull { it.first.text.takeIf(String::isNotBlank) }
+    val snippet = firstText?.let { if (it.length > 64) it.take(64) + "..." else it } ?: ""
+    return "[context summary] $bubbleCount earlier bubbles compressed " +
+        "($userCount user / $modelCount assistant);" +
+        (if (snippet.isNotEmpty()) " first message: \"$snippet\"." else "") +
+        " Conversation continues below."
 }
 
 /** system 段占的估算 token。拿不到（null）就算 0 —— 见 [compressBubbles] 的 `systemText`。 */

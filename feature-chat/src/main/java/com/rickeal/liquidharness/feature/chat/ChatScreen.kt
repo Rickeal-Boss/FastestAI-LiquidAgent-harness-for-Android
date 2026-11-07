@@ -150,8 +150,7 @@ fun ChatScreen(
             isStreaming = state.isStreaming,
             hasEndpoint = state.endpointLabel != null,
             onOpenSettings = onOpenSettings,
-            compressedUpTo = state.compressedUpTo,
-            compressedSavingTokens = state.compressedSavingTokens,
+            compression = state.compression,
             onUndoCompress = onUndoCompress,
             renderMarkdown = renderMarkdown,
         )
