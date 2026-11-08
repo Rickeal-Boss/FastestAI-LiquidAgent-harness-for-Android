@@ -38,8 +38,11 @@ name: Release
 #      只校验「文件非空」是不够的：base64 截断会解出一个合法的空壳 zip/文件。
 #
 #   5. 【签名方案契约 —— 由 app 模块的 build.gradle.kts 实现，本文件只传参数】
-#      · 本文件只传四个 -P：signing.storeFile / signing.storePassword /
-#        signing.keyAlias / signing.keyPassword。app 模块据此建 signingConfig。
+#      · 本文件经**环境变量**注入四个密钥：KEYSTORE_FILE / KEYSTORE_PASSWORD /
+#        KEY_ALIAS / KEY_PASSWORD（来自 secrets.*，见各 assemble 步骤的 `env:`）。
+#        app 模块用 `providers.environmentVariable(...)` 读取，**不**走 -P 命令行参数，
+#        避免口令进进程命令行 / Gradle 输出 / 失败报告 artifact（隐私扫描报告 Risk 5/6）。
+#        -P signing.* 仅作**本地手动签名**兜底，CI 不依赖它。
 #      · app 模块里**只写 enableV3Signing = true**，**不要**同时写 enableV2Signing：
 #        AGP 9 按 minSdk 选「最低可用方案」而非叠加，写 v2 会被直接忽略
 #        （实测：v2/v3 都写 true ⇒ v2=false v3=true）。
@@ -379,7 +382,7 @@ jobs:
           cat "$log_file"
 
           if grep -q "CN=Android Debug" "$log_file"; then
-            echo "::error::Release APK is signed with the DEBUG key. signing.* properties did not reach Gradle (检查 app 模块是否真的读了 -Psigning.storeFile/storePassword/keyAlias/keyPassword)。"
+            echo "::error::Release APK is signed with the DEBUG key. 签名参数未传到 Gradle —— 检查 app 模块是否读到 KEYSTORE_FILE/KEYSTORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD 环境变量（CI），或本地 -Psigning.storeFile/storePassword/keyAlias/keyPassword 兜底。"
             exit 1
           fi
 
