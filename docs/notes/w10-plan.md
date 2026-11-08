@@ -65,7 +65,7 @@
 | chunk | 分块装配（_w6 chunk 模式） | nv-vl / dots | 分块边界不丢针 |
 | summary | 汇总落 `_w10/summary.json`，关键计数抄进 handoff 正文 | — | — |
 
-### 3.2 设备侧（主理人亲自，OPPO PDRM00 `13309cc8`，adb `-P 15037`，`MSYS_NO_PATHCONV=1`）
+### 3.2 设备侧（主理人亲自，OPPO PDRM00 `<设备序列号>`，adb `-P 15037`，`MSYS_NO_PATHCONV=1`）
 
 | 项 | 行使方式 | 判据 | 预期四态 |
 |---|---|---|---|

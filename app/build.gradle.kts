@@ -3,10 +3,12 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 // =============================================================================
 // :app — 壳：Application / MainActivity / NavHost / DI 组装
 //
-// 签名契约（CI 席约定，release.yml 传四个 -P）：
-//   signing.storeFile / signing.storePassword / signing.keyAlias / signing.keyPassword
+// 签名契约（CI 席约定，release.yml 经环境变量注入，本地可回退 -P）：
+//   KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD（环境变量，优先）
+//   或 signing.storeFile / signing.storePassword / signing.keyAlias / signing.keyPassword（-P 兜底）
 //   四者齐备才创建 release signingConfig；否则 release 退回 debug 签名 ——
 //   保证无密钥时 assembleRelease 也能跑通（构建不许失败）。
+//   凭据走环境变量而非 -P，避免口令出现在进程命令行 / Gradle 输出 / 失败报告 artifact。
 // =============================================================================
 
 plugins {
@@ -47,10 +49,15 @@ android {
     // 签名：secrets 缺失时静默退回 debug 签名（构建不许失败）
     // ---------------------------------------------------------------------
     signingConfigs {
-        val storeFilePath = project.findProperty("signing.storeFile")?.toString()
-        val storePasswordValue = project.findProperty("signing.storePassword")?.toString()
-        val keyAliasValue = project.findProperty("signing.keyAlias")?.toString()
-        val keyPasswordValue = project.findProperty("signing.keyPassword")?.toString()
+        // 环境变量优先（CI，口令不进命令行），本地 -P 兜底（开发机手动签名）。
+        val storeFilePath = (providers.environmentVariable("KEYSTORE_FILE").orNull
+            ?: project.findProperty("signing.storeFile"))?.toString()
+        val storePasswordValue = (providers.environmentVariable("KEYSTORE_PASSWORD").orNull
+            ?: project.findProperty("signing.storePassword"))?.toString()
+        val keyAliasValue = (providers.environmentVariable("KEY_ALIAS").orNull
+            ?: project.findProperty("signing.keyAlias"))?.toString()
+        val keyPasswordValue = (providers.environmentVariable("KEY_PASSWORD").orNull
+            ?: project.findProperty("signing.keyPassword"))?.toString()
 
         val hasSigning = !storeFilePath.isNullOrBlank() &&
             storePasswordValue != null &&

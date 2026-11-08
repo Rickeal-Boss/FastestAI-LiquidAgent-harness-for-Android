@@ -49,7 +49,7 @@
 - **沙箱出网走 MITM 代理**：JVM 需 `-Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=<port>`，
   否则 PKIX 证书错误。`localbuild.sh` 已处理。
 - 真机：`_j2env/sdk/platform-tools/adb.exe`（PATH 里没有 adb）。设备 OPPO PDRM00 / Android 13（SDK 33）。
-  `adb install` 必须 `MSYS_NO_PATHCONV=1` 且源路径用 `D:/...`；读设备二进制用 `adb exec-out`。
+  `adb install` 必须 `MSYS_NO_PATHCONV=1` 且源路径用 `<Windows 形态源路径>`；读设备二进制用 `adb exec-out`。
 
 ### 🔴 安装前必须唤醒设备（2026-10-29 实测）
 
@@ -157,6 +157,9 @@ MSYS_NO_PATHCONV=1 $A shell pm install-commit $S     # 成功输出 "Success"
 ## 九、提交
 
 - 身份：`-c user.name="Rickeal-Boss" -c user.email="263587600+Rickeal-Boss@users.noreply.github.com"`。
-- **PAT 只以 URL inline 一次性使用，绝不落盘**；push 后 `git remote set-url` 回干净 URL。
+- **凭据推送首选 `gh auth` / Git credential helper**（隐私扫描报告 Risk 8）：
+  `gh auth login` 后 `git push` 自动用 token，不进命令行、不进 reflog、不留 shell history。
+  **PAT inline URL 是兜底手段**：仅一次性使用、绝不落盘；push 后 `git remote set-url` 回干净 URL。
+  ⚠️ inline token 仍可能残留在 shell history / 进程列表 / reflog 中，用完即轮换。
 - push 真判据 = `git push --dry-run` 成功，不是 `git remote -v` 看起来对。
 - 中文长 commit message 用 `git commit -F <file>`，不要塞进 `-m`。

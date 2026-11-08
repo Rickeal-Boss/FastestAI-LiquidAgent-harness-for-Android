@@ -36,7 +36,7 @@
 |---|---|
 | 模型 | GLM-4.7（BigModel / 智谱），`maxOutputTokens=8192`，thinking 默认开 |
 | 链路 | App → `adb reverse tcp:8765` → 宿主 Python 转发桥 → `open.bigmodel.cn/api/paas/v4/chat/completions` |
-| 设备 | OPPO PDRM00 / Android 13 / SDK 33（`13309cc8`） |
+| 设备 | OPPO PDRM00 / Android 13 / SDK 33（`<设备序列号>`） |
 | APK | `sha256=1de01ef2cbed85e1fe4e38a8ba75456f…`，HEAD `37465b4`，工作树干净 |
 | 端点配置 | `baseUrl=http://127.0.0.1:8765/v1`、`model=glm-4.7`、`allowPrivateNetwork=true`、`hasSecret=false`（`requiresApiKey` 对 127.0.0.1 为 false） |
 | 协议 | **每题先点「新对话」**；审批卡由驱动点「允许一次」 |

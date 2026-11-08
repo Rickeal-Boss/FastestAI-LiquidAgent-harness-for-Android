@@ -221,7 +221,7 @@ step5 的 M8 在 W10 记 `partial`、本波判据层面记 ⛔，两者不混。
 - **首轮 fulltest 红是真判据**：`ContextBudgetTest.compressionInvalidatesThePrefixOnlyOnce`
   靠 id 抖动通过，去 id 后恒假 —— 修测试（正文带 id、长度恒 200）而不是放宽断言。
 - **adb**：`-P 15037`（5037 无设备）；daemon 每命令后退出 ⇒ 相关命令放**同一 Bash 调用**连发；
-  `MSYS_NO_PATHCONV=1` + 源路径 `D:/...`；`pm install -r`（直接 `adb install` 报 -99）；
+  `MSYS_NO_PATHCONV=1` + 源路径 `<Windows 形态源路径>`；`pm install -r`（直接 `adb install` 报 -99）；
   **灭屏会挂起 `pm install-commit`** ⇒ 先 `KEYCODE_WAKEUP` + `input swipe` 解锁再装。
 - **UI 坐标 ×2**：截图按 540×1200 读，设备 1080×2400；**键盘弹出后输入框/发送键上移**
   （发送键收起态 ≈ (946,1964) → 弹起态 ≈ (940,1354)），按旧坐标点会落空导致「题面没发出去」。

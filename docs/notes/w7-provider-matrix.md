@@ -9,7 +9,7 @@
 > 脚本：`_w7/w7matrix.py` —— **复用** `_w6/matrix.py`（ladder/cache/chunk + `haystack` 题面 +
 > `hit`/`parse` 判据）与 `_w6/probe.py`（chat/tools/vision，200×120 真图 + 双要素断言），
 > 未重造判据；W7 只新增模型登记、原始响应落盘观测层与跑批编排。
-> 凭据：只从 `C:/Users/WB/Documents/{openrouter,nvidia}.txt` 读入内存注入环境变量，
+> 凭据：只从本地 `<凭据文件>`（OpenRouter / NVIDIA API Key，本地路径已隐去）读入内存注入环境变量，
 > 本文与 `_w7/` 全部产物不含任何密钥（落盘前 scrub 正则二次脱敏）。
 > 四态沿用 W6：**✅ 实测通过** / **⚠️ partial** / **⛔ 失败或不适用** /
 > **🟡 vacuous**（请求成功但判据未被行使，既非通过也非失败）。
@@ -281,12 +281,12 @@ W5 曾测得 91.3% 命中率是特定前缀 + 特定路由下的一次观测，*
 
 采集方式：`adb -P 15037`（默认 5037 被占用）；二进制一律 `exec-out` 读回；
 含设备绝对路径的命令加 `MSYS_NO_PATHCONV=1`（否则 Git Bash 会把 `/sdcard/...` 误转成
-`D:/WB/.../PortableGit/...`，第一轮就踩过，已重测）。本波**不装包、不唤醒**。
+`<本机目录>/.../PortableGit/...`，第一轮就踩过，已重测）。本波**不装包、不唤醒**。
 证据：`_w7/device-baseline.json`。
 
 | 项 | 实测 | 判定 |
 |---|---|---|
-| 设备在线 | `13309cc8 device`，`PDRM00`，Android 13 | ✅ |
+| 设备在线 | `<设备序列号> device`，`PDRM00`，Android 13 | ✅ |
 | 已装 debug 包 | `package:com.rickeal.liquidharness.debug` | ✅ |
 | 活跃端点 | `settings.preferences_pb` → `active_endpoint_id = orvl` ⇒ **OR-DOTS**（`https://openrouter.ai/api/v1`，`dots-studio/dots-3-note-preview:free`，512 000） | ⚠️ **与交接不符** |
 | 端点配置 | `endpoints.json`：`nv1`/NV-VL（1 048 576，`hasSecret=**False**`）、`orvl`/OR-DOTS（512 000，`hasSecret=True`）；`secrets/` 只有 `orvl.bin`(101 B)，**无 `nv1.bin`** | ⚠️ **与交接不符** |

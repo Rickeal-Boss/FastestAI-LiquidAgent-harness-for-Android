@@ -50,9 +50,9 @@
    （`_w7/w7matrix.py` 同款）⇒ 不得把 PC 侧 1M 写成设备侧可用。
 6. **真机题面一律英文 ASCII**：`input text` 非 ASCII 设备侧 NPE ⇒ 中文题面无法注入，
    空格用 `%s`（知识库 §2）；本表所有设备侧题面用英文。
-7. **adb 通道**：`D:/WBfil/2026-09-18-18-27-37/_j2env/sdk/platform-tools/adb.exe -P 15037`；
-   本席预登记时实跑 `devices` ⇒ `13309cc8 device` 在线（OPPO PDRM00 / Android 13 / SDK 33）。
-   **主理人已唤醒确认：`SCREEN_STATE_ON` + `Awake`，设备 `13309cc8`**（本波真机前置已满足，但
+7. **adb 通道**：`<workspace>/_j2env/sdk/platform-tools/adb.exe -P 15037`；
+   本席预登记时实跑 `devices` ⇒ `<设备序列号> device` 在线（OPPO PDRM00 / Android 13 / SDK 33）。
+   **主理人已唤醒确认：`SCREEN_STATE_ON` + `Awake`，设备 `<设备序列号>`**（本波真机前置已满足，但
    每次安装前仍须按下方判据复验，设备状态会随会话变化）。
    安装前必须 `KEYCODE_WAKEUP` + `exec-out screencap -p` **确认截图非全黑**（灭屏 `pm install-commit`
    永久挂起、AOD 仍可能黑）；`adb reverse` 与后续 input/screencap **必须在同一条 Bash 调用里**

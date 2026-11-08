@@ -28,6 +28,20 @@ lint-baseline.xml.bak
 keystore.properties
 secrets.properties
 *.env
+.env*
+*.pem
+*.key
+*.p8
+*.ppk
+*.pfx
+google-services.json
+*service-account*.json
+.npmrc
+
+# ---- 桥接/取证日志：含完整对话，严禁入库（隐私扫描 Risk 3/7）----
+*.jsonl
+glm_bridge.jsonl
+_w8_*.json
 
 # ---- 本机脚本 ----
 *.bat.local

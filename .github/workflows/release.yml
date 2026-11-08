@@ -313,18 +313,15 @@ jobs:
         id: assemble_release
         if: steps.signing.outputs.available == 'true'
         env:
-          KS_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KS_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_FILE: ${{ steps.keystore.outputs.path }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           "$GRADLE_CMD" \
             --no-daemon \
             --stacktrace \
             "-Dorg.gradle.jvmargs=${GRADLE_JVM_ARGS}" \
-            -Psigning.storeFile="${{ steps.keystore.outputs.path }}" \
-            -Psigning.storePassword="${KS_PASSWORD}" \
-            -Psigning.keyAlias="${KS_ALIAS}" \
-            -Psigning.keyPassword="${KS_KEY_PASSWORD}" \
             :app:assembleRelease
 
       - name: Assemble release AAB
@@ -334,18 +331,15 @@ jobs:
         id: assemble_bundle
         if: steps.signing.outputs.available == 'true'
         env:
-          KS_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KS_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_FILE: ${{ steps.keystore.outputs.path }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           "$GRADLE_CMD" \
             --no-daemon \
             --stacktrace \
             "-Dorg.gradle.jvmargs=${GRADLE_JVM_ARGS}" \
-            -Psigning.storeFile="${{ steps.keystore.outputs.path }}" \
-            -Psigning.storePassword="${KS_PASSWORD}" \
-            -Psigning.keyAlias="${KS_ALIAS}" \
-            -Psigning.keyPassword="${KS_KEY_PASSWORD}" \
             :app:bundleRelease
 
       - name: Verify release APK signature

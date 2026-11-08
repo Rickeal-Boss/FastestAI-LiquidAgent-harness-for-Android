@@ -23,7 +23,7 @@ W11 = **W10 收尾** + **跨免费模型综合功能矩阵验证**。
 
 ## 二、端点与模型分配（唯一真值源，key 不落盘）
 
-凭据纪律：key 只从文件读入内存注入（`C:\Users\WB\Documents\openrouter.txt`、`C:\Users\WB\Desktop\nvidia.txt`）；任何文档/产物不落 key 字面量。
+凭据纪律：key 只从文件读入内存注入（`<凭据文件：OpenRouter API Key（本地路径已隐去）>`、`<凭据文件：NVIDIA API Key（本地路径已隐去）>`）；任何文档/产物不落 key 字面量。
 
 | 供应商 | base URL | 模型 slug | 能力 | W11 用途 |
 |---|---|---|---|---|

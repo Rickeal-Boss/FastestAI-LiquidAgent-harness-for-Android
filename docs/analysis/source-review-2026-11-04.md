@@ -1,11 +1,11 @@
 # LiquidAgent harness-v2 源码日析 — 2026-11-04
 
 > 只读静态分析 + 改进推演。**全程未改动任何源码/配置文件**，仅在 `docs/analysis/` 新建本文档。
-> 分析对象：`D:/WBfil/2026-09-18-18-27-37/harness-v2`（现役仓）。
+> 分析对象：`<workspace>/harness-v2`（现役仓）。
 
 ## 本次依据（版本与水位）
 
-- **工作记忆**：`D:/WBfil/2026-09-18-18-27-37/.workbuddy-ai/memory/MEMORY.md` + 最新日志 `2026-11-02.md`（自动化建档日）。
+- **工作记忆**：`<workspace>/.workbuddy-ai/memory/MEMORY.md` + 最新日志 `2026-11-02.md`（自动化建档日）。
 - **项目文档**：`docs/02-roadmap.md`（W1–W8 / 能力线 X1–X6）、`docs/06-deferred-ledger.md`（42 条挂账，W7 版）、`handoff-20261101-wave6.md`、`docs/notes/w7-*.md`。
 - **架构闸门**：`scripts/arch-guard.sh` 的 `LINE_CAPS`（W7 口径，约 144–204 行）。
 - **arch-guard 当时行数水位**（本次 `find` 实扫 `**/src/main/**/*.{kt,kts}`，逐模块 `wc -l`）：

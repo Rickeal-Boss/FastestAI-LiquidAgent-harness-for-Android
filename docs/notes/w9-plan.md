@@ -179,7 +179,7 @@ N2 = 核到台账指定行 `CLOSED`+证据列非空+证据指向文件仍存在�
 | 维度 | 结论 | 状态 |
 |---|---|---|
 | 目标设备/OEM | **OPPO PDRM00 / ColorOS / Android 13（SDK 33）**，`com.rickeal.liquidharness.debug` | 已验证（AGENTS.md §三、handoff-wave8 §三） |
-| adb 通道 | `D:/WBfil/2026-09-18-18-27-37/_j2env/sdk/platform-tools/adb.exe`，**必须 `-P 15037`**；本席实跑 `devices` ⇒ `13309cc8 device` 在线 | ✅ 已验证 |
+| adb 通道 | `<workspace>/_j2env/sdk/platform-tools/adb.exe`，**必须 `-P 15037`**；本席实跑 `devices` ⇒ `<设备序列号> device` 在线 | ✅ 已验证 |
 | 安装前唤醒 | 灭屏 `pm install-commit` **永久挂起**（ColorOS 冻安装服务）；须 `KEYCODE_WAKEUP` + `exec-out screencap -p` 截图**非全黑**（AOD 仍可能黑）。`dumpsys window policy` 曾报 `screenState=SCREEN_STATE_TURNING_ON` ⇒ 必须确认非 AOD | 已验证规则 / **本车待确认** |
 | 题面注入 | `input text` 非 ASCII 设备侧 NPE ⇒ **中文题面一律英文 ASCII**（空格用 `%s`）；本波所有题面英文 | 已验证（知识库 §2） |
 | adb daemon | 每条命令后 daemon 退出 ⇒ **`adb reverse` 与后续 input/screencap 必须在同一条 Bash 调用里**；设备侧 `-f` 落盘取证（PC logcat 缓冲仅 ~256KiB） | 已验证（知识库 §2） |
@@ -222,7 +222,7 @@ N2 = 核到台账指定行 `CLOSED`+证据列非空+证据指向文件仍存在�
 8. 🔴 **子 Agent ≤4 路并行**（7 路实测集中 429，知识库 §6）；**成员回报可能虚构产出**（实摔 2 次）⇒
    派单后主理人先 `git status` + 严格 @Test 口径 + 文件 mtime 核实，再采信完成通报。
 9. 🔴 **提交/凭据**：**email 口径冲突已实证裁定**：AGENTS.md §九
-   = `263587600+Rickeal-Boss@users.noreply.github.com`，知识库 §5「绝不用 noreply」= `15992567646@139.com`；
+   = `263587600+Rickeal-Boss@users.noreply.github.com`，知识库 §5「绝不用 noreply」= 旧身份邮箱（已移除）；
    本席 `git log -1 --format=%ae e7d7a1e` = **noreply 版** ⇒ 本车以 AGENTS.md §九为准（知识库 §5 条目
    属旧仓/LiquidAgent 经验线，回写知识库时须订正，此处不擅改共享库）；
    PAT 只 URL inline 一次性使用、绝不落盘；`git push --dry-run` 才是真判据；

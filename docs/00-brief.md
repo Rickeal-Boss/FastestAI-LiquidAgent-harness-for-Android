@@ -1,8 +1,8 @@
 # 00 — 项目定位与裁决清单
 
 > 仓库：`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`（新仓，空仓起步）
-> 旧仓基线：`D:/WBfil/2026-09-18-18-27-37/Android-Agent`（分支 `final-cut`）
-> 外审输入：`C:\Users\WB\Desktop\难度与收益评估.md`（下称「报告」）
+> 旧仓基线：`<workspace>/Android-Agent`（分支 `final-cut`）
+> 外审输入：`<外审报告（本地路径已隐去）>`（下称「报告」）
 > 本文所有数字都可回溯到「旧仓文件:行号 / 报告 §x / 实测命令」，推断一律标【推断】。
 
 ---

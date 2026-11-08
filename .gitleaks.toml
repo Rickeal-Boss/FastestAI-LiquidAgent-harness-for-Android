@@ -5,8 +5,14 @@
 useDefault = true
 
 [allowlist]
-description = "已知误报：标定值变量名（上下文工程的 chars/token 比值，非密钥）"
+description = "已知误报：标定值变量名（上下文工程的 chars/token 比值，非密钥）+ 脱敏测试夹具占位常量"
 # 分析文档（docs/analysis/）引用代码时会连变量名一起贴出，
 # `measuredCharsPerToken` 被 generic-api-key 的熵检测误判为 api key。
 # 只放行该标识符本身，**不**放行整个目录（避免掩盖真实泄漏）。
 regexes = ['''measuredCharsPerToken''']
+# 下方两个文件是 SecretRedactor / EndpointPlaintextScan 的**测试夹具**，其中 sk-/ghp-/AKIA 等
+# 均为一眼可辨的公开样例或占位（非真凭据）。按文件精确放行，不削弱全局规则。
+paths = [
+  '''core-model/src/test/.*/SecretRedactorTest\.kt''',
+  '''core-data/src/test/.*/EndpointPlaintextScanTest\.kt''',
+]

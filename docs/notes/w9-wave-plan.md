@@ -146,7 +146,7 @@
 
 | 维度 | 结论 | 四态 |
 |---|---|---|
-| 目标设备/OEM | `com.rickeal.liquidharness.debug`；`adb -P 15037`，本波 `devices` ⇒ `13309cc8 device` 在线 | ✅ 已验证 |
+| 目标设备/OEM | `com.rickeal.liquidharness.debug`；`adb -P 15037`，本波 `devices` ⇒ `<设备序列号> device` 在线 | ✅ 已验证 |
 | 安装 | 必须 `adb push` 到设备目录后 `pm install -r`；直接 `adb install` 报 -99；`pm install-commit` 灭屏永久挂起 | ✅ 已验证规则 |
 | 唤醒前置 | 安装前 `KEYCODE_WAKEUP` + `exec-out screencap -p` 确认**非全黑**（AOD 仍可能黑） | ⚠️ 每次复验 |
 | adb daemon | 每命令后退出 ⇒ `adb reverse` 与后续 input/screencap **同一条 Bash 调用**；设备侧 `-f` 落盘 logcat（PC 缓冲 ~256KiB） | ✅ 已验证 |
@@ -263,5 +263,5 @@
 
 ### 9.4 设备侧测试节点建议
 
-- 真机（OPPO PDRM00/A13，`adb -P 15037`，在线 `13309cc8`）优先用 NVIDIA `nemotron-3.5-super-vl`（视觉+工具+长上下文三通，已在 W9-00 D7b 行使）与 OR `dots-3-note-preview:free`（工具+视觉双通 512k）。
+- 真机（OPPO PDRM00/A13，`adb -P 15037`，在线 `<设备序列号>`）优先用 NVIDIA `nemotron-3.5-super-vl`（视觉+工具+长上下文三通，已在 W9-00 D7b 行使）与 OR `dots-3-note-preview:free`（工具+视觉双通 512k）。
 - 设备侧 1M 仍受双内核阻断（W9-11 未解锁），PC 侧 1M 结论不得写成设备侧可用。

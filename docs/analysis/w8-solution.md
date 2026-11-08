@@ -1,7 +1,7 @@
 # W8 Phase 1 方案分析 — 端点高级配置 / 会话显示 / JSON 检查 / 多模型矩阵
 
 > **只读研究**：本文不改任何源码、配置、脚本或设备状态，仅新建本文档。
-> 分析对象：`D:/WBfil/2026-09-18-18-27-37/harness-v2`，`git rev-parse --short HEAD` = **`578f7e4`**，
+> 分析对象：`<workspace>/harness-v2`，`git rev-parse --short HEAD` = **`578f7e4`**，
 > `git status --short` = `?? docs/analysis/`（工作树干净）。14 模块，`@Test` 严格口径 **696**，
 > `.github/workflows/build.yml:132` `EXPECTED_TESTS: '696'`，`scripts/arch-guard.sh:204` `TOTAL_LINE_CAP=42500`。
 > 方案席：沈思远。职责含**设备硬件可行性维度**（本仓唯一真机 OPPO PDRM00 / Android 13 / SDK 33）。
@@ -970,7 +970,7 @@ G20 只扫 `docs/handoff-*.md` ⇒「同号多义」的人工核对项写进 WP0
 | W8 实测底稿 | `docs/analysis/w8-provider-probe.md`；工作区根 `_w8_*.json` / `_w8_vision.png` / `_w6/import-1m.jsonl` |
 | 审查席回树判定 | `docs/analysis/w8-review-triage.md`（507 行，只读） |
 | W7 基线 | `docs/handoff-20261104-wave7.md`；`docs/notes/w7-provider-matrix.md`；`docs/06-deferred-ledger.md` |
-| 知识库 | `C:/Users/WB/.workbuddy-ai/plugins/cache/my-experts/liquidagent-team/1.1.0/references/liquidagent-knowledge-base.md` §1–§6 |
+| 知识库 | `<本机用户目录>/.workbuddy-ai/plugins/cache/my-experts/liquidagent-team/1.1.0/references/liquidagent-knowledge-base.md` §1–§6 |
 
 ---
 

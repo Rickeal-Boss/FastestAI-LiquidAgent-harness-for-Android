@@ -366,7 +366,7 @@ fun evaluateSwitch(
 
 ### 6.4 adb 取证通道（硬约束，知识库 §2）
 
-- 一律**有线 adb**；`adb` 唯一路径 `_j2env/sdk/platform-tools/adb.exe`；install/push 加 `MSYS_NO_PATHCONV=1`，push 源路径写 Windows 形态 `D:/...`。
+- 一律**有线 adb**；`adb` 唯一路径 `_j2env/sdk/platform-tools/adb.exe`；install/push 加 `MSYS_NO_PATHCONV=1`，push 源路径写 Windows 形态 `<Windows 形态源路径>`。
 - **读二进制一律 `adb exec-out`**（`adb shell > file` 会 LF→CRLF 翻译损坏二进制）；`preferences_pb` / `nv1.bin` 的读回必须走它。
 - **PC 侧 logcat 环形缓冲实测仅 ~256 KiB** ⇒ 跨机取证必须**设备侧 `-f` 落盘**：`adb shell "nohup logcat -b all -f /data/local/tmp/w7.log &"`，事后 pull；adb 命令串行执行（沙箱 server 每命令后退出）。
 - **安装前必须唤醒设备**（AGENTS.md §三）：`input keyevent KEYCODE_WAKEUP` + `screencap` 确认非全黑；灭屏 `pm install-commit` 会永久挂起（ColorOS 冻结安装服务）。走 install-create/write/commit 三步法。
@@ -448,7 +448,7 @@ fun evaluateSwitch(
 6. ⚠️ **端点/密钥时态**：`nv1` 无密钥（§6.1）；切换守卫的 `verifiedContextLength` 只有真跑过一次 400 才有值 ⇒ 首次切换大概率走 `⛔vacuous` 的「显式确认」通道，别误读成守卫失效。
 7. ⚠️ **行数余量**：`ChatViewModel` 余 16、`feature-chat` 余 41、`feature-settings` 余 79；任何「顺手加两行」都会先撞单文件上限再撞模块上限。`core-context` 1450 上限里 `ContextCompressor.kt` 已 337/400。
 8. ⚠️ **全量单测口径**（知识库 §5）：注入 `JAVA_HOME/ANDROID_HOME/GRADLE_USER_HOME` + `--continue`；`fulltest.sh:54-67` **动态**读 `settings.gradle.kts` 的 include 条目数、不写死数字（只出 `::warning::`、不改退出码），故**没有「模块数 13 改 14」这回事**（初稿有误已订正，§1.1/§1.4-12a）；真正要实跑的是 `arch-guard.sh` G9 三方一致。`fulltest` 三假象（残留 XML / 孤儿 gradle 持锁 / `BUILD FAILED` 只是既有基线失败）先排除；多 agent 并发跑 gradle 会产生不可信红（W6 铁律 1）⇒ **收口必须单人串行**。
-9. ⚠️ **身份/许可证**：commit 身份以本仓 `AGENTS.md` §九为准（`263587600+Rickeal-Boss@users.noreply.github.com`）—— ⚠️ 与知识库 §5 的 `15992567646@139.com`（「绝不用 noreply」）**冲突**，以**本仓契约**为准并回写知识库；Apache-2.0 本仓 / 旧仓可复用，Operit LGPL / Operit2 AGPL 零搬运。
+9. ⚠️ **身份/许可证**：commit 身份以本仓 `AGENTS.md` §九为准（`263587600+Rickeal-Boss@users.noreply.github.com`）—— ⚠️ 与知识库 §5 的「旧身份邮箱（已移除）」（「绝不用 noreply」）**冲突**，以**本仓契约**为准并回写知识库；Apache-2.0 本仓 / 旧仓可复用，Operit LGPL / Operit2 AGPL 零搬运。
 10. 🔴 **长档结论的单次观测分叉（reasoning 消耗不可控）**：W6 / W7 同 `ptok=994 620`、同题面、同 `max_tokens=4096`，却一个 `⛔vacuous`（`completion=4096` 全被 reasoning 吃光）一个 ✅（`ctok=187 / finish=stop`）。⇒ **995k / 1M 档必须重放 ≥2 次**才允许写稳定结论；`finish_reason` 与 `completion_tokens` 必须同记（`w7-provider-matrix.md` §十.2）。**不许**写成「1M 能力已达上限」「本波解除了 vacuous」「模型能力变了」，也**不许**归因到 `max_tokens` 变化（已撤回，§1.4-9）。
 11. ⚠️ **切换守卫字符标定二档误用**：无真值却用 ceiling 6.0 ⇒ 把该禁的切换放行（危险方向，可能发出必然 400 的请求）；有真值却恒用 floor 1.8 ⇒ 把本可放行的 1M 切换禁掉（与需求 1 冲突）。两条反例锚必须**同时**进 `SwitchGuardTest`（§2.3 / P13），只给一条等于没给。
 
@@ -518,4 +518,4 @@ fun evaluateSwitch(
 | W7 草稿引用 | `docs/notes/w7-context-cache-roadmap.md`（未跟踪，全文 173 行） | 未跟踪 |
 
 > ⚠️ 本附录所有行号均为**本席在 `c67f37d` + CI 席拆分工作树**上 grep/`wc -l` 反查所得。最终提交后行号可能漂移，执行前须再核一次（知识库 §6）。
-> 🔴 **证据等级订正（2026-11-04，主理人指出本席路径找错）**：`_w7/matrix-nv-vl-ladder.json`、`_w7/requests.jsonl`、`_w7/w7matrix.py`、`_w6/matrix.py` **不在 `harness-v2/` 仓库根，而在工作区根 `D:/WBfil/2026-09-18-18-27-37/_w7/` 与 `_w6/`**。本席先前在仓库根 `ls` 找不到就一律降级为【中转】，是错的。本席已回**工作区根**核实文件全部存在（`matrix-nv-vl-ladder.json` 1617 B、`requests.jsonl` 23 809 B、`w7matrix.py` 12 815 B、`_w6/matrix.py` 11 048 B、`device-baseline.json` 3219 B）。⇒ 这些标 **【实测·主理人直接读盘】**（主理人逐条核过 `max_tokens=4096`、阶梯七档、OR 预检拒算术、判据自证）+ 本席回盘核存在与抽验（ladder 七档 `hit=true`、四闸门日志原始数字），**不再降级**。`docs/notes/w7-provider-matrix.md` 为开发席落盘的一手文档（实测 314 行 / 22 306 B / `??` 未跟踪；主理人先读的 248 行是较早版本，**以 314 行为准**）。设备基线数字来自开发席 exec-out 读回，其载体 `device-baseline.json` 同在工作区根、已核存在。
+> 🔴 **证据等级订正（2026-11-04，主理人指出本席路径找错）**：`_w7/matrix-nv-vl-ladder.json`、`_w7/requests.jsonl`、`_w7/w7matrix.py`、`_w6/matrix.py` **不在 `harness-v2/` 仓库根，而在工作区根 `<workspace>/_w7/` 与 `_w6/`**。本席先前在仓库根 `ls` 找不到就一律降级为【中转】，是错的。本席已回**工作区根**核实文件全部存在（`matrix-nv-vl-ladder.json` 1617 B、`requests.jsonl` 23 809 B、`w7matrix.py` 12 815 B、`_w6/matrix.py` 11 048 B、`device-baseline.json` 3219 B）。⇒ 这些标 **【实测·主理人直接读盘】**（主理人逐条核过 `max_tokens=4096`、阶梯七档、OR 预检拒算术、判据自证）+ 本席回盘核存在与抽验（ladder 七档 `hit=true`、四闸门日志原始数字），**不再降级**。`docs/notes/w7-provider-matrix.md` 为开发席落盘的一手文档（实测 314 行 / 22 306 B / `??` 未跟踪；主理人先读的 248 行是较早版本，**以 314 行为准**）。设备基线数字来自开发席 exec-out 读回，其载体 `device-baseline.json` 同在工作区根、已核存在。

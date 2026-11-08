@@ -17,7 +17,7 @@
 `core-engine/.../provider/OpenAiCompatibleAdapter.kt:182` 的 `REASONING_EFFORT` 分支发
 `"reasoning_effort": "medium"`，对该模型属**发了网关不认的字段**（实测不报 400，但也不改变思考量）。
 
-NVIDIA（`https://integrate.api.nvidia.com/v1`，密钥取自 `Documents/nvidia.txt`）：
+NVIDIA（`https://integrate.api.nvidia.com/v1`，密钥取自 `<凭据文件：NVIDIA API Key（本地路径已隐去）>`）：
 `GET /v1/models` 200、`models_count=85`，密钥有效；W7 已实测
 `nvidia/nemotron-3.5-super-vl-120b-a12b` 真实上限 1 000 000 token（含输出），端点写 1 048 576 是超报。
 

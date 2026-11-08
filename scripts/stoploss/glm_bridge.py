@@ -2,6 +2,15 @@
 """
 BigModel (GLM) 转发桥 —— W2 止损 20 题跑分的取证面。
 
+⚠️ 安全红线（隐私加固，见仓库隐私扫描报告 Risk 3）：
+  · 本桥**仅供本地跑分取证**，禁止用于真实生产流量或含有真实个人数据的对话。
+  · 日志（glm_bridge.jsonl）**含完整对话与工具参数**——这是跑分计分脚本
+    score_*.py 的取证所需，故保留全文；泄漏风险靠 `.gitignore`（`*.jsonl` 不入库）
+    兜底，**严禁把日志 `git add` 提交或外传**。
+  · TLS 证书校验默认开启；仅在受控的本地测试 MITM 代理下、显式设置
+    `BRIDGE_INSECURE_TLS=1` 时才关闭校验（此时上游密钥与对话对代理可见，
+    严禁在真实密钥下使用）。
+
 设备 → adb reverse tcp:8765 → 本进程 → https://open.bigmodel.cn/api/paas/v4/chat/completions
 
 为什么需要桥而不是让 App 直连：
@@ -10,7 +19,8 @@ BigModel (GLM) 转发桥 —— W2 止损 20 题跑分的取证面。
   2. 真实 Key 只在宿主进程的环境变量里，不进 APK、不进设备、不落盘。
   3. 顺带拿到 `prompt_tokens_details.cached_tokens`，用于上下文缓存命中率取证。
 
-日志：每请求一行 JSON（BRIDGE_LOG，默认 glm_bridge.jsonl）。
+日志：每请求一行 JSON（BRIDGE_LOG，默认 glm_bridge.jsonl）。**含完整对话内容**
+  （跑分计分需要，靠 .gitignore 防提交，严禁入库/外传）。
   {run_id, log_file, seq, ts, path, model, last_user, status, duration_ms, first_byte_ms,
    request: {...原始 body...},
    response: {text, reasoning, tool_calls:[{id,name,arguments}], finish_reason, usage, sse_lines}}
@@ -64,6 +74,8 @@ PROXY_PORT = _proxy_port()
 LISTEN_PORT = int(os.environ.get("BRIDGE_PORT", "8765"))
 LOG_PATH = os.environ.get("BRIDGE_LOG", os.path.join(os.getcwd(), "glm_bridge.jsonl"))
 API_KEY = os.environ.get("BIGMODEL_KEY", "")
+# TLS：默认校验证书；仅受控本地测试代理下、显式打开。
+INSECURE_TLS = os.environ.get("BRIDGE_INSECURE_TLS") == "1"
 
 _lock = threading.Lock()
 _seq = [0]
@@ -205,6 +217,8 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         last_user = last_user_text(body)
+        # 注意：日志含完整对话与工具参数（跑分计分脚本 score_*.py 需要，故保留全文）。
+        # 防泄漏靠 .gitignore（*.jsonl 不入库）+ 文档红线：绝不可把日志提交或外传。
         record = {
             "ts": time.time(),
             "path": self.path,
@@ -232,7 +246,8 @@ class Handler(BaseHTTPRequestHandler):
 
         conn = None
         try:
-            ctx = ssl._create_unverified_context()
+            # 默认校验证书；仅在 BRIDGE_INSECURE_TLS=1（受控本地测试代理）下关闭校验。
+            ctx = ssl._create_unverified_context() if INSECURE_TLS else ssl.create_default_context()
             if PROXY_HOST and PROXY_PORT:
                 conn = HTTPSConnection(PROXY_HOST, PROXY_PORT, context=ctx, timeout=300)
                 conn.set_tunnel(UPSTREAM_HOST, UPSTREAM_PORT)
@@ -306,6 +321,9 @@ if __name__ == "__main__":
         print("archived previous log -> %s" % archived, flush=True)
     bridge_log.write_run_id(LOG_PATH, RUN_ID)
     print("run_id=%s log=%s" % (RUN_ID, LOG_PATH), flush=True)
+    if INSECURE_TLS:
+        print("WARNING: BRIDGE_INSECURE_TLS=1 —— TLS 证书校验已关闭，上游密钥与对话对代理可见；"
+              "严禁在真实密钥/生产数据下使用", flush=True)
     print("bridge listening on 127.0.0.1:%d -> %s%s (proxy=%s:%d)" % (
         LISTEN_PORT, UPSTREAM_HOST, UPSTREAM_PATH, PROXY_HOST, PROXY_PORT), flush=True)
     if not API_KEY:
