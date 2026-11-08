@@ -1,6 +1,5 @@
 package com.rickeal.liquidharness.core.agent.loop
 
-import com.rickeal.liquidharness.core.agent.context.HardBudgetShrinker
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
 import com.rickeal.liquidharness.core.model.AgentEvent
 import com.rickeal.liquidharness.core.model.ChatMessage
@@ -212,7 +211,7 @@ class GenerationRound(
                                 ctx.state.recordReportedPrompt(
                                     prompt = event.prompt,
                                     messageCount = messages.size,
-                                    charsSent = HardBudgetShrinker.calibrationChars(messages),
+                                    charsSent = calibrationCharsForRound(messages),
                                 )
                                 ctx.emit(AgentEvent.UsageUpdated(event.prompt, event.completion, event.cachedPrompt, event.cacheWrite))
                             }

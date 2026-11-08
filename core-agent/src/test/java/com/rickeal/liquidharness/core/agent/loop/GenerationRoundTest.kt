@@ -1,14 +1,19 @@
 package com.rickeal.liquidharness.core.agent.loop
 
+import com.rickeal.liquidharness.core.agent.context.HardBudgetShrinker
 import com.rickeal.liquidharness.core.agent.engine.LlmEngine
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
 import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.agent.tool.ToolRegistry
 import com.rickeal.liquidharness.core.model.AgentEvent
+import com.rickeal.liquidharness.core.model.Attachment
+import com.rickeal.liquidharness.core.model.AttachmentKind
+import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.EngineCapabilities
 import com.rickeal.liquidharness.core.model.FinishReason
 import com.rickeal.liquidharness.core.model.GenerationEvent
 import com.rickeal.liquidharness.core.model.GenerationRequest
+import com.rickeal.liquidharness.core.model.Role
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -183,5 +188,35 @@ class GenerationRoundTest {
         assertTrue(AgentLogStore.recent().none { it.message.contains("first byte timeout") })
         // 半截静默不能把「已收到的内容」弄丢。
         assertTrue(ctx.state.textLength() > 0)
+    }
+
+    /**
+     * W12 / 外审 P1-2：带图轮次必须跳过 chars/token 标定（返回 0 ⇒ `recordReportedPrompt`
+     * 不覆盖 `measuredCharsPerToken`），否则视觉 token 进分母会把 cpt 压低、下一轮纯文本
+     * 开局被过度收缩。
+     *
+     * 红态先行：若去掉 [calibrationCharsForRound] 的附件守卫，带图轮次会返回
+     * `HardBudgetShrinker.calibrationChars` 的正值 ⇒ 第一条断言必红。
+     */
+    @Test
+    fun imageBearingRoundSkipsCharsPerTokenCalibration() {
+        val image = Attachment(kind = AttachmentKind.IMAGE, mimeType = "image/png", base64 = "aGk")
+        val imageRound = listOf(
+            ChatMessage(role = Role.USER, text = "what is this", attachments = listOf(image))
+        )
+        // 带图轮次：分子记 0，本轮不覆盖上一轮标定。
+        assertEquals(0, calibrationCharsForRound(imageRound))
+
+        // 纯文本轮次照常标定（正值），且与直接调 calibrationChars 同源（不是两把尺子）。
+        val textRound = listOf(ChatMessage(role = Role.USER, text = "hello world"))
+        val expected = HardBudgetShrinker.calibrationChars(textRound)
+        assertTrue(expected > 0)
+        assertEquals(expected, calibrationCharsForRound(textRound))
+
+        // MODEL 消息带附件属编程错误（引擎整段丢弃）⇒ sendableAttachments 为空 ⇒ 不跳过。
+        val modelWithAttachment = listOf(
+            ChatMessage(role = Role.MODEL, text = "x", attachments = listOf(image))
+        )
+        assertTrue(calibrationCharsForRound(modelWithAttachment) > 0)
     }
 }
