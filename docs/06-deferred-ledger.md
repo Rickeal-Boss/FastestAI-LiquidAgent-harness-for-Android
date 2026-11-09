@@ -183,6 +183,30 @@
 | W12-01 | 带图轮次跳过 chars/token 标定（外审 P1-2）：`calibrationChars` 只算文本作分子、含视觉 token 的 `prompt_tokens` 作分母 ⇒ 带图轮次 `measuredCharsPerToken` 偏低 ⇒ 下一轮纯文本 `charCap` 偏小过度收缩且跨轮继承 | W12 | `CLOSED` | 关闭于 W12 | `core-agent/.../CalibrationPolicy.kt` 新增 `calibrationCharsForRound`：带图轮次返回 0（`recordReportedPrompt` 只在 `charsSent>0` 时覆盖 cpt）⇒ 沿用上一轮纯文本标定、首轮即带图走默认上界（安全侧）；`GenerationRound` 改调并移除唯一 `HardBudgetShrinker` import；红态用例 `imageBearingRoundSkipsCharsPerTokenCalibration`；`EXPECTED_TESTS` 798→799 同提交一次改。本地闸门 G1–G4 全绿；CI run `42445368887` 五 job 全 success |
 | W12-02 | usage 四态 `PromptCacheStatus` 缺生产读者：唯一生产调用点 `StreamAccumulator.cacheStatus` 在 main 零读者（外审 P0-1 剩余面） | W12 | `OPEN` | 给四态一个生产读者 —— 探针事实表 / 诊断日志 / 或 `scripts/` 设备侧缓存探针按四态落盘；与 `W9-07` 探针波或 `W11-05` 分母族归一同车 | W12 外审 `W11第0车深度审查与W12排期裁决.md` §三.2 P0-1；W12 回树 grep 证实（`promptCacheStatus(` 排除 test 仅 `StreamAccumulator.kt:226` 一处，`.cacheStatus` main 零命中）。W12 真机 F7 实测 `buildUsageLabel` 三态正确（首轮 `0 cached, 0.0%`=MISS、二轮 `1664 cached, 96.5%`=HIT），用户可见面未缺口 |
 
+## 二-quater、W14 挂账表（2026-11-09，矩阵波）
+
+> 与 §二-bis / §二-ter 同口径：**本表行不计入 §二 统计表**（统计表只数 §一 表格行）。
+> 本波全部为 `OPEN`；状态只允许 `OPEN` / `CARRIED` / `CLOSED`（G20）。
+> **本表每行自带「触发信号 + 缓解动作」**，避免「推 Wx」一句话式静默顺延。
+> 唯一真值源仍是 §一 表格行；本表是 W14 的承接索引，不是第二真值源。
+> 依据：用户 2026-11-09 指令（多免费模型 × 多上下文矩阵 + 推 CI）与外审
+> 《W13隐私加固波深度审查与W14排期裁决》§五 的裁决分歧（收敛结论见
+> `docs/analysis/w14-matrix-acceptance.md` §1.2）。
+
+| ID | 项 | 开立于 | 状态 | 阻塞/关闭于 | 证据 |
+|---|---|---|---|---|---|
+| W14-01 | 外审第 0 车整包未做：W13 隐私波入账、五条漏号补登、账本三处订正、handoff 生成 checklist 三硬规则 | W14 | `OPEN` | **触发信号**：外部审查再次判「本波无 handoff / 无台账行 / 账实不符」；**缓解动作**：先补登历史漏号与订正，再开新面，且每条带必红变异样本 | `docs/analysis/w14-matrix-acceptance.md` §1.2 / §1.4；本波已产 `handoff-20261109-wave14.md` 与本表，但**未补历史漏号**，如实登记 |
+| W14-02 | 外审第 1 车安全波收口：消除重复扫描 job、安装脚本 pin 与哈希、allowlist 精确放行、全历史首跑取证、签名端到端 | W14 | `OPEN` | **触发信号**：扫描口径出现两处真值源漂移，或首次 `workflow_dispatch` 全历史扫描结论未取；**缓解动作**：抽 composite action / reusable workflow 两处调用，并补「真格式 key 仍判红」变异用例 | 外审 §五 第 1 车（P1-1 / P1-3 / P1-4 / P1-5 / P1-6）；本波不动 CI 配置 |
+| W14-03 | 外审第 2 车：拆分三方、四态生产读者、分母族归一、jsonMode × tools | W14 | `OPEN` | **触发信号**：`core-context` 余量见底或新增 `.kt` 触碰 G10；**缓解动作**：先拆再改，禁调 `LINE_CAPS` / `TOTAL_LINE_CAP` / `VACUOUS_BASELINE` | 外审 §五 第 2 车；本波零 `.kt` 改动 |
+| W14-04 | `W9-05` journal / FreezeClock **第 9 次顺延**，用户本单未给「永不实现 / 改状态」显式裁决 | W14 | `OPEN` | **触发信号**：下一波仍以功能矩阵优先，或用户显式裁决；**缓解动作**：要么第 0 车强制开波，要么用户显式改状态列并同步顺延代数；**不关号、不软化、不代裁决** | `docs/analysis/w14-matrix-acceptance.md` §1.2(4)；§一 `W9-05` 行仍写第 8 次，本波如实登记第 9 次但**不改老行代数**（改老行需单独裁决） |
+| W14-05 | 设备侧 1M 真压 ⛔ | W14 | `OPEN` | **触发信号**：`W9-11` 的 `PreStepBudget` 档位闸与 `RoundHeadGate` 双阻断被解除；**缓解动作**：解除后先用导入会话通道灌阶梯，PC 侧结论不得写成设备侧可用 | 本波真机：32K 档 `上下文 1.6K / 27.9K`、512K 档 `507.9K`，长会话 249752 字符被 `cap=50227` 前置熔断；外审 §五 同判「如实 ⛔」 |
+| W14-06 | MCP 明文联调 ⛔（平台阻断） | W14 | `OPEN` | **触发信号**：出现 https 夹具或 cleartext 例外的安全裁决；**缓解动作**：单独出裁决文档，不为测试放开 `usesCleartextTraffic` | §一 `W5-03`；`app/src/main/AndroidManifest.xml:25` `usesCleartextTraffic="false"`（G15b 本波仍 OK） |
+| W14-07 | git 历史清理（`filter-repo` / BFG / 强推）不可逆动作 | W14 | `OPEN` | **触发信号**：用户二选一裁决「清历史 + 凭据轮换」；**缓解动作**：裁决前维持「历史留存」现状并留痕；本单禁止 force-push / rewrite history | 外审 §三.3 P1-5；本波不执行 |
+| W14-08 | 音频输出、`core-device` 独立波、图片预算四条、为凑缓存加长 system | W14 | `OPEN` | **触发信号**：用户显式改变「明确不做」清单；**缓解动作**：维持既有方向，图片算进预算但不进 `PromptPrefix` 指纹 | 外审 §五 末「明确不做」；`docs/analysis/w14-matrix-acceptance.md` §1.2(2) |
+| W14-09 | PC 侧免费节点可用性结论不得升级为「设备侧可用」 | W14 | `OPEN` | **触发信号**：出现把 PC 侧单次请求窗口结论写进交接正文的措辞；**缓解动作**：四态写 `⛔`，只登记 PC 侧事实表 | `AGENTS.md` §二.3「未触发 ≠ 已验证通过」；W12 交接 §一 已立此纪律 |
+| W14-10 | **本波新观察**：长会话导入后 L3 字符硬闸前置熔断（`context_overflow_prevented`），`auto_compact=noop reason=below_trigger` 未介入；与 `W9-08` 的 400 自愈是**不同触发面** | W14 | `OPEN` | **触发信号**：需要「超窗请求由压缩链路救回」的验收；**缓解动作**：先判「字符闸 vs HTTP 400」两条路径再设计自愈，不把两者合并成一条挂账 | `<取证目录>/evidence/matrix_facts.jsonl` C05；`compress_facts.jsonl`；UI 红卡 `chars=249752 cap=50227`；`docs/analysis/w14-matrix-acceptance.md` §3 |
+| W14-11 | **功能矩阵未取全项**：多模态真机输入（两次尝试未通过）、`skill_load` 未行使、`file_write` 落盘未证实、自动压缩真触发未取、`W7-03` 分隔卡未取 | W14 | `OPEN` | **触发信号**：需要「多模态 / skill / 文件落盘 / 自动压缩」任一项重新验收；**缓解动作**：先把「判据在应用内」作为前置断言，再按工具链逐项取双向证据；不引用 W12 结论冒充本波通过 | `<取证目录>/evidence/vision_run.log` / `vision_run2.log` / `matrix_facts.jsonl` F1–F3；`docs/analysis/w14-matrix-acceptance.md` §3.6 / §3.7 |
+
 ---
 
 ## 二、统计（按 §一 表格实际编号行重算，W7）

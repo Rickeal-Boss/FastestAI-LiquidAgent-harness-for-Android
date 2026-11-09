@@ -1,0 +1,329 @@
+{
+  "wave": "W14",
+  "note": "脱敏派生件：端点标识 / 凭据 / 账号字段 / 本机路径 / 设备序列号均已剔除；端点以不可逆指纹表示。原始截图与完整日志不入库。",
+  "cells": [
+    {
+      "cell": "C01",
+      "endpoint_fp": "c4c25092",
+      "settled": false,
+      "wait_seconds": 75.4,
+      "usage": "",
+      "chars_cap": null,
+      "context": null,
+      "log_tail_last": "2026-11-08T08:08:59.968193Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "C01_safe.png"
+    },
+    {
+      "cell": "C01b",
+      "endpoint_fp": "c4c25092",
+      "settled": true,
+      "wait_seconds": 13.1,
+      "usage": "1.6k in / 25 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "1.6K",
+        "507.9K"
+      ],
+      "log_tail_last": "2026-11-09T11:09:18.509989Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "C01b_safe.png"
+    },
+    {
+      "cell": "C02",
+      "endpoint_fp": "c4c25092",
+      "settled": true,
+      "wait_seconds": 13.2,
+      "usage": "1.6k in / 40 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "1.6K",
+        "27.9K"
+      ],
+      "log_tail_last": "2026-11-09T11:13:35.637304Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "C02_safe.png"
+    },
+    {
+      "cell": "C05",
+      "endpoint_fp": "c4c25092",
+      "settled": false,
+      "wait_seconds": 113.2,
+      "usage": "",
+      "chars_cap": [
+        249752,
+        50227
+      ],
+      "context": null,
+      "log_tail_last": "2026-11-09T11:13:35.637304Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "C05_safe.png"
+    },
+    {
+      "cell": "C06",
+      "endpoint_fp": "c4c25092",
+      "settled": false,
+      "wait_seconds": 97.2,
+      "usage": "",
+      "chars_cap": [
+        53853,
+        50227
+      ],
+      "context": null,
+      "log_tail_last": "2026-11-09T11:22:55.927602Z INFO manual_compress dropped=238 kept=64 cache_invalidated=false",
+      "safe_shot": "C06_safe.png"
+    },
+    {
+      "cell": "C06b",
+      "endpoint_fp": "c4c25092",
+      "settled": true,
+      "wait_seconds": 18.7,
+      "usage": "10.4k in / 20 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "10.5K",
+        "123.9K"
+      ],
+      "log_tail_last": "2026-11-09T11:27:23.609193Z INFO auto_compact=noop reason=already_compressed",
+      "safe_shot": "C06b_safe.png"
+    },
+    {
+      "cell": "C07",
+      "endpoint_fp": "c4c25092",
+      "settled": true,
+      "wait_seconds": 13.2,
+      "usage": "1.6k in / 31 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "1.6K",
+        "507.9K"
+      ],
+      "log_tail_last": "2026-11-09T11:28:37.272500Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "C07_safe.png"
+    },
+    {
+      "cell": "C09",
+      "endpoint_fp": "c4c25092",
+      "settled": true,
+      "wait_seconds": 7.7,
+      "usage": "1.6k in / 40 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "1.6K",
+        "507.9K"
+      ],
+      "log_tail_last": "2026-11-09T11:29:50.099096Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "C09_safe.png"
+    },
+    {
+      "cell": "C10",
+      "endpoint_fp": "5ec3b060",
+      "settled": false,
+      "wait_seconds": 70.4,
+      "usage": "",
+      "chars_cap": null,
+      "context": null,
+      "log_tail_last": "2026-11-09T11:29:50.099096Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "C10_safe.png"
+    },
+    {
+      "cell": "C11",
+      "endpoint_fp": "34b14303",
+      "settled": false,
+      "wait_seconds": 70.0,
+      "usage": "",
+      "chars_cap": null,
+      "context": null,
+      "log_tail_last": "2026-11-09T11:29:50.099096Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "C11_safe.png"
+    },
+    {
+      "cell": "C12",
+      "endpoint_fp": "6ecd5b22",
+      "settled": true,
+      "wait_seconds": 7.8,
+      "usage": "1.1k in / 136 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "1.2K",
+        "251.9K"
+      ],
+      "log_tail_last": "2026-11-09T11:34:28.482885Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "C12_safe.png"
+    },
+    {
+      "cell": "C13",
+      "endpoint_fp": "29878504",
+      "settled": false,
+      "wait_seconds": 75.1,
+      "usage": "",
+      "chars_cap": null,
+      "context": null,
+      "log_tail_last": "2026-11-09T11:34:28.482885Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "C13_safe.png"
+    },
+    {
+      "cell": "F1",
+      "endpoint_fp": "8ac38d1b",
+      "settled": false,
+      "wait_seconds": 91.7,
+      "usage": "",
+      "chars_cap": null,
+      "context": null,
+      "log_tail_last": "2026-11-09T11:34:28.482885Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "F1_safe.png"
+    },
+    {
+      "cell": "F2",
+      "endpoint_fp": "8ac38d1b",
+      "settled": true,
+      "wait_seconds": 72.5,
+      "usage": "1.9k in / 83 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "2K",
+        "995.9K"
+      ],
+      "log_tail_last": "2026-11-09T11:34:28.482885Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "F2_safe.png"
+    },
+    {
+      "cell": "F3",
+      "endpoint_fp": "8ac38d1b",
+      "settled": true,
+      "wait_seconds": 7.7,
+      "usage": "2.0k in / 130 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "2K",
+        "995.9K"
+      ],
+      "log_tail_last": "2026-11-09T11:43:14.076928Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "F3_safe.png"
+    }
+  ],
+  "switches": [
+    {
+      "kind": "window",
+      "label": "32K",
+      "idx": null,
+      "ep_fp_before": null,
+      "ep_fp_after": "c4c25092",
+      "window_readback": [
+        "当前 32K"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": null,
+      "label": "1M",
+      "idx": null,
+      "ep_fp_before": null,
+      "ep_fp_after": null,
+      "window_readback": null,
+      "diagnosis": "",
+      "error": "window label not found"
+    },
+    {
+      "kind": "window",
+      "label": "128K",
+      "idx": null,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "c4c25092",
+      "window_readback": [
+        "当前 128K"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "1M",
+      "idx": null,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "c4c25092",
+      "window_readback": [
+        "当前 1M"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint",
+      "label": null,
+      "idx": 0,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "",
+      "error": null
+    },
+    {
+      "kind": "endpoint",
+      "label": null,
+      "idx": 2,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "5ec3b060",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint",
+      "label": null,
+      "idx": 0,
+      "ep_fp_before": "5ec3b060",
+      "ep_fp_after": "34b14303",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "34b14303",
+      "ep_fp_after": "6ecd5b22",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint",
+      "label": null,
+      "idx": 2,
+      "ep_fp_before": "6ecd5b22",
+      "ep_fp_after": "29878504",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint",
+      "label": null,
+      "idx": 0,
+      "ep_fp_before": "29878504",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    }
+  ],
+  "compression": [
+    {
+      "step": "dialog_opened",
+      "signals": [],
+      "tail_last": "2026-11-09T11:13:35.637304Z INFO auto_compact=noop reason=below_trigger"
+    },
+    {
+      "step": "confirmed",
+      "signals": [],
+      "tail_last": "2026-11-09T11:22:55.927602Z INFO manual_compress dropped=238 kept=64 cache_invalidated=false"
+    },
+    {
+      "step": "state",
+      "signals": [
+        "Segment 0299. The quick brown fox jumps over the lazy dog while the harness measures context growth across tiers and observes compression behaviour. The quick b",
+        "（已被安全熔断）"
+      ],
+      "tail_last": "2026-11-09T11:22:55.927602Z INFO manual_compress dropped=238 kept=64 cache_invalidated=false"
+    }
+  ]
+}
