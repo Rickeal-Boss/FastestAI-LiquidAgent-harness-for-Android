@@ -55,6 +55,14 @@ W14 = **功能矩阵补跑波**，不是重做内核、也不是外审排的「�
 | G3 arch-guard | `PASS ok=27 vacuous=1 violation=0 fault=0`；G20 63 个 handoff ID 全在台账 | `g3_archguard.log` |
 | G4 守卫自证 | `30/30 PASS（199s）` | `g4_selftest.log` |
 
+**推送与 CI**：`04eb0b5` 已推 `main`（`1337782..04eb0b5`，`--dry-run` 先验连通）；
+Build run `42613109392` `completed/success`（Unit tests / Assemble Debug / Arch guard /
+Lint / Secret scan **五 job 全 success**）、Secret scan run `42613109410` `completed/success`。
+**CI 红次数 0**，无需按四分类复归因 / 复编译 / 复真机 / 再推。
+外审 P1-5「全历史首跑是否判红」在本波取到正向证据（gitleaks + trufflehog 未告警）。
+随后的纯文档回填提交只触发独立 Secret scan workflow，`build.yml` 五 job 不重跑 —— 如实写明，
+不把 0 run 写成「构建再次通过」。
+
 **编译失败四分类**：G1 一次通过，编译环节四分类均未触发（如实写「未触发」，不虚构案例）。
 真机首格失败按同一四分类归因为**取证驱动的坐标参数错 / 该调不调**（IME 弹出使输入区整体上移、
 `input text` 末字符被吞）——**不是应用代码 bug**；只改取证驱动、不改应用源码、不硬凑通过（见 §五 ITER-1）。
