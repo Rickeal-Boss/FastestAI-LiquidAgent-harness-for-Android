@@ -277,18 +277,23 @@
 
 见 §2.3（编译环节一次通过、四分类未触发）与 §3.5（真机侧四分类全部归因取证驱动）。
 
-### 4.3 推送与 CI（四态见推送后回填）
+### 4.3 推送与 CI（四态 ✅）
+
+| 次 | commit | 推送 | CI run 链接 | 结论 |
+|---|---|---|---|---|
+| 1 | `0dd1aee` | `b0a6e44..0dd1aee main -> main`（`git push --dry-run` 思路先匿名 `fetch` 校远端 = `b0a6e44` 确认只领先 1 个提交；PAT 仅 inline URL 一次性使用、**未落盘**、push 后 remote 保持干净 URL；**不 force-push、不 rewrite history**） | Build [`42836401129`](https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/42836401129)<br>独立 Secret scan [`42836400955`](https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/42836400955) | **Build 五 job 全 success**：`Assemble Debug (JDK 21)` / `Secret scan (gitleaks + trufflehog)` / `Lint (baseline gate)` / `Arch guard (26 guards + mutation selftest)` / `Unit tests`；独立 Secret scan 亦 `success` |
+| 2 | 本次纯文档回填 | 只回填 §4.3 / §5.1 的 CI 结论与 run 链接 | `build.yml` 因 `paths-ignore` **0 run**，仅独立 `secret-scan.yml` 触发 | 该 workflow `success`；**不把 0 run 写成「构建再次通过」**（CI 席口径） |
 
 - **触发面口径**（CI 席只读核对）：`build.yml` 的 `paths-ignore` 只排除 `docs/**` + `**/*.md`，
   `scripts/**` 无额外过滤 ⇒ 本波新增的 `scripts/fixtures/w15-matrix-facts.json` **单个文件即真实
   触发 build 五 job**；同一次 `push main` 还触发独立 `secret-scan.yml`（1 job）⇒ **一次推送 =
-  2 workflow / 2 run / 6 job**。`release.yml` 是 tag 轨，本波不触发。
-- **commit 短哈希与 run 链接**：随交付消息给出，**不在仓内自指回填**（避免无限回填链，W14 同口径）。
-- **不 force-push、不 rewrite history**；每次推送留一个可审计 commit 与 run 链接。
-- **CI 红则按四分类归因、复编译、复真机、再推**，上限 `<最大推送次数>` = 3 次 /
-  `<最大 CI 红次数>` = 2 次；触顶则收尾并写明最后一条 run 与未归因项。
-- **第二次纯文档回填**（如有）：`build.yml` 0 run、仅独立 `secret-scan.yml` 触发 ⇒
-  **不写成「构建再次通过」**（CI 席口径）。
+  2 workflow / 2 run / 6 job**。`release.yml` 是 tag 轨，本波不触发。第 1 次推送的两个 run 已按
+  `head_sha = 0dd1aee…` 联网核对，与 CI 席预测的「2 workflow / 2 run / 6 job」完全一致。
+- **`EXPECTED_TESTS` 对账闸门**（`build.yml:445-525`）本波真实执行：零 `.kt` ⇒ `actual = 799 =
+  expected` ⇒ 通过（CI `Unit tests` job success 即含此闸）。
+- **CI 红次数 = 0**（未触及 `<最大 CI 红次数>` = 2），故无需按四分类复归因 / 复编译 / 复真机 / 再推。
+  **推送次数 = 2**（未触及 `<最大推送次数>` = 3）。每次推送均留可审计 commit 与 run 链接；
+  **不 force-push、不 rewrite history**；触顶规则未启用。
 
 ---
 
@@ -301,7 +306,7 @@
 | 1 | 范围收敛与外审分歧裁决 | 五处事实分歧逐条裁决 + 排期张力收敛（用户指令面优先、外审三车整包顺延、四项用户裁决不代做） | ✅ | 本文件 §1；`_w15/fix_docs.py`（订正留痕） |
 | 2 | 本地 UI 与功能闸门 | 四闸门全绿（G1 17s / G2 799,0,0,0 / G3 PASS / G4 30-30）+ known-good 对照格复验 | ✅ | §2.1 / §2.2；`_w15/evidence/g{1..4}_*.log`、`gate_status.txt`、`precheck.json` |
 | 3 | 真机同组交叉格 + 全功能面 | 同组交叉格 **⚠️**（端点维度 ✅ 三端点同组 converged / 档位维度 ⛔vacuous 仅 32K）；功能面 3 ✅ / 2 ⛔blocked / 2 ⛔vacuous | ⚠️ | §3；`scripts/fixtures/w15-matrix-facts.json`（自带五列） |
-| 4 | 推送与 CI | 见 §4.3；commit 短哈希与 run 链接**随交付消息**给出，不在仓内自指回填 | 推送后定 | §4.3；CI run 链接 |
+| 4 | 推送与 CI | `0dd1aee` 已推 main；Build [`42836401129`](https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/42836401129) **五 job 全 success** + 独立 Secret scan [`42836400955`](https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/42836400955) `success`；第二次纯文档回填 `build.yml` 0 run、仅独立 Secret scan 触发（不写成「构建再次通过」）；**CI 红 0 次、推送 2 次**（均未触顶） | ✅ | §4.3；GitHub Actions 联网核对 |
 | 5 | 收尾契约 | 本文件 §1–§5 + handoff + 台账 W15 十四行 + 脱敏派生件 | ✅ | 本文件 §5；`docs/handoff-20261110-wave15.md`；台账 §二-quinquies |
 
 ### 5.2 链内迭代记录

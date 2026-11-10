@@ -75,6 +75,12 @@ build 五 job，而不是靠「看起来绿了」的 0 run。如实写明，不�
 **9 条**（据此订正台账 `W9-04` 行）。四闸门 `G1_RC/G2_RC/G3_RC/G4_RC` 全为 0。
 本波零 `.kt` 改动 ⇒ G1 只发生**一次**编译，全程复用其产物。
 
+**推送与 CI**：`0dd1aee` 已推 `main`（`b0a6e44..0dd1aee`）。Build run **五 job 全 `success`**
+（Assemble Debug / Secret scan / Lint / Arch guard / Unit tests）+ 独立 Secret scan `success`
+（`2 workflow / 2 run / 6 job`，`head_sha = 0dd1aee…` 联网核对）。**CI 红次数 = 0，推送 2 次**
+（第 2 次为纯文档回填，`build.yml` 0 run、仅独立 Secret scan 触发，不写成「构建再次通过」）。
+run 链接见 `docs/analysis/w15-matrix-acceptance.md` §4.3。**不 force-push、不 rewrite history。**
+
 ## 四、真机同组交叉格 + 全功能面（见验收物 §3 / §4）
 
 完整事实表、逐格四态、功能项双向判据见 `docs/analysis/w15-matrix-acceptance.md` §3 / §4；
