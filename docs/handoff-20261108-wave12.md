@@ -54,7 +54,7 @@ W12 = **功能矩阵验证波**（不是重做内核）。用户指令优先「�
 |---|---|
 | G1 | ✅ APK `70,309,888 B` |
 | G2 | ✅ `tests=799 failures=0 errors=0 skipped=0` |
-| G3 | ✅ `result=PASS ok=27 vacuous=1 violation=0 fault=0`（G20 `61 个 handoff ID 全在台账`；台账新增后 66 行复跑仍 PASS） |
+| G3 | ✅ `result=PASS ok=27 vacuous=1 violation=0 fault=0`（G20 `PASS`，ID 数以 `arch-guard` 实跑输出为准〔W15 订正：原数为 W12 时点快照，非现役常量〕；台账新增后 66 行复跑仍 PASS） |
 | G4 | ✅ `30/30 PASS（205s）` |
 | push | `d2761e9..53d1465 main -> main`（`--dry-run` 先验连通；首次 URL 缺 password 段失败，改 `user:PAT` 形式成功） |
 | CI | run **`42445368887`** = `completed/success`；Unit tests / Assemble Debug / Arch guard / Lint / Secret scan 全 success |

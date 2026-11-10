@@ -52,7 +52,7 @@ W14 = **功能矩阵补跑波**，不是重做内核、也不是外审排的「�
 |---|---|---|
 | G1 `:app:assembleDebug` | `rc=0`，产出 `app-debug.apk` | `<取证目录>/evidence/g1_assemble.log` |
 | G2 全量 JVM 单测 | `tests=799 failures=0 errors=0 skipped=0`，14 模块，XML mtime 全为本轮 | `g2_fulltest.log` |
-| G3 arch-guard | `PASS ok=27 vacuous=1 violation=0 fault=0`；G20 63 个 handoff ID 全在台账 | `g3_archguard.log` |
+| G3 arch-guard | `PASS ok=27 vacuous=1 violation=0 fault=0`；G20 `PASS`，ID 数以 `arch-guard` 实跑输出为准〔W15 订正：原数为 W14 handoff 落盘前的闸门快照，守卫未错、文档数字磨损〕 | `g3_archguard.log` |
 | G4 守卫自证 | `30/30 PASS（199s）` | `g4_selftest.log` |
 
 **推送与 CI**：`04eb0b5` 已推 `main`（`1337782..04eb0b5`，`--dry-run` 先验连通）；
@@ -116,9 +116,9 @@ Lint / Secret scan **五 job 全 success**）、Secret scan run `42613109410` `c
 
 ### 4.4 跨端点格与 1M 档
 
-- 批量 `C07` / `C09`–`C13`：**6 格收敛、3 格未收敛**；未收敛分别归因「网络抖动正在重试」、
+- 批量 `C07` / `C09`–`C13`：**3 格收敛、3 格未收敛**（全表 15 格 / 8 收敛 / 7 未收敛；W15 订正，原数与事实表不符）；未收敛分别归因「网络抖动正在重试」、
   「推理流 70s 未收敛」、`HTTP 429 rate limited` —— 均为供应商侧，按四分类不归成代码 bug。
-  收敛格覆盖 ≥3 个不同端点指纹，满足外审 §五 第 0 车「≥3 免费端点」的补跑判据。
+  收敛格覆盖 3 个不同端点指纹，但跨端点批量只 2 个、第 3 个来自功能格且非同组 ⇒ **⚠️ 部分达标**〔W15 订正：不写成「满足判据」；同组交叉格判据在 W15 之前从未行使〕。
 - **1M 档**：切换回读 `当前 1M`；初判「被内核钳制」被 F2 / F3 的 `2K / 995.9K` **证伪**，
   分母实为 `min(档位, 端点声明窗口) − maxOutputTokens`（口径订正详见验收物 §3.4）。
   ⚠️ **档位可选 ≠ 设备侧 1M 真压已行使**：最大灌入 249 752 字符（32K 档熔断），

@@ -97,7 +97,7 @@
 |---|---|---|---|
 | G1 编译出包 | `rc=0`，`:app:assembleDebug` 产出 `app-debug.apk` | ✅ | `<取证目录>/evidence/g1_assemble.log`（362 行，末段 `成功 (rc=0)`） |
 | G2 全量 JVM 单测 | `tests=799 failures=0 errors=0 skipped=0`；14 模块；`TEST-*.xml` mtime 全为本轮 19:00:02–19:00:06 | ✅ | `<取证目录>/evidence/g2_fulltest.log` |
-| G3 arch-guard | `result=PASS ok=27 vacuous=1 violation=0 fault=0`；G20「63 个 handoff ID 全在台账内」；G22 2 处 / G23 1 处；G19 仍为空转项 | ✅ | `<取证目录>/evidence/g3_archguard.log` |
+| G3 arch-guard | `result=PASS ok=27 vacuous=1 violation=0 fault=0`；G20 `PASS`，ID 数以 `arch-guard` 实跑输出为准〔W15 订正〕；G22 2 处 / G23 1 处；G19 仍为空转项 | ✅ | `<取证目录>/evidence/g3_archguard.log` |
 | G4 守卫自证 | `selftest: 30/30 PASS（199s）`，28 个变异 case + 2 个 VACUOUS 机制自证 | ✅ | `<取证目录>/evidence/g4_selftest.log` |
 | 计数对账 | 严格 `^\s*@Test\b` = **799** ↔ `build.yml:132 EXPECTED_TESTS: '799'` | ✅ | 同仓双向 grep |
 
@@ -157,8 +157,7 @@
 
 **未收敛三格的四分类归因**：C10 = 网络抖动重试、C13 = HTTP 429 限流 ⇒ **环境 / 供应商侧**；
 C11 = 请求已发出但推理流在窗口内未收敛 ⇒ **调了不收敛**。三者均**不归因为应用代码 bug**，
-不硬跑、不改码硬凑。收敛格共 **6 个、覆盖 ≥3 个不同端点指纹**，满足外审 §五 第 0 车
-「≥3 免费端点」的补跑判据。
+不硬跑、不改码硬凑。收敛格全表共 **8 个**；跨端点批量为 **3 收敛 / 3 未收敛**、收敛端点指纹仅 2 个，第 3 个来自功能格且与批量非同组 ⇒ **⚠️ 部分达标**〔W15 订正：不写成「满足判据」，同组交叉格判据此前未被行使〕。
 
 ### 3.4 🔴 口径订正（推断被证伪，如实留痕）
 
@@ -294,7 +293,7 @@ C02 在 32K 档读 `27.9K`。三者交叉后真因清楚：
 | 步 | 名称 | 结果 | 四态 | 证据路径 |
 |---|---|---|---|---|
 | 1 | 范围收敛与裁决 | 读了记忆 / W12 交接（W13 无 handoff）/ 台账 `OPEN` 行 / 审查人原始报告；裁决「先矩阵、入账顺延」，不改大体方向；占位符按止损纪律收敛并标注为裁决留痕 | ✅ | 本文件 §1；`<取证目录>/evidence/runs_before.json` |
-| 2 | 本地 UI 与功能闸门 | G1 出包 `rc=0` / G2 `799,0,0,0` / G3 `PASS ok=27 vacuous=1 violation=0 fault=0` / G4 `30/30 PASS`；文档回写后 **G3 复跑仍 PASS**，G20 从 63 → **73 个 handoff ID 全在台账** | ✅ | `g1_assemble.log` / `g2_fulltest.log` / `g3_archguard.log` / `g3_archguard_after_docs.log` / `g4_selftest.log` |
+| 2 | 本地 UI 与功能闸门 | G1 出包 `rc=0` / G2 `799,0,0,0` / G3 `PASS ok=27 vacuous=1 violation=0 fault=0` / G4 `30/30 PASS`；文档回写后 **G3 复跑仍 PASS**，G20 复跑仍 `PASS`，ID 数以 `arch-guard` 实跑输出为准〔W15 订正：删增量推断，不写死数〕 | ✅ | `g1_assemble.log` / `g2_fulltest.log` / `g3_archguard.log` / `g3_archguard_after_docs.log` / `g4_selftest.log` |
 | 3 | 真机多模型 × 多上下文矩阵 | 六档 + 端点切换 UI 首次行使；≥3 个不同端点指纹收敛；长会话导入与 L3 字符硬闸 / 手动压缩 / 128K 档复测闭环；**3 格供应商侧未收敛、skill 未行使、文件落盘未证实、自动压缩真触发未取、多模态见 §3.7** | ⚠️ 部分（局限已逐条写明） | 本文件 §3；`matrix_facts.jsonl` / `switch_facts.jsonl` / `compress_facts.jsonl` / `batch_all.log` |
 | 4 | 推送与 CI | `04eb0b5` 已推 main；Build [`42613109392`](https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/42613109392) **五 job 全 success** + Secret scan [`42613109410`](https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/42613109410) `success`；CI 红 0 次、推送 2 次（均未触顶） | ✅ | `ci_result.json` / `ci_watch.log` / §4.3 |
 | 5 | 收尾契约 | 本文件 1→5 节 + 链内迭代记录 + 明确未做 + OPEN 挂账 + 文档回写 diff + 脱敏制品清单 | ✅ | 本文件 §4 / §5 |

@@ -1,0 +1,534 @@
+{
+  "wave": "W15",
+  "note": "脱敏派生件：端点标识 / 凭据 / 账号字段 / 本机路径 / 设备序列号均已剔除；端点以不可逆指纹表示。原始截图与完整日志不入库。cells 自带 window / endpoint_declared_window / failure_class / tail_is_fresh / group_id 五列，可独立复算 min(档位, 端点声明窗口) − maxOutputTokens。多批采集按判据行使成功优先取最终态，both_states 保留各批结果。",
+  "cells": [
+    {
+      "cell": "X04",
+      "group_id": "W15-CROSS-G1",
+      "window": "128K",
+      "endpoint_declared_window": 1048576,
+      "endpoint_fp": "8ac38d1b",
+      "settled": true,
+      "state": "vacuous",
+      "failure_class": "driver_window_readback",
+      "wait_seconds": 7.7,
+      "usage": "1.9k in / 20 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "2K",
+        "27.9K"
+      ],
+      "context_match": false,
+      "tail_is_fresh": true,
+      "log_tail_last": "2026-11-10T14:15:06.835407Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "X04_safe.png",
+      "both_states": {
+        "vacuous": 2
+      }
+    },
+    {
+      "cell": "X05",
+      "group_id": "W15-CROSS-G1",
+      "window": "128K",
+      "endpoint_declared_window": 512000,
+      "endpoint_fp": "c4c25092",
+      "settled": true,
+      "state": "vacuous",
+      "failure_class": "driver_window_readback",
+      "wait_seconds": 7.7,
+      "usage": "1.6k in / 27 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "1.6K",
+        "27.9K"
+      ],
+      "context_match": false,
+      "tail_is_fresh": true,
+      "log_tail_last": "2026-11-10T14:17:19.775047Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "X05_safe.png",
+      "both_states": {
+        "vacuous": 2
+      }
+    },
+    {
+      "cell": "X06",
+      "group_id": "W15-CROSS-G1",
+      "window": "128K",
+      "endpoint_declared_window": 256000,
+      "endpoint_fp": "6ecd5b22",
+      "settled": true,
+      "state": "vacuous",
+      "failure_class": "driver_window_readback",
+      "wait_seconds": 7.8,
+      "usage": "1.1k in / 177 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "1.2K",
+        "27.9K"
+      ],
+      "context_match": false,
+      "tail_is_fresh": true,
+      "log_tail_last": "2026-11-10T14:20:15.655059Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "X06_safe.png",
+      "both_states": {
+        "vacuous": 1
+      }
+    },
+    {
+      "cell": "X01",
+      "group_id": "W15-CROSS-G1",
+      "window": "32K",
+      "endpoint_declared_window": 1048576,
+      "endpoint_fp": "8ac38d1b",
+      "settled": true,
+      "state": "converged",
+      "failure_class": "none",
+      "wait_seconds": 2.3,
+      "usage": "1.9k in / 20 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "2K",
+        "27.9K"
+      ],
+      "context_match": true,
+      "tail_is_fresh": true,
+      "log_tail_last": "2026-11-10T14:06:15.149395Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "X01_safe.png",
+      "both_states": {
+        "converged": 2
+      }
+    },
+    {
+      "cell": "X02",
+      "group_id": "W15-CROSS-G1",
+      "window": "32K",
+      "endpoint_declared_window": 512000,
+      "endpoint_fp": "c4c25092",
+      "settled": true,
+      "state": "converged",
+      "failure_class": "none",
+      "wait_seconds": 7.7,
+      "usage": "1.6k in / 25 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "1.6K",
+        "27.9K"
+      ],
+      "context_match": true,
+      "tail_is_fresh": true,
+      "log_tail_last": "2026-11-10T13:38:53.835060Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "X02_safe.png",
+      "both_states": {
+        "vacuous": 1,
+        "converged": 1
+      }
+    },
+    {
+      "cell": "X03",
+      "group_id": "W15-CROSS-G1",
+      "window": "32K",
+      "endpoint_declared_window": 256000,
+      "endpoint_fp": "6ecd5b22",
+      "settled": true,
+      "state": "converged",
+      "failure_class": "none",
+      "wait_seconds": 7.7,
+      "usage": "1.1k in / 93 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "1.2K",
+        "27.9K"
+      ],
+      "context_match": true,
+      "tail_is_fresh": true,
+      "log_tail_last": "2026-11-10T14:12:16.235132Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "X03_safe.png",
+      "both_states": {
+        "converged": 1
+      }
+    },
+    {
+      "cell": "X03",
+      "group_id": "W15-CROSS-G1",
+      "window": "32K",
+      "endpoint_declared_window": 512000,
+      "endpoint_fp": "c4c25092",
+      "settled": true,
+      "state": "vacuous",
+      "failure_class": "driver_switch_not_converged",
+      "wait_seconds": 7.9,
+      "usage": "1.6k in / 41 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "context": [
+        "1.6K",
+        "27.9K"
+      ],
+      "context_match": true,
+      "tail_is_fresh": true,
+      "log_tail_last": "2026-11-10T13:47:00.734849Z INFO auto_compact=noop reason=below_trigger",
+      "safe_shot": "X03_safe.png",
+      "both_states": {
+        "vacuous": 1
+      }
+    }
+  ],
+  "features": [
+    {
+      "feature": "auto_compact",
+      "cell": "F-ACOMP",
+      "group_id": "W15-CROSS-G1",
+      "state": "blocked",
+      "failure_class": "kernel_preflight_budget_block",
+      "tail_is_fresh": false,
+      "forward": {
+        "true_trigger_seen": "false",
+        "true_trigger_lines": "[]",
+        "noop_lines": "[\"2026-11-10T14:12:16.235132Z INFO auto_compact=noop reason=below_trigger\", \"2026-11-10T14:15:06.835407Z INFO auto_compact=noop reason=below_trigger\", \"2026-11-",
+        "note": "真触发 = auto_compact dropped=N；noop below_trigger / already_compressed 不算触发"
+      },
+      "backward": {
+        "chat_view_model_395": "if (shouldEvaluate(event)) ops.autoCompactOnSettled()",
+        "settled_only_dispatch": "true",
+        "structural_unreachable": "true",
+        "reason": "L3 PreStepBudget 在请求发出前熔断 ⇒ 无 GenerationEvent / Finished ⇒ shouldEvaluate 分流不进入 ⇒ 自动压缩链不被评估",
+        "committedChars_gt_50227": "false",
+        "net_gain_gt_460": "false",
+        "applied_logged": "false",
+        "reused_tail_marked_stale": "[{\"cells\": [\"C02\", \"C05\"], \"identical\": true, \"stale\": true}]"
+      },
+      "notes": [
+        "结构不可达 ⇒ ⛔ 平台 / 内核阻断；不写「功能不支持」",
+        "复用旧尾标 stale=true / tail_is_fresh=false"
+      ],
+      "both_states": {
+        "blocked": 2
+      }
+    },
+    {
+      "feature": "manual_compress",
+      "cell": "F-MCOMP",
+      "group_id": "W15-CROSS-G1",
+      "state": "vacuous",
+      "failure_class": "manual_compress_noop",
+      "tail_is_fresh": false,
+      "forward": {
+        "dialog_opened": "false",
+        "menu_item_bounds": "null",
+        "dialog_nodes": "[]",
+        "cache_rebuild_warning": "false",
+        "confirm_error": "confirm button not found in dialog",
+        "confirmed_nodes": "[]",
+        "manual_compress_ledger": "{\"dropped\": 0, \"kept\": null, \"raw\": \"\", \"N_gt_0\": false}"
+      },
+      "backward": {
+        "history_before": "[\"上下文 1.2K / 27.9K\"]",
+        "history_after": "[]",
+        "next_request_cached_zero": "{\"usage\": null, \"cached_zero\": false, \"settled\": false}",
+        "cache_invalidated_true": "false",
+        "separator_card_not_captured": "true"
+      },
+      "notes": [
+        "cache_invalidated=true / 分隔卡未取 ⇒ W7-03 不关闭",
+        "仅 noop ⇒ ⛔vacuous"
+      ],
+      "both_states": {
+        "vacuous": 2
+      }
+    },
+    {
+      "feature": "mcp",
+      "cell": "F-MCP",
+      "group_id": "W15-CROSS-G1",
+      "state": "blocked",
+      "failure_class": "platform_cleartext_disabled",
+      "tail_is_fresh": false,
+      "forward": {
+        "manifest_line25_usesCleartextTraffic_false": "true",
+        "g15b_arch_guard": "[G15b] 禁明文流量        OK  (25:        android:usesCleartextTraffic=\"false\">)",
+        "g15b_ok": "true"
+      },
+      "backward": {
+        "plaintext_transport_error_sites": "[{\"file\": \"core-data/src/main/java/com/rickeal/liquidharness/core/data/NetMcpTransport.kt\", \"line\": 57}, {\"file\": \"core-mcp/src/main/java/com/rickeal/liquidharn",
+        "transport_error_as_designed": "true",
+        "note": "明文 MCP 联调未做；如实登记 ⛔，不为测试放开 usesCleartextTraffic"
+      },
+      "notes": [
+        "W14-06 触发信号未命中；不放开明文、不改 CI / 应用码",
+        "平台·内核阻断 ⛔（非功能缺陷，非判据未行使）"
+      ],
+      "both_states": {
+        "blocked": 2
+      }
+    },
+    {
+      "feature": "memory",
+      "cell": "F-MEM",
+      "group_id": "W15-CROSS-G1",
+      "state": "converged",
+      "failure_class": "none",
+      "tail_is_fresh": true,
+      "forward": {
+        "model_reply_confirms_save": "true",
+        "confirm_texts": "[\"Write a memory that my W15 probe code is ALPHA-7153.\", \"The user wants me to write a memory entry about their W15 probe code being ALPHA-7153. This is a simpl",
+        "tool_traces": "[]",
+        "request_settled": "true"
+      },
+      "backward": {
+        "snapshot_after": "{\"exists\": true, \"entry_count\": 4, \"bytes\": 636}",
+        "new_entry_matches_probe_token": "true",
+        "write_before_after_diff": "true"
+      },
+      "notes": [],
+      "both_states": {
+        "vacuous": 1,
+        "converged": 1
+      }
+    },
+    {
+      "feature": "multimodal_input",
+      "cell": "F-VIS",
+      "group_id": "W15-CROSS-G1",
+      "state": "vacuous",
+      "failure_class": "driver_attach_not_exercised",
+      "tail_is_fresh": null,
+      "forward": {
+        "precondition": "{\"foreground_is_app\": true, \"chat_page_focus\": true, \"image_button_nodes\": [\"添加图片\"], \"image_button_locked\": false, \"image_button_enabled\": true, \"pass\": true}",
+        "supportsVision_from_inputModalities": "{\"m\": \"M3\", \"fp\": \"5ec3b060\", \"vision_capable\": true}",
+        "image": "{\"size\": [200, 120], \"bytes\": 459, \"top\": \"red\", \"bottom\": \"blue\"}",
+        "push_rc": "0",
+        "attach": "{\"ok\": false, \"error\": \"bicolor image not visible in SAF\", \"attach_button\": {\"d\": \"添加图片\", \"b\": [54, 1896, 198, 2040], \"center\": [126, 1968]}, \"picker\": [{\"t\": \""
+      },
+      "backward": {},
+      "notes": [
+        "0 命中 ⇒ ⛔vacuous，不得写成「功能不支持」"
+      ],
+      "both_states": {
+        "vacuous": 2
+      }
+    },
+    {
+      "feature": "skill_load",
+      "cell": "F-SKILL",
+      "group_id": "W15-CROSS-G1",
+      "state": "converged",
+      "failure_class": "none",
+      "tail_is_fresh": true,
+      "forward": {
+        "tool_call_started_observable": "true",
+        "tool_result_received_observable": "true",
+        "tool_traces": "[\"skill_load\"]",
+        "not_only_prompt_sent": "true",
+        "request_settled": "true",
+        "usage": "1.6k in / 64 out (0 cached, 0.0%) "
+      },
+      "backward": {
+        "skill_body_loaded_observable": "true",
+        "body_fragments": "[\"Use the skill_load tool with name notes-organizer. Report the first line of the skill body.\", \"skill_load\", \"{\\\"name\\\": \\\"notes-organizer\\\"}\", \"[SKILL BODY] T",
+        "retry_only": "false"
+      },
+      "notes": [],
+      "both_states": {
+        "supplier": 1,
+        "converged": 1
+      }
+    },
+    {
+      "feature": "workspace_file_rw",
+      "cell": "F-FILE",
+      "group_id": "W15-CROSS-G1",
+      "state": "converged",
+      "failure_class": "none",
+      "tail_is_fresh": true,
+      "forward": {
+        "approval_dialog_seen": "true",
+        "approval_buttons_dynamic_bounds": "[{\"text\": \"允许一次\", \"bounds\": [222, 1150, 421, 1215]}, {\"text\": \"拒绝\", \"bounds\": [709, 1150, 809, 1215]}, {\"text\": \"本会话允许相同调用\", \"bounds\": [317, 1318, 763, 1383]}]",
+        "three_buttons_found": "[\"允许一次\", \"拒绝\", \"本会话允许相同调用\"]",
+        "tool_traces": "[\"file_write\"]",
+        "request_settled": "true"
+      },
+      "backward": {
+        "snapshot_before": "{\"exists\": false, \"content_len\": 0}",
+        "snapshot_after": "{\"exists\": true, \"content_matches_probe\": true, \"content_len\": 11, \"note\": \"逐字比对：写前不存在 → 写后存在且含探针串\"}"
+      },
+      "notes": [],
+      "both_states": {
+        "vacuous": 1,
+        "converged": 1
+      }
+    }
+  ],
+  "switches": [
+    {
+      "kind": "window",
+      "label": "32K",
+      "idx": null,
+      "ep_fp_before": null,
+      "ep_fp_after": "c4c25092",
+      "window_readback": [
+        "当前 32K"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 0,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "32K",
+      "idx": null,
+      "ep_fp_before": null,
+      "ep_fp_after": null,
+      "window_readback": null,
+      "diagnosis": "",
+      "error": "window label not found"
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "32K",
+      "idx": null,
+      "ep_fp_before": null,
+      "ep_fp_after": null,
+      "window_readback": null,
+      "diagnosis": "",
+      "error": "window label not found"
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 4,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "34b14303",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 4,
+      "ep_fp_before": "34b14303",
+      "ep_fp_after": "6ecd5b22",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "128K",
+      "idx": null,
+      "ep_fp_before": null,
+      "ep_fp_after": null,
+      "window_readback": null,
+      "diagnosis": "",
+      "error": "window label not found"
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "6ecd5b22",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "128K",
+      "idx": null,
+      "ep_fp_before": null,
+      "ep_fp_after": null,
+      "window_readback": null,
+      "diagnosis": "",
+      "error": "window label not found"
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "128K",
+      "idx": null,
+      "ep_fp_before": null,
+      "ep_fp_after": null,
+      "window_readback": null,
+      "diagnosis": "",
+      "error": "window label not found"
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 4,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "34b14303",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 4,
+      "ep_fp_before": "34b14303",
+      "ep_fp_after": "6ecd5b22",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 2,
+      "ep_fp_before": "6ecd5b22",
+      "ep_fp_after": "5ec3b060",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    }
+  ]
+}
