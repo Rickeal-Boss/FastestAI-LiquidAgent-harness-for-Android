@@ -1,0 +1,1233 @@
+{
+  "wave": "W16",
+  "group_id": "W16-CROSS-G1",
+  "driver_version": "w16-matrix/1",
+  "prompt": "Reply with exactly OK",
+  "note": "W16 脱敏派生件：端点标识 / 凭据 / 账号字段 / 本机路径 / 设备序列号均已剔除；端点以不可逆 8 位指纹表示，原始截图与完整日志不入库。cells 自带六列 window / window_tokens / endpoint_declared_window / failure_class / tail_is_fresh / group_id，可独立复算 Y = min(window_tokens, endpoint_declared_window) − maxOutputTokens（审查者无需回源码猜 32K 是 32000 还是 32768）。1M 档双口径见 window_note / recompute.one_m_dual_basis。tail_is_fresh 语义 = 尾含本格唯一事件 id 且非复用旧尾，仅时间戳新标 stale。cells 仅含同一批 B2 的 12 格；迭代 2 止损批见 prior_batch，不并入同组交叉格结论。1M 读数 ≠ 1M 真压（W9-11 双阻断：L3 字符闸 + RoundHeadGate 400k）。本件为非 docs / 非 md 产物，唯一用途是真实触发 build.yml 五 job；触发手段不写成功能改动。",
+  "state_counts": {
+    "converged": 4,
+    "supplier": 4,
+    "vacuous": 4
+  },
+  "planned_cells": 12,
+  "completed_cells": 12,
+  "windows_covered": [
+    "32K",
+    "128K",
+    "512K",
+    "1M"
+  ],
+  "context_match_count": 4,
+  "switch_verified_count": 11,
+  "probe_hit_count": 12,
+  "recompute": {
+    "formula": "Y = min(window_tokens, endpoint_declared_window) − maxOutputTokens",
+    "max_output_tokens": 4096,
+    "tiers": {
+      "32K": {
+        "window_tokens": 32000,
+        "effective": 27904,
+        "label": "27.9K"
+      },
+      "128K": {
+        "window_tokens": 128000,
+        "effective": 123904,
+        "label": "123.9K"
+      },
+      "512K": {
+        "window_tokens": 512000,
+        "effective": 507904,
+        "label": "507.9K"
+      },
+      "1M": {
+        "window_tokens": 1000000,
+        "effective": 995904,
+        "label": "995.9K"
+      }
+    },
+    "one_m_dual_basis": {
+      "declared": "2^20 = 1048576（端点声明窗口）",
+      "tier": "10^6 = 1000000（现役档位）",
+      "effective": "min(1048576, 1000000) − 4096 = 995904",
+      "note": "两个数字是同一实数值的两个来源，非互斥断言；32K/128K 复算已由外审订正为成立，不重做"
+    },
+    "strict_same_cell_tiers": [
+      "128K",
+      "32K",
+      "512K"
+    ],
+    "same_cell_verified_and_context_match": [
+      {
+        "cell": "B2_X01",
+        "window": "32K"
+      },
+      {
+        "cell": "B2_X04",
+        "window": "128K"
+      },
+      {
+        "cell": "B2_X07",
+        "window": "512K"
+      },
+      {
+        "cell": "X01",
+        "window": "32K"
+      }
+    ],
+    "one_m_same_cell_caveat": "1M 的 context_match=true 来自 B2_X10 但 switch_verified=false，属跨格拼凑，不写成 1M 同格通过"
+  },
+  "cells": [
+    {
+      "cell": "B2_X01",
+      "group_id": "W16-CROSS-G1",
+      "m_code": "M1",
+      "endpoint_fp": "8ac38d1b",
+      "window": "32K",
+      "endpoint_declared_window": 1048576,
+      "window_tokens": 32000,
+      "max_output_tokens": 4096,
+      "expected_context_cap_K": 27.9,
+      "context": [
+        "2K",
+        "27.9K"
+      ],
+      "context_match": true,
+      "settled": true,
+      "state": "converged",
+      "failure_class": "none",
+      "wait_seconds": 2.3,
+      "usage": "1.9k in / 17 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "log_tail_last": "2026-11-11T05:34:41.879621Z INFO auto_compact=noop reason=below_trigger",
+      "tail_is_fresh": true,
+      "tail_stale": false,
+      "probe_hit": true,
+      "switch_verified": true,
+      "window_readback": [
+        "当前 32K"
+      ],
+      "switch_error": null,
+      "safe_shot": "B2_X01_W16G1-a6c267bc_safe.png"
+    },
+    {
+      "cell": "B2_X02",
+      "group_id": "W16-CROSS-G1",
+      "m_code": "M2",
+      "endpoint_fp": "c4c25092",
+      "window": "32K",
+      "endpoint_declared_window": 512000,
+      "window_tokens": 32000,
+      "max_output_tokens": 4096,
+      "expected_context_cap_K": 27.9,
+      "context": null,
+      "context_match": false,
+      "settled": false,
+      "state": "supplier",
+      "failure_class": "no_usage_no_error",
+      "wait_seconds": 64.2,
+      "usage": "",
+      "chars_cap": null,
+      "log_tail_last": "2026-11-11T05:34:41.879621Z INFO auto_compact=noop reason=below_trigger",
+      "tail_is_fresh": false,
+      "tail_stale": true,
+      "probe_hit": true,
+      "switch_verified": true,
+      "window_readback": [
+        "当前 32K"
+      ],
+      "switch_error": null,
+      "safe_shot": "B2_X02_W16G1-a6c267bc_safe.png"
+    },
+    {
+      "cell": "B2_X03",
+      "group_id": "W16-CROSS-G1",
+      "m_code": "M6",
+      "endpoint_fp": "29878504",
+      "window": "32K",
+      "endpoint_declared_window": 262144,
+      "window_tokens": 32000,
+      "max_output_tokens": 4096,
+      "expected_context_cap_K": 27.9,
+      "context": null,
+      "context_match": false,
+      "settled": false,
+      "state": "vacuous",
+      "failure_class": "driver_switch_not_converged",
+      "wait_seconds": 64.3,
+      "usage": "",
+      "chars_cap": null,
+      "log_tail_last": "2026-11-11T05:34:41.879621Z INFO auto_compact=noop reason=below_trigger",
+      "tail_is_fresh": false,
+      "tail_stale": true,
+      "probe_hit": true,
+      "switch_verified": true,
+      "window_readback": [
+        "当前 32K"
+      ],
+      "switch_error": null,
+      "safe_shot": "B2_X03_W16G1-a6c267bc_safe.png"
+    },
+    {
+      "cell": "B2_X04",
+      "group_id": "W16-CROSS-G1",
+      "m_code": "M1",
+      "endpoint_fp": "8ac38d1b",
+      "window": "128K",
+      "endpoint_declared_window": 1048576,
+      "window_tokens": 128000,
+      "max_output_tokens": 4096,
+      "expected_context_cap_K": 123.9,
+      "context": [
+        "2K",
+        "123.9K"
+      ],
+      "context_match": true,
+      "settled": true,
+      "state": "converged",
+      "failure_class": "none",
+      "wait_seconds": 2.3,
+      "usage": "1.9k in / 24 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "log_tail_last": "2026-11-11T05:46:15.124223Z INFO auto_compact=noop reason=below_trigger",
+      "tail_is_fresh": true,
+      "tail_stale": false,
+      "probe_hit": true,
+      "switch_verified": true,
+      "window_readback": [
+        "当前 128K"
+      ],
+      "switch_error": null,
+      "safe_shot": "B2_X04_W16G1-a6c267bc_safe.png"
+    },
+    {
+      "cell": "B2_X05",
+      "group_id": "W16-CROSS-G1",
+      "m_code": "M2",
+      "endpoint_fp": "c4c25092",
+      "window": "128K",
+      "endpoint_declared_window": 512000,
+      "window_tokens": 128000,
+      "max_output_tokens": 4096,
+      "expected_context_cap_K": 123.9,
+      "context": null,
+      "context_match": false,
+      "settled": false,
+      "state": "supplier",
+      "failure_class": "no_usage_no_error",
+      "wait_seconds": 64.3,
+      "usage": "",
+      "chars_cap": null,
+      "log_tail_last": "2026-11-11T05:46:15.124223Z INFO auto_compact=noop reason=below_trigger",
+      "tail_is_fresh": false,
+      "tail_stale": true,
+      "probe_hit": true,
+      "switch_verified": true,
+      "window_readback": [
+        "当前 128K"
+      ],
+      "switch_error": null,
+      "safe_shot": "B2_X05_W16G1-a6c267bc_safe.png"
+    },
+    {
+      "cell": "B2_X06",
+      "group_id": "W16-CROSS-G1",
+      "m_code": "M6",
+      "endpoint_fp": "29878504",
+      "window": "128K",
+      "endpoint_declared_window": 262144,
+      "window_tokens": 128000,
+      "max_output_tokens": 4096,
+      "expected_context_cap_K": 123.9,
+      "context": null,
+      "context_match": false,
+      "settled": false,
+      "state": "vacuous",
+      "failure_class": "driver_switch_not_converged",
+      "wait_seconds": 64.4,
+      "usage": "",
+      "chars_cap": null,
+      "log_tail_last": "2026-11-11T05:46:15.124223Z INFO auto_compact=noop reason=below_trigger",
+      "tail_is_fresh": false,
+      "tail_stale": true,
+      "probe_hit": true,
+      "switch_verified": true,
+      "window_readback": [
+        "当前 128K"
+      ],
+      "switch_error": null,
+      "safe_shot": "B2_X06_W16G1-a6c267bc_safe.png"
+    },
+    {
+      "cell": "B2_X07",
+      "group_id": "W16-CROSS-G1",
+      "m_code": "M1",
+      "endpoint_fp": "8ac38d1b",
+      "window": "512K",
+      "endpoint_declared_window": 1048576,
+      "window_tokens": 512000,
+      "max_output_tokens": 4096,
+      "expected_context_cap_K": 507.9,
+      "context": [
+        "2K",
+        "507.9K"
+      ],
+      "context_match": true,
+      "settled": true,
+      "state": "converged",
+      "failure_class": "none",
+      "wait_seconds": 2.3,
+      "usage": "1.9k in / 32 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "log_tail_last": "2026-11-11T05:57:52.936934Z INFO auto_compact=noop reason=below_trigger",
+      "tail_is_fresh": true,
+      "tail_stale": false,
+      "probe_hit": true,
+      "switch_verified": true,
+      "window_readback": [
+        "当前 512K"
+      ],
+      "switch_error": null,
+      "safe_shot": "B2_X07_W16G1-a6c267bc_safe.png"
+    },
+    {
+      "cell": "B2_X08",
+      "group_id": "W16-CROSS-G1",
+      "m_code": "M2",
+      "endpoint_fp": "c4c25092",
+      "window": "512K",
+      "endpoint_declared_window": 512000,
+      "window_tokens": 512000,
+      "max_output_tokens": 4096,
+      "expected_context_cap_K": 507.9,
+      "context": null,
+      "context_match": false,
+      "settled": false,
+      "state": "supplier",
+      "failure_class": "supplier_no_settle",
+      "wait_seconds": 65.3,
+      "usage": "",
+      "chars_cap": null,
+      "log_tail_last": "2026-11-11T05:57:52.936934Z INFO auto_compact=noop reason=below_trigger",
+      "tail_is_fresh": false,
+      "tail_stale": true,
+      "probe_hit": true,
+      "switch_verified": true,
+      "window_readback": [
+        "当前 512K"
+      ],
+      "switch_error": null,
+      "safe_shot": "B2_X08_W16G1-a6c267bc_safe.png"
+    },
+    {
+      "cell": "B2_X09",
+      "group_id": "W16-CROSS-G1",
+      "m_code": "M6",
+      "endpoint_fp": "29878504",
+      "window": "512K",
+      "endpoint_declared_window": 262144,
+      "window_tokens": 512000,
+      "max_output_tokens": 4096,
+      "expected_context_cap_K": 258.0,
+      "context": null,
+      "context_match": false,
+      "settled": false,
+      "state": "vacuous",
+      "failure_class": "driver_switch_not_converged",
+      "wait_seconds": 64.7,
+      "usage": "",
+      "chars_cap": null,
+      "log_tail_last": "2026-11-11T05:57:52.936934Z INFO auto_compact=noop reason=below_trigger",
+      "tail_is_fresh": false,
+      "tail_stale": true,
+      "probe_hit": true,
+      "switch_verified": true,
+      "window_readback": [
+        "当前 512K"
+      ],
+      "switch_error": null,
+      "safe_shot": "B2_X09_W16G1-a6c267bc_safe.png"
+    },
+    {
+      "cell": "B2_X10",
+      "group_id": "W16-CROSS-G1",
+      "m_code": "M1",
+      "endpoint_fp": "8ac38d1b",
+      "window": "1M",
+      "endpoint_declared_window": 1048576,
+      "window_tokens": 1000000,
+      "max_output_tokens": 4096,
+      "expected_context_cap_K": 995.9,
+      "context": [
+        "2K",
+        "995.9K"
+      ],
+      "context_match": true,
+      "settled": true,
+      "state": "converged",
+      "failure_class": "none",
+      "wait_seconds": 2.3,
+      "usage": "1.9k in / 19 out (0 cached, 0.0%) ",
+      "chars_cap": null,
+      "log_tail_last": "2026-11-11T06:09:29.798272Z INFO auto_compact=noop reason=below_trigger",
+      "tail_is_fresh": true,
+      "tail_stale": false,
+      "probe_hit": true,
+      "switch_verified": false,
+      "window_readback": [],
+      "switch_error": "window readback mismatch",
+      "safe_shot": "B2_X10_W16G1-a6c267bc_safe.png",
+      "window_note": "declared=2^20(1048576) 是端点声明窗口；tier=10^6(1000000) 是现役档位（SettingsScreen presets）；effective=min(declared, tier) − maxOutputTokens。32K/128K 复算按外审订正后不重做。"
+    },
+    {
+      "cell": "B2_X11",
+      "group_id": "W16-CROSS-G1",
+      "m_code": "M2",
+      "endpoint_fp": "c4c25092",
+      "window": "1M",
+      "endpoint_declared_window": 512000,
+      "window_tokens": 1000000,
+      "max_output_tokens": 4096,
+      "expected_context_cap_K": 507.9,
+      "context": null,
+      "context_match": false,
+      "settled": false,
+      "state": "supplier",
+      "failure_class": "supplier_no_settle",
+      "wait_seconds": 64.4,
+      "usage": "",
+      "chars_cap": null,
+      "log_tail_last": "2026-11-11T06:09:29.798272Z INFO auto_compact=noop reason=below_trigger",
+      "tail_is_fresh": false,
+      "tail_stale": true,
+      "probe_hit": true,
+      "switch_verified": true,
+      "window_readback": [
+        "当前 1M"
+      ],
+      "switch_error": null,
+      "safe_shot": "B2_X11_W16G1-a6c267bc_safe.png",
+      "window_note": "declared=2^20(1048576) 是端点声明窗口；tier=10^6(1000000) 是现役档位（SettingsScreen presets）；effective=min(declared, tier) − maxOutputTokens。32K/128K 复算按外审订正后不重做。"
+    },
+    {
+      "cell": "B2_X12",
+      "group_id": "W16-CROSS-G1",
+      "m_code": "M6",
+      "endpoint_fp": "29878504",
+      "window": "1M",
+      "endpoint_declared_window": 262144,
+      "window_tokens": 1000000,
+      "max_output_tokens": 4096,
+      "expected_context_cap_K": 258.0,
+      "context": null,
+      "context_match": false,
+      "settled": false,
+      "state": "vacuous",
+      "failure_class": "driver_switch_not_converged",
+      "wait_seconds": 64.2,
+      "usage": "",
+      "chars_cap": null,
+      "log_tail_last": "2026-11-11T06:13:14.395670Z INFO auto_compact=noop reason=below_trigger",
+      "tail_is_fresh": true,
+      "tail_stale": false,
+      "probe_hit": true,
+      "switch_verified": true,
+      "window_readback": [
+        "当前 1M"
+      ],
+      "switch_error": null,
+      "safe_shot": "B2_X12_W16G1-a6c267bc_safe.png",
+      "window_note": "declared=2^20(1048576) 是端点声明窗口；tier=10^6(1000000) 是现役档位（SettingsScreen presets）；effective=min(declared, tier) − maxOutputTokens。32K/128K 复算按外审订正后不重做。"
+    }
+  ],
+  "prior_batch": [
+    {
+      "cell": "X01",
+      "window": "32K",
+      "endpoint_fp": "8ac38d1b",
+      "state": "converged",
+      "failure_class": "none",
+      "safe_shot": "X01_W16G1-38052c24_safe.png",
+      "note": "迭代 2 主动止损批（9m47s），仅作链内迭代证据；不与 B2 同组交叉格混算，不冒充本波通过"
+    },
+    {
+      "cell": "X02",
+      "window": "32K",
+      "endpoint_fp": "c4c25092",
+      "state": "vacuous",
+      "failure_class": "driver_window_readback",
+      "safe_shot": "X02_W16G1-38052c24_safe.png",
+      "note": "迭代 2 主动止损批（9m47s），仅作链内迭代证据；不与 B2 同组交叉格混算，不冒充本波通过"
+    }
+  ],
+  "features": [
+    {
+      "feature": "auto_compact",
+      "cell": "F-ACOMP",
+      "group_id": "W16-CROSS-G1",
+      "state": "blocked",
+      "failure_class": "kernel_preflight_budget_block",
+      "tail_is_fresh": false,
+      "forward": {
+        "true_trigger_seen": "false",
+        "true_trigger_lines": "[]",
+        "noop_lines": "[\"2026-11-11T05:46:15.124223Z INFO auto_compact=noop reason=below_trigger\", \"2026-11-11T05:57:52.936934Z INFO auto_compact=noop reason=below_trigger\", \"2026-11-",
+        "note": "真触发 = auto_compact dropped=N；noop below_trigger / already_compressed 不算触发"
+      },
+      "backward": {
+        "chat_view_model_395": "if (shouldEvaluate(event)) ops.autoCompactOnSettled()",
+        "settled_only_dispatch": "true",
+        "structural_unreachable": "true",
+        "reason": "L3 PreStepBudget 在请求发出前熔断 ⇒ 无 GenerationEvent / Finished ⇒ shouldEvaluate 分流不进入 ⇒ 自动压缩链不被评估",
+        "committedChars_gt_50227": "false",
+        "net_gain_gt_460": "false",
+        "applied_logged": "false",
+        "reused_tail_marked_stale": "[{\"cells\": [\"C02\", \"C05\"], \"identical\": true, \"stale\": true}]"
+      },
+      "notes": [
+        "结构不可达 ⇒ ⛔ 平台 / 内核阻断；不写「功能不支持」",
+        "复用旧尾标 stale=true / tail_is_fresh=false"
+      ],
+      "both_states": {
+        "blocked": 1
+      }
+    },
+    {
+      "feature": "manual_compress",
+      "cell": "F-MCOMP",
+      "group_id": "W16-CROSS-G1",
+      "state": "vacuous",
+      "failure_class": "manual_compress_noop",
+      "tail_is_fresh": false,
+      "forward": {
+        "dialog_opened": "false",
+        "menu_item_bounds": "null",
+        "dialog_nodes": "[]",
+        "cache_rebuild_warning": "false",
+        "confirm_error": "confirm button not found in dialog",
+        "confirmed_nodes": "[]",
+        "manual_compress_ledger": "{\"dropped\": 0, \"kept\": null, \"raw\": \"\", \"N_gt_0\": false}"
+      },
+      "backward": {
+        "history_before": "[]",
+        "history_after": "[]",
+        "ui_segments_visible_before": "0",
+        "ui_segments_visible_after": "0",
+        "history_count_drop": "{\"ledger_dropped\": 0, \"ledger_kept\": null, \"history_before_from_ledger\": null, \"history_after_from_ledger\": null, \"decreased_from_ledger\": false, \"ui_segments_b",
+        "next_request_cached_zero": "{\"usage\": null, \"cached_zero\": false, \"settled\": false}",
+        "cache_invalidated_true": "false",
+        "separator_card_not_captured": "true"
+      },
+      "notes": [
+        "cache_invalidated=true / 分隔卡未取 ⇒ W7-03 不关闭",
+        "仅 noop ⇒ ⛔vacuous"
+      ],
+      "both_states": {
+        "vacuous": 1
+      }
+    },
+    {
+      "feature": "mcp",
+      "cell": "F-MCP",
+      "group_id": "W16-CROSS-G1",
+      "state": "blocked",
+      "failure_class": "platform_cleartext_disabled",
+      "tail_is_fresh": false,
+      "forward": {
+        "<长标识>": "true",
+        "g15b_arch_guard": "[G15b] 禁明文流量        OK  (25:        android:usesCleartextTraffic=\"false\">)",
+        "g15b_ok": "true"
+      },
+      "backward": {
+        "plaintext_transport_error_sites": "[{\"file\": \"core-data/src/main/java/com/rickeal/liquidharness/core/data/NetMcpTransport.kt\", \"line\": 57}, {\"file\": \"core-mcp/src/main/java/com/rickeal/liquidharn",
+        "transport_error_as_designed": "true",
+        "note": "明文 MCP 联调未做；如实登记 ⛔，不为测试放开 usesCleartextTraffic"
+      },
+      "notes": [
+        "W14-06 触发信号未命中；不放开明文、不改 CI / 应用码",
+        "平台·内核阻断 ⛔（非功能缺陷，非判据未行使）"
+      ],
+      "both_states": {
+        "blocked": 1
+      }
+    },
+    {
+      "feature": "memory",
+      "cell": "F-MEM",
+      "group_id": "W16-CROSS-G1",
+      "state": "vacuous",
+      "failure_class": "criteria_not_exercised",
+      "tail_is_fresh": false,
+      "forward": {
+        "model_reply_confirms_save": "false",
+        "confirm_texts": "[]",
+        "tool_traces": "[]",
+        "request_settled": "false"
+      },
+      "backward": {
+        "snapshot_before": "{\"exists\": true, \"entry_count\": 4, \"bytes\": 636, \"probe_token_present_before\": false}",
+        "snapshot_after": "{\"exists\": true, \"entry_count\": 4, \"bytes\": 636}",
+        "new_entry_matches_probe_token": "false",
+        "write_before_after_diff": "false",
+        "snapshot_before_preserved": "true"
+      },
+      "notes": [],
+      "both_states": {
+        "vacuous": 1
+      }
+    },
+    {
+      "feature": "multimodal_input",
+      "cell": "F-VIS",
+      "group_id": "W16-CROSS-G1",
+      "state": "vacuous",
+      "failure_class": "driver_attach_not_exercised",
+      "tail_is_fresh": null,
+      "forward": {
+        "precondition": "{\"foreground_is_app\": true, \"chat_page_focus\": true, \"image_button_nodes\": [\"添加图片\"], \"image_button_locked\": false, \"image_button_enabled\": true, \"pass\": true}",
+        "supportsVision_from_inputModalities": "{\"m\": \"M3\", \"fp\": \"5ec3b060\", \"vision_capable\": true}",
+        "image": "{\"size\": [200, 120], \"bytes\": 459, \"top\": \"red\", \"bottom\": \"blue\"}",
+        "push_rc": "0",
+        "attach": "{\"ok\": false, \"error\": \"bicolor image not visible in SAF\", \"attach_button\": {\"d\": \"添加图片\", \"b\": [54, 1896, 198, 2040], \"center\": [126, 1968]}, \"picker\": [{\"t\": \""
+      },
+      "backward": {},
+      "notes": [
+        "0 命中 ⇒ ⛔vacuous，不得写成「功能不支持」"
+      ],
+      "both_states": {
+        "vacuous": 1
+      }
+    },
+    {
+      "feature": "skill_manual_reference",
+      "cell": "F-SKILLREF",
+      "group_id": "W16-CROSS-G1",
+      "state": "partial",
+      "failure_class": "manual_reference_single_direction",
+      "tail_is_fresh": false,
+      "forward": {
+        "manual_reference_typed_in_chat_box": "true",
+        "manual_reference_echo_verified": "false",
+        "manual_reference_sent_only": "true",
+        "manual_reference_string": "@notes-organizer",
+        "typed_hint_echo": "",
+        "request_settled": "false",
+        "usage_present": "false",
+        "not_a_bare_tool_instruction": "true"
+      },
+      "backward": {
+        "skill_body_loaded_observable": "false",
+        "skill_body_marker_texts": "[]",
+        "tool_trace_skill_load": "false",
+        "tool_traces": "[]",
+        "request_converged": "false",
+        "request_settled": "false"
+      },
+      "notes": [
+        "【推断】现役 EventReducer 明示 SkillLoaded 无 UI、无独立 @ 引用解析器；「手动引用被解析成 skill body 可观测加载」以用户侧显式引用串 + skill_load 工具结果中的 [SKILL BODY]/[SKILL <name>] 文本为判据，不等同于应用内存在引用语法解析器。",
+        "引用仅单向（题面发出但输入框回读未确证 / skill body 未观测）⇒ ⚠️"
+      ],
+      "both_states": {
+        "partial": 1
+      }
+    },
+    {
+      "feature": "workspace_file_rw",
+      "cell": "F-FILE",
+      "group_id": "W16-CROSS-G1",
+      "state": "vacuous",
+      "failure_class": "criteria_not_exercised",
+      "tail_is_fresh": false,
+      "forward": {
+        "approval_dialog_seen": "false",
+        "approval_buttons_dynamic_bounds": "[]",
+        "three_buttons_found": "[]",
+        "tool_traces": "[]",
+        "request_settled": "false"
+      },
+      "backward": {
+        "snapshot_before": "{\"exists\": false, \"content_len\": 0}",
+        "snapshot_after": "{\"exists\": false, \"content_matches_probe\": false, \"content_len\": 0, \"note\": \"逐字比对：写前不存在 → 写后存在且含探针串\"}"
+      },
+      "notes": [],
+      "both_states": {
+        "vacuous": 1
+      }
+    }
+  ],
+  "switches": [
+    {
+      "kind": "window",
+      "label": "32K",
+      "idx": null,
+      "ep_fp_before": "5ec3b060",
+      "ep_fp_after": "5ec3b060",
+      "window_readback": [
+        "当前 32K"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 0,
+      "ep_fp_before": "5ec3b060",
+      "ep_fp_after": "5ec3b060",
+      "window_readback": null,
+      "diagnosis": "",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "5ec3b060",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "32K",
+      "idx": null,
+      "ep_fp_before": null,
+      "ep_fp_after": null,
+      "window_readback": [],
+      "diagnosis": "",
+      "error": "window label not found"
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "32K",
+      "idx": null,
+      "ep_fp_before": null,
+      "ep_fp_after": null,
+      "window_readback": [],
+      "diagnosis": "",
+      "error": "window label not found"
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 4,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "34b14303",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 4,
+      "ep_fp_before": "34b14303",
+      "ep_fp_after": "6ecd5b22",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：empty_session char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "32K",
+      "idx": null,
+      "ep_fp_before": "6ecd5b22",
+      "ep_fp_after": "6ecd5b22",
+      "window_readback": [
+        "当前 32K"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 0,
+      "ep_fp_before": "6ecd5b22",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "32K",
+      "idx": null,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": [
+        "当前 32K"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "32K",
+      "idx": null,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "c4c25092",
+      "window_readback": [
+        "当前 32K"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 4,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "34b14303",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 0,
+      "ep_fp_before": "34b14303",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 2,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "5ec3b060",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 3,
+      "ep_fp_before": "5ec3b060",
+      "ep_fp_after": "34b14303",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 5,
+      "ep_fp_before": "34b14303",
+      "ep_fp_after": "29878504",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "128K",
+      "idx": null,
+      "ep_fp_before": "29878504",
+      "ep_fp_after": "29878504",
+      "window_readback": [
+        "当前 128K"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 0,
+      "ep_fp_before": "29878504",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "128K",
+      "idx": null,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": [
+        "当前 128K"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "128K",
+      "idx": null,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "c4c25092",
+      "window_readback": [
+        "当前 128K"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 4,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "34b14303",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 0,
+      "ep_fp_before": "34b14303",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 2,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "5ec3b060",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 3,
+      "ep_fp_before": "5ec3b060",
+      "ep_fp_after": "34b14303",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 5,
+      "ep_fp_before": "34b14303",
+      "ep_fp_after": "29878504",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "512K",
+      "idx": null,
+      "ep_fp_before": "29878504",
+      "ep_fp_after": "29878504",
+      "window_readback": [
+        "当前 512K"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 0,
+      "ep_fp_before": "29878504",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "512K",
+      "idx": null,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": [
+        "当前 512K"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "512K",
+      "idx": null,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "c4c25092",
+      "window_readback": [
+        "当前 512K"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 4,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "34b14303",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 0,
+      "ep_fp_before": "34b14303",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 2,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "5ec3b060",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 3,
+      "ep_fp_before": "5ec3b060",
+      "ep_fp_after": "34b14303",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 5,
+      "ep_fp_before": "34b14303",
+      "ep_fp_after": "29878504",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "1M",
+      "idx": null,
+      "ep_fp_before": "29878504",
+      "ep_fp_after": "29878504",
+      "window_readback": [],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": "window readback mismatch"
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 0,
+      "ep_fp_before": "29878504",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "1M",
+      "idx": null,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": [
+        "当前 1M"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "window",
+      "label": "1M",
+      "idx": null,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "c4c25092",
+      "window_readback": [
+        "当前 1M"
+      ],
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 4,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "34b14303",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 0,
+      "ep_fp_before": "34b14303",
+      "ep_fp_after": "8ac38d1b",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 1,
+      "ep_fp_before": "8ac38d1b",
+      "ep_fp_after": "c4c25092",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 2,
+      "ep_fp_before": "c4c25092",
+      "ep_fp_after": "5ec3b060",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 3,
+      "ep_fp_before": "5ec3b060",
+      "ep_fp_after": "34b14303",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 5,
+      "ep_fp_before": "34b14303",
+      "ep_fp_after": "29878504",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    },
+    {
+      "kind": "endpoint_probe",
+      "label": null,
+      "idx": 2,
+      "ep_fp_before": "29878504",
+      "ep_fp_after": "5ec3b060",
+      "window_readback": null,
+      "diagnosis": "切换端点或窗口会让提示前缀缓存从头重建，下一轮缓存命中为 0、费用更高。\n目标窗口尚未经实测验证，请确认后再切换。\n诊断：unverified_window char_floor_unmeasured",
+      "error": null
+    }
+  ],
+  "selfcheck": {
+    "cells_count": 12,
+    "cell_unique": true,
+    "safe_shot_unique": true,
+    "six_columns_all": true,
+    "window_tokens_all_int": true,
+    "one_m_note_present": true,
+    "memory_snapshot_before": true,
+    "features_count": 7,
+    "prior_batch_isolated": true,
+    "hard_hits": {
+      "credential": 0,
+      "local_path": 0,
+      "device_serial": 0,
+      "endpoint_marker": 0,
+      "account_field": 0
+    },
+    "hard_total": 0,
+    "pass": true
+  }
+}
