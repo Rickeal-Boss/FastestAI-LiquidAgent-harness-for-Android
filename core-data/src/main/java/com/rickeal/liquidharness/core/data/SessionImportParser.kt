@@ -39,13 +39,15 @@ import kotlinx.serialization.json.jsonObject
  * 3. **附件一律不带**：`ChatMessage.attachments` 恒空（历史图片不回灌，
  *    `ChatHistoryMapper` 同一口径）。
  *
- * ## 两条「不静默」的口径
+ * ## 三条「不静默」的口径
  *
  * - `role` 既不是 user / assistant / tool 的（例如 `system`）⇒ **整份拒绝**，不是丢弃。
  *   `tool` 有明确的可丢弃理由（见上），而 `system` 被静默丢掉会**改变模型行为**且用户
  *   看不见；把 system 拼进 history 又等于让导入通道改写提示词。两条都不接受，所以拒绝。
- * - `text` 为空的消息被**跳过且不计数**：它物化出来是一张空气泡，用户看不见任何东西，
- *   也没有任何内容可发。这不是「丢内容」，是「没有内容」。
+ * - `text` 为空的消息被**跳过且计数**（[Result.Ok.droppedBlank]，W16-18 定谳后改）：
+ *   单条消息物化出来是一张空气泡，「没有内容」对单条成立；但批量题面场景下 299 行
+ *   text 缺失/空白却报「导入成功 (1)」就是丢内容 —— 原口径「跳过且不计数」的辩护
+ *   对批量不成立，空正文必须可见。
  */
 object SessionImportParser {
 
@@ -96,10 +98,14 @@ object SessionImportParser {
          * @param messages 只含 [Role.USER] / [Role.MODEL]，顺序与文件一致，附件恒空。
          * @param droppedToolRoles 被丢弃的 `role=tool` 行数（**必须上报**，否则用户会以为
          *   「导入的文件完整进来了」）。
+         * @param droppedBlank 被丢弃的**空正文**行/段数（role 合法但 text 缺失或空白 —— W16-18
+         *   定谳：Q3 口径「没有内容不是丢内容」对单条成立，对批量题面不成立；夹具若用
+         *   `content` 字段名，299 行会静默跳过且 dropped=0。**必须上报**，数出来的静默才不是静默）。
          */
         data class Ok(
             val messages: List<ChatMessage>,
             val droppedToolRoles: Int,
+            val droppedBlank: Int = 0,
         ) : Result
 
         /** @param detail 具体原因（ASCII，含实测值与上限），直接进日志/诊断。 */
@@ -154,6 +160,7 @@ object SessionImportParser {
     private fun parseJsonl(text: String): Result {
         val messages = ArrayList<ChatMessage>()
         var dropped = 0
+        var droppedBlank = 0
         var lineNo = 0
         for (raw in text.lineSequence()) {
             lineNo++
@@ -170,6 +177,13 @@ object SessionImportParser {
                 dropped++
                 continue
             }
+            // W16-18：空正文行**计数后跳过**（不再静默）—— 批量题面场景里 299 行 text
+            // 缺失/空白却报「导入成功 (1)」就是丢内容。调用 [append] 前判定，避免它的
+            // Q3 空分支把 JSONL 的空行吞成静默。
+            if (body.isBlank()) {
+                droppedBlank++
+                continue
+            }
             // 见类头「两条不静默的口径」：未知 role 整份拒绝。
             val roleValue = if (role == "user") {
                 Role.USER
@@ -181,7 +195,7 @@ object SessionImportParser {
             val error = append(messages, roleValue, body, "line " + lineNo)
             if (error != null) return error
         }
-        return finish(messages, dropped)
+        return finish(messages, dropped, droppedBlank)
     }
 
     // --------------------------------------------------------------- markdown
@@ -197,6 +211,7 @@ object SessionImportParser {
     private fun parseMarkdown(text: String): Result {
         val messages = ArrayList<ChatMessage>()
         var dropped = 0
+        var droppedBlank = 0
         var role: Role? = null
         val body = StringBuilder()
         var headingLine = 0
@@ -205,7 +220,10 @@ object SessionImportParser {
             val current = role ?: return
             // 逐行拼进来时每行尾部都补了 '\n'：收口时去掉段尾换行（段**内**空行保留），
             // 否则每条消息都以一个换行结尾，断言与请求体里都是噪声。
-            val error = append(messages, current, body.toString().trimEnd(), "section at line " + headingLine)
+            val text0 = body.toString().trimEnd()
+            // 与 JSONL 同口径：空段计数后跳过（不静默），见 parseJsonl 的 W16-18 注。
+            if (text0.isBlank()) droppedBlank++
+            val error = append(messages, current, text0, "section at line " + headingLine)
             if (error != null) throw SectionRejected(error)
             body.setLength(0)
         }
@@ -239,7 +257,7 @@ object SessionImportParser {
         } catch (rejected: SectionRejected) {
             return rejected.result
         }
-        return finish(messages, dropped)
+        return finish(messages, dropped, droppedBlank)
     }
 
     /** 把一行判成小标题角色（小写）；不是小标题返回 null。 */
@@ -283,14 +301,15 @@ object SessionImportParser {
         return null
     }
 
-    private fun finish(messages: List<ChatMessage>, dropped: Int): Result =
+    private fun finish(messages: List<ChatMessage>, dropped: Int, droppedBlank: Int): Result =
         if (messages.isEmpty()) {
             Result.Rejected(
                 Rejection.EMPTY,
-                "no user/assistant messages (dropped tool roles: " + dropped + ")",
+                "no user/assistant messages (dropped tool roles: " + dropped +
+                    ", dropped blank: " + droppedBlank + ")",
             )
         } else {
-            Result.Ok(messages, dropped)
+            Result.Ok(messages, dropped, droppedBlank)
         }
 
     private fun malformed(detail: String): Result = Result.Rejected(Rejection.MALFORMED, detail)

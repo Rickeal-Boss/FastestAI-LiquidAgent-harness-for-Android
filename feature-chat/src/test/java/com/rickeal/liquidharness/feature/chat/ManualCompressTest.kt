@@ -5,6 +5,7 @@ import com.rickeal.liquidharness.core.agent.context.sanitizeForProvider
 import com.rickeal.liquidharness.core.model.Role
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -119,15 +120,18 @@ class ManualCompressTest {
         assertTrue(after.map { it.text }.none { it == droppedFirstText })
     }
 
-    /** W10/S3：摘要模板不含被压段逐字原文（零代码搬运 + 不膨胀请求体）。 */
+    /** W10/S3 + W17（外审 MC-2）：摘要模板不含被压段任何原文片段（结构事实只有条数/角色分布）。 */
     @Test
     fun summaryDoesNotEchoDroppedBodies() {
         val bubbles = twentyBubbles()
         val outcome = runBlocking { compressBubbles(bubbles, budgetTokens = 200) }
         assertTrue(outcome.applied)
         val summaryText = outcome.keptMessages.last().text
-        // 摘要是结构事实（条数/角色分布/首条片段截断），不应包含「message number N」完整正文。
+        val droppedFirstText = bubbles.toHistoryMessages()[HEAD_ANCHOR_BUBBLES].text
+        // 摘要是结构事实（条数/角色分布），不含「message number N」完整正文，
+        // 也不含首条片段回显（snippet 已移除 —— 片段可能是密钥形态或注入指令，外审 MC-2）。
         assertTrue(summaryText.length < 200)
+        assertFalse(summaryText.contains(droppedFirstText.take(32)))
     }
 
     @Test

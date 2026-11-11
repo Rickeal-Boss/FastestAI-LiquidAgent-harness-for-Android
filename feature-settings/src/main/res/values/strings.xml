@@ -48,6 +48,7 @@
     <string name="settings_import_session_reading">正在读取并解析…</string>
     <string name="settings_import_session_ok">已导入 %1$d 条</string>
     <string name="settings_import_session_ok_dropped">已导入 %1$d 条（丢弃 role=tool %2$d 条）</string>
+    <string name="settings_import_session_ok_blank">已导入 %1$d 条（跳过空正文 %2$d 行：role 合法但 text 缺失/空白）</string>
     <string name="settings_import_session_unreadable">读取失败：打不开这个文件</string>
     <string name="settings_import_session_too_large">拒绝：文件超过 8 MiB</string>
     <string name="settings_import_session_too_many">拒绝：消息条数超过 5000</string>

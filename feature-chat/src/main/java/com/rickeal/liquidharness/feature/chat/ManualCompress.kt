@@ -26,7 +26,8 @@ import com.rickeal.liquidharness.core.model.TokenEstimator
  * 1. **头锚保序**：最老 [HEAD_ANCHOR_BUBBLES] 条气泡原样保留（字节稳定 ⇒ 缓存前缀命中延续）；
  * 2. **中段砍掉**：`[droppedFromId..droppedToId]` 段不进 history（仍留在气泡里给用户读）；
  * 3. **尾部摘要**：被压段物化成一条**机械摘要消息**（零 LLM、ASCII 模板）追加在 history
- *    尾部，不打断保序段 ⇒ 压缩后 `cache_invalidated=false`（前缀改写只发生在摘要之后）。
+ *    尾部，不打断保序段 ⇒ 头锚段逐字节不变（从砍点起与砍前已不同；`cache_invalidated`
+ *    的二值声明过度，三值化挂 W11-03）。
  *
  * ## 不新建算法
  *
@@ -203,19 +204,17 @@ private fun bubbleCut(perBubble: List<Pair<ChatBubble, List<ChatMessage>>>, cutM
 /**
  * 机械摘要模板（零 LLM，ASCII 安全）。
  *
- * 只提取被压段的**结构事实**：条数、角色分布、首条非空正文片段。不调模型、
- * 不逐条搬运原文（零代码搬运 + 不膨胀请求体）。摘要只追加在 history 尾部，
- * 供模型理解「中间有一段被压缩过」。
+ * 只提取被压段的**结构事实**：条数、角色分布。不调模型、不逐条搬运原文（零代码搬运 +
+ * 不膨胀请求体），也**不回显任何原文片段**（外审 MC-2：片段可能是用户原文的密钥形态或
+ * 注入指令，`SecretRedactor` 只管出口脱敏、不走摘要模板；摘要的职责是「知道有被压历史」，
+ * 不是「记得第一条」）。摘要只追加在 history 尾部，供模型理解「中间有一段被压缩过」。
  */
 private fun summaryOf(dropped: List<Pair<ChatBubble, List<ChatMessage>>>): String {
     val bubbleCount = dropped.size
     val userCount = dropped.count { it.first.role == Role.USER }
     val modelCount = dropped.count { it.first.role == Role.MODEL }
-    val firstText = dropped.firstNotNullOfOrNull { it.first.text.takeIf(String::isNotBlank) }
-    val snippet = firstText?.let { if (it.length > 64) it.take(64) + "..." else it } ?: ""
     return "[context summary] $bubbleCount earlier bubbles compressed " +
-        "($userCount user / $modelCount assistant);" +
-        (if (snippet.isNotEmpty()) " first message: \"$snippet\"." else "") +
+        "($userCount user / $modelCount assistant)." +
         " Conversation continues below."
 }
 

@@ -329,4 +329,39 @@ class SessionImportParserTest {
         val parsed = ok(SessionImportParser.parse(builder.toString(), SessionImportParser.Format.JSONL))
         assertEquals(SessionImportParser.MAX_MESSAGES, parsed.messages.size)
     }
+
+    @Test
+    fun blankBodyLinesAreCountedNotSilent() {
+        // W16-18 定谳形态（外审 preaudit 根因候选 #1）：夹具若用 `content` 字段名（而非
+        // `text`），299 行会静默跳过且 dropped=0 —— 现在必须以 droppedBlank 上报，数出来的
+        // 静默才不是静默。字段名不认 content 属**当前口径**，用例把它钉成显式预期，
+        // 防止下波改字段映射时口径漂移。
+        val jsonl = "{\"role\":\"user\",\"text\":\"visible\"}\n" +
+            "{\"role\":\"user\",\"content\":\"wrong field name\"}\n" +
+            "{\"role\":\"assistant\",\"content\":\"also wrong\"}\n"
+        val parsed = ok(SessionImportParser.parse(jsonl, SessionImportParser.Format.JSONL))
+        assertEquals(1, parsed.messages.size)
+        assertEquals(0, parsed.droppedToolRoles)
+        assertEquals(2, parsed.droppedBlank)
+    }
+
+    @Test
+    fun blankBodyIsStillNotMaterializedAndCapOrderUnchanged() {
+        // 空正文行跳过且不计条数（Q3 顺序约束保持）：上限内 1 条可见 + 1 条空行
+        // ⇒ 结果 1 条、droppedBlank=1，绝不抛 TOO_MANY_MESSAGES。
+        val jsonl = "{\"role\":\"user\",\"text\":\"only one\"}\n" +
+            "{\"role\":\"user\",\"text\":\"   \"}\n"
+        val parsed = ok(SessionImportParser.parse(jsonl, SessionImportParser.Format.JSONL))
+        assertEquals(1, parsed.messages.size)
+        assertEquals(1, parsed.droppedBlank)
+    }
+
+    @Test
+    fun markdownBlankSectionIsCountedNotSilent() {
+        // markdown 备格式同口径：空段（标题后无正文）计数上报。
+        val md = "## user\n\n## assistant\nreal content\n"
+        val parsed = ok(SessionImportParser.parse(md, SessionImportParser.Format.MARKDOWN))
+        assertEquals(1, parsed.messages.size)
+        assertEquals(1, parsed.droppedBlank)
+    }
 }

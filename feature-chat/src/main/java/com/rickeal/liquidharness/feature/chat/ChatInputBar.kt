@@ -20,6 +20,11 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
@@ -42,9 +47,10 @@ import com.rickeal.liquidharness.core.model.AttachmentKind
  * 与旧仓同一形态：一枚浮玻璃底栏，里面是「输入框 + 发送/停止」。输入框自己再叠一层
  * `ULTRA_THIN` 玻璃（底栏是 THICK），两级材质让输入框在栏里「陷下去」一格。
  *
- * 附件入口（旧仓的「+」）**刻意没有搬**：本仓 `ChatMessage` 没有 attachments 字段、
- * `ChatUiState` 也没有附件通道，画出来就是一个点完什么都没发生的键（W6 接线）。
- * 选择器本体（`ChatAttachmentPicker.kt`）已就位，届时把入口加回来即可。
+ * 附件入口已接线（W10/S4：`ChatMessage.attachments` 正式字段 + `onPickImage` 通道，
+ * 选择器见 `ChatAttachmentPicker.kt`）；图片输入受端点视觉能力闸门（`imageInputLocked`）。
+ * skill 引用下拉（W16 追加 + W17 收口）：draft 以 `/` 或 `@` 开头且能匹配目录时弹出，
+ * 点面板外可关闭（`skillMenuDismissed`），继续输入会重新弹出。
  *
  * @param canSend 由 [ChatUiState.canSend] 传入（非流式 + 输入非空 + 已配置端点）。
  *   不能只看 `draft.isNotBlank()`：没端点时按下发送什么都不会发生。
@@ -75,6 +81,11 @@ internal fun ChatInputBar(
 ) {
     val colors = LocalGlassColors.current
     val tokens = LocalGlassTokens.current
+    // skill 下拉的「已关闭」标志（外审 A4/SM-1：原实现 DropdownMenu expanded 恒 true 且
+    // onDismissRequest 为空 ⇒ 点外部关不掉、该次点击被吃掉）。draft 变化即重置 ——
+    // 用户继续打字（过滤词变了）理应重新看到匹配面板；选中回填也会走这条重置。
+    var skillMenuDismissed by remember { mutableStateOf(false) }
+    LaunchedEffect(draft) { skillMenuDismissed = false }
     Column(modifier = modifier.fillMaxWidth()) {
         if (attachments.isNotEmpty()) {
             AttachmentStrip(
@@ -128,10 +139,10 @@ internal fun ChatInputBar(
                 if (onPickSkill != null && SkillMention.isTrigger(draft)) {
                     val query = draft.trimStart().drop(1)
                     val matched = skillNames.filter { it.contains(query, ignoreCase = true) }
-                    if (matched.isNotEmpty()) {
+                    if (matched.isNotEmpty() && !skillMenuDismissed) {
                         DropdownMenu(
                             expanded = true,
-                            onDismissRequest = {},
+                            onDismissRequest = { skillMenuDismissed = true },
                             modifier = Modifier.heightIn(max = 220.dp),
                         ) {
                             for (name in matched.take(8)) {

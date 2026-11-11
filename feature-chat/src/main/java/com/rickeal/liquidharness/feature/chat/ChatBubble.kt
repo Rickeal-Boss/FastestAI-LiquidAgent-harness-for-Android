@@ -73,7 +73,9 @@ internal fun ChatBubbleRow(
         }
 
         Role.USER -> GlassBubble(
-            text = bubble.text,
+            // 气泡存储的是装饰后文本（send 存装饰版 ⇒ wire=存储，跨轮请求体字节稳定），
+            // 显示时剥掉加载引导还原用户原文（ChatSkillInput.displayText）。
+            text = ChatSkillInput.displayText(bubble.text),
             isUser = true,
             modifier = modifier,
             // 附件缩略图。uri 用导入时落到 cacheDir 的本地路径 —— `GlassImageThumb`

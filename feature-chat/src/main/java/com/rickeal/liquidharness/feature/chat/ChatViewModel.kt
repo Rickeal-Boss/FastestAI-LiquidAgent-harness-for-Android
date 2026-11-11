@@ -9,7 +9,6 @@ import com.rickeal.liquidharness.core.agent.approval.ToolApprovalCache
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
 import com.rickeal.liquidharness.core.agent.context.shouldEvaluate
-import com.rickeal.liquidharness.core.agent.skill.SkillMention
 import com.rickeal.liquidharness.core.data.AppContainer
 import com.rickeal.liquidharness.core.data.AttachmentImporter
 import com.rickeal.liquidharness.core.model.AgentEvent
@@ -66,14 +65,11 @@ class ChatViewModel(
      */
     private var runGeneration = 0
 
-    /** 可被 `@`/`/` 引用的 skill 名（W16 后追加：对话框手动触发 skill）；目录只读，加载一次。 */
+    /** 可被 `@`/`/` 引用的 skill 名（W16 后追加：对话框手动触发 skill）；目录只读，加载一次（加载/装饰/显示剥引导见 [ChatSkillInput]）。 */
     private val _skillNames = MutableStateFlow<List<String>>(emptyList())
     val skillNames: StateFlow<List<String>> = _skillNames.asStateFlow()
     init {
-        viewModelScope.launch {
-            _skillNames.value = runCatching { container.skills.list() }
-                .getOrDefault(emptyList()).map { it.name }
-        }
+        viewModelScope.launch { _skillNames.value = ChatSkillInput.loadSkillNames(container) }
     }
 
     /**
@@ -291,14 +287,18 @@ class ChatViewModel(
         // 头部头锚保序 ⇒ 前缀缓存命中延续）。
         val history = snapshot.bubbles.toHistoryMessages(snapshot.compression)
 
+        // 发送侧装饰（/name 行首归一 + 白名单过滤，见 ChatSkillInput）：气泡与 wire 用**同一份**
+        // 装饰后文本 ⇒ 跨轮请求体逐字节稳定（外审 N1），显示侧由 ChatBubble 剥引导还原原文。
+        val decorated = ChatSkillInput.decorateInput(text, _skillNames.value)
+
         val claimed = _state.compareAndSet(
             snapshot,
-            EventReducer.appendUser(snapshot, text, attachments).copy(isStreaming = true),
+            EventReducer.appendUser(snapshot, decorated, attachments).copy(isStreaming = true),
         )
         if (!claimed) return
 
         val generation = ++runGeneration
-        viewModelScope.launch { runOnce(text, attachments, history, generation) }
+        viewModelScope.launch { runOnce(decorated, attachments, history, generation) }
     }
 
     /**
@@ -331,7 +331,7 @@ class ChatViewModel(
         ops.importConversation(messages) { newConversation() }
 
     private suspend fun runOnce(
-        text: String,
+        decoratedText: String,
         attachments: List<com.rickeal.liquidharness.core.model.Attachment>,
         history: List<ChatMessage>,
         generation: Int,
@@ -352,7 +352,8 @@ class ChatViewModel(
             runner.run(
                 AgentRequest(
                     history = history,
-                    userInput = SkillMention.decorate(text),
+                    // 装饰在 send() 已完成（send 存装饰版 ⇒ 历史重建与当轮 wire 一致），直接透传，不得二次装饰。
+                    userInput = decoratedText,
                     userAttachments = attachments,
                     endpoint = endpoint,
                     memoryText = promptContext.memoryText.ifBlank { null },

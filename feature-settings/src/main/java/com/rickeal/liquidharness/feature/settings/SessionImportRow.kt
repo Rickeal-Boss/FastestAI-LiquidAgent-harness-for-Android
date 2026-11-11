@@ -67,7 +67,7 @@ internal fun SessionImportRow(
             reading = false
             when (outcome) {
                 is ImportOutcome.Parsed -> {
-                    status = ImportStatus.Imported(outcome.messages.size, outcome.dropped)
+                    status = ImportStatus.Imported(outcome.messages.size, outcome.dropped, outcome.droppedBlank)
                     onImported(outcome.messages)
                 }
                 is ImportOutcome.Rejected -> status = ImportStatus.Refused(outcome.reason)
@@ -87,14 +87,14 @@ internal fun SessionImportRow(
 
 /** 上一次导入的结果。只用于副标题，不进任何业务状态。 */
 private sealed interface ImportStatus {
-    data class Imported(val count: Int, val dropped: Int) : ImportStatus
+    data class Imported(val count: Int, val dropped: Int, val droppedBlank: Int) : ImportStatus
     data class Refused(val reason: SessionImportParser.Rejection) : ImportStatus
     object Unreadable : ImportStatus
 }
 
 /** 解析结果 + 读取失败。与 [ImportStatus] 分开：前者是「一次操作的产出」，后者是「展示态」。 */
 private sealed interface ImportOutcome {
-    data class Parsed(val messages: List<ChatMessage>, val dropped: Int) : ImportOutcome
+    data class Parsed(val messages: List<ChatMessage>, val dropped: Int, val droppedBlank: Int) : ImportOutcome
     data class Rejected(val reason: SessionImportParser.Rejection) : ImportOutcome
     object Unreadable : ImportOutcome
 }
@@ -104,7 +104,10 @@ private fun importSubtitle(status: ImportStatus?, reading: Boolean): String {
     if (reading) return stringResource(R.string.settings_import_session_reading)
     return when (status) {
         null -> stringResource(R.string.settings_import_session_hint)
-        is ImportStatus.Imported -> if (status.dropped > 0) {
+        is ImportStatus.Imported -> if (status.droppedBlank > 0) {
+            // W16-18：空正文行不再静默 —— 「导入成功 (1)」而夹具 300 行的场景必须可见。
+            stringResource(R.string.settings_import_session_ok_blank, status.count, status.droppedBlank)
+        } else if (status.dropped > 0) {
             stringResource(R.string.settings_import_session_ok_dropped, status.count, status.dropped)
         } else {
             stringResource(R.string.settings_import_session_ok, status.count)
@@ -137,7 +140,7 @@ private fun readAndParse(context: Context, uri: Uri): ImportOutcome {
     val name = displayNameOf(context, uri) ?: uri.lastPathSegment
     return when (val result = SessionImportParser.parse(bytes, SessionImportParser.detectFormat(name))) {
         is SessionImportParser.Result.Ok ->
-            ImportOutcome.Parsed(result.messages, result.droppedToolRoles)
+            ImportOutcome.Parsed(result.messages, result.droppedToolRoles, result.droppedBlank)
 
         is SessionImportParser.Result.Rejected -> ImportOutcome.Rejected(result.reason)
     }

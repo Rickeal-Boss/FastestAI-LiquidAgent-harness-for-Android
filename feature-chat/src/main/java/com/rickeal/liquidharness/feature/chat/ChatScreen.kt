@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision
+import com.rickeal.liquidharness.core.agent.skill.SkillMention
 import com.rickeal.liquidharness.core.design.GlassButton
 import com.rickeal.liquidharness.core.design.GlassMaterial
 import com.rickeal.liquidharness.core.design.GlassScaffold
@@ -301,13 +302,11 @@ private fun ChatBottomArea(
         usedTokens = state.contextTokens,
         limitTokens = state.contextLimit,
     )
-    // 选中下拉项：先截掉输入框末尾的触发 token（`@` 或 `/` 及已敲的过滤串）再插入规范引用，
-    // 否则会得到「@ @notes-organizer」这种双前缀（真机首轮实测踩到）。base 为空时不再留前导空格。
+    // 选中下拉项：只截**开头**的触发 token（面板只因开头触发符弹出，见 SkillMention.isTrigger），
+    // 正文里后续出现的 @ / /（邮箱、路径）不再被误砍（外审 A3/P1-1 静默丢字修复）。
+    // 逻辑在 SkillMention.applySkillPick（core-agent，JVM 可测）。
     val onPickSkill: (String) -> Unit = { name ->
-        val cur = state.input
-        val cut = maxOf(cur.lastIndexOf('@'), cur.lastIndexOf('/'))
-        val base = if (cut >= 0) cur.take(cut).trimEnd() else cur.trimEnd()
-        onInputChange(if (base.isEmpty()) "@$name " else "$base @$name ")
+        onInputChange(SkillMention.applySkillPick(state.input, name))
     }
     ChatInputBar(
         draft = state.input,
