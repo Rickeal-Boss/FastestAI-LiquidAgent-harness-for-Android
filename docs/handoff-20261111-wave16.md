@@ -155,4 +155,30 @@ Build = `failure`（CI 红第 1 次，未触 `<最大 CI 红次数>` = 2）**。
 （第二次为纯文档提交 0 run ⇒ Build 判据本轮未被再次行使，如实写明）。
 
 **本节不写下一波候选入口。本波止于交接。**
+## 九、W16 后追加：对话框 `/` 指令与 `@` 引用以手动触发 skill
+
+> 用户 2026-11-11 追加需求（W16 主体止于交接之后）：「在对话框加入 `/` 添加指令，`@` 引用以可手动触发 skill」。
+> 这是**改 `.kt` 的功能波**，与 §一–§八的 W16 主体（零 `.kt`）分开记账。commit `51be3f7`。
+
+### 9.1 实现（最小破坏，复用现役 `skill_load` 链路）
+
+- **core-agent 新增 `SkillMention.kt`**：解析输入里的 `@name`（`/name` 在 UI 选中后归一为 `@name`），`decorate()` 在正文尾部附加一句英文加载引导。**刻意不**伪造 USER 消息、**不**碰 system 字节、**不**伪造 TOOL 配对 —— 三者分别踩 `SkillTools` KDoc（USER 伪造用户发言 ⇒ 越权句获用户级权重）、前缀缓存不变量（system 字节稳定）、`AGENTS.md` §五.3（改事件序列须先枚举路径矩阵）三处红线。真正的正文加载仍由模型经现役 `skill_load`（TOOL 角色 + 边界声明 + 14000 截断）完成，零复制。
+- **feature-chat**：`ChatInputBar` 加 skill 引用下拉（输入以 `/` 或 `@` 开头时弹出，前缀过滤 + 选中经 `onPickSkill` 回填）；`ChatScreen`/`ChatBottomArea` 接线 `onPickSkill`（**先截掉输入框末尾的触发 token 再插规范引用**，否则得「@ @name」双前缀 —— 真机首轮实测踩到并已修）；`ChatViewModel` 暴露 `skillNames`（进程内 `catalog.list()` 加载一次）+ `userInput` 走 `decorate`。
+- **app/AppNavHost**：收集 `viewModel.skillNames` 传 `ChatScreen`。
+
+### 9.2 G10 行数闸：用户显式裁决临时调高上限
+
+`feature-chat` 改前 3888/3900（余 12），本功能 UI + 接线净增约 47 行 ⇒ 触 G10。**经用户显式裁决临时调高上限 3900 → 4000**（`scripts/arch-guard.sh` LINE_CAPS），**违反本仓「触顶先下沉、禁调 LINE_CAPS」铁律，由用户裁决覆盖**。留痕：`TOTAL_LINE_CAP 42500` 不动；**不构成先例**；下波触顶仍须先下沉（台账 `W16-03` 拆分 feature-chat 仍 `OPEN`）；风险 = 把「拆分」当「扩容」用。改后 `feature-chat`=3935 ≤ 4000、`core-agent`=5443 ≤ 6500。
+
+### 9.3 测试与真机验证
+
+- 新增 `SkillMentionTest` 5 条（extractMentions 单/多/去重/空、isTrigger 仅前缀、decorate 有引用才附加引导）；严格 `@Test` **799 → 804**，`build.yml:132 EXPECTED_TESTS` 同步改 **804**（CI Reconcile 闸门同提交改，否则判红）。本地 `:core-agent:testDebugUnitTest` 绿。
+- 本地 arch-guard：`result=PASS ok=27 vacuous=1 violation=0`（G10/G11/G16/G17/G21 全 OK；G16 中文硬编码 0 处 —— 引导文案进请求体用英文）。
+- **真机**（OPPO PDRM00 / Android 13）：输入 `@` ⇒ 下拉列出 `notes-organizer` / `pdf-toolkit`；输入 `@not` ⇒ 过滤；选中 ⇒ 输入框得**单前缀** `@notes-organizer `（双 `@` 已修）；发送 ⇒ `1/12 轮`、模型响应中。
+- ⚠️ **未确证（不写成通过）**：`skill_load` 被调用 + skill body 可观测加载 —— mistral 端点该轮响应 >59s 未收敛，且取证链受两处工具限制（`matrix.texts()` 过滤空文本节点 ⇒ 输入框 draft 读不到；`tail` 日志源滞后）。机制上 `@name` 引用 + 加载引导会引导模型调 `skill_load`（复用现役链路），但**端到端 body 加载本轮未取到确证**。
+
+### 9.4 CI
+
+Build run `43018493382`：五 job 全 `success`（Arch guard / Secret scan / Lint / Unit tests / Assemble Debug）；独立 Secret scan `43018493682` `success`。commit `51be3f7`（`0c98f93..51be3f7`）。不 force-push。
+
 <!-- W16-HANDOFF-END -->
