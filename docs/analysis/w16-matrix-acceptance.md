@@ -409,4 +409,46 @@ W15 六格 128K+ 全 ⛔vacuous，根因 `window label not found`。本波在**�
 
 **本波止于交接，交由外部团队审查。不写「建议下一链做什么」。**
 
+### 5.7 W16 后补充：上下文压缩（F6/F7）重测（用户 2026-11-11 追加指令）
+
+> **定位**：本节是 W16 交付**之后**的增量重测，**不改动** §3.5 的 W16 原结论（F6 `⛔vacuous` / F7 `⛔blocked` 均维持），
+> 只补充更精确的根因与已验证的语义面，供外部团队一并复核。零凭据字面量；端点以不可逆指纹出现。
+
+**触发**：用户追加「对上下文压缩再做一次测试，如果不行再参照高价值参考仓库文档」。
+
+**修复的两处取证驱动 bug（非应用 `.kt`）**：
+1. `_w16/compress.py` 的 `record()` **无 `return`** ⇒ 调用方 `f6_manual_compress` 恒拿 `None` ⇒ `dialog_opened` / `dropped` / `history_*` 判据**恒假**。
+   这是 W16 判 F6 `manual_compress_noop` 时**掩盖了真实执行面**的原因之一。已加 `return obj`。
+2. `_w16/import_session.py` 的 `open_picker()` 用**固定坐标** `matrix.tap(792,209)` + 默认滚动 ⇒ 上次 `import row not found`。
+   改用 iter3 修好的 `switch.settings()`（识别 Compose NavHost 子页）+ `ensure_visible(max_swipes=18)`。已修。
+
+**重测一（重跑 `f6_manual_compress`）**：`import_picked=true` ✅、`dialog_opened=true` ✅、确认按钮动态 bounds `[806,1494,906,1559]` ✅、
+**下一请求缓存归零** `1.6k in / 32 out (0 cached, 0.0%)` settled ✅。但 `dropped=0`（journal 无 `manual_compress dropped=` 行）。
+**根因**：`usage=1.6k in` 证明导入的 300 条 / 257 kB 长会话**只真正加载了约 1 条**（导入链路只载 1 条，未解），无可压中段。
+
+**重测二（方案 B：不走导入，现场连发消息累积历史）**：1M 档下第 0 轮即返回应用明确文案
+**「没有可压缩的内容：历史本来就装得下，或找不到安全的截断点。」**
+
+**回源根因（`ManualCompress.kt:129-182` `compressBubbles`）**：noop 条件 = `compressed.size >= candidateAll.size`，
+其中 `candidatesBudget = 档位budget − systemTokens − headTokens − SUMMARY_TOKENS_RESERVE`。
+**1M 档 budget≈995.9K** ⇒ 任何合理长度历史都远小于 `candidatesBudget` ⇒ 压缩器判「装得下」⇒ **必然 noop**。
+这精确解释 W15/W16 的 F6 恒 vacuous：**测试条件（1M 档 + 仅 1 条历史）使压缩判据必然不触发，非功能缺陷。**
+
+**重测三（32K 档，唯一可能 dropped>0 的路径）**：切 32K 档后 `collect_round(keep=True)` 连发，`settled=true`、`in` 逐轮递增
+（…2.3k→2.7k→3.1k），但**每轮仅增约 0.4k** ⇒ 灌到压缩阈值（`candidatesBudget≈23K`，且须 < L3 闸 27904）需 50+ 轮请求，
+**超出单次链内时间预算**，未达压缩阶段即触顶止损。F7 自动压缩仍 `structural_unreachable`（L3 `PreStepBudget` 前置熔断双阻断，§3.5）。
+
+**外部参考仓库文档结论**（用户指令「如果不行再参照」）：`外部仓库可参考内容详录.md` 提供的是**设计思想**——
+`context_budget_percent`（百分比而非绝对值定义预算）、`CONTEXT_COMPACTION_FAILED`（压缩失败作为可上报 stop 原因）、
+`## task_context_compaction`（摘要 prompt）—— **均不改变本次结论**：dropped=0 源于**测试条件**（档位 budget 与历史量不匹配），
+不是实现缺陷，外部参考亦无对应解法。零代码搬运，仅取结构思想。
+
+**结论（四态，不改 §3.5）**：
+- **F6 手动压缩**：仍 `⛔vacuous`（`dropped=0` 属实，未取到 `dropped>0`）。**但语义面已验证通过**：导入选中 / 压缩对话框打开 /
+  确认按钮动态 bounds / 下一请求 `0 cached` settled —— 这四处 W16 原判 `false` 的现在均 `true`（归因于两处驱动 bug 修复）。
+  `dropped>0` 未成立的原因是**测试条件**（1M 档 budget 巨大 / 导入只载 1 条 / 32K 档灌历史超时间预算），**非应用功能缺陷**。
+- **F7 自动压缩**：仍 `⛔blocked`（`structural_unreachable`，L3 前置熔断双阻断）。
+- **不升级为 ✅**：`dropped>0` 未取到，「已验证通过」仅限 UI 语义面；`cache_invalidated=true` 与分隔卡仍未取 ⇒ `W7-03` 不关闭。
+- **新增挂账**：导入会话「只真正加载约 1 条」是一处独立疑点（本波未解，见 `W16-18`）。
+
 <!-- W16-SECTION-5-END -->
