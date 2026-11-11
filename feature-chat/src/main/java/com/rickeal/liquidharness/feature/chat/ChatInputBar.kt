@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.rickeal.liquidharness.core.agent.skill.SkillMention
 import com.rickeal.liquidharness.core.design.GlassBottomBar
 import com.rickeal.liquidharness.core.design.GlassIconButton
 import com.rickeal.liquidharness.core.design.GlassImageThumb
@@ -63,6 +66,12 @@ internal fun ChatInputBar(
      * 否则既有端点升级后图片入口直接消失（W7 真机视觉 ✅ 的现状回归）。
      */
     imageInputLocked: Boolean = false,
+    /**
+     * W16 后用户追加：可被 `@`/`/` 引用的 skill 名（来自 `SkillCatalog.list()`）。
+     * 输入以 `/` 或 `@` 开头时弹引用面板，选中经 [onPickSkill] 回填输入框。
+     */
+    skillNames: List<String> = emptyList(),
+    onPickSkill: ((String) -> Unit)? = null,
 ) {
     val colors = LocalGlassColors.current
     val tokens = LocalGlassTokens.current
@@ -116,6 +125,24 @@ internal fun ChatInputBar(
                     cursorBrush = SolidColor(colors.accent),
                     decorationBox = { innerTextField -> innerTextField() },
                 )
+                if (onPickSkill != null && SkillMention.isTrigger(draft)) {
+                    val query = draft.trimStart().drop(1)
+                    val matched = skillNames.filter { it.contains(query, ignoreCase = true) }
+                    if (matched.isNotEmpty()) {
+                        DropdownMenu(
+                            expanded = true,
+                            onDismissRequest = {},
+                            modifier = Modifier.heightIn(max = 220.dp),
+                        ) {
+                            for (name in matched.take(8)) {
+                                DropdownMenuItem(
+                                    text = { Text(name, style = MaterialTheme.typography.bodyMedium) },
+                                    onClick = { onPickSkill(name) },
+                                )
+                            }
+                        }
+                    }
+                }
             }
             SendButton(
                 isStreaming = isStreaming,

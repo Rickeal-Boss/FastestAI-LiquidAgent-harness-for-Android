@@ -9,6 +9,7 @@ import com.rickeal.liquidharness.core.agent.approval.ToolApprovalCache
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
 import com.rickeal.liquidharness.core.agent.context.shouldEvaluate
+import com.rickeal.liquidharness.core.agent.skill.SkillMention
 import com.rickeal.liquidharness.core.data.AppContainer
 import com.rickeal.liquidharness.core.data.AttachmentImporter
 import com.rickeal.liquidharness.core.model.AgentEvent
@@ -64,6 +65,16 @@ class ChatViewModel(
      * 追加到空白会话里。
      */
     private var runGeneration = 0
+
+    /** 可被 `@`/`/` 引用的 skill 名（W16 后追加：对话框手动触发 skill）；目录只读，加载一次。 */
+    private val _skillNames = MutableStateFlow<List<String>>(emptyList())
+    val skillNames: StateFlow<List<String>> = _skillNames.asStateFlow()
+    init {
+        viewModelScope.launch {
+            _skillNames.value = runCatching { container.skills.list() }
+                .getOrDefault(emptyList()).map { it.name }
+        }
+    }
 
     /**
      * 在途审批的等待句柄。`null` = 当前没有任何工具卡在审批上。
@@ -341,7 +352,7 @@ class ChatViewModel(
             runner.run(
                 AgentRequest(
                     history = history,
-                    userInput = text,
+                    userInput = SkillMention.decorate(text),
                     userAttachments = attachments,
                     endpoint = endpoint,
                     memoryText = promptContext.memoryText.ifBlank { null },

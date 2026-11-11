@@ -137,6 +137,8 @@ private fun ChatRoute(
 ) {
     val viewModel: ChatViewModel = viewModel(factory = ChatViewModel.Factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // W16 后用户追加：对话框 `/` 指令与 `@` 引用以手动触发 skill（下拉列表数据源）。
+    val skillNames by viewModel.skillNames.collectAsStateWithLifecycle()
 
     // 从设置页返回时端点可能变了（换了活跃端点 / 改了模型名），必须重读，
     // 否则顶栏还显示旧模型，而请求已经用新端点发出 —— 用户会以为「换模型没生效」。
@@ -189,6 +191,8 @@ private fun ChatRoute(
         // 手动压缩（W6）：入口 → 二次确认（ChatScreen 里）→ ViewModel 压缩。
         onCompressContext = viewModel::compressContext,
         onUndoCompress = viewModel::undoCompress,
+        // W16 后用户追加：对话框 `/` 指令与 `@` 引用以手动触发 skill。
+        skillNames = skillNames,
     )
 }
 

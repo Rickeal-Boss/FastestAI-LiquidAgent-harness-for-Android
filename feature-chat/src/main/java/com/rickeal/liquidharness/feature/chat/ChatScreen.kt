@@ -71,6 +71,8 @@ fun ChatScreen(
     renderMarkdown: Boolean = false,
     /** W8（NEW-D）：端点未声明图片输入 ⇒ 输入栏保留禁用态入口（点击无操作 + 无障碍原因）。 */
     imageInputLocked: Boolean = false,
+    /** W16 后用户追加：可被 `@`/`/` 引用的 skill 名（AppNavHost 从 ChatViewModel.skillNames 读入）。 */
+    skillNames: List<String> = emptyList(),
 ) {
     // 确认对话框的开关是纯 UI 状态（不进 ChatUiState）：它不影响任何业务判定，
     // 放进状态机只会让归约器多一个与事件无关的字段。
@@ -130,6 +132,7 @@ fun ChatScreen(
                     onRemoveAttachment = onRemoveAttachment,
                     renderMarkdown = renderMarkdown,
                     imageInputLocked = imageInputLocked,
+                    skillNames = skillNames,
                 )
             }
         },
@@ -276,6 +279,7 @@ private fun ChatBottomArea(
     onRemoveAttachment: ((String) -> Unit)?,
     renderMarkdown: Boolean,
     imageInputLocked: Boolean,
+    skillNames: List<String>,
 ) {
     val status = state.status
     if (status != null) {
@@ -297,6 +301,14 @@ private fun ChatBottomArea(
         usedTokens = state.contextTokens,
         limitTokens = state.contextLimit,
     )
+    // 选中下拉项：先截掉输入框末尾的触发 token（`@` 或 `/` 及已敲的过滤串）再插入规范引用，
+    // 否则会得到「@ @notes-organizer」这种双前缀（真机首轮实测踩到）。base 为空时不再留前导空格。
+    val onPickSkill: (String) -> Unit = { name ->
+        val cur = state.input
+        val cut = maxOf(cur.lastIndexOf('@'), cur.lastIndexOf('/'))
+        val base = if (cut >= 0) cur.take(cut).trimEnd() else cur.trimEnd()
+        onInputChange(if (base.isEmpty()) "@$name " else "$base @$name ")
+    }
     ChatInputBar(
         draft = state.input,
         onDraftChange = onInputChange,
@@ -308,5 +320,7 @@ private fun ChatBottomArea(
         onPickImage = onPickImage,
         onRemoveAttachment = onRemoveAttachment,
         imageInputLocked = imageInputLocked,
+        skillNames = skillNames,
+        onPickSkill = onPickSkill,
     )
 }
