@@ -265,7 +265,29 @@
 | W16-15 | **本波新登记**：不重犯 W15 派生件硬伤（`cell` 唯一 / `safe_shot` 唯一 / 补 `window_tokens` 数值列 / 1M 双口径注释 / `memory.backward.snapshot_before` / `tail_is_fresh` 升级为本批新事件） | W16 | `OPEN` | **触发信号**：派生件生成时唯一性断言或列齐备校验失败；**缓解动作**：`cell` 与 `safe_shot` 唯一性断言 + 六列出厂校验 + 复用旧尾标 `stale=true`；本波**执行**（不是顺延） | `docs/analysis/w16-matrix-acceptance.md` §1.1 / §1.3 A3；本波派生件自检结论见 §3 |
 | W16-16 | **本波新登记**：不以 `W16-XX` 承接任何老号或漏号；漏号若执行须补原号；老号全 `OPEN` 原样保留 | W16 | `OPEN` | **触发信号**：出现「用新号承接旧债」的台账行或交接措辞；**缓解动作**：逐行标注「参照老号、老号 `OPEN` 原样、非承接」；G20 只校验 handoff ID 存在性，换号不增加判据灵敏度 | 外审《W15最终态复核》§2.4 台账膨胀；`docs/analysis/w16-matrix-acceptance.md` §1.4 三条硬约束 |
 | W16-17 | **本波新登记**：不把「1M 读数」写成「1M 真压」、不把档位读数驱动失败归因成应用代码 bug、不把「对话框 skill 引用手动触发」简写成 W15 的 `skill_load` 工具调用 | W16 | `OPEN` | **触发信号**：交接 / 事实表出现口径混写；**缓解动作**：按四分类（参数错 / 工具名错 / 该调不调 / 调了不收敛）先排除驱动与环境、后应用；读数与真压分开判四态 | `docs/analysis/w16-matrix-acceptance.md` §1.3 A4 / §1.4；用户本单逐字要点 |
-| W16-18 | **W16 后补充重测新登记**：导入会话（调试）只真正加载约 1 条 —— 300 条 / 257 kB 夹具经 SAF 导入后，下一请求仅 `1.6k in`，致手动压缩无可压中段（`dropped=0`）；本波未解 | W16 | `OPEN` | **触发信号**：手动压缩 `dropped=0` 且下一请求 `in` 远小于夹具字节；**缓解动作**：单独排查导入链路（SAF 选文件后是否缺确认步 / JSONL 解析 / 会话加载到对话页），须独立成波；**属导入链路疑点，非压缩功能缺陷** | `docs/analysis/w16-matrix-acceptance.md` §5.7 |
+| W16-18 | **W16 后补充重测新登记**：导入会话（调试）只真正加载约 1 条 —— 300 条 / 257 kB 夹具经 SAF 导入后，下一请求仅 `1.6k in`，致手动压缩无可压中段（`dropped=0`）；本波未解 | W16 | `OPEN` | **触发信号**：手动压缩 `dropped=0` 且下一请求 `in` 远小于夹具字节；**缓解动作**：单独排查导入链路（SAF 选文件后是否缺确认步 / JSONL 解析 / 会话加载到对话页），须独立成波；**属导入链路疑点，非压缩功能缺陷** | `docs/analysis/w16-matrix-acceptance.md` §5.7；**W17 定谳（✅ 闭环）**：解析器加 `droppedBlank` 计数 + JVM 用例钉 `content` 字段名行；W16 同款夹具（`text` 字段、300 条、257 kB）重导 ⇒ **气泡滚至 `Segment 0299`（300 条全物化）+ 发送触发 `context_overflow_prevented: chars=249801 cap=50227`（32K 档字符闸，300 条全进请求）** ⇒ 上波「只载 1 条」未复现，判**上波取证驱动/流程伪影**（非应用缺陷、非夹具格式） |
+
+### 二-septies（W17 承接索引）
+
+> **本表每行自带「触发信号 + 缓解动作」**。唯一真值源仍是 §一 表格行；本表是 W17 的承接索引，
+> 不是第二真值源，**不计入 §二 统计表**（同 W15/W16 口径）。
+> 依据：用户 2026-11-12 指令（SkillMention 收口批 + W16-18 定谳 + 多模型×多档位功能矩阵 + 本地/真机 + 推 CI、
+> 读众审查人报告并裁决分歧、不改方案大体方向）与 `docs/analysis/w17-acceptance.md` §1。
+> ⚠️ 老号 `W14-01..11` / `W15-01..14` / `W16-01..18` / `W9-05` 全数保留 `OPEN`，本表不删、不改状态、
+> 不写「已核销」、不重判 `CLOSED`；`W17-XX` 是**本波范围声明**，不是老号承接。
+> 落笔纪律：台账由主理人**单人**落笔（本波无并行流起号）。
+
+| ID | 项 | 开立于 | 状态 | 触发信号 / 缓解动作 | 证据 |
+|---|---|---|---|---|---|
+| W17-01 | `HB-2`：`HardBudgetShrinker.imageChars` KDoc 表述绕（两方向半句说反）重写 | W17 | `OPEN` | **触发信号**：W16-03 拆分 `core-context`（现 1646/1650 余 4 全仓最紧）落地后首个触点；**缓解动作**：拆分后顺手重写一句「图片在字符闸记 16384 字符（=1024 token × 4.0 估算尺），在标定面记 0」；本波不改 core-context 任何行（纯注释改进不值得冒 G10 风险） | `harness-w17-deep.md` §3.3；`core-context/.../HardBudgetShrinker.kt` KDoc |
+| W17-02 | `SM-3`：`skillNames` 进程内只载一次，运行时导入/删除 skill 后下拉不刷新 | W17 | `OPEN` | **触发信号**：W3-02 Skill 导入（SAF→zip）落地时；**缓解动作**：导入成功后刷新 `_skillNames` 或改 `flatMapLatest` 目录流；当前导入未实现故无症状，登记防漏（外审 SM-3/N5/P3-3） | `feature-chat/ChatSkillInput.kt`（loader）；W3-02 台账行 |
+| W17-03 | `MC-1`：尾置 `Role.SYSTEM` 摘要的协议风险（Anthropic 族 system 是顶层字段，history 里出现 system 可能 400） | W17 | `OPEN` | **触发信号**：Anthropic adapter（W6 遗留面）实现时；**缓解动作**：把尾部 SYSTEM 摘要映射为顶层 system 的追加段（或降级 USER+边界声明）；现役仅 OpenAI 兼容族，无症状 | `harness-w17-deep.md` §2.2；`feature-chat/ManualCompress.kt` `summaryOf` 调用点 |
+| W17-04 | `W9-05` journal / FreezeClock **第 12 次顺延**（按 `W16-04` 现行代数 11+1；逐波重数口径 13 并列待裁决） | W17 | `OPEN` | **触发信号**：本波用户指令为功能收口 + 矩阵，未给「强制开波 / 永不实现」显式裁决；**缓解动作**：用户拍板二选一或统一代数口径；**不关号、不软化、不代裁决** | `docs/analysis/w17-acceptance.md` §1.3 #1；四份外审一致要求二选一（w12-16 §五 / W16裁决 §五 / 莫斯 §六 / 路线建议 §六） |
+| W17-05 | 功能矩阵真机侧未取全项（多模型×档位×功能面逐格证据以 W17 验收物 §3 实跑为准；未取到的不冒充已验收） | W17 | `OPEN` | **触发信号**：任一功能项判据未行使；**缓解动作**：四态如实 ⛔ / ⚠️ / ⛔vacuous，`both_states` 留痕，不引用旧波结论冒充本波通过；**本轮进展**：file_write 落盘 / file_list / 手动压缩 dropped=238 / 多模态 vision / skill 端到端 ⚠️（正文级间接证据）/ 多端点×多档位矩阵 ⛔vacuous（只跑 NV mistral-large × 32K 一格）如实登记 | `docs/analysis/w17-acceptance.md` §3；承接 `W16-11` 纪律 |
+| W17-06 | 拆分三方整包（`ChatViewModel` 499/500 触顶未下沉本体；`core-context` 余 4 / `feature-settings` 余 8） | W17 | `OPEN` | **触发信号**：下波任一 feature-chat / core-context / feature-settings 增量触 G10 前必须先拆；**缓解动作**：`ChatMessageList` / `ChatBubble` 下沉 + W16-03 本体；**本波未拆**（只做了 G10 被迫小裁：裁 ChatSkillInput KDoc 过闸） | `scripts/arch-guard.sh` G10；`W16-03` 原样 OPEN |
+| W17-07 | 安全波整包（扫描 job 去重 / pin install / allowlist / 全历史首跑 / 签名端到端） | W17 | `OPEN` | **触发信号**：任一安全相关改动 / 外审 P1 提请；**缓解动作**：单独成波逐项收口；**本波未做**（时间预算给功能收口 + 真机） | `W16-02` / `W14-02` / `W15-02` 原样 OPEN（外审 w12-16 §四清单） |
+| W17-08 | 设备侧 1M 真压 | W17 | `OPEN` | **触发信号**：`W9-11` 双阻断解除时；**缓解动作**：1M 档真压取证；**本波未做**（双阻断未解除，只跑 32K 档读数） | `W9-11` 原样 OPEN |
+| W17-09 | MCP 明文联调 | W17 | `OPEN` | **触发信号**：平台策略变更或 https 夹具备好；**缓解动作**：不改 `usesCleartextTraffic`；**本波未做** | `W16-06` / `W5-03` 原样 OPEN |
 
 ---
 
