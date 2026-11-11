@@ -188,6 +188,14 @@
 | 历史日析入库 | `docs/analysis/source-review-2026-11-07/09/10/11.md` | 外审团队日析（原样入库，含 11-11 的 SkillMention a/b/c=4/1/1） |
 | 代码 diff | 本提交 `git show` | SkillMention / ChatSkillInput / ChatViewModel / ChatScreen / ChatInputBar / ChatBubble / ManualCompress / SessionImportParser / SessionImportRow / build.yml / strings.xml |
 
-### 5.4 CI（提交后回填）
+### 5.4 CI（实跑回填）
 
-（本节在第一次推送后回填 run 链接与 job 四态；纯文档第二次提交按 `paths-ignore` 预期为 secret-scan 0 run。）
+| 项 | 值 |
+|---|---|
+| 推送 | `234eac0..27daac9 main -> main`（两个 commit：`1d27031` 代码修复批 + `27daac9` 文档批） |
+| Build run | `43051779542`（head `27daac9`）—— **completed success**，五 job 全绿（Assemble Debug / Secret scan / Lint / Unit tests / Arch guard）https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43051779542 |
+| Secret scan run | `43051779677`（head `27daac9`）—— **completed success** https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43051779677 |
+| CI 红次数 | 0（未触 `<最大 CI 红次数>` = 2） |
+| 归因 | 无失败案例，四分类未触发；不写「构建再次通过」类无佐证表述 |
+
+> 注：Build run 的 head 是 `27daac9`（文档批），但 `build.yml` 的 `paths-ignore` 基于**整个 push diff**（`234eac0→27daac9` 含 `1d27031` 代码改动）⇒ Build 真实跑动、Unit tests job 实跑 818 例。**不在仓内自指回填 run 链接**（与 W16 同款纪律）。
