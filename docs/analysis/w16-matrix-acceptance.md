@@ -277,19 +277,34 @@ W15 六格 128K+ 全 ⛔vacuous，根因 `window label not found`。本波在**�
 
 见 §2.3（编译环节一次通过、四分类未触发）与 §3.6（真机侧四分类全部归因取证驱动）。
 
-### 4.3 推送与 CI（**四态见推送后回填**）
+### 4.3 推送与 CI（⚠️ 首推 Build 判红已归因修复；修复后无绿 Build run 佐证，如实写明）
 
+- **推送 1（commit `f78cb2a`，`6e695d5..f78cb2a main -> main`，`push_rc=0`）**：实测 **2 workflow / 2 run**（符合 CI 席预测）。
+  - 独立 Secret scan run `42997718215` = **`success`** ✅
+  - Build run `42997718271` = **`failure`** ⛔（**CI 红第 1 次**，未触 `<最大 CI 红次数>` = 2）
+    - 五 job：`Assemble Debug` / `Secret scan` / `Lint` / `Unit tests` 四 job **`success`**；**`Arch guard` job `failure`**。
+    - **四分类归因（守卫行为正确；非环境、非应用 `.kt` bug、非取证驱动）**：`G20` 判 `VIOLATION`，CI 日志原文
+      `台账缺 ID（handoff 里有、台账里没有）：W11-06 W13-01`。根因 = 本波 handoff 引用了 W11 段第 6–10 号与 W13 段第 1 号
+      两处**编号跳号**；这两处历史上**从无独立台账行、从无真实挂账内容**（外审《W11-W15 审查》原文即称
+      「漏号未预铸…编号纪律与 G20 一致」）。
+    - **主理人自检失误（如实记录）**：首次简化复现误用「ID 在台账任意位置出现」判据 ⇒ 误判 `0 缺失`；
+      改用 G20 **精确判据**（台账**行首** ID 完全匹配 `^W\d+-\d+$`，见 `arch-guard.sh:1337-1351`）后复现出
+      `缺失=[W11-06, W13-01]`，与 CI 一致。
+    - **修复（不制造幽灵挂账）**：修正 handoff 两处措辞，不再把跳号写成 ID 字面量（改「W11 段第 6–10 号 / W13 段第 1 号」
+      中文表述）；「补登这两处跳号」**仍保留为 `W16-01` 待办**（待独立成波），本波**不编造其挂账内容、不增幽灵 `OPEN` 行**
+      （避免外审《W15 最终态复核》§2.4 批评的台账膨胀）。修后按 G20 精确判据本地复现 `缺失=[]` ⇒ 判据应绿。
+    - **顺带部分证伪一条外审论断**：外审《W11-W15 审查》称 G20 存在「结构性盲区、查不出漏号」；本次证明 **G20 实际能查出
+      「handoff 引用了无独立台账行的编号」**——只是历史上从无人引用跳号，盲区未被触发。此发现已回写本节，供外部审查复核。
+- **推送 2（纯文档回填：handoff §八 + 本节 §4.3 / §5）**：`build.yml` 因 `paths-ignore` **0 run**，仅独立 `secret-scan.yml` 触发
+  ⇒ **不写成「构建再次通过」**。
 - **触发面口径**（CI 席只读核对）：`build.yml` 的 `paths-ignore` 只排除 `docs/**` + `**/*.md`，`scripts/**` 无额外过滤
   ⇒ 本波新增的 `scripts/fixtures/w16-matrix-facts.json` **单个文件即真实触发 build 五 job**；同一次 `push main` 还触发
   独立 `secret-scan.yml`（1 job）⇒ **一次推送 = 2 workflow / 2 run / 6 job**。`release.yml` 是 tag 轨，本波不触发。
 - **`.gitleaks.toml` allowlist** 只精确放行两个 `.kt` 测试夹具 + 一个标识符，**不覆盖 `scripts/fixtures/*.json`**
   ⇒ 本波派生件出厂断言含凭据 / 路径 / 序列号 / 端点标识 / 账号字段五类硬扫描，`hard_total=0`（§5.6）。
-- **`EXPECTED_TESTS` 对账闸门**（`build.yml:445-525`）：零 `.kt` ⇒ `actual = 799 = expected` ⇒ 通过。
+- **`EXPECTED_TESTS` 对账闸门**（`build.yml:445-525`）：零 `.kt` ⇒ `actual = 799 = expected` ⇒ 通过（推送 1 实跑 `Unit tests` job `success` 佐证）。
 - **commit 短哈希与 run 链接**：随交付消息给出，**不在仓内自指回填**（避免无限回填链，W15 同口径）。
-- **不 force-push、不 rewrite history**；每次推送留一个可审计 commit 与 run 链接。
-- **CI 红则按四分类归因、复编译、复真机、再推**，上限 `<最大推送次数>` = 3 次 / `<最大 CI 红次数>` = 2 次；
-  触顶则收尾并写明最后一条 run 与未归因项。
-- **第二次纯文档回填**（如有）：`build.yml` 0 run、仅独立 `secret-scan.yml` 触发 ⇒ **不写成「构建再次通过」**。
+- **不 force-push、不 rewrite history**；每次推送留一个可审计 commit 与 run 链接。推送次数 = 2（未触上限 3）；CI 红次数 = 1（未触上限 2）。
 
 ---
 
@@ -302,7 +317,7 @@ W15 六格 128K+ 全 ⛔vacuous，根因 `window label not found`。本波在**�
 | 1 | 范围收敛与裁决 | ✅ | 四份外审分歧逐条裁决（§1.2 五处事实分歧 + 4 条互相订正，含本波新增回源证伪一条外审处方）；不改方案大体方向 | 本文件 §1；方案席 Phase 1 只读报告 + 主理人复核（`git status` / `HEAD` 证明只读） |
 | 2 | 本地 UI 与功能闸门 | ✅ | G1–G4 `rc` 全 0；**G1 出包判据经强制重出包转真实行使**；`@Test 799 ↔ 799`；arch-guard `OK=27 VACUOUS=1 VIOLATION=0`；selftest `30/30` | `<取证目录>/evidence/g1..g4*.log`、`g1_apk_meta.json`（before）+ `g1_apk_meta_rerun.json`（after） |
 | 3 | 真机多模型 × 多上下文 + 全功能面 | ⚠️ | 交叉格 **12/12 格**、四档全覆盖、**档位切换维度攻克**（严格同格 32K / 128K / 512K 三档）；功能面 **零 ✅**（blocked 2 / partial 1 / vacuous 4）；1M 仅分母读数 | `cross_summary.json`、`feature_summary.json`、`matrix_facts.jsonl`、`feature_facts.jsonl`、19 张脱敏 `_safe.png` |
-| 4 | 推送与 CI | 见推送后回填 | 触发面口径已核对（派生件单文件触发 build 五 job）；run 链接随交付消息给出、不在仓内自指回填 | 本文件 §4.3（回填） |
+| 4 | 推送与 CI | ⚠️ | 推送 2 次；实测 2 workflow / 2 run。首推 Build 判红（`G20` 查出 handoff 引用两处**编号跳号**）已四分类归因并修复 handoff 措辞；**修复后无一次绿 Build run 佐证**（推送 2 为纯文档 0 run ⇒ Build 判据本轮未再被行使）。独立 Secret scan `success` | 本文件 §4.3；handoff §八 |
 | 5 | 收尾（未做 / 挂账 / 回写 / 制品清单） | ✅ | 本节；台账 W16 17 行、handoff 落盘 | `docs/06-deferred-ledger.md` §二-sexies、`docs/handoff-20261111-wave16.md`、`git diff` |
 
 > ⚠️ 第 3 步整体 ⚠️（非 ✅）：档位维度**攻克**是本波实质进展（W15 该维度 ⛔vacuous），但端点维度仅覆盖 3 个 fp（目标 `6ecd5b22` 未收敛）、供应商侧 4 格 ⚠️、功能面多项未行使、1M 仅分母。**不得因档位攻克就把第 3 步写成 ✅**。
