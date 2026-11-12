@@ -106,16 +106,23 @@ MCP 明文 / git 历史清理均顺延；外审新提小缺陷与六处账实订
 ## 八、移交外部审查
 
 **提交序列**：`17711ec`（W17 收尾）→ `208c2eb`（docs(w18)：验收物 + 交接 + 台账 W18 段 + 脱敏证据制品，
-4 files / +509）。**1 个 commit，不 force-push、不 rewrite history。**
+4 files / +509）→ `f1ca8dc`（docs(w18)：回填 §3 真机矩阵四态 + §3.2 功能面判据行使 + §4 迭代 + 交接 CI/run，
+2 files / +64 −13）。**3 个 commit，不 force-push、不 rewrite history。**
 
 **CI（实跑，event=push）**：
-- Build run **completed success**（五 job 全绿）：Assemble Debug / Unit tests / Arch guard / Lint / Secret scan
+- 推送 1（`208c2eb`）：Build run **completed success**（五 job 全绿）：Assemble Debug / Unit tests /
+  Arch guard / Lint / Secret scan
   `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43272970379`
-- Secret scan run（独立 `secret-scan.yml`，无 paths-ignore）**completed success**，覆盖同一 commit
+- 推送 1（同 commit）：独立 Secret scan run（无 paths-ignore）**completed success**，覆盖同一 commit
   `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43272970496`
-- **CI 红次数 0**（上限 2）；**推送次数 1**（上限 3）。触发方式 = 同一 push 含仓根非 docs 路径的
-  `evidence/w18-matrix-summary.json` ⇒ Build 由该 push 自身真实触发（不靠 dispatch）。
+- 推送 2（`f1ca8dc`，纯文档提交）：Build 0 run（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；
+  独立 Secret scan run **success**
+  `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43274010070`
+- **CI 红次数 0**（上限 2）；**推送次数 3**（上限 3，触及 ⇒ 按契约收尾）。触发方式 = 推送 1 含仓根非
+  docs 路径的 `evidence/w18-matrix-summary.json` ⇒ Build 由该 push 自身真实触发（不靠 dispatch）。
 - 结论取值 = 公开 API check-runs（零凭据），逐项读 `status`/`conclusion`。
+- 推送 3（本提交）交付推送 2 的 CI 记录与本节最终状态；**其自身 run 链接随交付消息给出，不在仓内
+  自指回填**（W17 P0-A 教训：贴了完整 URL 却声称不在仓内回填 ⇒ 自我证伪）。
 
 **文档回写 diff**：`docs/analysis/w18-acceptance.md`（新）、`docs/handoff-20261113-wave18.md`（本文件，新）、
 `docs/06-deferred-ledger.md` §二-octies（+12 行）、`evidence/w18-matrix-summary.json`（新，脱敏机器可读制品）。

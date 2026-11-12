@@ -226,7 +226,7 @@ G20 静态复现（新增 W18 handoff 后）：handoff ID 112 个、台账行首
 
 | 项 | 值 |
 |---|---|
-| 推送 | `17711ec..208c2eb HEAD -> main`（1 个 commit：`208c2eb` docs(w18)），**不 force-push、不 rewrite history** |
+| 推送 1 | `17711ec..208c2eb HEAD -> main`（commit `208c2eb` docs(w18)：验收物+交接+台账 W18 段+脱敏证据制品），**不 force-push、不 rewrite history** |
 | Build run | **completed success**（五 job 全绿，event=push） |
 | — Assemble Debug (JDK 21) | success |
 | — Unit tests | success（818 ↔ `EXPECTED_TESTS: '818'` 对账通过） |
@@ -235,8 +235,10 @@ G20 静态复现（新增 W18 handoff 后）：handoff ID 112 个、台账行首
 | — Secret scan（build.yml 内嵌） | success |
 | Secret scan run（独立 `secret-scan.yml`，无 paths-ignore） | **completed success**，覆盖同一 commit |
 | Release run | 0 run（无 tag 推送、无 dispatch）⇒ 判据未行使 |
+| 推送 2 | `208c2eb..f1ca8dc HEAD -> main`（commit `f1ca8dc` docs(w18)：回填 §3 真机矩阵四态 + §3.2 功能面判据行使 + §4 迭代 + 交接 CI/run）。**纯文档提交** ⇒ Build 0 run（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；Secret scan 1 run **success** `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43274010070` |
 | CI 红次数 | **0**（上限 2，未触） |
-| 推送次数 | **1**（上限 3，未触） |
+| 推送次数 | **3**（上限 3，触及 ⇒ 按契约收尾） |
+| 推送 3 | 本提交（交付 PUSH-2 记录与本节最终状态）；**其自身 CI run 链接随交付消息给出，不在仓内自指回填**（W17 P0-A 教训：验收物贴了完整 URL 却声称不在仓内回填 ⇒ 自我证伪） |
 | 归因 | 无失败案例 ⇒ 四分类（参数错 / 工具名错 / 该调不调 / 调了不收敛）**未触发**；不写「构建再次通过」类无佐证表述 |
 
 **run 链接（head_sha `208c2eb`）**：
