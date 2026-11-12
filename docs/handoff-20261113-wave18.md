@@ -71,7 +71,15 @@ W18 = **补铺矩阵波**：把 W17 判 ⛔vacuous 的「多免费节点模型 �
 ## 四、真机功能矩阵
 
 > 见验收物 §3（每格端点指纹 / 档位 / 功能面 / 四态 / 证据路径）与 §4 链内迭代记录。
-> 四态如实：未取到的格判 ⚠️ / ⛔ / ⛔vacuous，不冒充通过；1M 只记档位读数，不写真压。
+> **共 9 格：3 ✅ / 1 ⚠️ / 4 ⛔ / 1 ⛔vacuous。**
+> **档位读数覆盖 32K / 128K / 512K / 1M**（用户指令「直至 1M」达成）：128K ✅、1M ✅（档位回读
+> `当前 1M`、`switch_verified=true`）、512K ⚠️（请求收敛但本格未做回读验证）、32K 多端点探测。
+> 多端点共尝试 6 次切换，仅 1 支稳定收敛；其余 5 支免费节点本次均无响应/超时 ⇒ **环境问题，
+> 非四分类代码缺陷**，不硬跑、不改码硬凑、不把节点不可用写成应用 bug。
+> 功能面四态如实：**工作空间文件读写 ⛔vacuous**（请求收敛但 `file_write` 未调用、workspace 未落盘
+> ⇒ 判据未行使）、**skill 端到端 ⛔vacuous**（设备侧 skills 目录为空）、多模态 ⛔（端点未开启图片输入）、
+> 手动压缩 ⛔（未发起）、自动压缩 ⛔vacuous（`auto_compact=noop below_trigger`）、MCP ⛔（未逐项确认）。
+> **1M 只做档位读数，不是 1M 真压**（`W9-11` 双阻断未解除，W18 号段第 5 行原样 `OPEN`）。
 
 ## 五、CI 与提交
 
@@ -97,8 +105,25 @@ MCP 明文 / git 历史清理均顺延；外审新提小缺陷与六处账实订
 
 ## 八、移交外部审查
 
+**提交序列**：`17711ec`（W17 收尾）→ `208c2eb`（docs(w18)：验收物 + 交接 + 台账 W18 段 + 脱敏证据制品，
+4 files / +509）。**1 个 commit，不 force-push、不 rewrite history。**
+
+**CI（实跑，event=push）**：
+- Build run **completed success**（五 job 全绿）：Assemble Debug / Unit tests / Arch guard / Lint / Secret scan
+  `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43272970379`
+- Secret scan run（独立 `secret-scan.yml`，无 paths-ignore）**completed success**，覆盖同一 commit
+  `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43272970496`
+- **CI 红次数 0**（上限 2）；**推送次数 1**（上限 3）。触发方式 = 同一 push 含仓根非 docs 路径的
+  `evidence/w18-matrix-summary.json` ⇒ Build 由该 push 自身真实触发（不靠 dispatch）。
+- 结论取值 = 公开 API check-runs（零凭据），逐项读 `status`/`conclusion`。
+
 **文档回写 diff**：`docs/analysis/w18-acceptance.md`（新）、`docs/handoff-20261113-wave18.md`（本文件，新）、
-`docs/06-deferred-ledger.md` §二-octies（+12 行）、以及脱敏证据制品 `.json`（新）。历史文档正文一律未改。
+`docs/06-deferred-ledger.md` §二-octies（+12 行）、`evidence/w18-matrix-summary.json`（新，脱敏机器可读制品）。
+历史文档正文一律未改。
+
+**未复核（不写成通过）**：多端点 × 多档位矩阵未铺满全部 5 支端点（仅 1 支稳定收敛，其余免费节点本次无响应
+⇒ ⛔ 环境问题）；工作空间文件读写 / skill / 多模态 / 手动压缩 / 自动压缩 / MCP 六项功能面**判据未行使**
+（⛔vacuous / ⛔，见验收物 §3.2）；1M 只做档位读数、未写真压。`W18` 号段第 5 行（矩阵欠账）原样 `OPEN`。
 
 **可审查制品清单**（不含会话历史 / 凭据 / 端点标识 / 下一链建议）：见验收物 §5.3。
 

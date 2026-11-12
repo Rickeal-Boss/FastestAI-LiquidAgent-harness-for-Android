@@ -164,7 +164,11 @@
 |---|---|---|---|---|
 | ITER-1 | 本地 UI + adb 调试 | 唤醒/存活判据 `SCREEN_STATE_ON` + 截屏非全黑（0.9995 / 106 色桶）；5 控件 + 压缩菜单 bounds 全有效可达；deviceLogTail 尾部为上一波旧行（fresh 基线） | ✅（基线，四分类未触发） | `iterations.jsonl` 第 1 行；`ui_debug.jsonl`；`_w18/shots/A1_boot_safe.png`、`A1_controls_safe.png` |
 | ITER-2 | 真机首格（判据自证档 CTRL-0） | 短英文题 `Reply with exactly OK` 注入成功（输入框回读一致）、发送生效（按钮变停止、出现等待提示）；70.7s 内无 usage 行、deviceLogTail 仍为旧行 ⇒ **请求在途未收敛** | ⛔ / ⛔vacuous；`failure_class=no_convergence`；归因 = **免费节点波动/超时，环境问题，非四分类代码缺陷** ⇒ 不硬跑、不改码硬凑 | `matrix_facts.jsonl`（CTRL-0 行）；`iterations.jsonl` 第 2 行；`_w18/shots/CTRL-0_safe.png`（非全黑 0.9959 / 126 色桶） |
-| ITER-3 | 链内「改 → 再看」 | 按纪律切备用端点（用户点名可用档）：`switch_facts.jsonl` 记 `idx=4`、切换前后端点指纹 `5ec3b060 → 6ecd5b22`、确认框由 dump 取 bounds `[713,1546][912,1631]` 后点选（**未猜坐标**）；诊断文本为切换会重建前缀缓存 + 目标窗口未实测验证 | 【进行中】重跑判据自证档，结果以真机席后续事实为准 | `_w18/evidence/switch_facts.jsonl` |
+| ITER-3 | 链内「改 → 再看」 | 真机席取证驱动加固：`w18.py` 增加迟到错误复查（provider 120s 超时上屏晚于轮询窗口）+ 精确审批按钮 + fast-fail 判据；切 idx4 备用端点重跑。结论：CTRL-0 追补为 ⛔ `node_unavailable`（上屏 `timeout: no response from provider within 120000ms`）；idx4 `6ecd5b22` 重跑现「网络抖动，正在重试…」⇒ 已停止本轮 | ⛔ 环境问题（免费节点波动），非四分类代码缺陷 | `switch_facts.jsonl`；`iterations.jsonl` 第 3 行 |
+| ITER-4 | 真机席完成多端点探测后因配额耗尽中断（53m36s），主理人接手补完（团队铁律：429 ⇒ 主理人接手，不重试 spawn） | 真机席已落 5 次端点切换 + 5 格事实；主理人只读判活后切回收敛成功的 `idx=0`（`29878504 → 8ac38d1b`，dump 取 bounds 点选确认框，未猜坐标） | ✅ 切换验证 | `switch_facts.jsonl`；`A2_safe.png` |
+| ITER-5 | 主理人接手铺**多档位读数格**（用户指令「直至 1M」） | 128K 收敛（`1.9k in / 14 out`）✅；512K 收敛（`1.9k in / 23 out`）但本格未做档位回读 ⇒ ⚠️；**1M 档收敛且回读验证 `当前 1M`、`switch_verified=true`（`1.9k in / 27 out`，13.1s）✅** | ✅ / ⚠️ / ✅ | `matrix_facts.jsonl`；`P1_128K_safe.png`、`P2_512K_safe.png`、`P3_1M_safe.png` |
+| ITER-6 | 主理人接手跑**功能面** | 工作空间文件读写：请求收敛但 `file_write` 未调用、workspace 未落盘 ⇒ 订正为 **⛔vacuous（判据未行使）**；skill 端到端：设备侧 skills 目录为空 ⇒ **⛔vacuous**；多模态：活跃端点未开启图片输入 ⇒ ⛔；手动/自动压缩：未发起 / `auto_compact=noop below_trigger` ⇒ ⛔ | ⛔vacuous / ⛔vacuous / ⛔ / ⛔ | `matrix_facts.jsonl`；`F1_filewrite_safe.png`；设备侧 `ls skills/` 为空 |
+| PUSH-1 | 推送 + CI | `17711ec..208c2eb HEAD -> main`（rc=0），Build 五 job + 独立 Secret scan 由该 push 自身触发 | Build success / Secret scan success / **CI 红次数 0** | §5.4（附 run 链接） |
 | G1 | 编译 / 出包 | 基线 `270 up-to-date` ⇒ 出包判据未行使（⛔vacuous）⇒ 删旧 APK 强制重出包 RUN A / RUN B，均 `1 executed`，68,407,402 B 字节一致 | ✅；四分类未触发 | `_w18/gates_g1.log`、`g1_runA_gradle.log`、`g1_runB_gradle.log` |
 | G2 | 全量单测 | `tests=818 failures=0 errors=0 skipped=0`，14 模块，83 个 XML mtime 全本轮 | ✅；四分类未触发 | `_w18/gates_g2.log` |
 | G3 | arch-guard | `PASS ok=27 vacuous=1 violation=0 fault=0`；MSYS `fork errno 11` 环境类异常，未改码硬凑 | ✅；环境类、非四分类 | `_w18/gates_g3.log`、`gates_attribution.jsonl` |
@@ -222,13 +226,35 @@ G20 静态复现（新增 W18 handoff 后）：handoff ID 112 个、台账行首
 
 | 项 | 值 |
 |---|---|
-| 推送 | 待回填 |
-| Build run | 待回填（五 job，附完整 run 链接） |
-| Secret scan run | 待回填（附完整 run 链接） |
-| CI 红次数 | 待回填（上限 2） |
-| 推送次数 | 待回填（上限 3） |
-| 归因 | 待回填；四分类未触发则如实写「未触发」，不写「构建再次通过」类无佐证表述 |
+| 推送 | `17711ec..208c2eb HEAD -> main`（1 个 commit：`208c2eb` docs(w18)），**不 force-push、不 rewrite history** |
+| Build run | **completed success**（五 job 全绿，event=push） |
+| — Assemble Debug (JDK 21) | success |
+| — Unit tests | success（818 ↔ `EXPECTED_TESTS: '818'` 对账通过） |
+| — Arch guard (26 guards + mutation selftest) | success |
+| — Lint (baseline gate) | success |
+| — Secret scan（build.yml 内嵌） | success |
+| Secret scan run（独立 `secret-scan.yml`，无 paths-ignore） | **completed success**，覆盖同一 commit |
+| Release run | 0 run（无 tag 推送、无 dispatch）⇒ 判据未行使 |
+| CI 红次数 | **0**（上限 2，未触） |
+| 推送次数 | **1**（上限 3，未触） |
+| 归因 | 无失败案例 ⇒ 四分类（参数错 / 工具名错 / 该调不调 / 调了不收敛）**未触发**；不写「构建再次通过」类无佐证表述 |
 
-> 触发方案（§1.4 分歧 9 裁决）：同一 push 内含仓根非 docs 路径的 `evidence/w18-matrix-summary.json`
-> ⇒ Build 五 job 由该 push 自身触发；`secret-scan.yml` 无路径忽略 ⇒ 独立 Secret scan run 覆盖同一 commit。
-> 每次推送在此表追加一行 commit + run 链接；不 force-push、不 rewrite history。
+**run 链接（head_sha `208c2eb`）**：
+- Build：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43272970379`
+- Secret scan：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43272970496`
+- 五 job 逐项 job 链接：
+  Assemble Debug `.../runs/43272970379/job/131373926143`；
+  Unit tests `.../runs/43272970379/job/131373926171`；
+  Arch guard `.../runs/43272970379/job/131373925959`；
+  Lint `.../runs/43272970379/job/131373925613`；
+  Secret scan（内嵌）`.../runs/43272970379/job/131373925995`。
+- 结论取值方式：公开 API `GET /repos/{owner}/{repo}/commits/{head_sha}/check-runs`（零凭据），
+  逐项读 `status`/`conclusion`/`html_url`，并交叉核对 `.../actions/runs?head_sha=` 的 workflow run。
+
+> **触发方案兑现（§1.4 分歧 9 裁决）**：同一 push 内含仓根非 docs 路径的
+> `evidence/w18-matrix-summary.json` ⇒ Build 五 job 由该 push **自身真实触发**（event=push），
+> 不依赖 `workflow_dispatch`；独立 `secret-scan.yml`（无 paths-ignore）覆盖同一 commit。
+> 本表如实记录 run 链接（用户指令「推送并记录 CI run 链接」），**不写「不在仓内自指回填」类
+> 自我证伪套话**（W17 的 P0-A 教训：验收物 §5.4 贴了完整 URL 却声称不在仓内回填）。
+> 本波是纯文档 + 证据制品提交，无 `.kt` 改动 ⇒ 「CI 全绿」指 Build 五 job + Secret scan 结论 success，
+> **不等于** 真机矩阵全格通过（§3 如实登记多格 ⛔/⛔vacuous）。
