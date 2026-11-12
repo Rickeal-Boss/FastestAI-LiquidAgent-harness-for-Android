@@ -1,0 +1,142 @@
+{
+  "schema": "liquidharness.w18.matrix-summary.v1",
+  "wave": "W18",
+  "scope": "multi-endpoint x multi-tier x full-feature real-device matrix",
+  "baseline_commit": "17711ec",
+  "state_enum": [
+    "fail",
+    "partial",
+    "pass",
+    "vacuous"
+  ],
+  "state_note": "vacuous = criterion not exercised; partial = indirect evidence only; pass = criterion exercised with evidence; fail = exercised and failed",
+  "cells_total": 9,
+  "state_counts": {
+    "fail": 4,
+    "pass": 3,
+    "partial": 1,
+    "vacuous": 1
+  },
+  "iterations_total": 3,
+  "iterations": [
+    {
+      "iteration": 1,
+      "action": "本地 UI/adb 调试 + 判据自证档 CTRL-0（当前端点 @ 32K，短英文收敛题）",
+      "observation": "唤醒/存活判据 SCREEN_STATE_ON + 非全黑 0.9995/106色桶；5 控件+压缩菜单 bounds 全有效且可达；deviceLogTail 尾部为上一波 15:36 旧行（fresh 基线）"
+    },
+    {
+      "iteration": 2,
+      "action": "判据自证档 CTRL-0 首跑：端点 fp=<redacted> @32K，短题 Reply with exactly OK",
+      "observation": "题面注入成功（输入框回读一致）、发送生效（按钮变停止、出现『正在等待模型响应…115s』）；70s 内无 usage 行、deviceLogTail 仍是上一波 15:36 旧行 ⇒ 请求在途未收敛。判为免费节点挂起/超时，非应用缺陷、非判据未行使"
+    },
+    {
+      "iteration": 3,
+      "action": "取证驱动加固：w18.py 增加迟到错误复查（provider 120s 超时上屏晚于轮询窗口）+ 精确审批按钮 + fast-fail 判据；切 idx4 备用端点重跑判据自证档",
+      "observation": "CTRL-0 上屏证据确认『本次请求失败：timeout: no response from provider within <redacted>』（追补为 ⛔ node_unavailable）；idx4=<redacted> 重跑出现『网络抖动，正在重试…』，已停止本轮（无产出内容）。agent-0.log 尾部仍停在上波 15:36 ⇒ 本波无新日志行"
+    }
+  ],
+  "cells": [
+    {
+      "cell_id": "CTRL-0",
+      "settled": false,
+      "usage_observed": null,
+      "evidence_ref": "CTRL-0_safe.png",
+      "endpoint_fingerprint": "5ec3b060",
+      "tier": "32K",
+      "switch_verified": false,
+      "state": "fail",
+      "feature": null
+    },
+    {
+      "cell_id": "P0_32K",
+      "feature": "endpoint_probe",
+      "tier": "32K",
+      "endpoint_fingerprint": "8ac38d1b",
+      "switch_verified": false,
+      "settled": true,
+      "usage_observed": "1.9k in / 20 out",
+      "state": "pass"
+    },
+    {
+      "cell_id": "P1_32K",
+      "feature": "endpoint_probe",
+      "tier": "32K",
+      "endpoint_fingerprint": "c4c25092",
+      "switch_verified": false,
+      "settled": false,
+      "usage_observed": null,
+      "state": "fail"
+    },
+    {
+      "cell_id": "P3_32K",
+      "feature": "endpoint_probe",
+      "tier": "32K",
+      "endpoint_fingerprint": "5ec3b060",
+      "switch_verified": false,
+      "settled": false,
+      "usage_observed": null,
+      "state": "fail"
+    },
+    {
+      "cell_id": "P5_32K",
+      "feature": "endpoint_probe",
+      "tier": "32K",
+      "endpoint_fingerprint": "29878504",
+      "switch_verified": false,
+      "settled": false,
+      "usage_observed": null,
+      "state": "fail"
+    },
+    {
+      "cell_id": "P1_128K",
+      "settled": true,
+      "usage_observed": "1.9k in / 14 out (0 cached, 0.0%) ",
+      "evidence_ref": "P1_128K_safe.png",
+      "endpoint_fingerprint": "8ac38d1b",
+      "tier": "128K",
+      "switch_verified": true,
+      "state": "pass",
+      "feature": "tier_readback"
+    },
+    {
+      "cell_id": "P2_512K",
+      "settled": true,
+      "usage_observed": "1.9k in / 23 out (0 cached, 0.0%) ",
+      "evidence_ref": "P2_512K_safe.png",
+      "endpoint_fingerprint": "8ac38d1b",
+      "tier": "512K",
+      "switch_verified": false,
+      "state": "partial",
+      "feature": "tier_readback"
+    },
+    {
+      "cell_id": "P3_1M",
+      "settled": true,
+      "usage_observed": "1.9k in / 27 out (0 cached, 0.0%) ",
+      "evidence_ref": "P3_1M_safe.png",
+      "endpoint_fingerprint": "8ac38d1b",
+      "tier": "1M",
+      "switch_verified": true,
+      "state": "pass",
+      "feature": "tier_readback"
+    },
+    {
+      "cell_id": "F1_filewrite",
+      "settled": true,
+      "usage_observed": "1.9k in / 27 out (0 cached, 0.0%) ",
+      "evidence_ref": "F1_filewrite_safe.png",
+      "endpoint_fingerprint": "8ac38d1b",
+      "tier": "1M",
+      "switch_verified": false,
+      "state": "vacuous",
+      "feature": "workspace_file_rw"
+    }
+  ],
+  "privacy": {
+    "credentials": 0,
+    "endpoint_identifiers": 0,
+    "device_serials": 0,
+    "local_paths": 0,
+    "session_history": 0
+  }
+}
