@@ -203,7 +203,8 @@ G10 只数 `*.kt`、G16 只扫 Kotlin 字符串字面量、G20 只扫 `docs/hand
 
 ### 3.3 档位轴与端点轴分开判定
 
-- **档位轴**：以 `switch_facts.jsonl` 的 `当前 <档>` 回读与 `switch_verified` 为准；1M 只做**档位读数**，不是 1M 真压（`W19-05` 原样 `OPEN`，`W9` 段第 11 行双阻断未解除）。
+- **档位轴**：以 `switch_facts.jsonl` 的 `当前 <档>` 回读与 `switch_verified` 为准；1M 只做**档位读数**，不是 1M 真压（`W19-05` 原样 `OPEN`，`W9` 段第 11 行双阻断未解除）。**本波实况**：`switch_facts.jsonl` 仅有一次 window 切换（512K，回读 `当前 512K` + `switch_verified=true`）；`CTRL0` 的 1M 是**开波活跃档的基线读数**（该档下短题收敛），**未做 1M 档位切换回读** ⇒ 不写「直至 1M 达成」。
+- **端点轴实况**：6 支端点中仅 `8ac38d1b` 稳定收敛，另 1 支切到后自动回退、其余无响应/超时 ⇒ **≥3 端点未达成（⛔）**；免费节点波动属环境问题，不归因成应用代码 bug，也不据本波结果代改「≥3 端点」终局口径（`W19-08` 只留痕）。
 - **端点轴**：以真机**实际发请求并收敛**的端点指纹去重计数为准；免费节点连续失败即切备用端点并判 ⛔，不把「PC 侧 / 历史波次可用」升级为「本波设备侧可用」（`W19-12`）。
 - 两轴不互相冒充；不写「用户指令『直至 1M』达成」这类合并表述（外审报告 ① 口径订正已采纳）。
 
@@ -242,7 +243,7 @@ G10 只数 `*.kt`、G16 只扫 Kotlin 字符串字面量、G20 只扫 `docs/hand
 | 2 §2 本地闸门 + 独立回源核验 | G1 / G2 / G3 / G4 四闸门全实跑；G3 含 1 条 ⛔vacuous（G19）如实登记；最终树重跑 arch-guard 仍 `PASS`；审查席九项核验 8 成立 / 1 部分成立并按设备侧实测做条件判断 | ✅ | `_w19/gates_g1..g4.log`、`g3_final.rc`、`g20_recheck.py`、`ci_trigger_chain.log` |
 | 3 §3 真机功能矩阵 | 逐格四态见 §3.1；功能面逐面判据是否行使见 §3.2；档位轴与端点轴分开判定见 §3.3；未取得的格不冒充通过 | ⚠️（部分格未通过 / 判据未行使，逐格见 §3.1） | `_w19/evidence/matrix_facts.jsonl`、`_w19/shots/*_safe.png`、`evidence/w19-matrix-summary.json` |
 | 4 §4 链内迭代 | 「改 → 编译 → 真机 → 再看」逐行证据；本波零 `.kt` 改动 ⇒ 每行如实写「未触发编译」，链内「改」只作用于取证驱动与设备侧配置 | ✅ | `_w19/evidence/iterations.jsonl`、`_w19/gates_attribution.jsonl` |
-| 5 §5 推送与 CI | {{CI_STATE}} | {{CI_FOUR_STATE}} | §5.4（run 链接）+ `git show` |
+| 5 §5 推送与 CI | 推送 1 Build 五 job + 独立 Secret scan 全绿；推送 2 为纯文档回填（Build 0 run 既定口径）；CI 红 0 | ✅ | §5.4（run 链接）+ `git show` |
 
 ### 5.2 明确未做（逐条带挂账号）与 OPEN 挂账
 
@@ -295,15 +296,15 @@ G10 只数 `*.kt`、G16 只扫 Kotlin 字符串字面量、G20 只扫 `docs/hand
 
 | 项 | 值 |
 |---|---|
-| 推送 1 | {{PUSH1}} |
-| Build run | {{BUILD1}} |
-| Secret scan run（独立） | {{SCAN1}} |
-| 推送 2 | {{PUSH2}} |
-| CI 红次数 | {{CI_RED}} |
-| 推送次数 | {{PUSH_COUNT}} |
-| 归因 | {{CI_ATTR}} |
+| 推送 1 | `00eade0..492d7b9 HEAD -> main`（commit `492d7b9`，5 files / +808，含仓根非 docs 的 `evidence/w19-matrix-summary.json`）；不 force-push、不 rewrite history |
+| Build run | run `43578815715` **completed success**（event=push，五 job 全绿：Assemble Debug (JDK 21) / Unit tests / Arch guard / Lint / 内嵌 Secret scan） |
+| Secret scan run（独立） | run `43578815709` **completed success**（独立 `secret-scan.yml`，无 `paths-ignore`，覆盖同一 commit） |
+| 推送 2 | 本提交（纯文档回填 §5.4）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 1 run，其链接**随交付消息给出、不在仓内自指回填**（避免自指陷阱） |
+| CI 红次数 | **0**（上限 2，未触） |
+| 推送次数 | **2**（上限 3；推送 1 已 CI 全绿 ⇒ 按契约收尾，不凑第三次） |
+| 归因 | 无失败案例 ⇒ 四分类（参数错 / 工具名错 / 该调不调 / 调了不收敛）**未触发**；真机侧免费节点 113s 无响应属环境问题，不写成应用 bug；纯文档提交 0 run 属既定口径，不写「构建再次通过」 |
 
-**run 链接**：{{RUN_LINKS}}
+**run 链接**：推送 1 Build https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43578815715 ；推送 1 独立 Secret scan https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43578815709 ；推送 2 的独立 Secret scan run 链接随交付消息给出。结论取值 = 公开 API check-runs 逐项读 status / conclusion（零凭据）
 
 > 触发方案兑现（§1.4 分歧 10）：同一 push 内含仓根非 docs 路径的
 > `evidence/w19-matrix-summary.json` ⇒ Build 五 job 由该 push **自身真实触发**（event=push），

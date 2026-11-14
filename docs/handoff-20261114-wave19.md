@@ -102,9 +102,15 @@ MCP 明文 / git 历史清理均顺延；外审新提小缺陷与 W18 账实订�
 
 ## 八、移交外部审查
 
-**提交与 run 链接**：逐次推送的可审计 commit 与绑定该 commit 的 run 链接**以验收物 §5.4 为准**
-（本文件不复制、不自指回填，避免 W18 交接「提交序列漏最后一次提交」的 P0-1 同型复发）。
-最后一次推送若为纯文档提交，其 Build 0 run 口径与独立 Secret scan 结论同样记在验收物 §5.4。
+**提交序列与 run 链接**：基线 `00eade0` 之外，本波共 **2 次推送**，计数与列表一致：
+① `492d7b9`（docs(w19) 主体：验收物 + 交接 + 台账 W19 段 + 本期源码日析入库 + 脱敏证据制品，
+5 files / +808）⇒ Build run `43578815715` **success**（五 job 全绿）、独立 Secret scan run
+`43578815709` **success**；
+② **本提交**（纯文档回填验收物 §5.4 的 CI 实跑结果；序列中的第二项即本文件所在提交，
+其哈希与独立 Secret scan run 链接**随交付消息给出，不在仓内自指回填**）。
+最后一次推送按 `paths-ignore` 既定口径 **Build 0 run**（判据未行使，不算绿也不算红）、
+独立 Secret scan 1 run；逐项 run 链接与口径见验收物 §5.4。
+不 force-push、不 rewrite history；CI 红次数 0。
 
 **文档回写 diff**：`docs/analysis/w19-acceptance.md`（新）、`docs/handoff-20261114-wave19.md`（本文件，新）、
 `docs/06-deferred-ledger.md` §二-novies（+15 行）、`docs/analysis/source-review-2026-11-14.md`
