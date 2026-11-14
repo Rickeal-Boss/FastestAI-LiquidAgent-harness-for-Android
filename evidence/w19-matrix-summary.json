@@ -1,0 +1,183 @@
+{
+  "schema": "liquidharness.w19.matrix-summary.v1",
+  "wave": "W19",
+  "scope": "multi-endpoint x multi-tier x full-feature real-device matrix",
+  "baseline_commit": "00eade0",
+  "state_enum": [
+    "fail",
+    "partial",
+    "pass",
+    "vacuous"
+  ],
+  "state_note": "vacuous = criterion not exercised; partial = indirect evidence only; pass = criterion exercised with evidence; fail = exercised and failed",
+  "cells_total": 9,
+  "state_counts": {
+    "pass": 2,
+    "vacuous": 6,
+    "partial": 1
+  },
+  "declared_feature_faces": [
+    "local_ui",
+    "multi_tier",
+    "workspace_io",
+    "skill",
+    "multimodal",
+    "manual_compress",
+    "auto_compress",
+    "mcp_status"
+  ],
+  "feature_faces_with_cells": [
+    "manual_compress",
+    "mcp_status",
+    "multi_tier",
+    "workspace_io"
+  ],
+  "coverage_note": "PARTIAL: cells cover 4 of 8 declared feature faces; missing faces and their four-state rows are in the acceptance document section 3.2; raw per-cell evidence is kept in the off-rep",
+  "iterations_total": 9,
+  "iterations_note": "rows are appended per real iteration; section 4 of the acceptance document is the authoritative iteration table",
+  "iterations": [
+    {
+      "iteration": 0,
+      "action": "read-only reconnaissance: memory, wave18 <redacted>, ledger OPEN rows, source-review-2026-11-14 (active repo only), five external review reports, external repo reference",
+      "state": "vacuous"
+    },
+    {
+      "iteration": 1,
+      "action": "取证驱动修复：新增 w19.py 兼容垫片（probe.py/drive_tail.py 的 import w19 在 w18.py→drive.py 改名后 ModuleNotFoundError）；全量 py_compile 通过",
+      "observation": "py_compile 15 驱动全过；import w19 解析成功；probe.py/drive_tail.py 可加载，fast-fail 探针与收尾驱动恢复可用。startapp 返回 in_app=true/endpoint_fp=<redacted>"
+    },
+    {
+      "iteration": 2,
+      "action": "判据自证档 CTRL-0：端点 fp=<redacted> @ 基线 1M，短题 Reply with exactly OK",
+      "observation": "7.9s 收敛，usage=1.9k in / 24 out (0 cached, 0.0%)；3 个 bounds 命中有效（发送键 IME 后重取）；endpoint_fp 前后一致；日志出现本波新行 2026-11-14T08:30:21Z ⇒ 发送键生效、usage 可读、journal 本波活跃"
+    },
+    {
+      "iteration": 3,
+      "action": "档位切换实测：switch.py window 512K（确认框 dump 取 bounds 中心 [713,1546,912,1631]）",
+      "observation": "切换后回读 当前 512K、switch_verified=true、dialog_seen=true；诊断含 unverified_window char_floor_unmeasured（W9-11 双阻断）。静止设置页用 已选 徽标、切换确认后才出现 当前 <档> 值文本 ⇒ read_window() 口径成立，无需改驱动。1M 仅做档位读数不写真压"
+    },
+    {
+      "iteration": 4,
+      "action": "取证驱动修复：switch.py switch_endpoint 过滤离屏 [0,0,0,0] 按钮（占位节点 truthy 且 y=0 排最前 ⇒ idx0 tap [0,0] 未切换）",
+      "observation": "修复前 idx0 tap_bounds=[0,0,0,0]/dialog_seen=<redacted> 不变；修复后 tap_bounds=[120,673,288,727]/dialog_seen=<redacted> <redacted>→<redacted>，确认框诊断含 unverified_window char_floor_unmeasured"
+    },
+    {
+      "iteration": 5,
+      "action": "lead takeover: drive file_write approval + device-side readback",
+      "observation": "false green corrected by device-side ground truth: the app was on the tools screen (all bounds_hits null => prompt not injected / send not pressed); the usage string was residual U"
+    },
+    {
+      "iteration": 6,
+      "action": "lead retry: ensure chat screen, strict ls readback, require real send hit",
+      "observation": "chat_screen=True backs=1 send_hit=True before=False after=False"
+    },
+    {
+      "iteration": 7,
+      "action": "ITER-7 manual compression via local UI (no provider round-trip)",
+      "observation": "PARTIAL / false green corrected: the more-menu item '压缩上下文' was tapped and the confirmation dialog appeared (real UI bounds evidence), but the tap that was recorded as 'confirm' ac"
+    },
+    {
+      "iteration": 8,
+      "action": "ITER-8 MCP status confirmation via local UI",
+      "observation": "settings=True entry=False nodes=14"
+    }
+  ],
+  "cells": [
+    {
+      "cell_id": "CTRL0",
+      "settled": true,
+      "usage_observed": "1.9k in / 24 out (0 cached, 0.0%) ",
+      "evidence_ref": "CTRL0_safe.png",
+      "endpoint_fingerprint": "8ac38d1b",
+      "tier": "1M",
+      "switch_verified": false,
+      "state": "pass",
+      "feature": "multi_tier"
+    },
+    {
+      "cell_id": "P0_512K",
+      "feature": "multi_tier",
+      "tier": "512K",
+      "endpoint_fingerprint": "8ac38d1b",
+      "switch_verified": false,
+      "settled": true,
+      "usage_observed": "1.9k in / 19 out",
+      "state": "pass"
+    },
+    {
+      "cell_id": "P0_512K",
+      "feature": "multi_tier",
+      "tier": "512K",
+      "switch_verified": false,
+      "settled": false,
+      "usage_observed": null,
+      "state": "vacuous"
+    },
+    {
+      "cell_id": "F1_filewrite",
+      "settled": true,
+      "usage_observed": "1.9k in / 19 out (0 cached, 0.0%) ",
+      "evidence_ref": "F1_filewrite_safe.png",
+      "endpoint_fingerprint": "8ac38d1b",
+      "tier": "512K",
+      "switch_verified": false,
+      "state": "vacuous",
+      "feature": "workspace_io"
+    },
+    {
+      "cell_id": "P1_512K",
+      "feature": "multi_tier",
+      "tier": "512K",
+      "switch_verified": false,
+      "settled": false,
+      "usage_observed": null,
+      "state": "vacuous"
+    },
+    {
+      "cell_id": "P2_512K",
+      "feature": "multi_tier",
+      "tier": "512K",
+      "switch_verified": false,
+      "settled": false,
+      "usage_observed": null,
+      "state": "vacuous"
+    },
+    {
+      "cell_id": "F2_filewrite",
+      "settled": false,
+      "usage_observed": null,
+      "evidence_ref": "F2_filewrite_safe.png",
+      "endpoint_fingerprint": "8ac38d1b",
+      "tier": "512K",
+      "switch_verified": false,
+      "state": "vacuous",
+      "feature": "workspace_io"
+    },
+    {
+      "cell_id": "M1_manual_compress",
+      "tier": "-",
+      "feature": "manual_compress",
+      "endpoint_fingerprint": "8ac38d1b",
+      "state": "partial",
+      "settled": false,
+      "usage_observed": null
+    },
+    {
+      "cell_id": "M2_mcp_status",
+      "tier": "-",
+      "feature": "mcp_status",
+      "endpoint_fingerprint": "8ac38d1b",
+      "state": "vacuous",
+      "settled": false,
+      "usage_observed": null
+    }
+  ],
+  "privacy": {
+    "credentials": 0,
+    "endpoint_identifiers": 0,
+    "device_serials": 0,
+    "local_paths": 0,
+    "session_history": 0,
+    "post_write_banned_hits": 0
+  }
+}
