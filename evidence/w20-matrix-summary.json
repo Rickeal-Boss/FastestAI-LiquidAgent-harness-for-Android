@@ -1,0 +1,201 @@
+{
+  "schema": "liquidharness.w20.matrix-summary.v1",
+  "wave": "W20",
+  "scope": "multi-endpoint x multi-tier x full-feature real-device matrix",
+  "baseline_commit": "0059c06",
+  "state_enum": [
+    "fail",
+    "partial",
+    "pass",
+    "vacuous"
+  ],
+  "state_note": "vacuous = criterion not exercised; partial = indirect evidence only; pass = criterion exercised with evidence; fail = exercised and failed",
+  "cells_total": 10,
+  "state_counts": {
+    "pass": 9,
+    "fail": 1
+  },
+  "declared_feature_faces": [
+    "local_ui",
+    "multi_tier",
+    "workspace_io",
+    "skill",
+    "multimodal",
+    "manual_compress",
+    "auto_compress",
+    "mcp_status"
+  ],
+  "feature_faces_with_cells": [
+    "multi_tier",
+    "workspace_io"
+  ],
+  "coverage_note": "PARTIAL: cells cover 2 of 8 declared feature faces; missing faces and their four-state rows are in the acceptance document section 3.2; raw per-cell evidence is kept in the off-rep",
+  "iterations_total": 8,
+  "iterations_note": "rows are appended per real iteration; section 4 of the acceptance document is the authoritative iteration table",
+  "iterations": [
+    {
+      "iteration": 0,
+      "action": "baseline recon (read-only)",
+      "observation": "alive ON/AWAKE nonblack=0.9996 colors=109; cold-start fixed Compose empty frame; 32 nodes / 8 controls reachable; active endpoint fp <redacted>; pool 6 endpoints ctx <redacted>/<re"
+    },
+    {
+      "iteration": 1,
+      "action": "CTRL0 self-proof cell: active endpoint @ baseline tier, ASCII short prompt 'Reply with exactly OK'",
+      "observation": "settled=8s usage='1.6k in / 34 out (0 cached)'; endpoint fp <redacted> stable <redacted>; typed_hint matches prompt; send bounds re-read after IME (y 1968->1356) = criterion exerci"
+    },
+    {
+      "iteration": 2,
+      "action": "endpoint fast-fail prescreen (6 endpoints, 35s stop-loss)",
+      "observation": "probe sweep idx0..5: 5 converged (fp <redacted> / <redacted> / <redacted> / <redacted> / <redacted>), 1 node_unavailable (idx4 fp <redacted>, network jitter retry). NOTE: idx1 and "
+    },
+    {
+      "iteration": 4,
+      "action": "tier axis: 512K->1M switch via real bounds tap, confirm dialog dumped, readback '当前 1M'",
+      "observation": "switch_verified=true; effective window of active endpoint is 251.9K (declared 262144 caps tier 1M); 1M tier readback != effective window != 1M real compression"
+    },
+    {
+      "iteration": 5,
+      "action": "tier axis: 1M cell converged (1.1k in / 233 out); switch back 512K readback verified; 512K cell converged (1.1k in / 115 out); two precondition-failed attempts merged per N-新2 in e",
+      "observation": "both tiers have real switch readback + converged usage; endpoint fp stable <redacted>"
+    },
+    {
+      "iteration": 6,
+      "action": "lead takeover: drive file_write approval + device-side readback",
+      "observation": "workspace_file_before=True after=True"
+    },
+    {
+      "iteration": 7,
+      "action": "F1_filewrite correction (append-only): lead_takeover workspace_file() uses cat-for-existence => cat error string can be mistaken as content (defense-1 residual); BEFORE=True unreli",
+      "observation": "device-side ground truth via INDEPENDENT commands: strict ls -1 shows hello20.txt present; ls -la mtime 2026-11-15 19:08 (this run); content 'hello20' 7 bytes matches prompt; agent"
+    },
+    {
+      "iteration": 8,
+      "action": "MCP status + vision final states: MCP screen NOT reached (top-bar settings restores last sub-page=endpoint management; its BACK exits settings entirely) => criterion not exercised;",
+      "observation": "MCP=⛔vacuous criterion_not_exercised; vision=⚠️ partial (endpoint capability bit confirmed via device-side probe, attachment+semantic steps not exercised); <redacted>/auto-compress"
+    }
+  ],
+  "cells": [
+    {
+      "cell_id": "CTRL0",
+      "settled": true,
+      "usage_observed": "1.6k in / 34 out (0 cached, 0.0%) ",
+      "evidence_ref": "CTRL0_safe.png",
+      "endpoint_fingerprint": "c4c25092",
+      "tier": "BASE",
+      "switch_verified": false,
+      "state": "pass",
+      "feature": "multi_tier"
+    },
+    {
+      "cell_id": "P0_BASE",
+      "feature": "multi_tier",
+      "tier": "BASE",
+      "endpoint_fingerprint": "8ac38d1b",
+      "switch_verified": false,
+      "settled": true,
+      "usage_observed": "1.9k in / 20 out",
+      "evidence_ref": "P0_BASE_safe.png",
+      "state": "pass"
+    },
+    {
+      "cell_id": "P1_BASE",
+      "feature": "multi_tier",
+      "tier": "BASE",
+      "endpoint_fingerprint": "5ec3b060",
+      "switch_verified": false,
+      "settled": true,
+      "usage_observed": "1.6k in / 32 out",
+      "evidence_ref": "P1_BASE_safe.png",
+      "state": "pass"
+    },
+    {
+      "cell_id": "P2_BASE",
+      "feature": "multi_tier",
+      "tier": "BASE",
+      "endpoint_fingerprint": "34b14303",
+      "switch_verified": false,
+      "settled": true,
+      "usage_observed": "1.7k in / 16 out",
+      "evidence_ref": "P2_BASE_safe.png",
+      "state": "pass"
+    },
+    {
+      "cell_id": "P3_BASE",
+      "feature": "multi_tier",
+      "tier": "BASE",
+      "endpoint_fingerprint": "5ec3b060",
+      "switch_verified": false,
+      "settled": true,
+      "usage_observed": "1.6k in / 340 out",
+      "evidence_ref": "P3_BASE_safe.png",
+      "state": "pass"
+    },
+    {
+      "cell_id": "P4_BASE",
+      "feature": "multi_tier",
+      "tier": "BASE",
+      "endpoint_fingerprint": "29878504",
+      "switch_verified": false,
+      "settled": false,
+      "usage_observed": null,
+      "evidence_ref": "P4_BASE_safe.png",
+      "state": "fail"
+    },
+    {
+      "cell_id": "P5_BASE",
+      "feature": "multi_tier",
+      "tier": "BASE",
+      "endpoint_fingerprint": "6ecd5b22",
+      "switch_verified": false,
+      "settled": true,
+      "usage_observed": "1.1k in / 468 out",
+      "evidence_ref": "P5_BASE_safe.png",
+      "state": "pass"
+    },
+    {
+      "cell_id": "TIER_1M",
+      "settled": true,
+      "usage_observed": "1.1k in / 233 out (0 cached, 0.0%) ",
+      "evidence_ref": "TIER_1M_safe.png",
+      "endpoint_fingerprint": "6ecd5b22",
+      "tier": "1M",
+      "switch_verified": true,
+      "state": "pass",
+      "feature": "unclassified",
+      "attempts": 2,
+      "merged_note": "merged 2 attempts for this cell_id; final state kept, earlier attempt(s) were precondition-not-met (criterion not exercised) and are preserved in the off-repo facts file"
+    },
+    {
+      "cell_id": "TIER_512K",
+      "settled": true,
+      "usage_observed": "1.1k in / 115 out (0 cached, 0.0%) ",
+      "evidence_ref": "TIER_512K_safe.png",
+      "endpoint_fingerprint": "6ecd5b22",
+      "tier": "512K",
+      "switch_verified": true,
+      "state": "pass",
+      "feature": "unclassified",
+      "attempts": 2,
+      "merged_note": "merged 2 attempts for this cell_id; final state kept, earlier attempt(s) were precondition-not-met (criterion not exercised) and are preserved in the off-repo facts file"
+    },
+    {
+      "cell_id": "F1_filewrite",
+      "settled": true,
+      "usage_observed": "1.2k in / 103 out (0 cached, 0.0%) ",
+      "evidence_ref": "F1_filewrite_safe.png",
+      "endpoint_fingerprint": "6ecd5b22",
+      "tier": "512K",
+      "switch_verified": false,
+      "state": "pass",
+      "feature": "workspace_io"
+    }
+  ],
+  "privacy": {
+    "credentials": 0,
+    "endpoint_identifiers": 0,
+    "device_serials": 0,
+    "local_paths": 0,
+    "session_history": 0,
+    "post_write_banned_hits": 0
+  }
+}
