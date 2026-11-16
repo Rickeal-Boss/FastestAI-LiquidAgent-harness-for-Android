@@ -138,7 +138,7 @@
 3. **最终树复跑判据**：本波 handoff 与台账 W20 段落盘后，在最终树重跑 `arch-guard`，要求 `result=PASS`、状态值仅 `OPEN/CARRIED/CLOSED`、所有 `CLOSED` 行证据列非空；`MISSING=[]`。此项在 §5.4 推送前回填。
 4. **不做的事**：不往 handoff 塞 ID 抬数、不改 `arch-guard.sh` 扩扫描面、不动 W18/W19 历史正文。挂 `W20-17`。
 
-### 2.3 本波制品出厂断言与必红变异（避免 W19 P0-2 同型）
+### 2.2 本波制品出厂断言与必红变异（避免 W19 P0-2 同型）【W21 收口修订：本节与下节编号互换以修复 §2.1→§2.3→§2.2 物理乱序（报告① P1-8），内容未动】
 
 | 项 | 内容 | 四态 | 证据 |
 |---|---|---|---|
@@ -147,7 +147,7 @@
 | 参数化 | 产物名 `w20-matrix-summary.json`、`baseline_commit` 由 argv 传入（不写死上一波基线），schema 版本 `liquidharness.w20.matrix-summary.v1` | ✅ | `_w20/make_evidence.py` |
 | 隐私闸门 | `privacy_gate.py` 分组判定；发现 12 处 `absolute_local_path` 硬命中 ⇒ **不改闸门、不削弱扫描**，处置为「两份未跟踪外部输入件不入库 + 闸门日志交 `.safe.log` 脱敏副本」，实际提交面复检 **0 命中** | ✅ | `_w20/privacy_gate.py`、`_w20/*.safe.log` |
 
-### 2.2 审查席独立回源核验（12 项，完整原文 `_w20/phase1_review.md`）
+### 2.3 审查席独立回源核验（12 项，完整原文 `_w20/phase1_review.md`）
 
 > 成员任务 `completed`，**已核 12 / 未核 0**；四闸门历史实跑值本席未复跑，此处引用 G1–G4 一律以 §2 表本波实跑为准，不升级为「审查席通过」。
 
@@ -159,7 +159,7 @@
 | 4 | 三 workflow 触发面 | ✅ 成立 | `build.yml:47-60`；`secret-scan.yml:16-22` 无 `paths-ignore` 且扫描步无 `continue-on-error`/`|| true`；`release.yml:53-60` `tags: v*` + dispatch、无 branches |
 | 5 | W19 §3.2/§3.3/§5.1 三态 | ✅ 三态字面并存 + ⚠️ **「账实矛盾」定性部分成立** | `:196`/`:207`/`:244` 分属三判据面，`:209` 已声明「两轴不互相冒充」⇒ 非严格自相矛盾；报告② P0-1 降 ⚠️ 部分 |
 | 6 | 制品 `cell_id` 唯一性 | ✅ 成立（P0-2 事实面） | `cells=9` / `P0_512K` 重复 2 次 ⇒ 唯一 ID **8**；idx2 缺 `endpoint_fingerprint`/`evidence_ref`；`iterations_total=9` 与 §4「1..8 + 基线」属口径差非硬矛盾（⚠️） |
-| 7 | W19 handoff 零 ID 字面量 + G20 逐 commit | ✅ 成立（含独立结论） | 112 恒定经实算复核；**外审「塞 ID 让数字变动」判不采纳**（全文扫是设计 / 每 ID 须台账行首有行 / `n_ids` 派生量 / 扩面须改 `.sh`+selftest）；`W9-00` 旧先例不得开绿灯 |
+| 7 | W19 handoff 零 ID 字面量 + G20 逐 commit | ✅ 成立（含独立结论） | 逐 commit 实算恒定经复核（数值留仓外不写入真值源——派生量不写死，W21 收口修订）；**外审「塞 ID 让数字变动」判不采纳**（全文扫是设计 / 每 ID 须台账行首有行 / `n_ids` 派生量 / 扩面须改 `.sh`+selftest）；`W9-00` 旧先例不得开绿灯 |
 | 8 | W18 制品 pass 值可信度 | ✅ 存疑特征成立 + 欠账未挂 | `w18-matrix-summary.json:115/:126` 两格 `usage_observed` **逐字节相同**（34 字符含尾空格）；W19 未回灌 downgrade 抬头、`W19-13` 仅三处账实 P0 ⇒ 该**数据可信度欠账未挂**，本波 `W20-15` 补登记 |
 | 9 | 「应用侧静默 fallback」 | ⚠️ **静态未定位** | `setActiveEndpointId` 全树写入点仅 3 处；`ChatViewModel.kt:341-344` `NO_ENDPOINT`、`HttpTransport.kt:185` `retryOnConnectionFailure(false)`；「自动回退」是全仓唯一表述且无代码锚 ⇒ 观察+推断混合，**不得写成事实** |
 | 10 | 日析三项与 §5.2 覆盖 | ✅ 三项原样 + ⚠️ 漏 2/3 | A1 `ChatViewModel.kt:136/138`、A2 `SkillMention.kt:55/128-129`、C1 限 ChatSkillInput 配对层（`SkillMentionTest.kt:134-138` 已有本层 round-trip）；§5.2 #3 已覆盖 A2，**A1 残留与 C1 未列**；`W16-19`/`W16-20` 为无台账行悬空候选编号 |
@@ -195,9 +195,15 @@
 | P3_BASE | 端点探针 / 基线 | `34b14303`→`5ec3b060` | ✅ | 收敛 / `1.6k in / 340 out` | **是** | `matrix_facts.jsonl` |
 | P4_BASE | 端点探针 / 基线 | `5ec3b060`→`29878504` | ⛔ | 未收敛 / 无 usage（11.1s fast-fail） | **行使后失败**：「网络抖动，正在重试…」上屏 ⇒ 判节点不可用，止损不等 120s | `matrix_facts.jsonl`；归**环境问题、非四分类代码缺陷**，切备用端点、不硬跑 |
 | P5_BASE | 端点探针 / 基线 | →`6ecd5b22` | ✅ | 收敛 / `1.1k in / 468 out`（15.5s） | **是**：usage 上屏 | `_w20/shots/P5_BASE_safe.png` |
+| TIER_1M | 档位格 / 1M | `6ecd5b22`（active） | ✅ | 收敛 / `1.1k in / 233 out (0 cached, 0.0%)` | **是**：`switch_verified=true`（回读「当前 1M」）+ 确认框 `dialog_seen=true` | `switch_facts.jsonl`、制品 `TIER_1M` |
+| TIER_512K | 档位格 / 512K | `6ecd5b22` | ✅ | 收敛 / `1.1k in / 115 out (0 cached, 0.0%)` | **是**：`switch_verified=true`（回读「当前 512K」） | `switch_facts.jsonl`、制品 `TIER_512K` |
+| F1_filewrite | 工作空间文件写 / 512K | `6ecd5b22` | ✅（带限定） | 收敛 / `1.2k in / 103 out (0 cached, 0.0%)` | **是**：三重硬证据（严格 `ls -1` + mtime 本轮 + 内容 7 字节）；限定见 §3.2（「工具被调用」【推断·高置信】） | `matrix_facts.jsonl`、制品 `F1_filewrite` |
 
-> 上表 5 格**全部**具备 `converged=true` + usage 行上屏 + `typed_hint` 与 prompt 一致 +
+> 【W21 收口修订（报告③ M-6，README 线 R-B 采纳）：上三格自 `_w20/evidence/` 与制品 `w20-matrix-summary.json` 回源补录（轮均已发生、证据已落盘），全制品 `cells_total=10` 与本表 10 行对齐】
+
+> 上表收敛格（6 `pass`；另 1 格 P4_BASE 判 ⛔ 未收敛）**全部**具备 `converged=true` + usage 行上屏 + `typed_hint` 与 prompt 一致 +
 > `bounds_hits[2]` 发送键真实 bounds + 脱敏截图 `alive=true` ⇒ 非「请求收敛但判据未行使」的空转绿。
+> 【W21 收口修订（报告① P1-8）：原句「5 格」计数错，按本表 7 行实算订正为「6 pass + 1 fail」】
 > 三道防线自证见 `_w20/evidence/defense_baseline.jsonl`：`cat` 不存在文件的错误串**确实含目标文件名**
 > （假绿陷阱已实证），故落盘判据采用严格 `ls -1` 前后差集；基线 `strict_ls_count=18`、
 > `hello20.txt` 不存在、`agent_log_file_write_baseline=0`。
@@ -207,7 +213,7 @@
 | 功能面 | 四态 | 说明 |
 |---|---|---|
 | 本地 UI + adb 控件可达 | ✅ | `ui_debug.jsonl`：输入框 / 发送 / 新对话 / 设置 / 更多操作 found+bounds_valid 全 True；存活 `SCREEN_STATE_ON` + 非全黑截图 `0.9996` / alive=true。压缩菜单 `bounds_valid=true` 但 `found` 未单独取到 ⇒ 以菜单可达性为准，不冒充进入确认框 |
-| 端点轴（≥3 端点真收敛） | ✅ | §3.3；去重 5 个收敛指纹（4 支收敛格 + CTRL0）+ 1 支判 ⛔ |
+| 端点轴（≥3 端点真收敛） | ✅ | §3.3；去重 5 个收敛指纹（6 收敛格 = 5 支收敛格 + CTRL0，其中 P1/P3 同指纹）+ 1 支判 ⛔ 【W21 收口修订（报告① P1-8）：原句「4 支收敛格」计数错，按制品 7 格实算订正】 |
 | 档位轴（512K / 1M 读数） | ✅ | **两档均为真切换回读**：512K→1M（`当前 1M` + `switch_verified=true`）→ 1M 档收敛（`1.1k in / 233 out`）→ 1M→512K（`当前 512K`）→ 512K 档收敛（`1.1k in / 115 out`）。**关键读数口径**：会话行显示 `上下文 1.2K / 251.9K` ⇒ 档位选择器 1M ≠ 生效窗口（活跃端点声明 262144 封顶，effective≈251.9K）≠ 1M 真压；不写「直至 1M 达成」 |
 | 多模态图片输入 | ⚠️ | **部分行使**：端点发现成功（遍历找到 `vision_locked=false` 的端点 `5ec3b060`，能力位经设备侧确证）；但 SAF 选择器未显示 `vision_probe.png` ⇒ 附件与语义判定未行使；不冒充通过 |
 | 工作空间文件读写 | ✅（带限定） | 落盘判据**真行使**：设备侧独立三重硬证据 —— 严格 `ls -1` 存在 `hello20.txt` + `ls -la` mtime 本轮 + 内容 `hello20`（7 字节与题面一致）。**限定如实登记**：① 驱动 `workspace_file()` 用 `cat` 判存在 ⇒ 错误串可被当内容（防线 #1 残留），BEFORE 差集不可靠；② `agent-0.log` 记录面只含 `auto_compact` 类事件、无工具调用记账 ⇒ 「日志 0 计数」不构成「工具未调用」证据，「`file_write` 工具被调用」标【推断·高置信】不写成事实 |
@@ -221,7 +227,8 @@
 ### 3.3 档位轴与端点轴分开判定
 
 - **端点轴（本波实质增量）**：以真机**实际发请求并收敛**的端点指纹去重计数为准。
-  已落盘 7 格（CTRL0 自证档 + 6 次端点预筛，覆盖设备侧 6 支端点）：**6 格真收敛**，
+  已落盘 7 格端点面（CTRL0 自证档 + 6 次端点预筛，覆盖设备侧 6 支端点；另 3 格档位/文件面
+  见 §3.1 补录行，全制品 `cells_total=10`）：**6 格真收敛**，
   收敛端点去重后 **5 个互不相同的指纹**（`c4c25092` / `8ac38d1b` / `5ec3b060` /
   `34b14303` / `6ecd5b22`，其中 `5ec3b060` 在 P1/P3 两格重复出现）；1 格切到 `29878504`
   后「网络抖动，正在重试…」上屏、无 usage ⇒ 判 ⛔ 节点不可用。收敛格每格均有 usage +
@@ -232,8 +239,10 @@
   「自动回退」类表述：审查席静态未定位，本波只写「静态未定位、待真机取证」，不预设机制、不写成应用行为事实（`W20-18`）。
 - **档位轴**：以 `switch_facts.jsonl` 的 `当前 <档>` 回读与 `switch_verified` 为准；
   1M 只做**档位读数**，不是 1M 真压（`W9` 段第 11 行双阻断未解除，`W20-05` 原样 `OPEN`）。
-  截至本表定稿时窗切换证据见 `switch_facts.jsonl`（`kind=endpoint` 的确认框 `dialog_seen=true`，
-  诊断含 `unverified_window char_floor_unmeasured`）；**窗切换回读结果待回填**，不写「直至 1M 达成」。
+  窗切换证据见 `switch_facts.jsonl`（`kind=endpoint` 的确认框 `dialog_seen=true`，
+  诊断含 `unverified_window char_floor_unmeasured`）；**窗切换回读结果见 §3.2 档位轴行与制品
+  `TIER_1M` / `TIER_512K` 两格**（双向 `switch_verified=true`），不写「直至 1M 达成」。
+  【W21 收口修订（报告① P0-3）：原句「待回填」为旧占位残留，与 §3.2 / §5.1 / 制品三处结论打架，按回源事实订正】
 - 两轴不互相冒充；不写「用户指令『直至 1M』达成」这类合并表述（外审口径订正已采纳）。
 
 ---
@@ -252,6 +261,16 @@
 | 1 | 本地 UI + adb 控件可达 + 三道防线自证 | 唤醒 `SCREEN_STATE_ON`+`AWAKE`、非全黑 0.9996；keyguard 未解时控件树仅 AOD（环境态非控件缺失）；控件 5/6 found+bounds_valid；`cat` 不存在文件的错误串**确实含目标文件名** ⇒ 改严格 `ls -1`；基线 18 文件、`hello20.txt` 不存在、`file_write=0` | 判据自证（**写「X 未发生」前先自证判据会响**） | ✅ |
 | 2 | CTRL0 判据自证档（活跃端点 @ 基线档，英文短题 `Reply with exactly OK`） | 8.0s 收敛，usage `1.6k in / 34 out`，`typed_hint` 与题面一致、发送键 bounds 命中、端点指纹 `c4c25092`、脱敏截图 alive | 基线（无代码缺陷，未触发四分类） | ✅ |
 | 3 | 端点 fast-fail 预筛（6 支端点，35s 止损） | 6 支中 5 支真收敛（去重 5 个指纹）、1 支「网络抖动，正在重试…」上屏且无 usage ⇒ 判 ⛔ 节点不可用；确认框 `dialog_seen=true`，诊断含 `unverified_window char_floor_unmeasured` | **环境问题**（provider 波动）⇒ 止损不硬跑、切备用端点、不写成应用代码 bug | ⚠️ |
+| 4 | 档位轴：512K→1M 真切换（real bounds tap + 确认框 dump + 回读「当前 1M」） | `switch_verified=true`；活跃端点生效窗口 251.9K（声明 262144 封顶）；口径：档位读数 ≠ 生效窗口 ≠ 1M 真压 | 设备侧配置 / 取证驱动（非四分类） | ✅ |
+| 5 | 档位轴：1M 档收敛（`1.1k in / 233 out`）→ 切回 512K 回读「当前 512K」→ 512K 档收敛（`1.1k in / 115 out`）；两次前置未满足尝试按出厂断言合并进本格（`attempts=2`） | 双档真切换回读 + 双档收敛；端点指纹 `6ecd5b22` 稳定 | 制品层合并（原始 JSONL append-only 保留） | ✅ |
+| 6 | 主理人接手（真机席 429 配额耗尽，按铁律不重试 spawn）：file_write 审批驱动 + 设备侧回读 | `workspace_file before=True / after=True`（`cat` 判存在，防线残留见轮 7 订正） | 主理人接手补完（团队纪律） | ✅ |
+| 7 | F1 判据订正（append-only）：`cat` 判存在可被错误串假绿 ⇒ 设备侧独立命令三重硬证据（严格 `ls -1` 存在 + `ls -la` mtime 本轮 + 内容 7 字节匹配）；`agent-0.log` 无工具调用记账 ⇒ 「工具被调用」标【推断·高置信】 | 判据自证升级；BEFORE 差集不可靠如实登记，不静默补值（原行保留） | 判据订正 | ✅ |
+| 8 | MCP + vision 终态：MCP 屏未达（顶栏设置恢复端点管理子页、BACK 退出整个设置）⇒ ⛔vacuous；vision 端点能力位设备侧确证但附件/语义未行使 ⇒ ⚠️；skill / 手动 / 自动压缩结构性 ⛔vacuous（`skills/` 空、长对话夹具未备） | 迭代预算 8 轮触顶即收 | 前置不满足如实登记（§1.2 #8） | ⚠️ |
+
+> 【W21 收口修订（报告③ M-2 / 报告① P1-4）：上五行自 `_w20/evidence/iterations.jsonl` 回源补录。
+> 编号映射：本表轮 1/2/3 ↔ JSONL iter 0/1/2（轮 0「驱动适配」为前置未计入 JSONL）；JSONL 无 iter 3
+> （两次前置未满足尝试按唯一 `cell_id` 断言合并进 iter 5，`attempts=2`，原始 JSONL append-only 保留）；
+> 本表轮 4–8 ↔ JSONL iter 4–8。原始证据行未被改写。】
 
 > **取证链如实登记**：真机席回传的 `iterations.jsonl` 曾出现 `compile_rc=None` ⇒ 主理人已提示改为
 > 显式「未触发本波编译」，不抹掉原始行、不静默补值（保留原行 + 后续订正）。
@@ -270,7 +289,7 @@
 | 步 | 结果 | 四态 | 证据路径 |
 |---|---|---|---|
 | 1 §1 本次任务范围（做什么 / 明确不做） | 三份外审分歧逐条裁决完成，收敛出唯一目标；做什么 8 项 / 明确不做 20 条逐条带挂账号；方案席 Phase 1 A–F 与审查席 12 项独立核验均已汇编 | ✅ | 本文件 §1.1–§1.4；`docs/06-deferred-ledger.md` §二-decies |
-| 2 §2 本地闸门 + 独立回源核验 | G1 / G2 / G3 / G4 四闸门全实跑；G3 含 1 条 ⛔vacuous（G19）如实登记；审查席 12 项已核 12 / 未核 0；G20 显式边界注记（§2.1）；制品出厂断言 + 必红变异（§2.3）；最终树复跑见 §5.4 | ✅ | `_w20/gates_g1..g4.log`、`phase1_review.md`、`ci_trigger_chain.log` |
+| 2 §2 本地闸门 + 独立回源核验 | G1 / G2 / G3 / G4 四闸门全实跑；G3 含 1 条 ⛔vacuous（G19）如实登记；审查席 12 项已核 12 / 未核 0；G20 显式边界注记（§2.1）；制品出厂断言 + 必红变异（§2.2）；最终树复跑见 §5.4 | ✅ | `_w20/gates_g1..g4.log`、`phase1_review.md`、`ci_trigger_chain.log` |
 | 3 §3 真机功能矩阵 | 9 面四态终态见 §3.2（4 ✅ / 1 ⚠️ / 4 ⛔vacuous）；端点轴 ✅（去重 5 收敛指纹）+ 1 ⛔；档位轴 ✅ 两档真切换回读；迭代 8 轮触顶；未取得格不冒充通过 | ⚠️（部分格判据未行使，逐格见 §3.2） | `_w20/evidence/matrix_facts.jsonl`、`vision_facts.jsonl`、`_w20/shots/*_safe.png`、`evidence/w20-matrix-summary.json` |
 | 4 §4 链内迭代 | 8 轮逐行证据（含 2 次 F1 判据订正 append-only）；本波零 `.kt` ⇒ 每行「未触发本波编译」；主理人接手补完（真机席 429 配额耗尽，按铁律不重试 spawn） | ✅ | `_w20/evidence/iterations.jsonl` |
 | 5 §5 推送与 CI | 见 §5.4（每次推送 commit + run 链接、CI 红次数与推送次数） | 见 §5.4 | §5.4 + `git show` |
@@ -293,31 +312,9 @@
 **其余 OPEN 挂账的触发信号 / 缓解动作**：逐行见 `docs/06-deferred-ledger.md` §二-decies（20 行全 `OPEN`）。
 本波不再新开其它号，不制造幽灵行。
 
-### 5.4 CI（实跑回填）
+### 5.3 制品清单（交外部审查团队）
 
-| 项 | 值 |
-|---|---|
-| 推送 1 | `0059c06..9ceebad HEAD -> main`（commit `9ceebad`，4 files / +679：验收物 + 交接 + 台账 §二-decies + 仓根脱敏制品 `evidence/w20-matrix-summary.json`）；不 force-push、不 rewrite history |
-| Build run | run `43708584148` **completed success**（event=push，由仓根非 docs 制品自身真实触发；五 job 全绿：Assemble Debug (JDK 21) / Unit tests / Arch guard (26 guards + mutation selftest) / Lint (baseline gate) / 内嵌 Secret scan） |
-| Secret scan run（独立） | 同一 push 触发的独立 `secret-scan.yml` run **completed success**（无 `paths-ignore`，覆盖同一 commit；check-runs 中第二个 `Secret scan (gitleaks + trufflehog)` 项） |
-| 最终树守卫复跑 | 推送前实跑：`result=PASS ok=27 vacuous=1 violation=0 fault=0`、rc=0、**G20 = 112 未变动（属预期，非失败，`0 命中 ≠ 通过`）**、扫描面 handoff 文件数 18→19（新交接被纳入扫描面且零 W-ID 贡献）、`MISSING=[]`、静态复现器 `g20_static_pass=True` |
-| 推送 2 | 本提交（纯文档回填 §5.4）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 1 run，其链接**随交付消息给出、不在仓内自指回填**（避免自指陷阱） |
-| CI 红次数 | **0**（上限 2，未触） |
-| 推送次数 | **2**（上限 3；推送 1 已 CI 全绿 ⇒ 按契约收尾，不凑第三次） |
-| 归因 | 无失败案例 ⇒ 四分类（参数错 / 工具名错 / 该调不调 / 调了不收敛）**未触发**；端点 1 支「网络抖动」判 ⛔ 属环境问题不写成应用 bug；纯文档提交 0 run 属既定口径，不写「构建再次通过」；真机席 429 配额耗尽 ⇒ 主理人接手补完（团队纪律），环境类单独登记 |
-
-**run 链接**（公开 API check-runs 逐项读 status / conclusion，零凭据）：
-推送 1 Build：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43708584148
-
-> 本波零 `.kt` 改动 ⇒ 「CI 全绿」指 Build 五 job + 独立 Secret scan 结论 success，
-> **不等于**真机矩阵全格通过（§3 如实登记 ⛔ / ⚠️ / ⛔vacuous 的格）。
-> 凭据纪律：inline URL 一次性使用、输出经 redact、remote 保持干净 URL、不落盘；
-> 该 PAT 用后应轮换（inline 残留 shell history / reflog）。
-> 不 force-push、不 rewrite history；每次推送留可审计 commit 与 run 链接。
-
-**文档回写 diff**：`docs/analysis/w20-acceptance.md`（新）、`docs/handoff-20261115-wave20.md`（新，零 W-ID 字面量经守卫同款正则自证）、
-`docs/06-deferred-ledger.md` §二-decies（+20 行，全 `OPEN`）、`evidence/w20-matrix-summary.json`（新，脱敏机器可读制品）。
-历史文档正文一律未改；两份本期源码日析保持未跟踪不入库（`W20-20`）；本波不写「建议下一链做什么」。
+> 【W21 收口修订（报告① P0-1）】tip 回填时本节标题曾被整行覆盖为 §5.4，现恢复标题并把 CI 段移至本节之后；表格内容与语义不变。
 
 > **不含会话历史、不含凭据、不含端点标识、不含「建议下一链做什么」**。
 > 端点一律以不可逆 8 位指纹出现；证据路径为仓内相对路径或仓外证据目录名，
@@ -336,3 +333,35 @@
 | 代码 diff | 本波各提交 `git show` | **零 `.kt` 改动**；只有文档 + 台账 + 脱敏证据制品 |
 | 隐私自检 | `_w20/privacy_gate.py` 运行结果 | commit + evidence 组硬命中 0；8 位 hex 端点指纹为允许形态 |
 | 本期源码日析（**未入库**） | `docs/analysis/source-review-2026-11-14-2.md`、`source-review-2026-11-15.md` | 开波即为工作树未跟踪的外部输入文档（`git log --all` 零记录），非本波产出；两份标题「已提交 main」属抬头易误读。其一份含本机绝对路径 ⇒ **本波不纳入提交、保持未跟踪**，只登记表述易误读（`W20-20`），不改历史正文、不削弱隐私闸门 |
+
+### 5.4 CI（实跑回填）
+
+| 项 | 值 |
+|---|---|
+| 推送 1 | `0059c06..9ceebad HEAD -> main`（commit `9ceebad`，4 files / +679：验收物 + 交接 + 台账 §二-decies + 仓根脱敏制品 `evidence/w20-matrix-summary.json`）；不 force-push、不 rewrite history |
+| Build run | run `43708584148` **completed success**（event=push，由仓根非 docs 制品自身真实触发；五 job 全绿：Assemble Debug (JDK 21) / Unit tests / Arch guard (26 guards + mutation selftest) / Lint (baseline gate) / 内嵌 Secret scan） |
+| Secret scan run（独立） | 同一 push 触发的独立 `secret-scan.yml` run `43708584128` **completed success**（无 `paths-ignore`，覆盖同一 commit）【W21 收口修订：run ID 经公开 API 复核后补入，报告① P1-7】 |
+| 最终树守卫复跑 | 推送前实跑：`result=PASS ok=27 vacuous=1 violation=0 fault=0`、rc=0、**G20 `PASS`，ID 数以 `arch-guard` 实跑输出为准（派生量不写死；`0 命中 ≠ 通过`）**、扫描面 handoff 文件数 18→19（新交接被纳入扫描面且零 W-ID 贡献）、`MISSING=[]`、静态复现器 `g20_static_pass=True`【W21 收口修订：原句写死派生计数，按 W16 裁决订正为实跑口径；逐 commit 实算结论留仓外（报告① P0-2）】 |
+| 推送 2 | commit `eceacf3`（纯文档回填 §5.4）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan run `43708860782` **completed success**【W21 收口修订：tip 哈希与 run ID 经公开 API 复核后补入，不再「随交付消息给出」，报告① P1-7】 |
+| CI 红次数 | **0**（上限 2，未触） |
+| 推送次数 | **2**（上限 3；推送 1 已 CI 全绿 ⇒ 按契约收尾，不凑第三次） |
+| 归因 | 无失败案例 ⇒ 四分类（参数错 / 工具名错 / 该调不调 / 调了不收敛）**未触发**；端点 1 支「网络抖动」判 ⛔ 属环境问题不写成应用 bug；纯文档提交 0 run 属既定口径，不写「构建再次通过」；真机席 429 配额耗尽 ⇒ 主理人接手补完（团队纪律），环境类单独登记 |
+
+**run 链接**（公开 API check-runs 逐项读 status / conclusion，零凭据）：
+推送 1 Build：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43708584148
+推送 1 Secret scan：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43708584128
+推送 2 Secret scan：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43708860782
+
+> 本波零 `.kt` 改动 ⇒ 「CI 全绿」指 Build 五 job + 独立 Secret scan 结论 success，
+> **不等于**真机矩阵全格通过（§3 如实登记 ⛔ / ⚠️ / ⛔vacuous 的格）。
+> 凭据纪律：run 链接取值仅用公开 API（零凭据）；推送凭据 inline 一次性使用、不落盘，
+> 凭据已由用户侧完成轮换（2026-11-16 新凭据生效）。【W21 收口修订：原句「应轮换」为未闭环
+> 表述且与同段「零凭据」口径冲突，按报告① P1-1 订正】
+> 不 force-push、不 rewrite history；每次推送留可审计 commit 与 run 链接。
+
+**文档回写 diff**：`docs/analysis/w20-acceptance.md`（新）、`docs/handoff-20261115-wave20.md`（新，零 W-ID 字面量经守卫同款正则自证）、
+`docs/06-deferred-ledger.md` §二-decies（+20 行，全 `OPEN`）、`evidence/w20-matrix-summary.json`（新，脱敏机器可读制品）。
+历史文档正文一律未改；两份本期源码日析保持未跟踪不入库（`W20-20`）；本波不写「建议下一链做什么」。
+【W21 收口修订：本文件 §5.3 / §5.4 结构按报告① P0-1 恢复（制品清单节标题曾被 tip 回填覆盖），
+§5.4 三处按 P0-2 / P1-1 / P1-7 订正；其余正文未动】
+

@@ -1,0 +1,355 @@
+{
+  "schema": "liquidharness.w21.matrix-summary.v1",
+  "wave": "W21",
+  "scope": "multi-endpoint x multi-tier x full-feature real-device matrix",
+  "baseline_commit": "eceacf3",
+  "state_enum": [
+    "fail",
+    "partial",
+    "pass",
+    "vacuous"
+  ],
+  "state_note": "vacuous = criterion not exercised; partial = indirect evidence only; pass = criterion exercised with evidence; fail = exercised and failed",
+  "cells_total": 20,
+  "state_counts": {
+    "fail": 3,
+    "pass": 11,
+    "partial": 3,
+    "vacuous": 3
+  },
+  "declared_feature_faces": [
+    "local_ui",
+    "endpoint_axis",
+    "multi_tier",
+    "workspace_io",
+    "skill",
+    "multimodal",
+    "manual_compress",
+    "auto_compress",
+    "mcp_status"
+  ],
+  "feature_faces_with_cells": [
+    "auto_compress",
+    "endpoint_axis",
+    "local_ui",
+    "manual_compress",
+    "mcp_status",
+    "multi_tier",
+    "multimodal",
+    "skill",
+    "workspace_io"
+  ],
+  "coverage_note": "every declared feature face has at least one machine-readable cell",
+  "iterations_total": 12,
+  "iterations_note": "rows are appended per real iteration; section 4 of the acceptance document is the authoritative iteration table",
+  "numbering_note": null,
+  "truncated_fields": [],
+  "iterations": [
+    {
+      "iteration": 0,
+      "action": "Step0 key-reuse source-trace + envelope verify",
+      "observation": "Path1 kept-blank=preserve: EndpointEditScreen.kt:175 ifBlank{null} + AppContainer.kt:324-325 write only when apiKey!=null. Path2 id-keyed envelope: EndpointSecretStore.kt:107 fileFor=<id>.bin; device md5: nv1=nv2=nv3, orvl=ortxt=orvis (2 originals copied to 4 new ids). Driver paths patched _w20->_w21, w20.py shim added, py_compile pass. Endpoints pre-staged: 6 entries all hasSecret=true."
+    },
+    {
+      "iteration": 1,
+      "action": "endpoint axis NV-family probes",
+      "observation": "nv1(idx0) sanity: converged 2.4s usage 1.9k <redacted> out fp=<redacted> - device link+engine+envelope decrypt all healthy. Two new-NV probes (idx2,idx3) both node_no_response (35s,90s windows, no fail signal, no usage). CAVEAT: idx-based switch unstable - active row has no set-active button so button index shifts between probes; two probes gave same fp <redacted> from different idx. Identity of silent nodes NOT fully verified -> will re-probe with row-fp-verified switch."
+    },
+    {
+      "iteration": 2,
+      "action": "endpoint axis NV re-probe with row-fp-verified switch",
+      "observation": "row_switch.py added (switch by row name-fp + badge recheck, fixes idx drift from iter1). nv2_mistral: switch badge-verified <redacted>, chat fp <redacted> -> node_no_response 60s, no fail signal = silent node, judged env-side (W7 had transient 502 precedent). nv3_step5: badge-verified <redacted>, chat fp <redacted> -> CONVERGED 8.9s usage 1.7k <redacted> out. Envelope path-2 (nv1.bin copy) proven working by nv3 convergence."
+    },
+    {
+      "iteration": 3,
+      "action": "endpoint axis OR-family probes",
+      "observation": "orvl <redacted>-note-preview:free: badge-verified <redacted>, chat fp <redacted>, CONVERGED 4.9s usage 1.6k <redacted> out (after cold-start reset; <redacted> envelope copy path-2 proven live). ortxt <redacted>-code:free: badge-verified <redacted>, chat fp <redacted>, CONVERGED 12.1s usage 1.1k <redacted> out. orvis <redacted>-4-26b:free: badge-verified <redacted>, chat fp <redacted>, node_unavailable - retry loop on screen, env-side."
+    },
+    {
+      "iteration": 4,
+      "action": "tier axis 256K+512K",
+      "observation": "TIER_256K: switch dialog+readback [current 256K] verified, cell converged 7.7s usage 1.6k <redacted> out on orvl fp <redacted>. TIER_512K: dialog+readback [current 512K] verified, cell converged 7.7s usage 1.6k <redacted> out, same endpoint. Both switch_facts.jsonl recorded. logcat hard= not found in last-300 lines (fingerprint may only log at app start; noted as missing evidence, tier readback remains primary). Nav lesson: switch.home() BACK-loop exits app; replaced by deterministic cold-start or single BACK."
+    },
+    {
+      "iteration": 5,
+      "action": "manual compress <redacted> tiny fixture + meter discovery",
+      "observation": "Fixture: 3 turns short answers, 6 bubbles > 4, menu item appeared, dialog confirmed - result toast: nothing-to-compress (dropped=0). Discoveries: (1) context meter 1.6K/507.9K on screen = tier 512K effective window visible; (2) attachment button disabled with honest reason on orvl (no image input); (3) manual_compress dropped=N kept=M log format exists per W20. Layer B needs long-output fixture; combining with layer A rounds next."
+    },
+    {
+      "iteration": 6,
+      "action": "compression face: layerA trigger crossed + layerB declined + layerC guard",
+      "observation": "LayerA: tier-32K guard dialog readout committed=79027 cap=50227 chars = trigger line 50227 crossed with official numbers; log auto_compact reason flipped below_trigger -> insufficient_savings:net=-256 (evaluator ran, declined, giant indivisible essay turns). LayerB: menu reachable twice (bubbles>4 gate ok), confirm executed twice at 14.8K ctx -> both declined <redacted>; dropped>0 not achieved. LayerC: 32K switch blocked by guard (committed 79027 > cap 50227) - guard itself exercised live; 20,928-token L1 path not reachable this session."
+    },
+    {
+      "iteration": 7,
+      "action": "skill face: device-injected SKILL.md exercised via @mention",
+      "observation": "Injected <redacted>/<redacted>/SKILL.md (324B, name+description frontmatter) via run-as base64 pipe; cold start; settings skill list shows w21-probe source=file (scan chain ok). First @ attempt garbled by mention autocomplete; retry via popup pick -> '@w21-probe' + question. Reply usage 2.2k <redacted> out (in +0.5k = skill body in context), UI shows [SKILL BODY] banner, thinking mentions loading skill, reply contains sentinel verbatim (RAW check true; redactor masks SENTINEL as device-id token - mask artifact not absence). agent-0.log has no skill_load tool accounting (same as W20), skill face judged by reply content per brief."
+    },
+    {
+      "iteration": 8,
+      "action": "vision prep: probe image via SAF-visible MediaStore",
+      "observation": "Generated 480x240 PNG (blue bg, white <redacted> pixel-font label, pure stdlib <redacted>), pushed to /sdcard/Download/ (MSYS_NO_PATHCONV=1, <redacted> form), content call scan_file OK (bundle returned), MediaStore query on content://<redacted>/<redacted> GREP-HIT: Row _id=<redacted> _display_name=<redacted>.png resolution 480x240 mime <redacted> bucket Download. Note: brief's URI <redacted>/media unsupported on this Android 13 build; images provider + grep used instead. Precondition met: query hit before SAF exercise."
+    },
+    {
+      "iteration": 9,
+      "action": "vision face: SAF chain exercised, semantic hit blocked by node",
+      "observation": "nv2 (only IMAGE-modality endpoint) made active. Full SAF chain exercised live: attach button enabled on IMAGE endpoint (vs honest disabled state on orvl), system picker opened, Download visible, probe image selected (0.98kB chip matched MediaStore row), chip on screen with remove button, semantic question typed+sent. But nv2 request went 'retrying' (network flap) again - same silent-node condition as endpoint axis. <redacted> semantic hit NOT reachable. Vision chain evidence complete except model answer; judged env-side block, not app defect."
+    },
+    {
+      "iteration": 10,
+      "action": "MCP face: list page reachable + status evidence",
+      "observation": "Navigation: chat -> settings (in-app top-bar back arrows used, not system BACK) -> MCP list page reachable. Page contents captured + redacted screenshot MCP_list_safe.png. Real MCP exercise NOT attempted: no external MCP endpoint provisioned in this wave AND G15b cleartext-traffic platform block stays closed (no manifest change allowed). Judged: nav reachable + exercise vacuous separately."
+    },
+    {
+      "iteration": 11,
+      "action": "workspace face + evidence upgrade verdict",
+      "observation": "file_write FILESYSTEM-level evidence (upgrade from W20 inference level): w21-note.txt created in-turn, 11 bytes exact content <redacted>-OK, ns-mtime 13:45:45.<redacted> correlating with the tool turn; approval dialog (allow-once) seen for side-effect tier. file_read: ground-truth content match - model replied notes.txt exact content never present in context (anti-cite-the-prompt control), usage 2.0k <redacted> out. file_list: turn exercised usage 2.1k <redacted> out but .txt count reply mismatched ground truth 14; judged partial (no log accounting to disambiguate model miscount vs tool miss). Log-level upgrade NOT achieved: agent-0.log +72B all auto_compact lines, zero tool accounting - evidence tier = filesystem-level, honestly labeled between inference and log-level."
+    }
+  ],
+  "cells": [
+    {
+      "cell_id": "P2_32K",
+      "feature": "endpoint_axis",
+      "tier": "32K",
+      "endpoint_fingerprint": "5ec3b060",
+      "switch_verified": true,
+      "settled": false,
+      "usage_observed": null,
+      "evidence_ref": "P2_32K_safe.png",
+      "state": "fail",
+      "note": "max_wait=60s 仍等待模型响应、无 usage ⇒ 止损不等 120s",
+      "attempts": 4,
+      "attempt_states": [
+        "fail",
+        "fail",
+        "vacuous",
+        "fail"
+      ],
+      "merged_note": "merged 4 attempts for this cell_id (chronological); final state kept; earlier attempt states preserved in attempt_states; raw per-attempt facts remain in the off-repo facts file"
+    },
+    {
+      "cell_id": "P3_32K",
+      "feature": "endpoint_axis",
+      "tier": "32K",
+      "endpoint_fingerprint": "34b14303",
+      "switch_verified": true,
+      "settled": true,
+      "usage_observed": "1.7k in / 16 out",
+      "evidence_ref": "P3_32K_safe.png",
+      "state": "pass",
+      "note": "usage 行上屏，判据自证档成立",
+      "attempts": 2,
+      "attempt_states": [
+        "fail",
+        "pass"
+      ],
+      "merged_note": "merged 2 attempts for this cell_id (chronological); final state kept; earlier attempt states preserved in attempt_states; raw per-attempt facts remain in the off-repo facts file"
+    },
+    {
+      "cell_id": "P0_32K",
+      "feature": "endpoint_axis",
+      "tier": "32K",
+      "endpoint_fingerprint": "8ac38d1b",
+      "switch_verified": false,
+      "settled": true,
+      "usage_observed": "1.9k in / 22 out",
+      "evidence_ref": "P0_32K_safe.png",
+      "state": "pass",
+      "note": "usage 行上屏，判据自证档成立"
+    },
+    {
+      "cell_id": "P1_32K",
+      "feature": "endpoint_axis",
+      "tier": "32K",
+      "endpoint_fingerprint": "c4c25092",
+      "switch_verified": true,
+      "settled": true,
+      "usage_observed": "1.6k in / 37 out",
+      "evidence_ref": "P1_32K_safe.png",
+      "state": "pass",
+      "note": "usage 行上屏，判据自证档成立"
+    },
+    {
+      "cell_id": "P4_32K",
+      "feature": "endpoint_axis",
+      "tier": "32K",
+      "endpoint_fingerprint": "6ecd5b22",
+      "switch_verified": true,
+      "settled": true,
+      "usage_observed": "1.1k in / 41 out",
+      "evidence_ref": "P4_32K_safe.png",
+      "state": "pass",
+      "note": "usage 行上屏，判据自证档成立"
+    },
+    {
+      "evidence_ref": "matrix_facts.jsonl#P5_32K",
+      "cell_id": "P5_32K",
+      "feature": "endpoint_axis",
+      "tier": "32K",
+      "endpoint_fingerprint": "29878504",
+      "switch_verified": true,
+      "settled": false,
+      "usage_observed": null,
+      "state": "fail",
+      "note": "provider 失败/重试上屏 ⇒ 节点不可用（非应用缺陷）"
+    },
+    {
+      "cell_id": "TIER_256K",
+      "endpoint_fingerprint": "c4c25092",
+      "settled": true,
+      "usage_observed": "1.6k in / 46 out (0 cached, 0.0%) ",
+      "evidence_ref": "TIER_256K_safe.png",
+      "tier": "256K",
+      "switch_verified": true,
+      "state": "pass",
+      "note": "收敛 + usage 读数 + 端点指纹稳定",
+      "feature": "multi_tier",
+      "attempts": 2,
+      "attempt_states": [
+        "vacuous",
+        "pass"
+      ],
+      "merged_note": "merged 2 attempts for this cell_id (chronological); final state kept; earlier attempt states preserved in attempt_states; raw per-attempt facts remain in the off-repo facts file"
+    },
+    {
+      "cell_id": "TIER_512K",
+      "endpoint_fingerprint": "c4c25092",
+      "settled": true,
+      "usage_observed": "1.6k in / 46 out (0 cached, 0.0%) ",
+      "evidence_ref": "TIER_512K_safe.png",
+      "tier": "512K",
+      "switch_verified": true,
+      "state": "pass",
+      "note": "收敛 + usage 读数 + 端点指纹稳定",
+      "feature": "multi_tier"
+    },
+    {
+      "cell_id": "P1_512K",
+      "feature": "endpoint_axis",
+      "tier": "512K",
+      "endpoint_fingerprint": "c4c25092",
+      "switch_verified": false,
+      "settled": true,
+      "usage_observed": "1.6k in / 40 out",
+      "evidence_ref": "P1_512K_safe.png",
+      "state": "pass",
+      "note": "usage 行上屏",
+      "attempts": 3,
+      "attempt_states": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "merged_note": "merged 3 attempts for this cell_id (chronological); final state kept; earlier attempt states preserved in attempt_states; raw per-attempt facts remain in the off-repo facts file"
+    },
+    {
+      "cell_id": "AUTO_R1",
+      "endpoint_fingerprint": "c4c25092",
+      "settled": true,
+      "usage_observed": "1.6k in / 40 out (0 cached, 0.0%) ",
+      "evidence_ref": "AUTO_R1_safe.png",
+      "feature": "auto_compress",
+      "state": "partial",
+      "note": "auto compact evaluator exercised live: log reason flipped below_trigger -> insufficient_savings:net=-256 at ~52k committed chars (official guard readout committed=79027 cap=50227); net-savings threshold not met, no drop performed"
+    },
+    {
+      "cell_id": "AUTO_R2",
+      "endpoint_fingerprint": "c4c25092",
+      "settled": true,
+      "usage_observed": "1.6k in / 40 out (0 cached, 0.0%) ",
+      "evidence_ref": "AUTO_R2_safe.png",
+      "feature": "auto_compress",
+      "state": "partial",
+      "note": "same evaluator path as AUTO_R1: trigger line crossed (committed > 50227), evaluator ran and declined with insufficient_savings:net=-256; long essay turns are indivisible so no safe cut point, dropped=0"
+    },
+    {
+      "cell_id": "SKILL_probe",
+      "usage_observed": "1.6k in / 185 out",
+      "evidence_ref": "SKILL_probe_safe.png",
+      "feature": "skill",
+      "state": "vacuous",
+      "note": "criterion NOT exercised: @mention autocomplete garbled the typed prompt (typed_hint shows replaced text), sentinel absent because the question never reached the model intact; retried as SKILL_probe2",
+      "endpoint_fingerprint": "c4c25092"
+    },
+    {
+      "cell_id": "SKILL_probe2",
+      "usage_observed": "2.1k in / 111 out",
+      "evidence_ref": "SKILL_probe2_safe.png",
+      "feature": "skill",
+      "state": "pass",
+      "note": "sentinel verbatim hit in reply (raw XML containment check true; redactor masks SENTINEL prefix as device-id token, mask artifact not absence) + [SKILL BODY] banner on screen + usage in +0.5k vs baseline (skill body in context); agent-0.log has no skill_load tool accounting, judged by reply content per brief",
+      "caveat": "skill_load invocation inferred from reply content and [SKILL BODY] UI banner (log has no tool accounting), not from log-level tool record",
+      "endpoint_fingerprint": "c4c25092"
+    },
+    {
+      "cell_id": "VISION_semantic",
+      "usage_observed": null,
+      "evidence_ref": "VISION_semantic_safe.png",
+      "feature": "multimodal",
+      "state": "fail",
+      "note": "full chain exercised: attach button enabled on IMAGE endpoint, SAF picker opened, Download visible, probe image selected (0.98kB chip matching MediaStore row), chip on screen with remove button, semantic question typed+sent; nv2 (only IMAGE endpoint) went retry-loop again, <redacted> semantic hit unreachable; env-side node outage, not an app defect",
+      "endpoint_fingerprint": "5ec3b060"
+    },
+    {
+      "cell_id": "WS_tools_trio",
+      "usage_observed": "2.0k in / 37 out",
+      "evidence_ref": "WS_tools_safe.png",
+      "feature": "workspace_io",
+      "state": "pass",
+      "note": "file_write filesystem-level ground truth: w21-note.txt created in-turn, 11 bytes exact content <redacted>-OK, ns-mtime correlating with the tool turn, side-effect approval dialog (allow-once) seen; agent-0.log grew only by auto_compact lines, zero tool accounting",
+      "caveat": "evidence tier is filesystem-level, between inference-level and log-level (log itself carries no tool records)",
+      "endpoint_fingerprint": "c4c25092"
+    },
+    {
+      "cell_id": "WS_fread",
+      "usage_observed": "2.0k in / 46 out",
+      "feature": "workspace_io",
+      "state": "pass",
+      "evidence_ref": "matrix_facts.jsonl#WS_fread",
+      "note": "file_read verified against ground truth: model replied notes.txt exact content that was never present in conversation context (anti-cite-the-prompt control), usage 2.0k <redacted> out; no safe_shot taken for this turn, fact row carries ground_truth_len + content_hit",
+      "caveat": "evidence tier is <redacted> level, between inference-level and log-level (log itself carries no tool records)",
+      "endpoint_fingerprint": "c4c25092"
+    },
+    {
+      "cell_id": "WS_flist",
+      "usage_observed": "2.1k in / 44 out",
+      "feature": "workspace_io",
+      "state": "partial",
+      "evidence_ref": "matrix_facts.jsonl#WS_flist",
+      "note": "file_list turn exercised (usage 2.1k <redacted> out) but replied .txt count did not match ground truth 14; no log tool accounting exists to disambiguate model miscount vs tool miss, judged partial",
+      "endpoint_fingerprint": "c4c25092"
+    },
+    {
+      "cell_id": "F8_manual_compress",
+      "feature": "manual_compress",
+      "state": "vacuous",
+      "endpoint_fingerprint": "c4c25092",
+      "evidence_ref": "F8_manual_compress_safe.png",
+      "note": "compress menu item appeared (bubbles>4 gate ok) and confirm executed twice (tiny fixture, then 14.8K-ctx long-essay fixture); both declined nothing-to-compress / no-safe-cut-point, dropped>0 not achieved because no droppable middle segment exists under the 512K window ; per state_note definition this is exercised-and-failed (dropped>0 unmet), recorded as vacuous because the structural precondition (a discardable middle segment) never existed"
+    },
+    {
+      "cell_id": "MCP_list",
+      "feature": "mcp_status",
+      "state": "vacuous",
+      "endpoint_fingerprint": "5ec3b060",
+      "evidence_ref": "MCP_list_safe.png",
+      "note": "navigation reached: settings home -> MCP list page via in-app top-bar back arrows (system BACK bypass, two-stage); list page empty state captured (no MCP servers configured). Real exercise NOT attempted and judged vacuous separately: no external MCP endpoint provisioned this wave and G15b cleartext-traffic block stays closed (no manifest change)."
+    },
+    {
+      "cell_id": "UI_controls",
+      "feature": "local_ui",
+      "state": "pass",
+      "endpoint_fingerprint": "5ec3b060",
+      "evidence_ref": "P0_32K_safe.png",
+      "note": "multi-page navigation all live-verified: settings main list, endpoint manager (6-row list + active-badge readout), skill list page (source=file grouping), MCP list page, SAF system picker; alive non-black screenshot criterion exercised on every cell (png stat nonblack_ratio>=0.49 in worst frame)"
+    }
+  ],
+  "privacy": {
+    "credentials": 0,
+    "endpoint_identifiers": 0,
+    "device_serials": 0,
+    "local_paths": 0,
+    "session_history": 0,
+    "post_write_banned_hits": 0
+  }
+}
