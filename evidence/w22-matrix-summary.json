@@ -1,0 +1,212 @@
+{
+  "wave": 22,
+  "baseline": "7760632",
+  "zero_kotlin": true,
+  "cells_total": 17,
+  "unique_cell_ids": 17,
+  "state_counts": {
+    "pass": 11,
+    "vacuous": 3,
+    "fail": 1,
+    "partial": 2
+  },
+  "declared_feature_faces": [
+    "local_ui",
+    "endpoint_axis",
+    "tier_axis",
+    "multimodal",
+    "workspace",
+    "skill",
+    "mcp",
+    "manual_compress",
+    "auto_compress"
+  ],
+  "feature_faces_with_cells": [
+    "auto_compress",
+    "endpoint_axis",
+    "local_ui",
+    "manual_compress",
+    "mcp",
+    "multimodal",
+    "skill",
+    "tier_axis",
+    "workspace"
+  ],
+  "face_count": 9,
+  "declared_count": 9,
+  "coverage_note": "declared 9 faces all covered; L1 hard gate is sub-item of compress face (not counted separately)",
+  "iterations_total": 12,
+  "iteration_ids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "switches_total": 4,
+  "compress_cells": 2,
+  "factories": {
+    "E1": {
+      "state": "pass",
+      "endpoint_name_fp": "b995dc45",
+      "tier": "32K",
+      "feature_face": "endpoint_axis",
+      "evidence": "shots/it1_converged_safe.png;shots/it1_tier32_done_safe.png",
+      "caveat": "复验格;回复逐字PONG4(题面PONG42被截),仅证明真往返发生"
+    },
+    "E2": {
+      "state": "pass",
+      "endpoint_name_fp": "b0113b2c",
+      "tier": "32K",
+      "feature_face": "endpoint_axis",
+      "evidence": "shots/it2_north_resp_safe.png;shots/it2_north_setcurrent_safe.png",
+      "caveat": "复验格;真往返成立,模型未逐字回显题面token"
+    },
+    "E3": {
+      "state": "pass",
+      "endpoint_name_fp": "a9ae3f9e",
+      "tier": "32K",
+      "feature_face": "endpoint_axis",
+      "evidence": "shots/it3_step_resp_safe.png",
+      "caveat": "复验格;信封副本活证沿用W21;真往返成立"
+    },
+    "E4": {
+      "state": "pass",
+      "endpoint_name_fp": "d5022055",
+      "tier": "32K",
+      "feature_face": "endpoint_axis",
+      "evidence": "shots/it4_mistral_chat_safe.png;shots/it4_mistral_probe_safe.png",
+      "caveat": "W21静默节点本波恢复;测试连接4813ms+真chat逐字OK双证;单窗口样本不作稳定性承诺"
+    },
+    "E4b": {
+      "state": "vacuous",
+      "endpoint_name_fp": "NA",
+      "tier": "32K",
+      "feature_face": "endpoint_axis",
+      "evidence": "device endpoints.json 6端点池无deepseek条目",
+      "caveat": "设备侧无此端点无法设当前,判据没被行使;不臆造W21超时结论为本波pass"
+    },
+    "E5": {
+      "state": "fail",
+      "endpoint_name_fp": "cfd5fbda",
+      "tier": "32K",
+      "feature_face": "endpoint_axis",
+      "evidence": "shots/it4_gemma_probe_safe.png",
+      "caveat": "连接失败RATE_LIMIT HTTP429=节点环境侧,不归因应用代码;复证即止不硬跑"
+    },
+    "T1": {
+      "state": "pass",
+      "endpoint_name_fp": "b995dc45",
+      "tier": "512000",
+      "feature_face": "tier_axis",
+      "evidence": "shots/it5_512k_done_safe.png",
+      "caveat": "回读'当前512K'+已选;switch_verified=true;W21达成格复验"
+    },
+    "T2": {
+      "state": "pass",
+      "endpoint_name_fp": "b995dc45",
+      "tier": "256000",
+      "feature_face": "tier_axis",
+      "evidence": "shots/it5_256k_done_safe.png",
+      "caveat": "回读'当前256K'+已选;switch_verified=true"
+    },
+    "T3": {
+      "state": "pass",
+      "endpoint_name_fp": "01e476bd",
+      "tier": "1048576",
+      "feature_face": "tier_axis",
+      "evidence": "shots/it6_1m_done_safe.png;shots/it6_1m_resp_safe.png",
+      "caveat": "读数'上下文2K/995.9K'+收敛reply=HI;读数≠生效窗口≠1M真压;hard=指纹未捕到如实登记;真压⛔vacuous双阻断未解"
+    },
+    "F1": {
+      "state": "pass",
+      "endpoint_name_fp": "d5022055",
+      "tier": "1M",
+      "feature_face": "multimodal",
+      "evidence": "shots/it7_selected_safe.png;shots/it7_picker_safe.png;shots/it7_multimodal_resp_safe.png",
+      "caveat": "全链行使:scan_file+MediaStore images命中+SAF chip+语义逐字命中测试图;NV-VL输入模态仅TEXT故换nv2;W21⛔→本波✅因端点恢复;语义判据以回复内容为准无image_load日志记账"
+    },
+    "F2": {
+      "state": "pass",
+      "endpoint_name_fp": "b995dc45",
+      "tier": "1M(读数)",
+      "feature_face": "workspace",
+      "evidence": "shots/it8_write_sent_safe.png;shots/it8_read_retry_safe.png;evidence/f2_baseline.txt;evidence/f2_after.txt",
+      "caveat": "文件系统级:ls差集+1/ns mtime/内容逐字/审批框exact args/反背题对照(DONE+SENTINEL双证);证据等级=文件系统级;首轮题面双重空格误读如实记录后复跑"
+    },
+    "F3": {
+      "state": "partial",
+      "endpoint_name_fp": "b995dc45",
+      "tier": "1M(读数)",
+      "feature_face": "workspace",
+      "evidence": "shots/it8_list_safe.png",
+      "caveat": "file_list列20文件+1目录,模型答20=fs真值;无工具记账日志(AgentLogStore加一行挂账),证据等级=回复内容级,按纪律不写裸✅故判⚠️部分"
+    },
+    "F4": {
+      "state": "pass",
+      "endpoint_name_fp": "b995dc45",
+      "tier": "1M(读数)",
+      "feature_face": "skill",
+      "evidence": "shots/it9_skills_cold_safe.png;shots/it9_skill_selected_safe.png;shots/it9_skill_result_safe.png",
+      "caveat": "W22新注入file-based skill(305B front-matter)冷启'来源:file'+@点选+[SKILL BODY]横幅+sentinel逐字+usage增量;日志无skill_load记账,判据以回复内容为准带caveat"
+    },
+    "F5": {
+      "state": "vacuous",
+      "endpoint_name_fp": "b995dc45",
+      "tier": "32K",
+      "feature_face": "manual_compress",
+      "evidence": "shots/it8_compress_result_safe.png;shots/it8_compress_attempt3_safe.png;evidence/it8_agent_tail.safe.log",
+      "caveat": "菜单出现+确认+执行的判据全行使,但返回'没有可压缩的内容'且无新manual_compress行⇒dropped>0未达;夹具受16000字符truncate+32K软预算几何限制;⛔vacuous非bug;历史log证明dropped=238能力存在"
+    },
+    "F6": {
+      "state": "partial",
+      "endpoint_name_fp": "b995dc45",
+      "tier": "32K",
+      "feature_face": "auto_compress",
+      "evidence": "evidence/it8_agent_tail.safe.log;shots/it8_fixture_ready_safe.png",
+      "caveat": "本波会话auto_compact全below_trigger未越COMPACT_TRIGGER_CHARS=50227;insufficient_savings:net=-256×3为历史评估链实锤非本波真压;无applied=true+dropped>0;判⚠️不写达标"
+    },
+    "F7": {
+      "state": "vacuous",
+      "endpoint_name_fp": "NA",
+      "tier": "NA",
+      "feature_face": "mcp",
+      "evidence": "shots/it10_mcp_page_safe.png",
+      "caveat": "导航✅:MCP列表页可达+空态'还没有MCP服务器'截图;真实行使⛔vacuous:无外部端点前置且G15b明文阻断不放开;两者分开落账不写功能通过"
+    },
+    "L0": {
+      "state": "pass",
+      "endpoint_name_fp": "NA",
+      "tier": "NA",
+      "feature_face": "local_ui",
+      "evidence": "iterations.jsonl:iter0; shots/probe_wake_safe.png; shots/settings_main_safe.png",
+      "caveat": "判据=多页导航可达+唤醒非全黑（iter0 本地先行）；存活动判据全程非全黑；不依赖端点"
+    }
+  },
+  "assertions": [
+    "A_unique_cell_id",
+    "B_required_fields",
+    "C_iter_contiguous",
+    "D_state_enum",
+    "E_feature_enum",
+    "F_new_face_must_be_declared",
+    "G_attempt_states",
+    "H_inference_caveat",
+    "I_evidence_ref",
+    "J_privacy_fingerprint"
+  ],
+  "mutation_selftest": "all 5 sampled assertions red on injected violation",
+  "privacy": {
+    "endpoint_fingerprint": "8-hex irreversible",
+    "forbidden_literals": 0,
+    "raw_screenshots": "local only",
+    "logcat": "tail-only desensitized"
+  }
+}
