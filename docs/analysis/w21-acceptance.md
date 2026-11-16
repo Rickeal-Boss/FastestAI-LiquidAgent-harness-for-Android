@@ -263,15 +263,16 @@
 | Build run | run `43815514048` **completed success**（event=push，由仓根非 docs 制品自身真实触发；五 job 全绿经公开 API check-runs 逐项复核：Assemble Debug (JDK 21) / Unit tests / Arch guard (26 guards + mutation selftest) / Lint (baseline gate) / 内嵌 Secret scan） |
 | Secret scan run（独立） | 同一 push 的独立 `secret-scan.yml` run `43815513869` **completed success**（无 `paths-ignore`，覆盖同一 commit） |
 | 最终树守卫复跑 | 推送前两次实跑（`_w21/gates_g3_final.log` / `gates_g3_final2.log`）：`result=PASS ok=27 vacuous=1 violation=0 fault=0`、rc=0；**G20 `PASS`，ID 数以 `arch-guard` 实跑输出为准（派生量不写死）**；扫描面 handoff 文件数 19→20（本波交接入库进入扫描面且零复合编号贡献，ID 数与前三波恒定一致恰为印证）；`MISSING=[]` |
-| 推送 2 | 本提交（纯文档回填 §5.4）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 1 run，链接见下方 run 链接行（推送后回填） |
+| 推送 2 | commit `a7cb11a`（纯文档回填 §5.4）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan run `43815899465` **completed success**（链接已入仓，不自指留白——本波把上一波 P1-7 同型问题的修法用在自己身上） |
+| 推送 3 | 本提交（纯文档：仅补推送 2 Secret scan run 链接一行）：Build **0 run**（同上）；独立 Secret scan 1 run——**最终推的自身 run 链接结构性无法自指回填，随交付消息给出**（沿上一波既定口径，不算缺陷） |
 | CI 红次数 | **0**（上限 2，未触） |
-| 推送次数 | **2**（上限 3；推送 1 已 CI 全绿 ⇒ 按契约收尾，不凑第三次） |
+| 推送次数 | **3**（上限 3，触顶未超；推送 1 全绿收尾、推送 2/3 为链接闭环，推送 3 自身 run 链接随交付消息给出） |
 | 归因 | 无失败案例 ⇒ 四分类（参数错 / 工具名错 / 该调不调 / 调了不收敛）**未触发**；端点 2 支判 ⛔ 属环境问题不写成应用 bug；纯文档提交 0 run 属既定口径，不写「构建再次通过」；CI 席自报「脱敏 0 替换」被主理人复核证伪并修复（1 处临时目录 home 路径），如实登记非静默 |
 
 **run 链接**（公开 API 逐项读 status / conclusion，零凭据）：
 推送 1 Build：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43815514048
 推送 1 Secret scan：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43815513869
-推送 2 Secret scan：（推送 2 后回填）
+推送 2 Secret scan：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43815899465
 
 > 本波零 `.kt` 改动 ⇒ 「CI 全绿」指 Build 五 job + 独立 Secret scan 结论 success，
 > **不等于**真机矩阵全格通过（§3 如实登记 ⛔ / ⚠️ / ⛔vacuous 的格）。
