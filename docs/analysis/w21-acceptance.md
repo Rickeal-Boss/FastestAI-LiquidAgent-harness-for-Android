@@ -257,4 +257,34 @@
 
 ### 5.4 CI（实跑回填）
 
-（推送后回填：每次推送 commit、run 链接、五 job 结论、文档回写 diff）
+| 项 | 值 |
+|---|---|
+| 推送 1 | `eceacf3..3894e31 HEAD -> main`（commit `3894e31`，5 files / +806 −34：本波验收物 + 交接 + 台账 W21 段与三处注记 + 上一波验收物收口 + 仓根脱敏制品 `evidence/w21-matrix-summary.json`）；暂存判据：逐文件 add，两份未跟踪源码日析推送后仍 `??`（未入库，老号口径）；不 force-push、不 rewrite history |
+| Build run | run `43815514048` **completed success**（event=push，由仓根非 docs 制品自身真实触发；五 job 全绿经公开 API check-runs 逐项复核：Assemble Debug (JDK 21) / Unit tests / Arch guard (26 guards + mutation selftest) / Lint (baseline gate) / 内嵌 Secret scan） |
+| Secret scan run（独立） | 同一 push 的独立 `secret-scan.yml` run `43815513869` **completed success**（无 `paths-ignore`，覆盖同一 commit） |
+| 最终树守卫复跑 | 推送前两次实跑（`_w21/gates_g3_final.log` / `gates_g3_final2.log`）：`result=PASS ok=27 vacuous=1 violation=0 fault=0`、rc=0；**G20 `PASS`，ID 数以 `arch-guard` 实跑输出为准（派生量不写死）**；扫描面 handoff 文件数 19→20（本波交接入库进入扫描面且零复合编号贡献，ID 数与前三波恒定一致恰为印证）；`MISSING=[]` |
+| 推送 2 | 本提交（纯文档回填 §5.4）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 1 run，链接见下方 run 链接行（推送后回填） |
+| CI 红次数 | **0**（上限 2，未触） |
+| 推送次数 | **2**（上限 3；推送 1 已 CI 全绿 ⇒ 按契约收尾，不凑第三次） |
+| 归因 | 无失败案例 ⇒ 四分类（参数错 / 工具名错 / 该调不调 / 调了不收敛）**未触发**；端点 2 支判 ⛔ 属环境问题不写成应用 bug；纯文档提交 0 run 属既定口径，不写「构建再次通过」；CI 席自报「脱敏 0 替换」被主理人复核证伪并修复（1 处临时目录 home 路径），如实登记非静默 |
+
+**run 链接**（公开 API 逐项读 status / conclusion，零凭据）：
+推送 1 Build：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43815514048
+推送 1 Secret scan：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/43815513869
+推送 2 Secret scan：（推送 2 后回填）
+
+> 本波零 `.kt` 改动 ⇒ 「CI 全绿」指 Build 五 job + 独立 Secret scan 结论 success，
+> **不等于**真机矩阵全格通过（§3 如实登记 ⛔ / ⚠️ / ⛔vacuous 的格）。
+> 凭据纪律：run 链接取值仅用公开 API（零凭据）；推送凭据 inline 一次性使用、不落盘、
+> remote 保持干净 URL（推送后 `git remote -v` 复核 0 命中）；凭据已由用户侧完成轮换。
+> 不 force-push、不 rewrite history；每次推送留可审计 commit 与 run 链接。
+
+**文档回写 diff**：`docs/analysis/w21-acceptance.md`（新，260 行）、`docs/handoff-20261116-wave21.md`（新，107 行，零复合编号字面量经守卫同款正则自证）、
+`docs/06-deferred-ledger.md`（W21 段 6 行 + 被点名老行 3 处行内注记）、`docs/analysis/w20-acceptance.md`（收口最小修复，91 行 diff，每处带「W21 收口修订」标注）、
+`evidence/w21-matrix-summary.json`（新，355 行，脱敏机器可读制品）。历史各波正文与制品一律未动；
+两份未跟踪源码日析保持未跟踪不入库（老号口径）；本波不写「建议下一链做什么」。
+
+**审查席推送前核验**：7 项（验收物 / W20 收口 / 台账 / 交接 / 制品 / 隐私 / 零 `.kt`）逐项四态回传，
+3 处重要 + 4 处建议**全部处置**（P5_32K 证据引用悬空修为 facts 自指 + 出厂断言新增第 7 条
+evidence_ref 存在性检查并实测拦截过；行数 24→27 两处订正；密钥复用覆盖口径改四支新端点；
+F8 四态精度句；派生数例外说明落台账）；推送 1 五 job 全绿为处置后结果。
