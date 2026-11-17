@@ -1,0 +1,430 @@
+{
+ "schema": "liquidharness.w25.matrix-summary.v1",
+ "wave": 25,
+ "baseline": "846301c",
+ "zero_kotlin": true,
+ "assertion_source": "_w25/make_evidence_w25.py (off-repo forensic facility; see ledger W20-14)",
+ "runner_fingerprint_prefix16": "e0269bd69432994b",
+ "cells_total": 9,
+ "unique_cell_ids": 9,
+ "state_counts": {
+  "pass": 5,
+  "fail": 0,
+  "partial": 0,
+  "vacuous": 4
+ },
+ "declared_feature_faces": [
+  "endpoint_axis",
+  "tier_axis",
+  "multimodal",
+  "workspace",
+  "skill",
+  "mcp",
+  "auto_compress",
+  "defect_probe"
+ ],
+ "feature_faces_with_cells": [
+  "auto_compress",
+  "defect_probe",
+  "endpoint_axis",
+  "mcp",
+  "multimodal",
+  "skill",
+  "tier_axis",
+  "workspace"
+ ],
+ "cells": [
+  {
+   "cell_id": "E1",
+   "feature": "endpoint_axis",
+   "feature_desc": "NV-VL 基础往返 + token/usage 逐字",
+   "endpoint_name_fp": "01e476bd",
+   "modelId_public": "nemotron-3.5-super-vl-120b-a12b",
+   "tier": "1M",
+   "state": "pass",
+   "key_judge": "逐字回复 W25 NOVA 742；usage 2.5k in/40 out；计量条 2.5K/995.9K",
+   "usage_summary": "2.5k in / 40 out (0 cached, 0.0%)",
+   "evidence_ref": "_w25/evidence/e1_nvvl_roundtrip.json;_w25/shots/e1_nova3.png",
+   "attempt_states": [
+    "unknownhost_x2_env_side",
+    "wifi_reconnected",
+    "success"
+   ],
+   "caveat": "前两次请求设备 WiFi 掉线（环境侧）；档位读数为 1M 档生效，非 1M 真压"
+  },
+  {
+   "cell_id": "T1",
+   "feature": "tier_axis",
+   "feature_desc": "多上下文档位切换读回（32K→1M）",
+   "endpoint_name_fp": "01e476bd",
+   "modelId_public": "nemotron-3.5-super-vl-120b-a12b",
+   "tier": "1M",
+   "state": "pass",
+   "key_judge": "当前 32K → 当前 1M，switch_verified=true",
+   "usage_summary": "档位回读，无 token",
+   "evidence_ref": "_w25/evidence/t1_tier.json;_w25/shots/t1_tier_1M.png",
+   "attempt_states": [
+    "read_32K",
+    "tap_1M",
+    "confirm_dialog",
+    "read_1M"
+   ],
+   "caveat": "档位 = 会话预算档位，与端点声明 contextLength 解耦；读数 ≠ 生效窗口 ≠ 真压"
+  },
+  {
+   "cell_id": "F1",
+   "feature": "multimodal",
+   "feature_desc": "真图语义逐字命中（含 IMAGE 端点）",
+   "endpoint_name_fp": "d5022055",
+   "modelId_public": "mistral-large-4-1t-a52b",
+   "tier": "1M",
+   "state": "pass",
+   "key_judge": "加号 desc=添加图片（对照 NV-VL 未开启）；读真图逐字识别 HARNESS-42（reasoning+正文）",
+   "usage_summary": "2.4k in / 88 out (0 cached, 0.0%)",
+   "evidence_ref": "_w25/evidence/f1_semantic.json;_w25/shots/f1_semantic_final.png",
+   "attempt_states": [
+    "endpoint_switch_mistral",
+    "plus_desc_image",
+    "picker_scan_file",
+    "image_chip",
+    "semantic_verbatim"
+   ],
+   "caveat": "模型名含视觉标识≠应用侧开 IMAGE，以真机 inputModalities（加号 desc）为准"
+  },
+  {
+   "cell_id": "F2",
+   "feature": "workspace",
+   "feature_desc": "工作空间文件读写文件系统级落盘",
+   "endpoint_name_fp": "01e476bd",
+   "modelId_public": "nemotron-3.5-super-vl-120b-a12b",
+   "tier": "1M",
+   "state": "pass",
+   "key_judge": "审批框 exact args {\"path\":\"w25_probe.txt\",\"content\":\"W25WS777\"}；ls -1 差集新增；cat 逐字 W25WS777；mtime 02:48",
+   "usage_summary": "2.6k in / 77 out",
+   "evidence_ref": "_w25/evidence/f2_workspace.json;_w25/shots/f2_ws_allowed.png",
+   "attempt_states": [
+    "tool_approval",
+    "allow_once",
+    "fs_write",
+    "cat_verbatim"
+   ],
+   "caveat": "文件系统级证据（差集+mtime+cat 逐字），非工具级 AgentLogStore 记账（需 .kt）；本波判 ✅ 基于落盘坐实，不改 W23/W24 历史判级"
+  },
+  {
+   "cell_id": "F4",
+   "feature": "skill",
+   "feature_desc": "skill sentinel 逐字 + @ 菜单注册链新面",
+   "endpoint_name_fp": "01e476bd",
+   "modelId_public": "nemotron-3.5-super-vl-120b-a12b",
+   "tier": "1M",
+   "state": "pass",
+   "key_judge": "[SKILL BODY] 横幅 + SENTINEL-W22-Q7X3M 逐字；@ 菜单仅 4 项，w24-probe 新注入 file skill 未含",
+   "usage_summary": "2.6k in / 77 out",
+   "evidence_ref": "_w25/evidence/f4_skill_sentinel.json;_w25/evidence/f4_at_menu.json;_w25/shots/f4_skill_sentinel.png",
+   "attempt_states": [
+    "skill_list_5",
+    "at_menu_4",
+    "select_w22",
+    "sentinel_verbatim"
+   ],
+   "caveat": "sentinel 逐字 ✅；新注入 file skill 在 @ 菜单未含（需额外注册）本波真机坐实，注册链修复需 .kt 顺延"
+  },
+  {
+   "cell_id": "F7",
+   "feature": "mcp",
+   "feature_desc": "MCP 页导航可达 + 行使空态",
+   "endpoint_name_fp": "NA",
+   "modelId_public": "NA",
+   "tier": "NA",
+   "state": "vacuous",
+   "key_judge": "导航✅：远程工具来源/还没有 MCP 服务器；行使⛔vacuous：无外部 MCP 端点 + G15b 明文阻断",
+   "usage_summary": "NA",
+   "evidence_ref": "_w25/evidence/f7_mcp_nav.json;_w25/shots/f7_mcp_page.png",
+   "attempt_states": [
+    "nav_settings",
+    "nav_mcp_page",
+    "empty_state"
+   ],
+   "caveat": "导航与行使分开落账；不放开明文、不造 https 夹具"
+  },
+  {
+   "cell_id": "F6",
+   "feature": "auto_compress",
+   "feature_desc": "自动压缩夹具（32K 短问答）",
+   "endpoint_name_fp": "01e476bd",
+   "modelId_public": "nemotron-3.5-super-vl-120b-a12b",
+   "tier": "32K",
+   "state": "vacuous",
+   "key_judge": "6 轮全程 auto_compact=noop reason=below_trigger，未达 dropped>0",
+   "usage_summary": "NA",
+   "evidence_ref": "_w25/evidence/compress_probe_w25.json;_w25/shots/compress_final.png",
+   "attempt_states": [
+    "tier_32K",
+    "6_rounds_short_qa",
+    "all_below_trigger"
+   ],
+   "caveat": "夹具几何夹紧；不写硬出口判据；不改写 W23 F6 ✅ dropped=19 历史；already_compressed 单指针按缺陷实锤登记"
+  },
+  {
+   "cell_id": "W24-01",
+   "feature": "defect_probe",
+   "feature_desc": "思考框全黑缺陷浅色主题核验",
+   "endpoint_name_fp": "01e476bd",
+   "modelId_public": "nemotron-3.5-super-vl-120b-a12b",
+   "tier": "1M",
+   "state": "vacuous",
+   "key_judge": "浅米底（mean 233/230/223）+ 深色可读文字，未现全黑面板",
+   "usage_summary": "NA",
+   "evidence_ref": "_w25/evidence/w2401_thinking_box.json;_w25/shots/w2401_reasoning_collapsed.png",
+   "attempt_states": [
+    "reasoning_bubble_present",
+    "sample_band_mean"
+   ],
+   "caveat": "深色主题×展开态未行使；NOT_REPRODUCED 不写成已复现；台账 W24-01 保持 OPEN"
+  },
+  {
+   "cell_id": "W24-02",
+   "feature": "defect_probe",
+   "feature_desc": "拥堵静默断词缺陷核验",
+   "endpoint_name_fp": "NA",
+   "modelId_public": "NA",
+   "tier": "NA",
+   "state": "vacuous",
+   "key_judge": "本波未跑 MockWebServer；遇网络失败 UI 明确显示『本次请求失败』（反向证据，非静默）",
+   "usage_summary": "NA",
+   "evidence_ref": "_w25/evidence/env_wifi_event.json",
+   "attempt_states": [
+    "no_mockwebserver",
+    "env_wifi_error_surfaced"
+   ],
+   "caveat": "未坐实断词复现；台账 W24-02 保持 OPEN；不写成已复现或已证伪"
+  }
+ ],
+ "iterations_total": 10,
+ "iterations": [
+  {
+   "iter": "iter0",
+   "action": "唤醒三步法+screencap非全黑",
+   "observation": "SCREEN_STATE_ON, ALIVE(8427色,std36), MainActivity前台",
+   "state": "✅",
+   "attribution": "前置",
+   "evidence_ref": "_w25/shots/_w25_alive.png"
+  },
+  {
+   "iter": "iter1",
+   "action": "T1切1M档",
+   "observation": "当前32K→当前1M, switch_verified=true",
+   "state": "✅",
+   "attribution": "档位读数格",
+   "evidence_ref": "_w25/evidence/t1_tier.json"
+  },
+  {
+   "iter": "iter2",
+   "action": "E1 NV-VL往返x3",
+   "observation": "前两次 UnknownHostException(环境WiFi掉线);重连后逐字W25 NOVA 742+usage",
+   "state": "✅(带环境抖动)",
+   "attribution": "环境侧→收敛",
+   "evidence_ref": "_w25/evidence/e1_nvvl_roundtrip.json;_w25/evidence/env_wifi_event.json"
+  },
+  {
+   "iter": "iter3",
+   "action": "W24-01浅色主题reasoning气泡采样",
+   "observation": "mean233/230/223非全黑,未复现",
+   "state": "⛔vacuous",
+   "attribution": "缺陷未复现",
+   "evidence_ref": "_w25/evidence/w2401_thinking_box.json"
+  },
+  {
+   "iter": "iter4",
+   "action": "F1切mistral+真图语义",
+   "observation": "加号desc=添加图片;逐字HARNESS-42",
+   "state": "✅",
+   "attribution": "多模态逐字",
+   "evidence_ref": "_w25/evidence/f1_semantic.json"
+  },
+  {
+   "iter": "iter5",
+   "action": "F2工作空间写+审批",
+   "observation": "exact args逐字;cat逐字W25WS777;mtime一致",
+   "state": "✅",
+   "attribution": "文件系统级",
+   "evidence_ref": "_w25/evidence/f2_workspace.json"
+  },
+  {
+   "iter": "iter6",
+   "action": "F7 MCP页导航",
+   "observation": "远程工具来源/还没有MCP服务器;行使空态",
+   "state": "⛔vacuous",
+   "attribution": "导航✅行使vacuous",
+   "evidence_ref": "_w25/evidence/f7_mcp_nav.json"
+  },
+  {
+   "iter": "iter7",
+   "action": "F4技能列表+@菜单+sentinel",
+   "observation": "5技能/@菜单4项(w24-probe未含);SENTINEL-W22-Q7X3M逐字",
+   "state": "✅(带caveat)",
+   "attribution": "注册链新面坐实",
+   "evidence_ref": "_w25/evidence/f4_skill_sentinel.json"
+  },
+  {
+   "iter": "iter8",
+   "action": "F6压缩夹具6轮(32K)",
+   "observation": "全程below_trigger,未达dropped>0",
+   "state": "⛔vacuous",
+   "attribution": "夹具夹紧",
+   "evidence_ref": "_w25/evidence/compress_probe_w25.json"
+  },
+  {
+   "iter": "iter9",
+   "action": "本地四闸门",
+   "observation": "G1 818/G2 27-1-0/G3 selftest/G4 818",
+   "state": "✅",
+   "attribution": "本地闸门",
+   "evidence_ref": "_w25/g1_tests.log;_w25/g2_archguard.log;_w25/g3_selftest.log;_w25/g4_fulltest.log"
+  }
+ ],
+ "truncated_fields": [],
+ "truncated_fields_note": "逐字段核对：cells/iterations 全部字段完整写出，无截断字段，故空数组；声明口径可复核，非空壳",
+ "na_allowlist": [
+  "F7",
+  "W24-02"
+ ],
+ "attempt_states_note": "attempt_states 记录每格真实尝试路径；环境类 ⛔ 不归因应用代码；未触发写 vacuous 不写 pass",
+ "assertions": [
+  {
+   "id": "K_cells_total",
+   "desc": "cells_total == len(cells) == sum(state_counts)",
+   "must_red_mutation": "把 cells_total 从 9 改成 10"
+  },
+  {
+   "id": "K_unique_ids",
+   "desc": "cell_id 唯一无重复",
+   "must_red_mutation": "复制 F1 cell_id 为 E1"
+  },
+  {
+   "id": "K_state_domain",
+   "desc": "state 仅四态",
+   "must_red_mutation": "把 F1 state 改成 PASS_BOGUS"
+  },
+  {
+   "id": "K_evidence_ref",
+   "desc": "每格 evidence_ref 非空",
+   "must_red_mutation": "清空 F7 evidence_ref"
+  },
+  {
+   "id": "K_attempt_states",
+   "desc": "每格 attempt_states 非空列表且长度>1",
+   "must_red_mutation": "把 W24-02 attempt_states 设为单元素"
+  },
+  {
+   "id": "K_caveat",
+   "desc": "每格 caveat 非空（推断带caveat）",
+   "must_red_mutation": "删 T1 caveat"
+  },
+  {
+   "id": "K_na_allowlist",
+   "desc": "NA 格全部在白名单",
+   "must_red_mutation": "把 F7 移出 na_allowlist"
+  },
+  {
+   "id": "K_no_vacuous_as_pass",
+   "desc": "below_trigger 不写 pass",
+   "must_red_mutation": "把 F6 state 改成 pass"
+  },
+  {
+   "id": "K_runner_field_name",
+   "desc": "字段名名实相符（prefix16 非 sha256）",
+   "must_red_mutation": "把字段改回 runner_sha256"
+  },
+  {
+   "id": "K_no_credential",
+   "desc": "产物零凭据字面量",
+   "must_red_mutation": "在 caveat 注入带已知前缀的凭据形态假值"
+  },
+  {
+   "id": "K_zero_kotlin",
+   "desc": "本波零 .kt 声明",
+   "must_red_mutation": "改成 False"
+  }
+ ],
+ "mutation_cases": [
+  {
+   "id": "K_cells_total",
+   "base_true": true,
+   "mutant_false": true,
+   "verified": true
+  },
+  {
+   "id": "K_unique_ids",
+   "base_true": true,
+   "mutant_false": true,
+   "verified": true
+  },
+  {
+   "id": "K_state_domain",
+   "base_true": true,
+   "mutant_false": true,
+   "verified": true
+  },
+  {
+   "id": "K_evidence_ref",
+   "base_true": true,
+   "mutant_false": true,
+   "verified": true
+  },
+  {
+   "id": "K_attempt_states",
+   "base_true": true,
+   "mutant_false": true,
+   "verified": true
+  },
+  {
+   "id": "K_caveat",
+   "base_true": true,
+   "mutant_false": true,
+   "verified": true
+  },
+  {
+   "id": "K_na_allowlist",
+   "base_true": true,
+   "mutant_false": true,
+   "verified": true
+  },
+  {
+   "id": "K_no_vacuous_as_pass",
+   "base_true": true,
+   "mutant_false": true,
+   "verified": true
+  },
+  {
+   "id": "K_runner_field_name",
+   "base_true": true,
+   "mutant_false": true,
+   "verified": true
+  },
+  {
+   "id": "K_no_credential",
+   "base_true": true,
+   "mutant_false": true,
+   "verified": true
+  },
+  {
+   "id": "K_zero_kotlin",
+   "base_true": true,
+   "mutant_false": true,
+   "verified": true
+  }
+ ],
+ "mutation_selftest": {
+  "total": 11,
+  "verified_red": 11,
+  "all_verified": true
+ },
+ "privacy": "端点以不可逆 sha256 前 8 位指纹出现；零凭据/设备序列号/本机绝对路径/未打码账号字段；密钥留真机",
+ "artifact_discipline_fixes": {
+  "runner_field": "字段名由 runner_sha256(16位) 改为名实相符的 runner_fingerprint_prefix16（报告甲 P1-1）",
+  "na_allowlist": "NA 格 F7/W24-02 全部登记（对齐报告甲 P1-3 数字口径）",
+  "no_history_rewrite": "不重写 W24 及更早制品/正文；本波只新出 w25 制品",
+  "f2_upgrade": "F2 本波拿到文件系统级落盘证据判 pass；不改 W23/W24 历史判级"
+ }
+}

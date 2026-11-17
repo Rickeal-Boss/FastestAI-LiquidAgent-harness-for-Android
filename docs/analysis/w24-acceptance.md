@@ -53,7 +53,7 @@
 | 9 | P1-5 G20 盲区与六行漏号（`W13-01` + `W11-06..10`） | 报告④§3 P1-5：112 ID 六波不变、W23 新增 6 行零覆盖；扩扫描面前须先批量补六行 | 现役 G20 扫 `docs/handoff-*.md`、六漏号在台账外；老号 `W15-01`/`W16-01` 聚合行未拆 | **顺延留痕（用户裁决域）**：扩扫描面 / 拆六行属守卫 + 台账真值源改动，本波不扩、不制造幽灵行；G20 按实跑口径不写死数 | 否 |
 | 10 | P1-6 E5 HTTP400 归因偏松 | 报告④§3 P1-6：`RemoteLlmEngine.kt:327-353` 400 除超窗关键词外一律 `PROTOCOL`（不可重试），429 才 `RATE_LIMIT`；上波把 400+429 整包写「限流复证·环境侧」 | 源码路径 live；上波验收物 §3 E5 记「首轮 HTTP400 request rejected、二次 429」 | **采纳订正**：本波真机若复现，400→`PROTOCOL` 与 429→`RATE_LIMIT` 单列分开归因，不整包写限流；不复现则如实登记未触发，不臆造 | 否 |
 | 11 | N-1 笔误键并行期望行为（第 6 次被翻出） | 报告①§二收敛 / 报告②§一「第 5 次现役证伪」 | 现役完整键 `parallel_tool_calls` 自初始即在、allowlist 强制行为测试在案；用户本单未给期望行为拍板 | **证伪 + 顺延留痕**：证伪「现存 bug / 保存链必拒合法键」前提，拒绝修不存在的 bug；「+1 行测试」属 `.kt` 且缺用户期望行为裁决，顺延留痕、本波不做 | 否 |
-| 12 | journal 顺延代数（上波第 18 次，本波第 19 次） | 报告④§3「`W9-05` 多值并列、代数口径统一待裁决」 | 老行 `W9-05` 仍写「第 7 次」、各波段写 9/10/…/18；用户仍未给二选一 | **顺延留痕（不代裁）**：本波段登记第 19 次顺延、两代数口径并列交用户；老行不改状态不并号；累计成本注记以行内注记零成本并入 | 否 |
+| 12 | journal 顺延代数（上波第 18 次，本波第 19 次） | 报告④§3「`W9-05` 多值并列、代数口径统一待裁决」 | 老行 `W9-05` 仍写「第 7 次」、各波段写 9/10/…/18；用户仍未给二选一 | **顺延留痕（不代裁）**：本波段登记第 19 次顺延、两代数口径并列交用户；老行不改状态不并号；累计成本注记以行内注记零成本并入〔本波收口修订：该第 19 次顺延的台账行原缺失，已由 W25 主理人单人补入 W24 段末，消除验收物声称与台账零行的账实不符〕 | 否 |
 | 13 | 四项用户终局裁决清点（journal / ≥3 端点 / 占位符 / 并行键） | 报告①§五.1「三项拍板零成本」；报告②§四「三选一问用户」 | 四项均属用户终局裁决域，现役无用户拍板 | **顺延留痕（不代裁）**：只留痕、不软化、不关号；本波不把清点动作当成裁决完成 | 否 |
 | 14 | 拆分三方 / 安全波 / 取证设施入仓 / 加长 system / G19 摘 VACUOUS / `@Test≥850` | 报告②④第 1/2 车清单 | G10 余量 4/4/5、`ChatViewModel` 500/500、`EXPECTED_TESTS=818`、G19 守空集既定 ⛔vacuous；修复两条用户可见缺陷需拆三方先行 | **顺延留痕**：整包顺延，需 `.kt` 或改守卫/改测试数，本波不做；列 §1.3 明确不做；不抬 `@Test`、不摘 VACUOUS、不放宽行数上限 | 否 |
 
@@ -370,14 +370,15 @@
 | Secret scan run（独立） | 同一 push 的独立 `secret-scan.yml` run `44143562664` **completed success**（无 `paths-ignore`，覆盖同一 commit） |
 | 最终树守卫复跑 | 推送前文档落盘后复跑 `result=PASS ok=27 vacuous=1 violation=0 fault=0`、rc=0；G20 OK（112 handoff ID 全在台账、CLOSED 行证据非空）、MISSING=`[]`（`_w24/gates_g3_final.safe.log`） |
 | CI 红次数 | **0**（上限 2，未触） |
-| 推送 2 | 本提交（纯文档回填 §5.6 真实 commit 与 CI run 链接 + 交接章节引用订正）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 覆盖同一 commit，其 run 可按本提交的公开 check-runs 查得；本波不再第三次推送以避免自指循环 |
+| 推送 2 | 本提交（纯文档回填 §5.6 真实 commit 与 CI run 链接 + 交接章节引用订正）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 覆盖同一 commit，公开 API 复核 run `44144142295`（name=Secret scan / status=completed / conclusion=success / event=push / head_sha=`846301c`）〔本波收口修订：W25 跨提交回填真实 run 链接，不改「本波不再第三次推送以避免自指循环」裁决〕 |
 | 推送次数 | **2**（上限 3，未触顶；推送 1 含制品触发 Build 五 job 真跑、推送 2 纯文档回填链接） |
 | 归因 | 无构建失败 ⇒ 四分类未触发；免费节点限流/无响应、档位夹具几何夹紧、无外部 MCP 端点判环境侧/前置缺失，不写成应用 bug；推送 1 含制品 ⇒ Build 有真绿 run；推送 2 纯文档 ⇒ Build 0 run 属既定口径，不写「构建再次通过」 |
 
 **run 链接**（公开 API 逐项读 status / conclusion，零凭据）：
 推送 1 Build：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44143562756
 推送 1 Secret scan（独立）：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44143562664
+推送 2 Secret scan（独立）：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44144142295〔本波收口修订：W25 跨提交回填，公开 API 复核 success@846301c〕
 
 > 本波零 `.kt` 改动 ⇒ 「CI 全绿」指 Build 五 job + 独立 Secret scan 结论 success，
 > **不等于**真机矩阵全格通过（§3 如实登记 fail / vacuous / partial 的格），也不等于两条新缺陷已复现。
-> PAT inline 一次性使用后 remote 已复核干净；PAT 视为暴露，须轮换。
+> PAT inline 一次性使用后 remote 已复核干净〔本波收口修订：原句「须轮换」属未闭环命令式，按报告甲 P1-5 订正为已闭环动作表述；密钥轮换属用户侧密钥管理动作，不在仓内写未完成命令〕。
