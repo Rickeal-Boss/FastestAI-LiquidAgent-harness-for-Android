@@ -1,0 +1,489 @@
+{
+  "schema": "liquidharness.w24.matrix-summary.v1",
+  "wave": 24,
+  "baseline": "9558d5a",
+  "zero_kotlin": true,
+  "assertion_source": "_w24/make_evidence_w24.py (off-repo forensic facility; see W20-14)",
+  "runner_sha256": "c349f4011b0842e0",
+  "cells_total": 12,
+  "unique_cell_ids": 12,
+  "state_counts": {
+    "pass": 5,
+    "fail": 2,
+    "partial": 2,
+    "vacuous": 3
+  },
+  "declared_feature_faces": [
+    "local_ui",
+    "endpoint_axis",
+    "tier_axis",
+    "multimodal",
+    "workspace",
+    "skill",
+    "manual_compress",
+    "auto_compress",
+    "mcp"
+  ],
+  "feature_faces_with_cells": [
+    "auto_compress",
+    "endpoint_axis",
+    "local_ui",
+    "mcp",
+    "multimodal",
+    "skill",
+    "tier_axis",
+    "workspace"
+  ],
+  "face_count": 8,
+  "declared_count": 9,
+  "coverage_note": "8/9 declared faces covered from real iter evidence; manual_compress face has no independent cell this wave (W23 was vacuous, zero-.kt fixture clamped) - inferred from history, NOT a fabricated cell; auto_compress cell is vacuous with explicit note",
+  "cells": [
+    {
+      "cell_id": "L0",
+      "feature": "local_ui",
+      "feature_desc": "本地UI+设备唤醒存活",
+      "endpoint_name_fp": "NA",
+      "modelId_public": "NA",
+      "tier": "NA",
+      "state": "pass",
+      "key_judge": "wake->Awake/SCREEN_STATE_ON; screencap 非全黑 PNG头正确",
+      "usage_summary": "alive_raw.png 176831B",
+      "evidence_ref": "_w24/shots/alive_raw.png",
+      "attempt_states": [
+        "Dozing/OFF 起步",
+        "wakeup 成功"
+      ],
+      "caveat": "设备存活判据;非矩阵功能格"
+    },
+    {
+      "cell_id": "E2",
+      "feature": "endpoint_axis",
+      "feature_desc": "端点轴NV-VL从严三件套收敛",
+      "endpoint_name_fp": "01e476bd",
+      "modelId_public": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "tier": "32K",
+      "state": "pass",
+      "key_judge": "token W24BRAVO42 逐字+usage上屏+发送键live bounds",
+      "usage_summary": "2.4k in / 730 out",
+      "evidence_ref": "_w24/shots/e2_nvvl2.png",
+      "attempt_states": [
+        "首个带冒号题面截断失败",
+        "导航修正+纯ASCII收敛"
+      ],
+      "caveat": "题面气泡显示截断≠参数截断;以usage+逐字为准"
+    },
+    {
+      "cell_id": "E1",
+      "feature": "endpoint_axis",
+      "feature_desc": "端点dots(openrouter)收敛",
+      "endpoint_name_fp": "b995dc45",
+      "modelId_public": "dots-studio/dots-3-note-preview:free",
+      "tier": "32K",
+      "state": "fail",
+      "key_judge": "首请求50-118s无usage/无回复;stop后已停止无产出",
+      "usage_summary": "无usage",
+      "evidence_ref": "_w24/shots/e1_dots_reply.png",
+      "attempt_states": [
+        "首轮长思考卡住",
+        "stop"
+      ],
+      "caveat": "免费节点限流/慢归环境侧,不归因应用代码;用户标注双通≠本机本轮可用"
+    },
+    {
+      "cell_id": "E3",
+      "feature": "endpoint_axis",
+      "feature_desc": "端点north(openrouter)收敛",
+      "endpoint_name_fp": "b0113b2c",
+      "modelId_public": "cohere/north-mini-code:free",
+      "tier": "32K",
+      "state": "fail",
+      "key_judge": "首请求59s仍等待无usage;stop",
+      "usage_summary": "无usage",
+      "evidence_ref": "_w24/shots/north_wait.png",
+      "attempt_states": [
+        "首轮无响应",
+        "stop"
+      ],
+      "caveat": "环境侧;用户标注可用≠本机本轮可用,需重试"
+    },
+    {
+      "cell_id": "T1",
+      "feature": "tier_axis",
+      "feature_desc": "档位1M读数(非真压)",
+      "endpoint_name_fp": "01e476bd",
+      "modelId_public": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "tier": "1M",
+      "state": "pass",
+      "key_judge": "档位切换回读当前1M;上下文条2.5K/995.9K;token逐字",
+      "usage_summary": "2.4k in / 435 out",
+      "evidence_ref": "_w24/shots/e5_1m_readout.png",
+      "attempt_states": [
+        "32K起步",
+        "切1M回读成功"
+      ],
+      "caveat": "档位读数≠生效窗口≠1M真压;输入仅2.5K;真压双阻断未解(W20-05)"
+    },
+    {
+      "cell_id": "F1",
+      "feature": "multimodal",
+      "feature_desc": "多模态真图语义逐字命中",
+      "endpoint_name_fp": "d5022055",
+      "modelId_public": "mistralai/mistral-large-4-1t-a52b",
+      "tier": "1M",
+      "state": "pass",
+      "key_judge": "添加图片chip→SAF选真图→语义逐字W24 VISION 737+RED FRAME TEST",
+      "usage_summary": "2.2k in / 75 out",
+      "evidence_ref": "_w24/shots/mm_semantic_reply.png",
+      "attempt_states": [
+        "NV-VL无图片入口(端点未开IMAGE)",
+        "切mistral添加图片成功",
+        "语义逐字命中"
+      ],
+      "caveat": "以真机inputModalities为准,用户标注双通不可靠;只证mistral一例"
+    },
+    {
+      "cell_id": "F2",
+      "feature": "workspace",
+      "feature_desc": "工作空间file_write/file_read",
+      "endpoint_name_fp": "01e476bd",
+      "modelId_public": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "tier": "1M",
+      "state": "partial",
+      "key_judge": "审批框exact args完整;工具调用成立;file_write落盘副作用未坐实;read轮有tool参数",
+      "usage_summary": "write 2.4k/86; read 2.5k/45",
+      "evidence_ref": "_w24/shots/f2_after_allow.png",
+      "attempt_states": [
+        "write轮审批框弹出",
+        "手动允许",
+        "文件ls无w24sentinel",
+        "read轮done"
+      ],
+      "caveat": "从严判⚠️同W23;工具记账观测缝需.kt(W21-06);气泡显示截断≠参数截断"
+    },
+    {
+      "cell_id": "F4",
+      "feature": "skill",
+      "feature_desc": "skill加载→sentinel逐字复述",
+      "endpoint_name_fp": "01e476bd",
+      "modelId_public": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "tier": "1M",
+      "state": "pass",
+      "key_judge": "@w22-devprobe→工具{name}+[SKILL BODY]→逐字SENTINEL-W22-Q7X3M",
+      "usage_summary": "2.6k in / 154 out",
+      "evidence_ref": "_w24/shots/skill_sentinel_reply.png",
+      "attempt_states": [
+        "冷启动注入w24 skill",
+        "skill页来源:file可见",
+        "@菜单4项不含w24-probe",
+        "用w22-probe逐字命中"
+      ],
+      "caveat": "新注入file skill在skill页可见但@选择器未含(需额外注册);用已在@的w22资产验逐字"
+    },
+    {
+      "cell_id": "F7",
+      "feature": "mcp",
+      "feature_desc": "MCP页导航(行使vacuous)",
+      "endpoint_name_fp": "NA",
+      "modelId_public": "NA",
+      "tier": "NA",
+      "state": "vacuous",
+      "key_judge": "设置→MCP服务器页可达;远程工具来源/还没有MCP服务器/空态",
+      "usage_summary": "无usage",
+      "evidence_ref": "_w24/shots/mcp_page.png",
+      "attempt_states": [
+        "导航可达",
+        "空态确认"
+      ],
+      "caveat": "导航✅≠行使✅;无外部MCP端点+平台明文开关G15b阻断;不放开明文不造https夹具"
+    },
+    {
+      "cell_id": "W24-01",
+      "feature": "multimodal",
+      "feature_desc": "思考框全黑推导(浅色未复现)",
+      "endpoint_name_fp": "01e476bd",
+      "modelId_public": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "tier": "32K",
+      "state": "partial",
+      "key_judge": "浅色主题收起/展开3帧均浅米底+深色可读文字;未现全黑;深色未测",
+      "usage_summary": "2.4k in / 730 out",
+      "evidence_ref": "_w24/shots/w2401_expand_f1.png",
+      "attempt_states": [
+        "稳态展开",
+        "收起",
+        "再展开3帧"
+      ],
+      "caveat": "推导未坐实,保持OPEN不证伪;深色主题/特定机型未穷尽;像素采样坐标以视觉判据为准"
+    },
+    {
+      "cell_id": "W24-02",
+      "feature": "endpoint_axis",
+      "feature_desc": "拥堵静默断词推导(未行使)",
+      "endpoint_name_fp": "b995dc45",
+      "modelId_public": "dots-studio/dots-3-note-preview:free",
+      "tier": "32K",
+      "state": "vacuous",
+      "key_judge": "dots/north 50-102s无产出;UI等待/已停止;未见半截静默;无MockWebServer前端",
+      "usage_summary": "无usage",
+      "evidence_ref": "_w24/shots/north_wait.png",
+      "attempt_states": [
+        "首轮无产出",
+        "stop"
+      ],
+      "caveat": "未跑MockWebServer,限流/无响应归环境侧;保持OPEN不写成复现事实"
+    },
+    {
+      "cell_id": "F6",
+      "feature": "auto_compress",
+      "feature_desc": "自动压缩观察(夹具夹紧)",
+      "endpoint_name_fp": "01e476bd",
+      "modelId_public": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "tier": "32K",
+      "state": "vacuous",
+      "key_judge": "32K档12轮短问答agent log全程auto_compact=noop below_trigger;无dropped>0;上下文保持2.5K",
+      "usage_summary": "无dropped",
+      "evidence_ref": "_w24/evidence/compress_probe.json",
+      "attempt_states": [
+        "12轮累积",
+        "全程below_trigger"
+      ],
+      "caveat": "夹具几何夹紧未达触发线,同W23;不写硬出口判据;不替代W23的dropped=19证据;already_compressed单指针按缺陷实锤登记"
+    }
+  ],
+  "iterations_total": 11,
+  "iterations": [
+    {
+      "iter": 1,
+      "type": "E1_dots_first_attempt",
+      "action": "ask token with colon",
+      "observation": "题面被截断为用户气泡 Say；50-102s 无 usage、等待标记持续",
+      "state": "attempt_failed",
+      "attribution": "input text 冒号/标点触发截断；或 dots 节点长思考超时（环境侧）",
+      "evidence_ref": "_w24/shots/e1_dots_reply.png",
+      "caveat": "未收敛，不作端点 pass 判据"
+    },
+    {
+      "iter": 2,
+      "type": "E2_NVVL_converge + W24-01_probe",
+      "action": "asks pure-ASCII token on NV-VL after nav.to_chat",
+      "observation": "token W24BRAVO42 verbatim + usage 2.4k in/730 out + 2.5K/27.9K; thinking bubble EXPANDED shows dark text on light theme, NOT all-black",
+      "state": "endpoint_pass",
+      "attribution": "导航修正(先to_chat)+纯ASCII题面=>收敛;W24-01全黑在浅色主题展开稳态未复现",
+      "evidence_ref": "_w24/shots/e2_nvvl2.png",
+      "caveat": "展开首帧动画未逐帧采;全黑缺陷需首帧/特定机型验证,未复现≠证伪"
+    },
+    {
+      "iter": 3,
+      "type": "W24-01_thinking_bubble_forensics",
+      "action": "collapse/expand reasoning bubble 3 frames on NV-VL, light theme",
+      "observation": "thinking bubble light beige bg + dark readable text in all 3 expand frames; no all-black panel; text verbatim readable",
+      "state": "not_reproduced_light_theme",
+      "attribution": "报告③全黑推导在本机浅色主题稳态+首帧未复现",
+      "evidence_ref": "_w24/shots/w2401_expand_f1.png / f2 / f3 / w2401_collapsed.png",
+      "caveat": "深色主题未测; 特定机型/双层THIN嵌套条件未穷尽; 未复現≠证伪; 像素采样坐标多次校准后以视觉判据为准(uiautomator bounds不作唯一判据)"
+    },
+    {
+      "iter": 4,
+      "type": "E3_north_first_attempt",
+      "action": "ask pure token on OR-NORTH",
+      "observation": "59s still waiting, no usage, no reply; stop tapped",
+      "state": "attempt_failed_env",
+      "attribution": "north openrouter free node slow/no-response on device this round (environment side), not app code",
+      "evidence_ref": "_w24/shots/north_wait.png",
+      "caveat": "用户标注可用≠本机本轮可用;需重试确认,不构成端点pass判据"
+    },
+    {
+      "iter": 5,
+      "type": "E5_tier_1M_readout",
+      "action": "switch tier 1M + ask token",
+      "observation": "readback 当前1M; context bar 2.5K / 995.9K; token W24DELTA77 verbatim; usage 2.4k/435",
+      "state": "tier_readout_pass",
+      "attribution": "档位真切到~1M生效窗口,但输入仅2.5K=读数非真压",
+      "evidence_ref": "_w24/shots/e5_1m_readout.png",
+      "caveat": "档位读数≠生效窗口≠1M真压; 真压双阻断未解(W20-05)"
+    },
+    {
+      "iter": 6,
+      "type": "F1_multimodal_precheck",
+      "action": "probe + button content-desc on NV-VL",
+      "observation": "plus btn desc=当前端点未开启图片输入; NV-VL虽modelId含vl但app inputModalities不开IMAGE",
+      "state": "image_disabled_on_endpoint",
+      "attribution": "端点声明模型名≠app实际inputModalities;以真机为准(用户标注双通亦同此纪律)",
+      "evidence_ref": "_w24/shots/mm_plus_menu.png",
+      "caveat": "需切含IMAGE端点(mistral d5022055)攻多模态; 不开图片输入是端点配置事实非缺陷"
+    },
+    {
+      "iter": 7,
+      "type": "F1_multimodal_semantic",
+      "action": "mistral + 添加图片 -> SAF select real text image -> ask what text",
+      "observation": "reply verbatim W24 VISION 737 + RED FRAME TEST; usage 2.2k/75; chip 添加图片 present on mistral but 当前端点未开启图片输入 on NV-VL",
+      "state": "pass",
+      "attribution": "真图->SAF->语义逐字命中;以真机inputModalities为准(用户标注双通不可靠)",
+      "evidence_ref": "_w24/shots/mm_semantic_reply.png / mm_image_attached.png / evidence/mm_semantic.json",
+      "caveat": "只证mistral一例; dots用户标注双通未独立攻此格"
+    },
+    {
+      "iter": 8,
+      "type": "F2_workspace_file_rw",
+      "action": "NV-VL file_write+file_read with approval dialog",
+      "observation": "approval dialog showed exact args {path:w24sentinel.txt,content:W24SENTINEL9182} (题面完整送达); manual allow tapped; but workspace ls has no w24sentinel.txt; read turn done=true with tool param {path:w24sentinel.txt} and 浏览目录/3/3",
+      "state": "partial_warn",
+      "attribution": "工具调用与参数级证据成立(审批框exact args),但file_write副作用(文件落盘)未坐实、无工具级AgentLogStore记账",
+      "evidence_ref": "_w24/shots/f2_after_allow.png / f2_state_check.png / evidence/f2_workspace.json",
+      "caveat": "从严判⚠️不判✅(同W23);题面气泡显示截断≠参数截断,以审批框exact args为准;工具记账观测缝需.kt(W21-06)"
+    },
+    {
+      "iter": 9,
+      "type": "F4_skill_end_to_end",
+      "action": "cold start with w24 skill injected; @pick w22-devprobe; ask passphrase",
+      "observation": "skill page lists w24-probe 来源:file; @ menu lists 4 skills NOT including w24-probe; picked w22-devprobe -> tool {name:w22-devprobe} + [SKILL BODY] injected -> reply verbatim SENTINEL-W22-Q7X3M; usage 2.6k/154",
+      "state": "pass_with_caveat",
+      "attribution": "skill加载->逐字复述链路成立;新注入file skill在skill页可见但@选择器未含(需额外注册)",
+      "evidence_ref": "_w24/shots/skill_page.png / skill_at_menu.png / skill_sentinel_reply.png",
+      "caveat": "sentinel逐字用w22资产(已在@); w24-probe只验到来源:file可见,未验@点选;无skill_load记账以工具参数+[SKILL BODY]+逐字为准"
+    },
+    {
+      "iter": 10,
+      "type": "F7_mcp_navigation",
+      "action": "navigate settings->MCP page",
+      "observation": "远程工具来源 / 还没有 MCP 服务器 / 添加一个远程 MCP 端点，模型即可调用它的工具; empty state",
+      "state": "navigation_pass_exercise_vacuous",
+      "attribution": "导航可达;无外部MCP端点+平台明文开关G15b阻断,行使判据未行使",
+      "evidence_ref": "_w24/shots/mcp_page.png",
+      "caveat": "导航✅≠行使✅;行使⛔vacuous不冒充通过;不放开明文、不造https夹具"
+    },
+    {
+      "iter": 11,
+      "type": "F6_auto_compress_probe",
+      "action": "32K tier 12 sequential short Q&A",
+      "observation": "agent log all 12 turns auto_compact=noop below_trigger; no dropped>0; context stayed 2.5K",
+      "state": "vacuous_fixture_clamped",
+      "attribution": "短问答夹具几何夹紧未达32K触发线;同W23;不写硬出口判据不改判据凑绿",
+      "evidence_ref": "_w24/evidence/compress_probe.json / _w24/shots/compress_final.png",
+      "caveat": "本波自动压缩未真行使;不替代W23的dropped=19证据;already_compressed单指针按缺陷实锤登记(W24-01注记域)"
+    }
+  ],
+  "iteration_ids": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "truncated_fields": [],
+  "truncated_fields_note": "逐字段核对：cells/iterations 全部字段完整写出，无截断字段，故空数组；声明口径可复核，非空壳",
+  "na_allowlist": [
+    "F7",
+    "L0"
+  ],
+  "attempt_states_note": "attempt_states kept per cell; early failed states never merged away",
+  "assertions": [
+    "A_unique_cell_id",
+    "B_required_fields",
+    "C_iter_contiguous",
+    "D_state_enum",
+    "E_feature_enum",
+    "F_new_face_declared",
+    "G_attempt_states",
+    "H_inference_caveat",
+    "I_evidence_ref",
+    "J_privacy_fingerprint",
+    "K_na_allowlist_complete"
+  ],
+  "mutation_cases": [
+    {
+      "assertion": "A_unique_cell_id",
+      "injected_violation": "复制首格使 cell_id 重复",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "B_required_fields",
+      "injected_violation": "清空首格 evidence_ref 触发必填缺失",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "C_iter_contiguous",
+      "injected_violation": "删中间一轮制造编号跳号",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "D_state_enum",
+      "injected_violation": "把首格 state 置为非法值 PASSED",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "E_feature_enum",
+      "injected_violation": "把首格 feature 置为未登记枚举值",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "F_new_face_declared",
+      "injected_violation": "把一格 feature 改成未登记新面",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "G_attempt_states",
+      "injected_violation": "构造 attempts>1 但 attempt_states 缺失",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "H_inference_caveat",
+      "injected_violation": "清空一格 caveat",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "I_evidence_ref",
+      "injected_violation": "把一格 evidence_ref 改成非法前缀",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "J_privacy_fingerprint",
+      "injected_violation": "把首格指纹改成非 8-hex",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "K_na_allowlist_complete",
+      "injected_violation": "新增一个未白名单的 NA 格（P1-1 必红样本）",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    }
+  ],
+  "mutation_selftest": "11/11 assertions red on injected violation (all cases in artifact)",
+  "privacy": {
+    "endpoint_fingerprint": "8-hex irreversible",
+    "forbidden_literals": 0,
+    "raw_screenshots": "local only",
+    "logcat": "tail-only desensitized"
+  },
+  "artifact_discipline_fixes": {
+    "P1-1": "na_allowlist now covers all NA cells + K assertion必红样本",
+    "P1-2": "assertion_source + runner_sha256 added",
+    "P1-3": "truncated_fields note added against empty-shell ambiguity"
+  }
+}
