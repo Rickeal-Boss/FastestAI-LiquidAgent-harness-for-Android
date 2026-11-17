@@ -361,8 +361,23 @@
 > 仓外取证目录（`_w24/`）按老号 `W20-14` 口径不入仓（换机不可再生风险如实挂账）；制品 JSON 本体
 > 已含断言来源与运行器指纹，外部可核「哪个脚本哪版判的红」。
 
-### §5.6 CI / 提交序列（推送后回填，唯一真值源）
+### §5.6 CI / 提交序列（唯一真值源）
 
-> 待推送。占位规则：同一 push 含仓根非 docs 制品 ⇒ Build 由该 push 自身真实触发；纯文档 push ⇒
-> Build 0 run（既定口径，不算绿也不算红），独立 Secret scan 仍覆盖。推送后在此回填每次 commit、
-> run 链接、CI 红次数与推送次数；不 force-push、不 rewrite history。
+| 项 | 值 |
+|---|---|
+| 推送 1 | `9558d5a..c73c3cf HEAD -> main`（commit `c73c3cf`，5 files：本波验收物 + 交接 + 台账 W24 两行与 W23-01 注记 + W23 §5.4 最小修复 + 仓根非 docs 制品 `evidence/w24-matrix-summary.json`〔12 格〕）；暂存判据逐文件 add，两份历史未跟踪源码日析全程 `??` 未入库；dry-run RC=0 → 实推 RC=0，inline PAT URL 一次性使用、`git remote -v` 复核干净 URL 0 命中；noreply 身份（全仓一致）；不 force-push、不 rewrite history |
+| Build run | run `44143562756` **completed success**（event=push，由仓根非 docs 制品自身真实触发；五 job 经公开 API 逐项复核全 success：Lint (baseline gate) / Assemble Debug (JDK 21) / Unit tests / Arch guard (26 guards + mutation selftest) / Secret scan (gitleaks + trufflehog)） |
+| Secret scan run（独立） | 同一 push 的独立 `secret-scan.yml` run `44143562664` **completed success**（无 `paths-ignore`，覆盖同一 commit） |
+| 最终树守卫复跑 | 推送前文档落盘后复跑 `result=PASS ok=27 vacuous=1 violation=0 fault=0`、rc=0；G20 OK（112 handoff ID 全在台账、CLOSED 行证据非空）、MISSING=`[]`（`_w24/gates_g3_final.safe.log`） |
+| CI 红次数 | **0**（上限 2，未触） |
+| 推送 2 | 本提交（纯文档回填 §5.6 真实 commit 与 CI run 链接 + 交接章节引用订正）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 覆盖同一 commit，其 run 可按本提交的公开 check-runs 查得；本波不再第三次推送以避免自指循环 |
+| 推送次数 | **2**（上限 3，未触顶；推送 1 含制品触发 Build 五 job 真跑、推送 2 纯文档回填链接） |
+| 归因 | 无构建失败 ⇒ 四分类未触发；免费节点限流/无响应、档位夹具几何夹紧、无外部 MCP 端点判环境侧/前置缺失，不写成应用 bug；推送 1 含制品 ⇒ Build 有真绿 run；推送 2 纯文档 ⇒ Build 0 run 属既定口径，不写「构建再次通过」 |
+
+**run 链接**（公开 API 逐项读 status / conclusion，零凭据）：
+推送 1 Build：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44143562756
+推送 1 Secret scan（独立）：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44143562664
+
+> 本波零 `.kt` 改动 ⇒ 「CI 全绿」指 Build 五 job + 独立 Secret scan 结论 success，
+> **不等于**真机矩阵全格通过（§3 如实登记 fail / vacuous / partial 的格），也不等于两条新缺陷已复现。
+> PAT inline 一次性使用后 remote 已复核干净；PAT 视为暴露，须轮换。
