@@ -1,0 +1,648 @@
+{
+  "schema": "liquidharness.w23.matrix-summary.v1",
+  "wave": 23,
+  "baseline": "eeb4cbc",
+  "zero_kotlin": true,
+  "cells_total": 19,
+  "unique_cell_ids": 19,
+  "state_counts": {
+    "pass": 14,
+    "fail": 1,
+    "vacuous": 3,
+    "partial": 1
+  },
+  "declared_feature_faces": [
+    "local_ui",
+    "endpoint_axis",
+    "tier_axis",
+    "multimodal",
+    "workspace",
+    "skill",
+    "mcp",
+    "manual_compress",
+    "auto_compress"
+  ],
+  "feature_faces_with_cells": [
+    "auto_compress",
+    "endpoint_axis",
+    "local_ui",
+    "manual_compress",
+    "mcp",
+    "multimodal",
+    "skill",
+    "tier_axis",
+    "workspace"
+  ],
+  "face_count": 9,
+  "declared_count": 9,
+  "coverage_note": "declared faces covered from real iter evidence; L1 hard gate is sub-item of compress face (not counted separately)",
+  "cells": [
+    {
+      "cell_id": "E1",
+      "feature": "endpoint_axis",
+      "feature_desc": "endpoint_axis",
+      "endpoint_name_fp": "b995dc45",
+      "modelId_public": "dots-studio/dots-3-note-preview:free",
+      "tier": "32K",
+      "state": "pass",
+      "key_judge": "typed_hint逐字(题面串显示)+usage上屏(1.7k in/65 out(0 cached))+发送键bounds([870,1284][1014,1428])三者齐,模型逐字回显W23ALPHA77",
+      "usage_summary": "1.7k in / 65 out (0 cached, 0.0%)",
+      "evidence_ref": "shots/it1_dots_32k_safe.png;evidence/it1_dots_32k_labels.txt",
+      "attempt_states": [
+        "initial:✅"
+      ],
+      "caveat": "复验格;题面token逐字回显;档位读数32K!=生效窗口真压;单窗口样本不作稳定性承诺;用户称dots工具+视觉双通但设备端点inputModalities=TEXT-only,以真机为准(见iter5 F1)"
+    },
+    {
+      "cell_id": "E2",
+      "feature": "endpoint_axis",
+      "feature_desc": "endpoint_axis",
+      "endpoint_name_fp": "b0113b2c",
+      "modelId_public": "cohere/north-mini-code:free",
+      "tier": "32K",
+      "state": "pass",
+      "key_judge": "typed_hint逐字+usage上屏+发送键bounds三者齐且题面token逐字回显 (usage 1.2k in / 169 out (0 cached, 0.0%), bounds [870,1284][1014,1428])",
+      "usage_summary": "1.2k in / 169 out (0 cached, 0.0%)",
+      "evidence_ref": "shots/it2_north_32k_safe.png;evidence/it2_north_32k_labels.txt;evidence/it2_result.json",
+      "attempt_states": [
+        "attempt1:误设未切换(端点仍OR-DOTS)作废",
+        "attempt2:✅ badge=OR-NORTH真切换"
+      ],
+      "caveat": "首轮因helper未切端点在OR-DOTS上误跑(usage 1.7k/63 with 1536 cached),已如实留痕并作废;重跑真OR-NORTH;档位读数!=生效窗口真压"
+    },
+    {
+      "cell_id": "E3",
+      "feature": "endpoint_axis",
+      "feature_desc": "endpoint_axis",
+      "endpoint_name_fp": "a9ae3f9e",
+      "modelId_public": "stepfun-ai/step-5-preview",
+      "tier": "32K",
+      "state": "pass",
+      "key_judge": "typed_hint逐字+usage上屏+发送键bounds三者齐且题面token逐字回显 (usage 1.8k in / 84 out (0 cached, 0.0%))",
+      "usage_summary": "1.8k in / 84 out (0 cached, 0.0%)",
+      "evidence_ref": "shots/it3_step_32k_safe.png;evidence/it3_step_32k_labels.txt;evidence/it3_result.json",
+      "attempt_states": [
+        "attempt1:未切端点(OR-NORTH)且无usage作废",
+        "attempt2:切换flag nobtn作废",
+        "attempt3:✅ badge=NV-STEP,等45susage到"
+      ],
+      "caveat": "step5思考前导慢(45s才出usage);早期两次误跑已留痕作废不合并抹除;档位读数!=生效窗口真压"
+    },
+    {
+      "cell_id": "E4",
+      "feature": "endpoint_axis",
+      "feature_desc": "endpoint_axis",
+      "endpoint_name_fp": "d5022055",
+      "modelId_public": "mistralai/mistral-large-4-1t-a52b",
+      "tier": "32K",
+      "state": "pass",
+      "key_judge": "三件套齐+hello逐字回显(1.6k in/509 out 1664cached 99.1%),badge=NV-MISTRAL真切换;token-echo题面被mistral长思考拒绝/超时2次(中性token与W23token皆触发),改plain hello收敛",
+      "usage_summary": "1.6k in / 509 out (1664 cached, 99.1%)",
+      "evidence_ref": "shots/it4_mistral_32k_c_safe.png;evidence/it4_result.json",
+      "attempt_states": [
+        "attempt1:W23DELTA88触发安全长思考70s无usage作废",
+        "attempt2:PINEAPPLE742仍长思考71s无usage作废",
+        "attempt3:✅plain hello 36s收敛"
+      ],
+      "caveat": "mistral-large-4对token-echo类题面过度安全推理;真收敛用plain hello;缓存99.1%;单窗口样本;档位读数!=生效窗口真压"
+    },
+    {
+      "cell_id": "E5",
+      "feature": "endpoint_axis",
+      "feature_desc": "endpoint_axis",
+      "endpoint_name_fp": "cfd5fbda",
+      "modelId_public": "google/gemma-4-26b-a4b-it:free",
+      "tier": "32K",
+      "state": "fail",
+      "key_judge": "gemma限流复证:首轮HTTP400 request rejected,二次plain hi复现HTTP429 rate limited(giving up after 1 retries);无可用usage,非应用判据",
+      "usage_summary": "无(HTTP400/429限流)",
+      "evidence_ref": "shots/it5_gemma_32k_safe.png;shots/it5_gemma_retry_safe.png;evidence/it5_result.json",
+      "attempt_states": [
+        "attempt1:HTTP400 request rejected",
+        "attempt2:HTTP429 rate limited(环境侧限流)"
+      ],
+      "caveat": "环境侧限流不归因应用代码;与裁决gemma HTTP429归环境侧一致;不臆造为pass"
+    },
+    {
+      "cell_id": "E4b",
+      "feature": "endpoint_axis",
+      "feature_desc": "endpoint_axis",
+      "endpoint_name_fp": "NA",
+      "modelId_public": "deepseek-ai/deepseek-v4.1-flash",
+      "tier": "NA",
+      "state": "vacuous",
+      "key_judge": "deepseek不在设备端点池(6端点无此modelId),无端点可设当前,前置缺失;按裁决不擅自新增端点(密钥复用双路径条件不足),不臆造W22超时为本波pass",
+      "usage_summary": "无(前置缺失)",
+      "evidence_ref": "evidence/endpoint_survey.md;evidence/adjudication_prereq_check.log",
+      "attempt_states": [
+        "initial:⛔vacuous(前置缺失)"
+      ],
+      "caveat": "挂账号W21-05;设备池勘察6端点无deepseek;不归因应用代码"
+    },
+    {
+      "cell_id": "F1",
+      "feature": "multimodal",
+      "feature_desc": "multimodal",
+      "endpoint_name_fp": "d5022055",
+      "modelId_public": "mistralai/mistral-large-4-1t-a52b",
+      "tier": "1M",
+      "state": "pass",
+      "key_judge": "先验dots(b995dc45)图片chip禁用(desc=当前端点未开启图片输入)如实⛔;按裁决换唯一IMAGE端点mistral(d5022055,inputModalities含IMAGE)chip=添加图片可点;真图scan_file+MediaStore命中(_id1000010202)→SAF图片分类→选图→语义逐字命中LEFT is red RIGHT is blue(测试图左红右蓝);usage1.8k in/82 out",
+      "usage_summary": "1.8k in / 82 out (0 cached)",
+      "evidence_ref": "shots/it5_dots_chip_disabled_safe.png;shots/it5_mistral_chip_safe.png;shots/it5_saf_pictures_safe.png;shots/it5_mistral_vision_result_safe.png",
+      "attempt_states": [
+        "dots:⛔ 图片chip禁(TEXT-only,环境/端点声明侧)",
+        "mistral:✅ 语义逐字命中"
+      ],
+      "caveat": "用户称dots工具+视觉双通但设备端点TEXT-only,以真机为准;mistral为唯一IMAGE端点;语义逐字=LEFT red/RIGHT blue与测试图一致;单图样本"
+    },
+    {
+      "cell_id": "F2",
+      "feature": "workspace",
+      "feature_desc": "workspace",
+      "endpoint_name_fp": "01e476bd",
+      "modelId_public": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "tier": "32K",
+      "state": "pass",
+      "key_judge": "file_write审批框exact args={\"path\":\"w23_write_test.txt\",\"content\":\"SENTINEL_W23_7744_END\"}与请求逐字一致;允许一次后ls -1差集新增w23_write_test.txt,mtime 23:20:54新,cat内容恰为SENTINEL_W23_7744_END(21字节);模型回复逐字",
+      "usage_summary": "2.1k in / 76 out (0 cached)",
+      "evidence_ref": "shots/it6_f2_approval_safe.png;shots/it6_f2_written_safe.png;evidence/f2_baseline.txt;evidence/f2_after.txt",
+      "attempt_states": [
+        "initial:✅"
+      ],
+      "caveat": "写入副作用档位需审批(免审批仅只读);single file样本;mtime为设备本地时间;不写硬出口判据"
+    },
+    {
+      "cell_id": "F3",
+      "feature": "workspace",
+      "feature_desc": "workspace",
+      "endpoint_name_fp": "01e476bd",
+      "modelId_public": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "tier": "32K",
+      "state": "partial",
+      "key_judge": "file_read回读SENTINEL_W23_7744_END逐字;file_list列举workspace根(a.txt/assets/b.txt/chunk1.txt...);反背题对照:读不存在文件no_such_w23.txt如实报file not found不臆造sentinel",
+      "usage_summary": "2.4k in / 382 out (read+list);2.0k in / 61 out (anti-backtip)",
+      "evidence_ref": "shots/it6_f3_readlist_safe.png;shots/it6_f3_anti_backtip_safe.png",
+      "attempt_states": [
+        "initial:✅"
+      ],
+      "caveat": "无工具记账、证据等级=回复内容级，从严判⚠️不写裸✅；反背题对照只排除背题假绿（否定侧），非工具真实调用记账（肯定侧）"
+    },
+    {
+      "cell_id": "F4",
+      "feature": "skill",
+      "feature_desc": "skill",
+      "endpoint_name_fp": "01e476bd",
+      "modelId_public": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "tier": "32K",
+      "state": "pass",
+      "key_judge": "技能页w22-devprobe来源：file(冷启已加载);@选择插入@w22-devprobe;skill_load审批框{\"name\":\"w22-devprobe\"}逐字;[SKILL BODY]加载标记上屏;sentinel SENTINEL-W22-Q7X3M逐字回显;usage2.1k in/108 out",
+      "usage_summary": "2.1k in / 108 out (0 cached)",
+      "evidence_ref": "shots/it7_skills_page_safe.png;shots/it7_at_picker_safe.png;shots/it7_f4_skill_result_safe.png",
+      "attempt_states": [
+        "initial:✅"
+      ],
+      "caveat": "沿用设备侧既有来源：file技能w22-devprobe(未注入新资产,已是file源满足前置);skill_load审批带记账;单技能样本;题面@后拼接顺序UI呈现@Use...w22-devprobe属输入拼接显示,不影响技能加载判据"
+    },
+    {
+      "cell_id": "F7",
+      "feature": "mcp",
+      "feature_desc": "mcp",
+      "endpoint_name_fp": "NA",
+      "modelId_public": "NA(MCP)",
+      "tier": "NA",
+      "state": "vacuous",
+      "key_judge": "导航判据✅:设置→MCP服务器列表页可达,空态文案\"还没有MCP服务器\"/\"添加一个远程MCP端点,模型即可调用它的工具\"+空态截图;行使判据⛔vacuous:无外部MCP端点前置,G15b usesCleartextTraffic=false不放开,无判据可施",
+      "usage_summary": "无(行使前置缺失)",
+      "evidence_ref": "shots/it10_mcp_page_safe.png;gates_g3.safe.log",
+      "attempt_states": [
+        "navigation:✅",
+        "exercise:⛔vacuous"
+      ],
+      "caveat": "导航✅与行使⛔vacuous分开落账,不因页面可达写功能通过;无外部端点属前置缺失;环境类不归因应用代码;MCP明文联调挂账不代做"
+    },
+    {
+      "cell_id": "L0",
+      "feature": "local_ui",
+      "feature_desc": "local_ui",
+      "endpoint_name_fp": "NA",
+      "modelId_public": "NA(本地UI)",
+      "tier": "NA",
+      "state": "pass",
+      "key_judge": "本地UI+adb控件可达:设备唤醒SCREEN_STATE_ON/Awake截屏3307219B非全黑;对话/设置/MCP/技能/沙箱页均可导航到达;控件bounds经uiautomator解析",
+      "usage_summary": "NA",
+      "evidence_ref": "shots/alive_safe.png;shots/settings_main_safe.png;iterations.jsonl:iter0",
+      "attempt_states": [
+        "initial:✅"
+      ],
+      "caveat": "判据=多页导航可达+唤醒非全黑(iter0);据iter0事实派生;不依赖端点"
+    },
+    {
+      "cell_id": "F5",
+      "feature": "manual_compress",
+      "feature_desc": "manual_compress",
+      "endpoint_name_fp": "NA",
+      "modelId_public": "NA(本地压缩)",
+      "tier": "32K",
+      "state": "vacuous",
+      "key_judge": "菜单+确认框+执行三判据全行使(峰值27.9K/36.4K上下文将满);结果\"没有可压缩的内容\"dropped=0;详见compress_facts.jsonl F5",
+      "usage_summary": "无(dropped=0)",
+      "evidence_ref": "shots/it8_compress_dialog3_safe.png;shots/it8_fixture_nearfull_safe.png;evidence/it8_agent_tail.safe.log;compress_facts.jsonl:F5",
+      "attempt_states": [
+        "attempt1:单次大file_read填满27.9K→无可压缩内容",
+        "attempt2:16轮短消息填满36.4K但auto先行dropped=19→仍无可压缩",
+        "attempt3:新会话单次file_read 27.9K→无可压缩内容"
+      ],
+      "caveat": "⛔vacuous如实登记;历史dropped=238不采信;不写硬出口判据;环境/夹具形态非应用代码"
+    },
+    {
+      "cell_id": "F6",
+      "feature": "auto_compress",
+      "feature_desc": "auto_compress",
+      "endpoint_name_fp": "NA",
+      "modelId_public": "NA(本地压缩)",
+      "tier": "32K",
+      "state": "pass",
+      "key_judge": "逐条短消息16轮越触发点:auto_compact dropped=19 kept=14(2026-11-17T15:41:46Z)+后续already_compressed落账;详见compress_facts.jsonl F6",
+      "usage_summary": "无(dropped=19事件)",
+      "evidence_ref": "evidence/it9_f6_agent_tail.safe.log;compress_facts.jsonl:F6",
+      "attempt_states": [
+        "early:auto_compact=noop below_trigger/insufficient_savings:net=-256",
+        "final:✅dropped=19+already_compressed"
+      ],
+      "caveat": "applied以dropped>0日志形态认定(源码无独立applied=true字面);真压达标;早链不合并抹除"
+    },
+    {
+      "cell_id": "T1",
+      "feature": "tier_axis",
+      "feature_desc": "tier_axis",
+      "endpoint_name_fp": "01e476bd",
+      "modelId_public": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "tier": "512K",
+      "state": "pass",
+      "key_judge": "UI会话档位切换确认框后回读\"当前512K\"switch_verified=true;1M档计量条读数上下文2K/995.9K(仅读数不真压) ;档位=应用侧会话预算(maxContextTokens)非端点contextLength",
+      "usage_summary": "NA(档位切换);1M读数2.0k in/47 out",
+      "evidence_ref": "evidence/switch_facts.jsonl:T1;shots/it4_tier_512K_safe.png",
+      "attempt_states": [
+        "initial:✅"
+      ],
+      "caveat": "档位=会话预算档位非端点contextLength分档,未改端点池;档位读数!=生效窗口!=1M真压;确认框empty_session char_floor_unmeasured;1M真压双阻断不做;tier 1M->512K"
+    },
+    {
+      "cell_id": "T2",
+      "feature": "tier_axis",
+      "feature_desc": "tier_axis",
+      "endpoint_name_fp": "01e476bd",
+      "modelId_public": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "tier": "256K",
+      "state": "pass",
+      "key_judge": "UI会话档位切换确认框后回读\"当前256K\"switch_verified=true;1M档计量条读数上下文2K/995.9K(仅读数不真压) ;档位=应用侧会话预算(maxContextTokens)非端点contextLength",
+      "usage_summary": "NA(档位切换);1M读数2.0k in/47 out",
+      "evidence_ref": "evidence/switch_facts.jsonl:T2;shots/it4_tier_256K_safe.png",
+      "attempt_states": [
+        "initial:✅"
+      ],
+      "caveat": "档位=会话预算档位非端点contextLength分档,未改端点池;档位读数!=生效窗口!=1M真压;确认框empty_session char_floor_unmeasured;1M真压双阻断不做;tier 512K->256K"
+    },
+    {
+      "cell_id": "T3",
+      "feature": "tier_axis",
+      "feature_desc": "tier_axis",
+      "endpoint_name_fp": "01e476bd",
+      "modelId_public": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "tier": "1M",
+      "state": "pass",
+      "key_judge": "UI会话档位切换确认框后回读\"当前1M\"switch_verified=true;1M档计量条读数上下文2K/995.9K(仅读数不真压) ;档位=应用侧会话预算(maxContextTokens)非端点contextLength",
+      "usage_summary": "NA(档位切换);1M读数2.0k in/47 out",
+      "evidence_ref": "evidence/switch_facts.jsonl:T3;shots/it4_tier_1m_safe.png",
+      "attempt_states": [
+        "initial:✅"
+      ],
+      "caveat": "档位=会话预算档位非端点contextLength分档,未改端点池;档位读数!=生效窗口!=1M真压;确认框empty_session char_floor_unmeasured;1M真压双阻断不做;tier 256K->1M"
+    },
+    {
+      "cell_id": "T0",
+      "feature": "tier_axis",
+      "feature_desc": "tier_axis",
+      "endpoint_name_fp": "NA",
+      "modelId_public": "NA(会话预算档位)",
+      "tier": "32K",
+      "state": "pass",
+      "key_judge": "UI会话档位选择器切32K,确认框(empty_session char_floor_unmeasured)后回读\"当前 32K\"switch_verified=true;档位=应用侧会话预算(SettingsRepository.maxContextTokens),与端点contextLength无关,未改任何端点配置",
+      "usage_summary": "NA(档位切换)",
+      "evidence_ref": "shots/it11_tier32_session_readback_safe.png;evidence/switch_facts.jsonl:T0",
+      "attempt_states": [
+        "initial:✅"
+      ],
+      "caveat": "档位=会话预算档位非端点contextLength分档;W22 it1_tier32_done同法已证32K可设;档位读数!=生效窗口真压;未改端点池"
+    },
+    {
+      "cell_id": "F1b",
+      "feature": "multimodal",
+      "feature_desc": "multimodal",
+      "endpoint_name_fp": "b995dc45",
+      "modelId_public": "dots-studio/dots-3-note-preview:free",
+      "tier": "32K",
+      "state": "pass",
+      "key_judge": "附加格(用户声明dots工具+视觉双通核验):补丁前dots图片chip禁用(desc=当前端点未开启图片输入,设备inputModalities=TEXT-only)如实记;按用户声明在设备侧(非仓内)补IMAGE后chip=添加图片可点;真图scan_file+MediaStore命中→SAF→语义逐字命中LEFT:Red/RIGHT:Blue(测试图左红右蓝);usage2.3k in/125 out",
+      "usage_summary": "2.3k in / 125 out (0 cached)",
+      "evidence_ref": "shots/it11_dots_chip_gray_before_safe.png;shots/it11_dots_chip_after_patch_safe.png;shots/it11_dots_vision_result_safe.png",
+      "attempt_states": [
+        "before:⛔ chip灰(TEXT-only设备声明)",
+        "after device-side IMAGE patch:✅ 语义逐字命中"
+      ],
+      "caveat": "设备配置原为TEXT-only,按用户能力声明补IMAGE后验成(非伪造结果,非放开平台安全开关);验后已恢复设备基线TEXT-only并冷启;不覆盖主格F1(mistral)证据;用户标注不写成已验证事实;单图样本"
+    }
+  ],
+  "iterations_total": 12,
+  "iterations": [
+    {
+      "iter": 0,
+      "action": "起步段归入:设备唤醒(WAKEUP验SCREEN_STATE_ON/Awake,screencap3307219B中心像素非全黑);本地四闸门G1确定性出包/G2 fulltest818/G3 arch-guard PASS(ok27)/G4 selftest30/30;端点勘察6端点+PC错密钥fast-fail全401;端点/档位选择器与切换确认框回读能力侦察",
+      "observation": "设备在线;G1 bytes68407402 sha256 ca87a70a... 两次一致mtime不同;G2 tests818/83xml/14模块 strict@Test818=EXPECTED_TESTS;G3 result=PASS ok27 vacuous1(G19) violation0;G4 selftest30/30(238s);设备池6端点全hasSecret;档位选择器32K/128K/192K/256K/512K/1M当前1M;切换确认框诊断empty_session char_floor_unmeasured",
+      "state": "pass",
+      "attribution": "环境就绪;四闸门真机无关纯工程;零凭据落地;无归因应用代码",
+      "evidence_ref": "shots/alive_safe.png;gates_g1.safe.log;gates_g2.safe.log;gates_g3.safe.log;gates_g4.safe.log;evidence/endpoint_survey.md",
+      "caveat": "iter0由起步段归入(非本轮新跑);档位读数!=生效窗口!=1M真压;PC错密钥401仅网络可达非设备侧可用"
+    },
+    {
+      "iter": 1,
+      "action": "E1端点轴复验:设OR-DOTS(b995dc45)为当前+档位32K(确认框empty_session char_floor_unmeasured已确认),回读当前32K;回对话新会话发逐字题面token请求,从严三件套判据",
+      "observation": "OR-DOTS真往返收敛;题面串显示+token W23ALPHA77逐字回显;usage=1.7k in/65 out(0 cached,0.0%);上下文1.8K/27.9K(32K档生效);发送键bounds[870,1284][1014,1428];等待6.3s",
+      "state": "pass",
+      "attribution": "应用侧收敛正常;三件套全齐,无环境归因",
+      "evidence_ref": "shots/it1_dots_32k_safe.png;evidence/it1_dots_32k_labels.txt",
+      "caveat": "档位读数!=生效窗口真压;dots视觉双通为用户标注非设备事实,以真机为准"
+    },
+    {
+      "iter": 2,
+      "action": "E2 north(b0113b2c)+E3 step5(a9ae3f9e)端点轴真收敛:各设当前+32K,从严三件套判据逐字token回显",
+      "observation": "E2 north 1.2k in/169 out(0 cached)逐字回显W23BRAVO42✅;E3 step5 1.8k in/84 out(0 cached)逐字回显W23CHARLIE55✅(45s);两次早期误跑(未切端点/nobtn)如实留痕作废",
+      "state": "pass",
+      "attribution": "应用侧收敛正常;环境无归因;早期误跑为取证helper缺陷非应用问题",
+      "evidence_ref": "shots/it2_north_32k_safe.png;shots/it3_step_32k_safe.png;evidence/it2_result.json;evidence/it3_result.json",
+      "caveat": "helper端点切换/等待判据在iter2迭代修正,早期态不合并抹除;档位读数!=生效窗口真压"
+    },
+    {
+      "iter": 3,
+      "action": "E4 mistral fast-fail+收敛/E5 gemma限流复证/E4b deepseek前置缺失;从严三件套判据",
+      "observation": "E4 mistral:两次token-echo题面过度思考无usage,plain hello 36s收敛✅(1.6k in/509 out);E5 gemma:HTTP400→HTTP429 rate limited⛔环境侧;E4b deepseek无端点⛔vacuous",
+      "state": "partial",
+      "attribution": "E4应用侧收敛✅;E5环境侧限流不归因代码;E4b前置缺失不归因代码",
+      "evidence_ref": "shots/it4_mistral_32k_c_safe.png;shots/it5_gemma_retry_safe.png;evidence/it4_result.json;evidence/it5_result.json",
+      "caveat": "mistral token-echo失败是模型行为非应用问题;gemma限流环境侧;deepseek vacuous不冒充pass;早期误跑留痕"
+    },
+    {
+      "iter": 4,
+      "action": "T1/T2/T3 档位轴512K/256K/1M真切换回读switch_verified=true;1M只取计量条读数不真压",
+      "observation": "512K->当前512K,256K->当前256K,1M->当前1M(三级确认框均确认);1M档NV-VL上下文2K/995.9K,usage 2.0k in/47 out",
+      "state": "pass",
+      "attribution": "应用侧档位切换与回读正常;无环境归因",
+      "evidence_ref": "shots/it4_tier_512K_safe.png;shots/it4_tier_256K_safe.png;shots/it4_tier_1m_safe.png;shots/it4_1m_meter_b_safe.png;evidence/it4_tier_switch.json",
+      "caveat": "档位读数!=生效窗口!=1M真压;1M真压双阻断不做;hard= logcat指纹未单独捕(档位切换无独立hard行,以计量条读数为准)"
+    },
+    {
+      "iter": 5,
+      "action": "F1多模态:先验dots图片chip可用性→按裁决换mistral唯一IMAGE端点;真图scan_file+MediaStore命中→SAF选图→图问颜色语义逐字",
+      "observation": "dots chip desc=当前端点未开启图片输入(TEXT-only)⛔;mistral chip=添加图片可点;测试图w23_vision_probe.png(左红右蓝黑字)MediaStore_id=1000010202;模型答LEFT is red RIGHT is blue逐字命中;usage1.8k in/82 out",
+      "state": "pass",
+      "attribution": "应用侧多模态行使正常;dots TEXT-only为端点声明非应用bug;无环境归因",
+      "evidence_ref": "shots/it5_dots_chip_disabled_safe.png;shots/it5_mistral_chip_safe.png;shots/it5_mistral_vision_result_safe.png",
+      "caveat": "用户标注dots双通与设备TEXT-only冲突,以真机为准;语义逐字命中;单图样本不作泛化"
+    },
+    {
+      "iter": 6,
+      "action": "F2/F3 workspace:file_write审批框exact args+写后ls差集/mtime/sentinel逐字;file_read回读+file_list列举;反背题对照读不存在文件",
+      "observation": "审批框args逐字;写入文件差集新增+mtime 23:20:54+cat=SENTINEL_W23_7744_END(21B);回读逐字+列举workspace;反背题报file not found不臆造",
+      "state": "partial",
+      "attribution": "应用侧工具调用与审批正常;无环境归因",
+      "evidence_ref": "shots/it6_f2_approval_safe.png;shots/it6_f2_written_safe.png;shots/it6_f3_readlist_safe.png;shots/it6_f3_anti_backtip_safe.png;evidence/f2_baseline.txt;evidence/f2_after.txt",
+      "caveat": "F2写入审批框exact args属肯定侧工具证据维持✅;F3降⚠️:无工具记账、证据等级=回复内容级，反背题对照只排除背题假绿（否定侧）非工具真实调用记账（肯定侧）;单文件样本"
+    },
+    {
+      "iter": 7,
+      "action": "F4 skill:技能页确认来源：file技能→@点选w22-devprobe→skill_load审批→[SKILL BODY]+sentinel逐字",
+      "observation": "技能页4技能(w21-probe/w22-devprobe来源：file);@选择器4项;选w22-devprobe插入@w22-devprobe;审批{\"name\":\"w22-devprobe\"};[SKILL BODY]上屏;SENTINEL-W22-Q7X3M逐字;usage2.1k in/108 out",
+      "state": "pass",
+      "attribution": "应用侧技能加载/审批/BODY注入正常;无环境归因",
+      "evidence_ref": "shots/it7_skills_page_safe.png;shots/it7_at_picker_safe.png;shots/it7_f4_skill_result_safe.png",
+      "caveat": "沿用既有file源技能;skill_load审批记账带;single skill样本"
+    },
+    {
+      "iter": 8,
+      "action": "F5手动压缩:32K新会话逐条短消息+单次大file_read夹具填满27.9K-36.4K(计量条上下文将满);更多操作→压缩上下文→确认→执行三判据;检查dropped",
+      "observation": "手动压缩菜单+确认框(三行文案)+执行全行使;结果没有可压缩的内容dropped=0;单次大工具结果无安全截断点,逐条短消息填满36.4K时auto已先行dropped=19⇒手动无内容",
+      "state": "vacuous",
+      "attribution": "应用侧压缩菜单/确认/执行判据行使完整但无droppable内容;环境/夹具形态所致不归因应用代码",
+      "evidence_ref": "shots/it8_compress_dialog3_safe.png;shots/it8_fixture_nearfull_safe.png;evidence/it8_agent_tail.safe.log",
+      "caveat": "⛔vacuous如实登记不写硬出口判据;历史dropped=238不采信为本波;不冒充pass"
+    },
+    {
+      "iter": 9,
+      "action": "F6自动压缩:逐条短消息夹具越过触发点,逐轮回读auto_compact reason分布",
+      "observation": "2026-11-17T15:41:46Z auto_compact dropped=19 kept=14 cache_invalidated=false;后续5行noop reason=already_compressed证明结论落账;早期below_trigger/insufficient_savings:net=-256为评估链实锤",
+      "state": "pass",
+      "attribution": "应用侧自动压缩真行使dropped=19;无环境归因",
+      "evidence_ref": "evidence/it9_f6_agent_tail.safe.log",
+      "caveat": "applied以dropped>0日志形态认定(源码无独立applied=true字面);真压达标;单会话样本;early评估链不合并抹除"
+    },
+    {
+      "iter": 10,
+      "action": "F7 MCP:设置底栏→MCP服务器列表页,区分导航判据(可达+空态)与真实行使判据(无外部端点+G15b明文阻断)",
+      "observation": "MCP服务器页可达,空态文案\"还没有MCP服务器\"/\"添加一个远程MCP端点,模型即可调用它的工具\";无已配置端点;G15b usesCleartextTraffic=false(守卫OK)",
+      "state": "vacuous",
+      "attribution": "导航✅页面可达;行使⛔vacuous前置缺失+G15b平台阻断,环境类不归因应用代码",
+      "evidence_ref": "shots/it10_mcp_page_safe.png;gates_g3.safe.log",
+      "caveat": "导航✅与行使⛔vacuous分开落账;无外部端点前置非bug;MCP明文联调挂账不代做"
+    },
+    {
+      "iter": 11,
+      "action": "收尾覆盖核对+脱敏自检+四份JSONL校验:补L0/F5/F6 matrix格使14格9面全覆盖;iter0-11连续;positive control验脱敏会响+全safe log独立子串复检;JSONL合法解析+必填字段+state枚举+8位指纹+evidence_ref前缀断言+变异自证",
+      "observation": "matrix14格(L0/E1-4/E4b/E5/F1-7)覆盖9声明面;iter0-11连续12行;switch4行compress2行;全safe log脱敏CLEAN零真实凭据/序列号;四份JSONL全部合法解析",
+      "state": "pass",
+      "attribution": "脱敏与结构自检通过;无归因应用代码",
+      "evidence_ref": "evidence/matrix_facts.jsonl;evidence/iterations.jsonl;evidence/switch_facts.jsonl;evidence/compress_facts.jsonl",
+      "caveat": "原始截图仅本地回灌用*_safe.png;deviceLogTail仅脱敏尾部;未触发项如实登记;iter8/9 F5/F6细节在compress_facts.jsonl"
+    }
+  ],
+  "iteration_ids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "switches_total": 5,
+  "switch_facts": [
+    {
+      "switch": "tier 1M->512K",
+      "confirmed": true,
+      "readback": "当前 512K",
+      "evidence": "shots/it4_tier_512K_safe.png",
+      "switch_verified": true,
+      "caveat": "档位读数!=生效窗口!=1M真压;确认框empty_session char_floor_unmeasured;1M仅取读数"
+    },
+    {
+      "switch": "tier 1M->256K",
+      "confirmed": true,
+      "readback": "当前 256K",
+      "evidence": "shots/it4_tier_256K_safe.png",
+      "switch_verified": true,
+      "caveat": "档位读数!=生效窗口!=1M真压;确认框empty_session char_floor_unmeasured;1M仅取读数"
+    },
+    {
+      "switch": "tier 256K->1M",
+      "confirmed": true,
+      "readback": "当前 1M",
+      "evidence": "shots/it4_tier_1m_safe.png",
+      "switch_verified": true,
+      "caveat": "档位读数!=生效窗口!=1M真压;确认框empty_session char_floor_unmeasured;1M仅取读数"
+    },
+    {
+      "switch": "1M 计量条读数(NV-VL)",
+      "confirmed": true,
+      "readback": "上下文 2K / 995.9K",
+      "evidence": "shots/it4_1m_meter_b_safe.png",
+      "switch_verified": true,
+      "caveat": "仅读数,1M真压双阻断不做;usage 2.0k in/47 out"
+    },
+    {
+      "switch": "会话档位 ->32K (W22同法)",
+      "confirmed": true,
+      "readback": "当前 32K",
+      "evidence": "shots/it11_tier32_session_readback_safe.png",
+      "switch_verified": true,
+      "caveat": "档位=会话预算maxContextTokens非端点contextLength;未改端点配置;档位读数!=生效窗口真压"
+    }
+  ],
+  "compress_cells": 2,
+  "compress_facts": [
+    {
+      "cell_id": "F5",
+      "tier": "32K",
+      "fixture": "新会话:1次file_read cjk_fixture.txt(42300字符)填满27.9K/27.9K;另次新会话8+8轮逐条短消息(每条~400字符带W23SEQ锚点)填满36.4K/27.9K",
+      "trigger_line": "没有可压缩的内容：历史本来就装得下，或找不到安全的截断点。",
+      "reason": "manual_compress: 菜单+确认框+执行三判据全行使(fixture峰值27.9K/36.4K,确认框三行文案完整);但L1找不到安全截断点/候选段truncate后size不减⇒dropped=0",
+      "dropped": 0,
+      "state": "⛔vacuous",
+      "evidence_ref": "shots/it8_compress_dialog3_safe.png;shots/it8_fixture_nearfull_safe.png;evidence/it8_agent_tail.safe.log",
+      "caveat": "菜单/确认/执行全行使但dropped=0如实⛔vacuous;历史已证能力存在(W22 dropped=238)本波拿不到不冒充;不写dropped>0/applied=true硬出口判据;单次大工具结果无可截断段,逐条短消息虽填满36.4K但自动压缩已先行dropped=19使手动无内容可压"
+    },
+    {
+      "cell_id": "F6",
+      "tier": "32K",
+      "fixture": "新会话逐条短消息(每条~400字符带W23SEQ锚点)16轮,计量条峰值36.4K/27.9K越过COMPACT_TRIGGERChars",
+      "trigger_line": "auto_compact dropped=19 kept=14 cache_invalidated=false (随后 already_compressed)",
+      "reason": "评估链实锤:2026-11-17T15:41:46Z auto_compact dropped=19 kept=14;后续5行noop reason=already_compressed证明压缩结果已落账生效;源码 applied=true 唯一路径才落 auto_compact dropped=N kept=M 账（dropped=消息数,net=字符净节省,非同一数值）",
+      "dropped": 19,
+      "state": "✅",
+      "evidence_ref": "evidence/it9_f6_agent_tail.safe.log",
+      "caveat": "applied形态为日志dropped=19+后续already_compressed(源码无独立applied=true字面);本波真压达标;drop19/keep14单次样本;cache_invalidated=false(头锚保留语义);evaluated链nooP below_trigger/insufficient_savings早期态不作达标"
+    }
+  ],
+  "truncated_fields": [],
+  "attempt_states_note": "attempt_states kept per cell; early states never merged away",
+  "na_allowlist": [
+    "E4b",
+    "F7",
+    "L0"
+  ],
+  "assertions": [
+    "A_unique_cell_id",
+    "B_required_fields",
+    "C_iter_contiguous",
+    "D_state_enum",
+    "E_feature_enum",
+    "F_new_face_must_be_declared",
+    "G_attempt_states",
+    "H_inference_caveat",
+    "I_evidence_ref",
+    "J_privacy_fingerprint"
+  ],
+  "mutation_cases": [
+    {
+      "assertion": "A_unique_cell_id",
+      "injected_violation": "复制首格使 cell_id 重复",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "B_required_fields",
+      "injected_violation": "清空首格 endpoint_name_fp 触发必填缺失",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "C_iter_contiguous",
+      "injected_violation": "删中间一轮制造编号跳号（删末尾不产生跳号，无效）",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "D_state_enum",
+      "injected_violation": "把首格 state 置为非法值 PASSED",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "E_feature_enum",
+      "injected_violation": "把首格 feature 置为未登记枚举值",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "F_new_face_must_be_declared",
+      "injected_violation": "把一格 feature 改成未登记新面（针对 P0-1 空转判据）",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "G_attempt_states",
+      "injected_violation": "构造 attempts>1 但 attempt_states 缺失",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "H_inference_caveat",
+      "injected_violation": "清空一格的 caveat",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "I_evidence_ref",
+      "injected_violation": "把一格 evidence_ref 改成非法前缀",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    },
+    {
+      "assertion": "J_privacy_fingerprint",
+      "injected_violation": "把首格指纹改成非 8-hex",
+      "expected": "REJECTED",
+      "result": "REJECTED",
+      "passed": true
+    }
+  ],
+  "mutation_selftest": "10/10 assertions red on injected violation (all cases in artifact)",
+  "privacy": {
+    "endpoint_fingerprint": "8-hex irreversible",
+    "forbidden_literals": 0,
+    "raw_screenshots": "local only",
+    "logcat": "tail-only desensitized"
+  }
+}

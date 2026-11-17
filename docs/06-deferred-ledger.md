@@ -430,13 +430,34 @@
 | ID | 项 | 开立于 | 状态 | 触发信号 / 缓解动作 | 证据 |
 |---|---|---|---|---|---|
 | W22-01 | 上一波收尾契约收口执行（面数三态九面方案五处同步 / 销账自证措辞 + 排除规则 / 推送链接/时点/错数订正）——每处带「W22 收口修订」标注 | W22 | `CLOSED` | **触发信号**：报告① 判上一波收尾契约 P0/P1 结构缺陷；**缓解动作**：最小结构修复、不删历史结论语义；出口判据按字面复核成立（缺陷形态 0 命中 + 排除规则明确） | `docs/analysis/w21-acceptance.md`（带 W22 收口修订标注的 diff）；本台账 W21-01 / W21-02 / W21-04 三处行内注记；`_w22/` 出口 grep 复核 |
-| W22-02 | 上一波制品缺陷登记（面数三态不自洽、销账自证字面不成立等）——制品正文**不重出** | W22 | `OPEN` | **触发信号**：外部审查按上一波制品作历史结论复核时；**缓解动作**：本波新制品出厂断言升级（含「新增面须登记 declared」+ 必红变异），历史制品修复待独立成波（老号 W21-02 / W20-15 域），本波不重出不覆盖 | `_w22/make_evidence_w22.py`（断言源码 + 必红回归）；`evidence/w22-matrix-summary.json`；W21-02 行内注记 |
+| W22-02 | 上一波制品缺陷登记（面数三态不自洽、销账自证字面不成立等）——制品正文**不重出** | W22 | `OPEN` | **触发信号**：外部审查按上一波制品作历史结论复核时；**缓解动作**：本波新制品出厂断言升级（含「新增面须登记 declared」+ 必红变异），历史制品修复待独立成波（老号 W21-02 / W20-15 域），本波不重出不覆盖 | `_w22/make_evidence_w22.py`（断言源码 + 必红回归）；`evidence/w22-matrix-summary.json`；W21-02 行内注记 | 【W23 收口注记（报告② P0-1）：本波新制品按 8 处 schema 缺陷全修——恢复 schema/cells[]/iterations 明细/evidence_ref/attempt_states/必红样本入本体；历史制品不重出不覆盖】
 | W22-03 | journal / FreezeClock 二选一裁决 **第 17 次顺延**（承接上一波段第 3 行，两代数口径仍并列待用户裁决） | W22 | `OPEN` | **触发信号**：用户未给显式二选一裁决；**缓解动作**：用户拍板二选一并统一代数口径；不关号、不软化、不代裁决 | `docs/analysis/w22-acceptance.md` §1.3 #2；老号原样 `OPEN` |
-| W22-04 | 本波真机矩阵未达成格清单（E4b deepseek 设备池无端点 ⛔vacuous / E5 gemma HTTP429 ⛔ 环境侧 / F3 workspace list ⚠️ 无记账 / F5 手动压缩 `dropped>0` 未达 / F6 自动压缩 `applied=true` 未达 / F7 无外部 MCP 端点 ⛔vacuous / `hard=` logcat 指纹未捕获） | W22 | `OPEN` | **触发信号**：节点复活 / 新会话可分割夹具可铺时（F1 多模态已因 mistral 复活闭环）；**缓解动作**：F5/F6 需动 `.kt`（单指针 + 时序）或放宽 file_read 上限（本波零 `.kt` 禁改）；E4b 需用户设备侧新增端点；环境类 ⛔ 不归因应用代码 | `docs/analysis/w22-acceptance.md` §3 逐格四态；`_w22/evidence/matrix_facts.jsonl` / `compress_facts.jsonl` / `shots/` |
-| W22-05 | 非对话模型（`wan2.2-animate` 视频生成 / `nvidia/vsr` 视频超分两支）不进 chat 端点矩阵 | W22 | `OPEN` | **触发信号**：出现把非对话模型计进端点收敛数的表述；**缓解动作**：chat 矩阵只收对话 LLM；两支与矩阵无关，不判 ⛔ 不计分母 | 用户本单 `nvidia.txt` 六支清单；`docs/analysis/w22-acceptance.md` §1.3 #12 |
+| W22-04 | 本波真机矩阵未达成格清单（E4b deepseek 设备池无端点 ⛔vacuous / E5 gemma HTTP429 ⛔ 环境侧 / F3 workspace list ⚠️ 无记账 / F5 手动压缩 `dropped>0` 未达 / F6 自动压缩 `applied=true` 未达 / F7 无外部 MCP 端点 ⛔vacuous / `hard=` logcat 指纹未捕获） | W22 | `OPEN` | **触发信号**：节点复活 / 新会话可分割夹具可铺时（F1 多模态已因 mistral 复活闭环）；**缓解动作**：F5/F6 需动 `.kt`（单指针 + 时序）或放宽 file_read 上限（本波零 `.kt` 禁改）；E4b 需用户设备侧新增端点；环境类 ⛔ 不归因应用代码 | `docs/analysis/w22-acceptance.md` §3 逐格四态；`_w22/evidence/matrix_facts.jsonl` / `compress_facts.jsonl` / `shots/` | 【W23 收口注记：F6 自动压缩本波从 ⚠️ 转 ✅（auto_compact dropped=19 kept=14 落账，源码双点回源成立，带 caveat 不读成压缩主线闭环）；F5 手动压缩仍 dropped=0 ⛔vacuous（需 .kt 单指针/时序或放宽 file_read 上限，本波禁改）；E4b 仍不在池】
+| W22-05 | 非对话模型（`wan2.2-animate` 视频生成 / `nvidia/vsr` 视频超分两支）不进 chat 端点矩阵 | W22 | `OPEN` | **触发信号**：出现把非对话模型计进端点收敛数的表述；**缓解动作**：chat 矩阵只收对话 LLM；两支与矩阵无关，不判 ⛔ 不计分母 | 【W23 收口修订（报告② P0-2）：证据列去凭据文件名（隐私红线，仅证据列表述，状态/触发信号/缓解动作原句未改）】 用户本单模型清单（六支，凭据文件名按隐私纪律不落盘）；`docs/analysis/w22-acceptance.md` §1.3 #12 |
 | W22-06 | 取证驱动遗留（本波新落 `devdrv.sh` / `ask_robust.sh` / `fixture_run.sh` / `redact.py`；agent log 全程零工具记账 ⇒ 工具/技能调用判据一律以 UI 副作用 / sentinel 复述 / 文件系统证据为准） | W22 | `OPEN` | **触发信号**：后续波复用驱动栈遇到同型 BACK 逃逸或日志判据空转时；**缓解动作**：维持取证设施不入仓口径（老号 W20-14 / W21-06 同域）；判据面改写规则已写入本波验收物 §1.2 | `_w22/*.sh` / `redact.py`（仓外）；`docs/analysis/w22-acceptance.md` §1.2；本波 skill / 工作空间格判据实录 |
 
 
+
+### W23 段（2026-11-17，6 行：1 `CLOSED` + 5 `OPEN`）
+
+> 上游依据：用户 2026-11-17 指令（读记忆 / 上一波 handoff / 台账 OPEN 行；**四份**众审查人报告裁决
+> 分歧不改方案大体方向；用户给 API 免费节点清单（凭据文件名不落盘）+ 两支 openrouter 模型 + 公开构建平台其余模型
+> × 多上下文〔直至 1M〕× 多模态 / 工作空间 / skill / MCP / 手动+自动压缩；先本地 → 真机 → 推 CI；
+> 收尾契约；停于交接）与方案席 Phase 1 十四裁决；收敛结论见 `docs/analysis/w23-acceptance.md` §1.1–§1.4。
+> ⚠️ 老号全数保留 `OPEN`，本表不删、不改老行状态、不并号、不制造幽灵行；本段编号是**本波范围声明**。
+> 被点名老行（W22-02 / W22-04）已按「行内注记不改原句」口径补登 W23 收口注记（见各老行）。
+> 落笔纪律：台账由主理人**单人**落笔。
+> 本波 handoff 严格零复合编号字面量 ⇒ 本段 6 行对 G20 并集零贡献 ⇒ **G20 `PASS` 不等于本波新增行
+> 已被守卫覆盖**（沿用老段边界注记口径）。
+
+| ID | 项 | 开立于 | 状态 | 触发信号 / 缓解动作 | 证据 |
+|---|---|---|---|---|---|
+| W23-01 | 上一波收尾契约收口执行（制品 schema 退化恢复 / 脱敏回退 / 面数与推送链接订正 / 两页零成本 docs 并入）——每处带「本波收口修订」标注 | W23 | `CLOSED` | **触发信号**：两报告判上一波收尾契约 P0（制品断言无对象、必红样本只在仓外）与 P0-2（脱敏规则集缺凭据文件名形态）；**缓解动作**：本波新制品恢复 schema/cells[]/iterations[] 明细/evidence_ref/attempt_states/必红样本入本体（历史制品不重出），脱敏规则集补形态并正控自证会响；出口判据按字面复核成立（8 处 schema 缺陷全修、正控 15/15+11/11、全树 0 命中） | `docs/analysis/w23-acceptance.md` §1.1 #2/#3/#4/#11；`_w23/privacy_ruleset.safe.log`；`_w23/phase3_review_static.md` |
+| W23-02 | 上一波制品缺陷登记（schema 退化、断言列 10 条但 selftest 仅抽样 5 条、F 新面断言对当前制品必然绿）——制品正文**不重出** | W23 | `OPEN` | **触发信号**：外部审查按上一波制品作历史结论复核时；**缓解动作**：本波新制品 10 条断言每条配必红变异样本落 `mutation_cases[]`（10/10 全 REJECTED 实跑入仓），确定性重跑 sha256 一致；历史制品修复待独立成波（老号 W22-02 / W21-02 / W20-15 域），本波不重出不覆盖 | `_w23/make_evidence_w23.py`（生成器 + 10 变异自证）；`evidence/w23-matrix-summary.json`；W22-02 行内注记 |
+| W23-03 | journal / FreezeClock 二选一裁决 **第 18 次顺延**（承接上一波段第 3 行，两代数口径仍并列待用户裁决） | W23 | `OPEN` | **触发信号**：用户未给显式二选一裁决；**缓解动作**：用户拍板二选一并统一代数口径；不关号、不软化、不代裁决；累计成本注记以行内注记零成本并入 | `docs/analysis/w23-acceptance.md` §1.3 #2；老号原样 `OPEN` |
+| W23-04 | 本波真机矩阵未达成格清单（F3 workspace ⚠️ 无工具记账从严 / E5 gemma HTTP429 ⛔ 环境侧 / E4b deepseek 设备池无端点 ⛔vacuous / F5 手动压缩 dropped=0 ⛔vacuous / F7 无外部 MCP 端点 ⛔vacuous；19 格含增补 T0 32K 档回读 + F1b dots 视觉核验）。**F6 自动压缩本波转 ✅**（`auto_compact dropped=19 kept=14` 落账生效，源码双点回源成立，带 caveat：单会话证据、源码无独立 applied=true 字面，不读成压缩主线闭环） | W23 | `OPEN` | **触发信号**：节点复活 / 新会话可分割夹具可铺；**缓解动作**：F5 手动压缩需 `.kt`（`alreadyCompressed` 单指针 + 时序）或放宽 file_read 16000 上限（本波零 `.kt` 禁改）；E4b 需用户设备侧新增端点；F5/F7 环境类 ⛔vacuous 不冒充通过、不归因代码 | `docs/analysis/w23-acceptance.md` §3 逐格四态；`_w23/evidence/matrix_facts.jsonl` / `compress_facts.jsonl` / `shots/` |
+| W23-05 | 非对话模型（视频生成 / 视频超分等）不进 chat 端点矩阵；用户标注模型能力（如某 openrouter 模型「视觉双通」）与设备实测（inputModalities 仅 TEXT）冲突时以真机为准 | W23 | `OPEN` | **触发信号**：出现把非对话模型计进端点收敛数、或把用户标注能力写成已验证事实；**缓解动作**：chat 矩阵只收对话 LLM；能力声明先验 `inputModalities` / chip 可用性，实测冲突以真机为准并带 caveat、不臆造 | `docs/analysis/w23-acceptance.md` §1.3 #12 / §3 F1；`_w23/evidence/endpoint_survey.md`（已脱敏） |
+| W23-06 | 取证驱动遗留（本波 `_w23/devdrv.py` / `ep_probe.py` / `nav.py` / `redact.py` / `scan_artifacts.py`；脱敏正控自证抓出历史 serial 检测器恒不响 bug 并修复；agent log 全程零工具记账 ⇒ 工具/技能调用判据一律以 UI 副作用 / sentinel 复述 / 文件系统证据为准并带 caveat） | W23 | `OPEN` | **触发信号**：后续波复用驱动栈遇同型 BACK 逃逸、日志判据空转、或脱敏规则集完备性被质疑时；**缓解动作**：维持取证设施不入仓口径（老号 W20-14 / W21-06 / W22-06 同域）；判据面改写规则见本波验收物 §1.2；正控先自证会响再判 0 的纪律固化 | `_w23/*.py`（仓外）；`docs/analysis/w23-acceptance.md` §1.2 / §2；`_w23/privacy_ruleset.safe.log` |
 ---
 
 ## 二、统计（按 §一 表格实际编号行重算，W7）
