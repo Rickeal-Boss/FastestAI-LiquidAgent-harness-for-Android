@@ -220,7 +220,7 @@
 
 | ID 段 | 状态 | 触发信号 / 缓解动作 |
 |---|---|---|
-| 本波段三行（裁决落地 / 制品空转 / 出口载体） | `OPEN` | 号段自由已确认、三行各带必红变异出口；触发信号与缓解动作详见台账段（待落笔，草案见 §5.4）。对机器守卫并集零贡献 |
+| 本波段三行（裁决落地 / 制品空转 / 出口载体） | `OPEN` | 号段自由已确认、三行各带必红变异出口；触发信号与缓解动作详见台账 W29 段（已落笔；出口判据见本文件 §5.4）。对机器守卫并集零贡献 |
 | 更早波段三行（收尾 / 制品 / 挂账口径） | `OPEN` | 本波 P0-1 选 B 删虚报措辞 + 补 tip run；状态原样不销账；tip run 闭环方式待用户裁决 |
 | 更早波段首两行（思考框 / 断词） | `OPEN` | 两缺陷源码锚点 live；本波若真机顺带观察只录证据、不写成复现事实；优先级 argument 维持 |
 | 更早波段第 3 行（journal） | `OPEN` | 代数多值并存，用户未给二选一裁决，不新开行、不代裁 |
@@ -229,17 +229,17 @@
 
 ### §5.4 文档回写 diff
 
-> 本波**零 `.kt`**。变更面 = 本波新文件 2 + 第 0 车最小行内修复 3 文件 + 台账新增段 + 制品 1（后两项待真机结果与落笔后补）。
+> 本波**零 `.kt`**。变更面 = 本波新文件 4（验收物 / 交接 / 收口 checklist / 制品）+ 第 0 车最小行内修复 3 文件 + 台账新增段。W29 波已按第 0 车把这些占位收口。
 
 | 文件 | 变更 | 性质 |
 |---|---|---|
-| `docs/analysis/w28-acceptance.md` | 新增：§1 裁决/做什么/不做/前置 + §2 闸门 + §5 收尾（§3/§4 待真机回填） | 本波新文件 |
+| `docs/analysis/w28-acceptance.md` | 新增：§1 裁决/做什么/不做/前置 + §2 闸门 + §5 收尾（§3/§4 真机矩阵 ✅6/⛔vacuous5 已于本波回填） | 本波新文件 |
 | `docs/handoff-20261118-wave28.md` | 新增：交接摘要（零复合编号、不写推断为事实、不写下一链） | 本波新文件 |
 | `docs/notes/w28-closeout-checklist.md` | 新增：三条出口判据的可跑命令 + 必红变异（判据1/2/3 均已实跑：正常态 OK、变异 RED）+ 人工兜底声明 | 本波新文件（P0-3 载体） |
 | `docs/analysis/w27-acceptance.md` | 最小行内修复（本波实际 4 处）：§1.1 #9 与 §5.3 压缩老号行删「已写进 / 红态入口」改案 B 口径（P0-1 选 B 同步）；§5.1 步 5 改「推送后回填」口径；§5.6 推送 2 行补 `44241199431`@`cdaade7` + 文末链接段 | 最小行内修复（收尾义务），不重出全文、不改状态/结论/判级。凭据文件名字面量全树 0 命中（W27 波已删，本波未再引入） |
 | `docs/handoff-20261118-wave27.md` | 最小行内修复：压缩老号行删「写行内注记作红态入口」改案 B 口径 | 最小行内修复 |
-| `docs/06-deferred-ledger.md` | `W27-03` 缓解动作与出口判据删「写进压缩老号行内注记 / 红态引用」改案 B 口径（P0-1 同步）；新增 W28 段 3 行（主理人单人、待落笔） | 老行行内注记 + 新增段 |
-| `evidence/w28-matrix-summary.json` | 新建：本波矩阵制品（修 P0-2 空转判据 + 8 字段 + 真机面断言 / coverage_note + 结构化注入样本），待真机结果生成 | 本波新增（仓根非 docs，触发 Build） |
+| `docs/06-deferred-ledger.md` | `W27-03` 缓解动作与出口判据删「写进压缩老号行内注记 / 红态引用」改案 B 口径（P0-1 同步）；新增 W28 段 3 行（主理人单人，已落笔） | 老行行内注记 + 新增段 |
+| `evidence/w28-matrix-summary.json` | 新建：本波矩阵制品（修 P0-2 空转判据 + 8 字段 + 真机面断言 / coverage_note + 结构化注入样本），已生成 11 格 | 本波新增（仓根非 docs，触发 Build） |
 | 两份历史 `source-review-*.md` | 未跟踪文件，保持 `??` 不入库 | 沿用既定口径 |
 
 > 隐私处置：本波新建四文件初稿经交付物隐私自查（`_w28/privacy_scan.py`）抓出两处字面量（凭据文件名 / 本机绝对路径），已按占位符约定改为语义描述 / `<workspace>` / `<取证设施>`；正控 `SELF-AUDIT 10/10 detectors fired` 会响后才采信 `PRIVACY_RESULT=CLEAN`。
@@ -271,7 +271,7 @@
 | 公开 API 四字段复核 | 两 run 各读 status/conclusion/event/head_sha：均 `completed`/`success`/`push`/`7335605`（零凭据字面量，仅四字段） |
 | 最终树守卫复跑 | 推送前文档与制品落盘后复跑 `result=PASS ok=27 vacuous=1 violation=0 fault=0`、rc=0；G20 OK（112 handoff ID 全在台账、CLOSED 行证据非空）；本波 handoff 零复合编号，W28 段 3 行对 G20 并集零贡献 |
 | CI 红次数 | **0** |
-| 推送 2 | 本提交（纯文档回填 §5.6 与 §5.1 步 5 真实 commit 与 CI run 链接）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 覆盖同一 commit；本波不再第三次推送以避免自指循环 |
+| 推送 2 | 本提交（纯文档回填 §5.6 与 §5.1 步 5 真实 commit 与 CI run 链接）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan `44251600099` success@`f0997580e`（W29 波按 W28 自设降级规则补链，四字段 API 复核）；本波不再第三次推送以避免自指循环 |
 | 推送次数 | **2**（推送 1 含制品触发 Build 五 job 真跑 + 独立 Secret scan；推送 2 纯文档回填链接） |
 | 归因 | 无构建失败 ⇒ 四分类未触发；环境类（F4 mistral 安全拒答 / F1 SAF 取证未完成 / F5 未行使 / F7 无外部 MCP / F6 字符维未越 / 平台明文阻断 / 用户视觉声明被设备证伪）不写成应用 bug；推送 1 含制品 ⇒ Build 有真绿 run；推送 2 纯文档 ⇒ Build 0 run 属既定口径，不写「构建再次通过」 |
 
@@ -279,6 +279,7 @@
 
 - 推送 1 Build：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44251098599
 - 推送 1 独立 Secret scan：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44251098669
+- 推送 2 独立 Secret scan（W29 波降级补链）：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44251600099
 
 > 本波零 `.kt` 改动 ⇒ 「CI 全绿」指 Build 五 job + 独立 Secret scan 结论 success，**不等于**真机矩阵全格通过（§3 如实登记 ✅6 / ⛔vacuous5），也不等于两条用户可见缺陷已复现。
 > PAT inline 一次性使用后 remote 已复核干净；PAT 已使用一次即视为暴露（轮换为用户侧密钥管理动作，不在仓内写未闭环命令）。
