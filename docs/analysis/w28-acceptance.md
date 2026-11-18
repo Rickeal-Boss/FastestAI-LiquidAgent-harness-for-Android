@@ -210,7 +210,7 @@
 | 步 2 | 本地先行 + 编译确定性实证 + adb 调试 + 唤醒三步法 + 非全黑 screencap | ✅ | `_w28/g1_build.log`、`g1_rebuild.log`、`__screen0.png`、§1.4.1 |
 | 步 3 | 真机矩阵 11 格按四态如实落账（✅6 / ⛔vacuous5）+ 链内迭代 11 轮（含真机席 429 中断后主理人接手补完） | ⚠️（6 ✅ / 5 ⛔vacuous，逐格如实；非全格通过） | §3、§4、`evidence/w28-matrix-summary.json` |
 | 步 4 | 收尾契约：第 0 车零 `.kt` 最小修复（P0-1 三处同步 + 制品 + checklist + tip run）+ W28 段 3 行主理人单人落笔 | ✅ | §5.4；`git diff` 见 §5.4 |
-| 步 5 | 四闸门 ✅ + 推送 + CI（run 链接见 §5.6） | （待推送回填） | §2、`_w28/g4_fulltest.log`、`g2_arch.log`、`g3_selftest.log`、§5.6 |
+| 步 5 | 四闸门 ✅ + 推送 + CI（run 链接见 §5.6） | ✅（闸门 ✅ / 推送 1 Build+Secret scan 全 success、run 链接见 §5.6） | §2、`_w28/g4_fulltest.log`、`g2_arch.log`、`g3_selftest.log`、§5.6 |
 
 ### §5.2 明确未做（逐条带挂账号 · 与 §1.3 同源）
 
@@ -261,3 +261,30 @@
 > 以上均不含：会话历史 / 凭据字面量 / 端点完整标识（仅指纹）/ 对下一链的建议。原始截图与 JSONL 取证在仓外 `_w28/`，供审查团队按需索取，不随交付物入库。
 > **诚实边界**：真机矩阵 ✅6/⛔vacuous5 **非全格通过**；F4/F1/F5 未完成取证如实 ⛔vacuous；档位读数 ≠ 1M 真压；F6 below_trigger 为案 B 正确行为、非缺陷。
 
+### §5.6 CI / 提交序列（唯一真值源）
+
+| 项 | 值 |
+|---|---|
+| 推送 1 | `cdaade7..7335605 HEAD -> main`（commit `7335605`，7 files：本波验收物 + 交接 + 台账 W28 段 + W27 收尾第 0 车最小修复 + 仓根非 docs 制品 `evidence/w28-matrix-summary.json`〔11 格〕+ 收口 checklist）；逐文件 add，两份历史源码日析全程 `??` 未入库；dry-run RC=0 → 实推 RC=0；PAT inline URL 一次性使用、`git remote get-url origin` 复核干净 URL（PAT 未落盘 remote）；noreply 身份；不 force-push、不 rewrite history |
+| Build run（推送 1） | run `44251098599` **completed success**（event=push，由仓根非 docs 制品自身真实触发；五 job：Assemble Debug (JDK 21) / Lint / Secret scan / Arch guard / Unit tests；head_sha `7335605`） |
+| Secret scan run（推送 1，独立） | run `44251098669` **completed success**（无 `paths-ignore`，覆盖同一 commit `7335605`） |
+| 公开 API 四字段复核 | 两 run 各读 status/conclusion/event/head_sha：均 `completed`/`success`/`push`/`7335605`（零凭据字面量，仅四字段） |
+| 最终树守卫复跑 | 推送前文档与制品落盘后复跑 `result=PASS ok=27 vacuous=1 violation=0 fault=0`、rc=0；G20 OK（112 handoff ID 全在台账、CLOSED 行证据非空）；本波 handoff 零复合编号，W28 段 3 行对 G20 并集零贡献 |
+| CI 红次数 | **0** |
+| 推送 2 | 本提交（纯文档回填 §5.6 与 §5.1 步 5 真实 commit 与 CI run 链接）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 覆盖同一 commit；本波不再第三次推送以避免自指循环 |
+| 推送次数 | **2**（推送 1 含制品触发 Build 五 job 真跑 + 独立 Secret scan；推送 2 纯文档回填链接） |
+| 归因 | 无构建失败 ⇒ 四分类未触发；环境类（F4 mistral 安全拒答 / F1 SAF 取证未完成 / F5 未行使 / F7 无外部 MCP / F6 字符维未越 / 平台明文阻断 / 用户视觉声明被设备证伪）不写成应用 bug；推送 1 含制品 ⇒ Build 有真绿 run；推送 2 纯文档 ⇒ Build 0 run 属既定口径，不写「构建再次通过」 |
+
+**run 链接**（公开 API 逐项读 status / conclusion / event / head_sha，零凭据）：
+
+- 推送 1 Build：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44251098599
+- 推送 1 独立 Secret scan：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44251098669
+
+> 本波零 `.kt` 改动 ⇒ 「CI 全绿」指 Build 五 job + 独立 Secret scan 结论 success，**不等于**真机矩阵全格通过（§3 如实登记 ✅6 / ⛔vacuous5），也不等于两条用户可见缺陷已复现。
+> PAT inline 一次性使用后 remote 已复核干净；PAT 已使用一次即视为暴露（轮换为用户侧密钥管理动作，不在仓内写未闭环命令）。
+
+---
+
+> **本波止于交接**，不写「建议下一链做什么」。
+
+<!-- APPEND_POINT -->
