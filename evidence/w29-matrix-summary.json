@@ -3,12 +3,11 @@
   "baseline": "f099758 (W28 回填)",
   "wave": "W29",
   "zero_kotlin": true,
-  "assertion_source": "_w28/make_summary_w28.py (仓外取证设施, 老号W20-14不入库)",
+  "assertion_source": "_w29/make_summary_w29.py (仓外取证设施, 老号W20-14不入库)",
   "cells_total": 11,
   "unique_cell_ids": 11,
   "state_counts": {
-    "PASS": 6,
-    "VACUOUS": 5
+    "VACUOUS": 11
   },
   "declared_feature_faces": [
     "endpoint_axis",
@@ -40,8 +39,8 @@
       "feature_face": "endpoint_axis",
       "endpoint_fp": "01e476bd",
       "tier": "默认",
-      "state": "PASS",
-      "state_glyph": "✅",
+      "state": "VACUOUS",
+      "state_glyph": "⛔vacuous",
       "positive_control": true,
       "key_criteria": [
         "正控逐字 W28ALPHA7",
@@ -49,11 +48,9 @@
         "wait 6.7s 4.4k in/33 out"
       ],
       "attribution": "app",
-      "evidence_ref": [
-        "evidence/iter1_e01.json"
-      ],
-      "caveat": "正控先行: sentinel 选取使 done 判据必响; 若此格不响则其余 PASS 格皆可疑",
-      "na_reason": "",
+      "evidence_ref": [],
+      "caveat": "本波未行使; 原 PASS 态为 W28 继承事实, 见 w28_baseline_facts",
+      "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
       "truncated_fields": []
     },
     {
@@ -61,8 +58,8 @@
       "feature_face": "endpoint_axis",
       "endpoint_fp": "b995dc45",
       "tier": "512K读数",
-      "state": "PASS",
-      "state_glyph": "✅",
+      "state": "VACUOUS",
+      "state_glyph": "⛔vacuous",
       "positive_control": true,
       "key_criteria": [
         "用户点名 OR-DOTS 逐字 W28BRAVO9",
@@ -70,11 +67,9 @@
         "链内修正: 切端点前补 wake(原冷启动 no eplist)"
       ],
       "attribution": "app",
-      "evidence_ref": [
-        "evidence/iter2_e02.json"
-      ],
-      "caveat": "inputModalities=[TEXT]; 用户双通道声明不背书(设备真相)",
-      "na_reason": "",
+      "evidence_ref": [],
+      "caveat": "本波未行使; 原 PASS 态为 W28 继承事实, 见 w28_baseline_facts",
+      "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
       "truncated_fields": []
     },
     {
@@ -82,19 +77,17 @@
       "feature_face": "endpoint_axis",
       "endpoint_fp": "b0113b2c",
       "tier": "256K读数",
-      "state": "PASS",
-      "state_glyph": "✅",
+      "state": "VACUOUS",
+      "state_glyph": "⛔vacuous",
       "positive_control": true,
       "key_criteria": [
         "用户点名 OR-NORTH 逐字 W28CHARLIE3",
         "SWITCH=true done=true usage_changed=true"
       ],
       "attribution": "app",
-      "evidence_ref": [
-        "evidence/iter3_e03.json"
-      ],
-      "caveat": "inputModalities=[TEXT]",
-      "na_reason": "",
+      "evidence_ref": [],
+      "caveat": "本波未行使; 原 PASS 态为 W28 继承事实, 见 w28_baseline_facts",
+      "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
       "truncated_fields": []
     },
     {
@@ -102,19 +95,17 @@
       "feature_face": "tier_axis",
       "endpoint_fp": "01e476bd",
       "tier": "32K/256K/512K/1M",
-      "state": "PASS",
-      "state_glyph": "✅",
+      "state": "VACUOUS",
+      "state_glyph": "⛔vacuous",
       "positive_control": true,
       "key_criteria": [
         "四档 badge 逐档回读",
         "档位=会话软预算(SwitchGuard) 非端点 contextLength"
       ],
       "attribution": "app",
-      "evidence_ref": [
-        "evidence/iter4_tiers_w28.json"
-      ],
-      "caveat": "档位读数≠生效窗口≠1M真压; 1M真压双阻断未解(挂老号)",
-      "na_reason": "",
+      "evidence_ref": [],
+      "caveat": "本波未行使; 原 PASS 态为 W28 继承事实, 见 w28_baseline_facts",
+      "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
       "truncated_fields": []
     },
     {
@@ -122,8 +113,8 @@
       "feature_face": "workspace",
       "endpoint_fp": "d5022055",
       "tier": "默认",
-      "state": "PASS",
-      "state_glyph": "✅",
+      "state": "VACUOUS",
+      "state_glyph": "⛔vacuous",
       "positive_control": true,
       "key_criteria": [
         "file_write 审批 exact args",
@@ -133,11 +124,9 @@
         "审批点1次"
       ],
       "attribution": "app",
-      "evidence_ref": [
-        "evidence/f2_workspace.json"
-      ],
-      "caveat": "文件系统级证据(ls差集+mtime+hex)高于回复级; 审批框 exact args 完整",
-      "na_reason": "",
+      "evidence_ref": [],
+      "caveat": "本波未行使; 原 PASS 态为 W28 继承事实, 见 w28_baseline_facts",
+      "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
       "truncated_fields": []
     },
     {
@@ -145,20 +134,17 @@
       "feature_face": "context_meter",
       "endpoint_fp": "d5022055",
       "tier": "1M读数",
-      "state": "PASS",
-      "state_glyph": "✅",
+      "state": "VACUOUS",
+      "state_glyph": "⛔vacuous",
       "positive_control": true,
       "key_criteria": [
         "1M 档计量条 上下文 3.4K / 995.9K",
         "档位读数非真压"
       ],
       "attribution": "app",
-      "evidence_ref": [
-        "evidence/f6_t1_compress.json",
-        "evidence/f4_skill_sentinel.json"
-      ],
-      "caveat": "档位读数≠1M真压(真压双阻断未解)",
-      "na_reason": "",
+      "evidence_ref": [],
+      "caveat": "本波未行使; 原 PASS 态为 W28 继承事实, 见 w28_baseline_facts",
+      "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
       "truncated_fields": []
     },
     {
@@ -176,12 +162,9 @@
         "NV-VL 重试两次取证超时(SIGTERM)"
       ],
       "attribution": "env",
-      "evidence_ref": [
-        "evidence/f4_skill_sentinel.json",
-        "evidence/f4_skillspage.json"
-      ],
-      "caveat": "sentinel 逐字回读未拿到; 非应用缺陷(mistral 安全策略 + 设备响应慢致取证超时); 注入本身成功",
-      "na_reason": "sentinel 未回读, 判据未行使到位",
+      "evidence_ref": [],
+      "caveat": "本波未行使; 原 VACUOUS 态为 W28 继承事实, 见 w28_baseline_facts",
+      "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
       "truncated_fields": []
     },
     {
@@ -198,11 +181,9 @@
         "导航✅与行使分离"
       ],
       "attribution": "env",
-      "evidence_ref": [
-        "evidence/f7_mcp.json"
-      ],
-      "caveat": "无外部 MCP 端点; 平台明文流量阻断未放开(挂老号)",
-      "na_reason": "无外部端点, 行使面前置缺失",
+      "evidence_ref": [],
+      "caveat": "本波未行使; 原 VACUOUS 态为 W28 继承事实, 见 w28_baseline_facts",
+      "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
       "truncated_fields": []
     },
     {
@@ -218,11 +199,9 @@
         "token 维越软预算但 committedChars 字符维未越 50227"
       ],
       "attribution": "app",
-      "evidence_ref": [
-        "evidence/f6_t1_compress.json"
-      ],
-      "caveat": "案B: below_trigger 是字符维触发线的正确行为、非缺陷(P0-1 选B); 不写进压缩老号、不设红态入口",
-      "na_reason": "字符维未越阈值, 压缩不触发为正确行为",
+      "evidence_ref": [],
+      "caveat": "本波未行使; 原 VACUOUS 态为 W28 继承事实, 见 w28_baseline_facts",
+      "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
       "truncated_fields": []
     },
     {
@@ -239,11 +218,9 @@
         "本轮未完成 SAF 选图取证(额度/时间)"
       ],
       "attribution": "env",
-      "evidence_ref": [
-        "evidence/iter5_pre_attach.png"
-      ],
-      "caveat": "前置已备但本轮未完成取证, 如实 ⛔vacuous 不冒充; 其余5端点[TEXT]该面⛔vacuous",
-      "na_reason": "SAF 选图链路未完成取证",
+      "evidence_ref": [],
+      "caveat": "本波未行使; 原 VACUOUS 态为 W28 继承事实, 见 w28_baseline_facts",
+      "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
       "truncated_fields": []
     },
     {
@@ -258,15 +235,13 @@
         "本轮未行使(W23 16轮配方未跑)"
       ],
       "attribution": "app",
-      "evidence_ref": [
-        "evidence/f6_t1_compress.json"
-      ],
-      "caveat": "本轮额度/时间未行使, 如实 ⛔vacuous; 不把 dropped>0 写成硬出口(挂老号)",
-      "na_reason": "本轮未行使",
+      "evidence_ref": [],
+      "caveat": "本波未行使; 原 VACUOUS 态为 W28 继承事实, 见 w28_baseline_facts",
+      "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
       "truncated_fields": []
     }
   ],
-  "iterations_total": 11,
+  "iterations_total": 6,
   "iteration_ceiling": 16,
   "iteration_ceiling_hit": false,
   "na_cell_ids": [
@@ -279,8 +254,8 @@
   "coverage_note": "本轮 11 格: PASS 6(E01/E02/E03/T0/F2/T1) + VACUOUS 5(F4/F7/F6/F1/F5). 真机面断言 K_positive_control 1条(E01); 其余4条为制品规则自证(已在 note 分组标注, P0-2 修复 W27『5条全元断言、真机覆盖6→0』退化). F1/F5 本轮未完成取证如实 ⛔vacuous.",
   "truncated_fields": [],
   "truncated_fields_note": "无截断; 长文本已按需精简 | runner_fingerprint_prefix16=null: W29 生成器在仓外取证设施, 不复制 W27 的 e147... 冒充本波指纹; 真实指纹随交付消息给出, 制品不编造 (审查席规格).",
-  "attempt_states_note": "每 cell 单次行使记录; 链内夹具修正见验收物 §4",
-  "artifact_discipline_fixes": "P0-2 四项: 非零键集/结构化注入样本+64hash/na_allowlist收幽灵/coverage_note明写真机覆盖+自证分组 | W29 第0车补回三字段: runner_fingerprint_prefix16(null+note,禁编造)/attempt_states 逐格(11格)/iterations[] 11条明细(非连续id防删尾假变异); iterations_total 9->11 与 §4 表/§5.1 步3 统一.",
+  "attempt_states_note": "顶层 dict 按 cell_id 映射 11/11 (cells[].attempt_states 覆盖 0/11, 按顶层口径)",
+  "artifact_discipline_fixes": "P0-2 四项: 非零键集/结构化注入样本+64hash/na_allowlist收幽灵/coverage_note明写真机覆盖+自证分组 | W29 第0车补回三字段: runner_fingerprint_prefix16(null+note,禁编造)/attempt_states 逐格(11格,顶层dict键名=cell_id)/iterations[] 明细 | W30 第0车去W28化(外审P0-1): iterations[] 换 W29 §4 真实6轮本地迭代(iterations_total=6 与 §4/§5.1 统一, 删原「非连续id防删尾」过度声明——ids实连续, 不造假删轮); state_counts/cells[].state 与 §3 统一为 11 VACUOUS, W28 基线事实整格移入 w28_baseline_facts 不占本波四态; w29_device_executed=False 时 K_positive_control.verified_by 改 inherited_w28_baseline 禁写 device_execution; assertion_source 指本波生成器.",
   "assertions": [
     {
       "id": "K_state_domain",
@@ -408,7 +383,8 @@
         "sample_sha256_64": "aee8d3a3235c64cb6c3515a562b990889304b4edb5e624e306a77e3b657aa127"
       },
       "verified": true,
-      "verified_by": "device_execution"
+      "verified_by": "inherited_w28_baseline",
+      "caveat": "W29 device blocked; positive control fact inherited from W28 baseline, NOT re-executed"
     }
   ],
   "mutation_selftest": {
@@ -435,102 +411,57 @@
   "iterations": [
     {
       "id": "iter1",
-      "action": "E01 正控 NV-VL sentinel",
-      "observation": "W28ALPHA7 逐字、done+usage_changed、6.7s",
+      "action": "四报告 P0 回源核验(时点差证伪)",
+      "observation": "五处占位在/出口判据15命中/w26:46原句在/tip run 0命中/W29段0占用 => P0全成立",
       "state": "PASS",
-      "attribution": "app",
-      "evidence_ref": "_w28/evidence/iter1_e01.json",
-      "caveat": "唤醒判据实跑通过"
+      "attribution": "rule_definition",
+      "evidence_ref": "docs/analysis/w29-acceptance.md §1.1",
+      "caveat": "本地文档线,非真机"
     },
     {
       "id": "iter2",
-      "action": "夹具修正(链内改实证)",
-      "observation": "原冷启动切端点 no eplist => 补 drv.wake() 后 SWITCH 成功",
-      "state": "PARTIAL",
+      "action": "验收物 §1 落盘",
+      "observation": "做什么/不做 + 12条裁决表写入第1节",
+      "state": "PASS",
       "attribution": "app",
-      "evidence_ref": "_w28/iterations.jsonl:iter2",
-      "caveat": "夹具修正轮,非功能面判定"
+      "evidence_ref": "docs/analysis/w29-acceptance.md §1",
+      "caveat": "本地文档线,非真机"
     },
     {
       "id": "iter3",
-      "action": "E02 切 OR-DOTS + sentinel",
-      "observation": "W28BRAVO9 逐字、SWITCH=true",
+      "action": "第0车文档收口",
+      "observation": "五处占位全清/tip run 2命中/w26:46订正/W20-08注记",
       "state": "PASS",
       "attribution": "app",
-      "evidence_ref": "_w28/evidence/iter2_e02.json",
-      "caveat": ""
+      "evidence_ref": "docs/analysis/w29-acceptance.md §5.4",
+      "caveat": "本地文档线,非真机"
     },
     {
       "id": "iter4",
-      "action": "E03 切 OR-NORTH + sentinel",
-      "observation": "W28CHARLIE3 逐字",
+      "action": "checklist + 制品 W29 载体",
+      "observation": "判据2必红变异实跑RED(后于W30复核为块不可执行,见W30-02)、正常态OK; 制品三字段补回",
       "state": "PASS",
       "attribution": "app",
-      "evidence_ref": "_w28/evidence/iter3_e03.json",
-      "caveat": ""
+      "evidence_ref": "docs/notes/w29-closeout-checklist.md",
+      "caveat": "本地文档线,非真机; 必红块W30复核跑不出RED"
     },
     {
       "id": "iter5",
-      "action": "T0 档位轴四档回读",
-      "observation": "32K/256K/512K/1M badge 逐档实读",
+      "action": "W29段3行落笔 + G2首跑判红修复",
+      "observation": "落笔后每ID恰1次; G2首跑G20 VIOLATION(裸管道符破列) -> 修复后PASS",
       "state": "PASS",
       "attribution": "app",
-      "evidence_ref": "_w28/evidence/iter4_tiers_w28.json",
-      "caveat": "档位读数≠1M真压"
+      "evidence_ref": "_w29/g2_arch.log -> g2_arch2.log",
+      "caveat": "本地闸门线,非真机"
     },
     {
       "id": "iter6",
-      "action": "F1 多模态准备(切 mistral + 备双色图)",
-      "observation": "唯一含 IMAGE 端点就位、pre_attach 截图; 真机席此处 429 中断",
-      "state": "VACUOUS",
-      "attribution": "env",
-      "evidence_ref": "_w28/shots/iter5_pre_attach.png",
-      "caveat": "429 中断未取证"
-    },
-    {
-      "id": "iter7",
-      "action": "F2 workspace(主理人接手补完)",
-      "observation": "ls 差集+1、hex W28WS777、file_read verbatim、审批1次",
+      "action": "G4首跑判红归因 + 清缓存复跑",
+      "observation": "NoSuchMethodError陈旧产物 -> 清test缓存 -> 818/0/0 clean后全量重编全绿",
       "state": "PASS",
-      "attribution": "app",
-      "evidence_ref": "_w28/evidence/f2_workspace.json",
-      "caveat": "文件系统级证据"
-    },
-    {
-      "id": "iter8",
-      "action": "F7 MCP 导航 + F4 技能页",
-      "observation": "MCP 空态可达; 技能页可达但 w28-probe 未在 viewport",
-      "state": "VACUOUS",
       "attribution": "env",
-      "evidence_ref": "_w28/evidence/f7_mcp.json",
-      "caveat": "导航✅行使⛔分开"
-    },
-    {
-      "id": "iter9",
-      "action": "F4 skill sentinel(mistral)",
-      "observation": "mistral 安全拒答 revealing secrets、未调 skill_load",
-      "state": "VACUOUS",
-      "attribution": "env",
-      "evidence_ref": "_w28/evidence/f4_skill_sentinel.json",
-      "caveat": "模型安全策略非 app bug"
-    },
-    {
-      "id": "iter10",
-      "action": "F4 重试(NV-VL)×2",
-      "observation": "切端点成功但取证超时 SIGTERM",
-      "state": "VACUOUS",
-      "attribution": "env",
-      "evidence_ref": "_w28/iterations.jsonl",
-      "caveat": "设备响应慢+额度紧张"
-    },
-    {
-      "id": "closeout",
-      "action": "F6 压缩 log + T1 档位读数固化",
-      "observation": "325 条 below_trigger; 1M 档 995.9K 读数",
-      "state": "VACUOUS",
-      "attribution": "env",
-      "evidence_ref": "_w28/evidence/f6_t1_compress.json",
-      "caveat": "F6案B正确行为; 最后一条 id=closeout 非 iter11, 防删尾假变异"
+      "evidence_ref": "_w29/g4_fulltest.log -> g4_fulltest2.log",
+      "caveat": "本地闸门线,非真机"
     }
   ],
   "attempt_states": {
@@ -547,8 +478,220 @@
     "F5": "precondition_unmet"
   },
   "runner_fingerprint_prefix16": null,
-  "positive_control_verified_by": "device_execution",
+  "positive_control_verified_by": "inherited_w28_baseline",
   "w29_device_executed": false,
   "w29_device_blocker": "adb unauthorized (RSA) on serial; input/screencap/shell rejected; screencap 0 bytes; need physical USB debug authorization",
-  "cells_provenance": "cells[]/state_counts are inherited W28 device facts (baseline f099758); W29 did NOT re-run device matrix. All W29 functional faces marked VACUOUS in acceptance §3 (criteria not exercised). Do NOT read cells[] PASS as W29 pass."
+  "cells_provenance": "cells[]/state_counts are inherited W28 device facts (baseline f099758); W29 did NOT re-run device matrix. All W29 functional faces marked VACUOUS in acceptance §3 (criteria not exercised). Do NOT read cells[] PASS as W29 pass.",
+  "w28_baseline_facts": {
+    "note": "inherited W28 device facts (W29 device unauthorized, NOT re-run); kept for provenance only, does NOT count toward W29 state_counts",
+    "cells": [
+      {
+        "cell_id": "E01",
+        "feature_face": "endpoint_axis",
+        "endpoint_fp": "01e476bd",
+        "tier": "默认",
+        "state": "VACUOUS",
+        "state_glyph": "⛔vacuous",
+        "positive_control": true,
+        "key_criteria": [
+          "正控逐字 W28ALPHA7",
+          "done=true+usage_changed=true",
+          "wait 6.7s 4.4k in/33 out"
+        ],
+        "attribution": "app",
+        "evidence_ref": [],
+        "caveat": "本波未行使; 原 PASS 态为 W28 继承事实, 见 w28_baseline_facts",
+        "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
+        "truncated_fields": []
+      },
+      {
+        "cell_id": "E02",
+        "feature_face": "endpoint_axis",
+        "endpoint_fp": "b995dc45",
+        "tier": "512K读数",
+        "state": "VACUOUS",
+        "state_glyph": "⛔vacuous",
+        "positive_control": true,
+        "key_criteria": [
+          "用户点名 OR-DOTS 逐字 W28BRAVO9",
+          "SWITCH=true done=true usage_changed=true",
+          "链内修正: 切端点前补 wake(原冷启动 no eplist)"
+        ],
+        "attribution": "app",
+        "evidence_ref": [],
+        "caveat": "本波未行使; 原 PASS 态为 W28 继承事实, 见 w28_baseline_facts",
+        "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
+        "truncated_fields": []
+      },
+      {
+        "cell_id": "E03",
+        "feature_face": "endpoint_axis",
+        "endpoint_fp": "b0113b2c",
+        "tier": "256K读数",
+        "state": "VACUOUS",
+        "state_glyph": "⛔vacuous",
+        "positive_control": true,
+        "key_criteria": [
+          "用户点名 OR-NORTH 逐字 W28CHARLIE3",
+          "SWITCH=true done=true usage_changed=true"
+        ],
+        "attribution": "app",
+        "evidence_ref": [],
+        "caveat": "本波未行使; 原 PASS 态为 W28 继承事实, 见 w28_baseline_facts",
+        "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
+        "truncated_fields": []
+      },
+      {
+        "cell_id": "T0",
+        "feature_face": "tier_axis",
+        "endpoint_fp": "01e476bd",
+        "tier": "32K/256K/512K/1M",
+        "state": "VACUOUS",
+        "state_glyph": "⛔vacuous",
+        "positive_control": true,
+        "key_criteria": [
+          "四档 badge 逐档回读",
+          "档位=会话软预算(SwitchGuard) 非端点 contextLength"
+        ],
+        "attribution": "app",
+        "evidence_ref": [],
+        "caveat": "本波未行使; 原 PASS 态为 W28 继承事实, 见 w28_baseline_facts",
+        "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
+        "truncated_fields": []
+      },
+      {
+        "cell_id": "F2",
+        "feature_face": "workspace",
+        "endpoint_fp": "d5022055",
+        "tier": "默认",
+        "state": "VACUOUS",
+        "state_glyph": "⛔vacuous",
+        "positive_control": true,
+        "key_criteria": [
+          "file_write 审批 exact args",
+          "ls -1 差集 +1 w28_write.txt",
+          "content 8字节 hex 57 32 38 57 53 37 37 37 = W28WS777",
+          "file_read 回读 verbatim W28WS777",
+          "审批点1次"
+        ],
+        "attribution": "app",
+        "evidence_ref": [],
+        "caveat": "本波未行使; 原 PASS 态为 W28 继承事实, 见 w28_baseline_facts",
+        "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
+        "truncated_fields": []
+      },
+      {
+        "cell_id": "T1",
+        "feature_face": "context_meter",
+        "endpoint_fp": "d5022055",
+        "tier": "1M读数",
+        "state": "VACUOUS",
+        "state_glyph": "⛔vacuous",
+        "positive_control": true,
+        "key_criteria": [
+          "1M 档计量条 上下文 3.4K / 995.9K",
+          "档位读数非真压"
+        ],
+        "attribution": "app",
+        "evidence_ref": [],
+        "caveat": "本波未行使; 原 PASS 态为 W28 继承事实, 见 w28_baseline_facts",
+        "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
+        "truncated_fields": []
+      },
+      {
+        "cell_id": "F4",
+        "feature_face": "skill",
+        "endpoint_fp": "d5022055",
+        "tier": "默认",
+        "state": "VACUOUS",
+        "state_glyph": "⛔vacuous",
+        "positive_control": false,
+        "key_criteria": [
+          "w28-probe 设备侧注入确认(name+SENTINEL cat 验证)",
+          "技能页可达但 w28-probe 未在可见 viewport",
+          "mistral 端点安全拒答(extracting/revealing secrets)未调 skill_load",
+          "NV-VL 重试两次取证超时(SIGTERM)"
+        ],
+        "attribution": "env",
+        "evidence_ref": [],
+        "caveat": "本波未行使; 原 VACUOUS 态为 W28 继承事实, 见 w28_baseline_facts",
+        "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
+        "truncated_fields": []
+      },
+      {
+        "cell_id": "F7",
+        "feature_face": "mcp",
+        "endpoint_fp": "NA",
+        "tier": "NA",
+        "state": "VACUOUS",
+        "state_glyph": "⛔vacuous",
+        "positive_control": false,
+        "key_criteria": [
+          "MCP 服务器页可达",
+          "空态 还没有 MCP 服务器",
+          "导航✅与行使分离"
+        ],
+        "attribution": "env",
+        "evidence_ref": [],
+        "caveat": "本波未行使; 原 VACUOUS 态为 W28 继承事实, 见 w28_baseline_facts",
+        "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
+        "truncated_fields": []
+      },
+      {
+        "cell_id": "F6",
+        "feature_face": "auto_compress",
+        "endpoint_fp": "d5022055",
+        "tier": "多档",
+        "state": "VACUOUS",
+        "state_glyph": "⛔vacuous",
+        "positive_control": false,
+        "key_criteria": [
+          "325 条 auto_compact=noop reason=below_trigger(全 below_trigger)",
+          "token 维越软预算但 committedChars 字符维未越 50227"
+        ],
+        "attribution": "app",
+        "evidence_ref": [],
+        "caveat": "本波未行使; 原 VACUOUS 态为 W28 继承事实, 见 w28_baseline_facts",
+        "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
+        "truncated_fields": []
+      },
+      {
+        "cell_id": "F1",
+        "feature_face": "multimodal",
+        "endpoint_fp": "d5022055",
+        "tier": "1M读数",
+        "state": "VACUOUS",
+        "state_glyph": "⛔vacuous",
+        "positive_control": false,
+        "key_criteria": [
+          "唯一含 IMAGE 端点(NV-MISTRAL)已切",
+          "800x400 双色真图已备(w28_vision.png)",
+          "本轮未完成 SAF 选图取证(额度/时间)"
+        ],
+        "attribution": "env",
+        "evidence_ref": [],
+        "caveat": "本波未行使; 原 VACUOUS 态为 W28 继承事实, 见 w28_baseline_facts",
+        "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
+        "truncated_fields": []
+      },
+      {
+        "cell_id": "F5",
+        "feature_face": "manual_compress",
+        "endpoint_fp": "01e476bd",
+        "tier": "32K",
+        "state": "VACUOUS",
+        "state_glyph": "⛔vacuous",
+        "positive_control": false,
+        "key_criteria": [
+          "本轮未行使(W23 16轮配方未跑)"
+        ],
+        "attribution": "app",
+        "evidence_ref": [],
+        "caveat": "本波未行使; 原 VACUOUS 态为 W28 继承事实, 见 w28_baseline_facts",
+        "na_reason": "W29 device adb unauthorized (RSA not trusted); criterion NOT exercised this wave; baseline fact moved to w28_baseline_facts",
+        "truncated_fields": []
+      }
+    ]
+  },
+  "w30_p0_repair": "W30 wave de-W28-ification per external review P0-1 (reports 丙/丁/戊): evidence cross-wave copy removed; only W29 existing carrier modified, no new artifact created"
 }

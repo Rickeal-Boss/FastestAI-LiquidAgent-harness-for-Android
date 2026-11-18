@@ -249,7 +249,7 @@
 | 公开 API 四字段复核 | 两 run 各读 status/conclusion/event/head_sha：均 `completed`/`success`/`push`/`1c6e404`（零凭据字面量，仅四字段；API 实取） |
 | 终态守卫复跑 | 推送前终态树复跑 result=PASS ok=27 vacuous=1 violation=0 fault=0、rc=0；G20 OK（112 handoff ID 全在台账、CLOSED 行证据非空）；本波 handoff 零复合编号，W29 段 3 行对 G20 并集零贡献 |
 | CI 红次数 | **0** |
-| 推送 2 | 本提交（纯文档回填 §5.6 真实 commit 与 CI run 链接）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 覆盖同一 commit `1c6e404`；本波不再第三次推送以避免自指回填循环 |
+| 推送 2 | 本提交（纯文档回填 §5.6 真实 commit 与 CI run 链接，commit `f0b12966b`）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 覆盖同一 commit `f0b12966b`；本波不再第三次推送以避免自指回填循环。**W30 波订正**：原句写「覆盖同一 commit `1c6e404`」为 head_sha 笔误（`1c6e404` 是推送 1、`f0b12966b` 才是推送 2，公开 API 四字段复核见 W30 验收物 §5.6），按外审 W30-03 处方订正 head_sha，不改结论 |
 | 推送次数 | **2**（推送 1 含仓根非 docs 制品触发 Build 五 job 真跑 + 独立 Secret scan；推送 2 纯文档回填链接） |
 | 归因 | 四闸门全绿（编译/守卫/自测/全测）；真机矩阵全部 ⛔vacuous（设备 adb unauthorized 物理授权阻塞，判据未行使）；G4 首跑 NoSuchMethodError 为陈旧构建产物假红，gradlew clean 全量重编后 818/0/0 全绿（本波零 `.kt` 引入）；G2 首跑 G20 VIOLATION 为 W29-02 行裸管道符破列，改中文表述后 PASS；推送 1 含仓根非 docs 制品 ⇒ Build 由该 push 自身真实触发；纯文档推送 ⇒ Build 0 run 属既定口径，不写「构建再次通过」 |
 

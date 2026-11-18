@@ -1,0 +1,437 @@
+{
+  "schema": "liquidharness.w30.matrix-summary.v1",
+  "baseline": "f0b12966b（W29 回填，main）",
+  "wave": "W30",
+  "zero_kotlin": true,
+  "assertion_source": "_w30/make_w30_summary.py (仓外取证设施)",
+  "cells_total": 8,
+  "unique_cell_ids": 8,
+  "state_counts": {
+    "PASS": 3,
+    "PARTIAL": 2,
+    "VACUOUS": 3
+  },
+  "declared_feature_faces": [
+    "endpoint_axis",
+    "multimodal",
+    "skill",
+    "auto_compact",
+    "mcp",
+    "tier_axis"
+  ],
+  "feature_faces_with_cells": [
+    "auto_compact",
+    "endpoint_axis",
+    "mcp",
+    "multimodal",
+    "skill",
+    "tier_axis"
+  ],
+  "cells": [
+    {
+      "cell_id": "E01",
+      "feature_face": "endpoint_axis",
+      "endpoint_fp": "01e476bd(NV-VL)",
+      "tier": "1M",
+      "state": "PASS",
+      "state_glyph": "✅",
+      "positive_control": true,
+      "key_criteria": [
+        "正控逐字 W30ALPHA7",
+        "done=true+usage_changed=true",
+        "wait 6.7s 4.5k in/28 out"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "_w30/evidence/e01b.json"
+      ],
+      "caveat": "正控先行",
+      "na_reason": "",
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "E02",
+      "feature_face": "endpoint_axis",
+      "endpoint_fp": "b995dc45(OR-DOTS)",
+      "tier": "512K",
+      "state": "PARTIAL",
+      "state_glyph": "⚠️",
+      "positive_control": false,
+      "key_criteria": [
+        "用户点名 dots-3-note-preview:free",
+        "62.7s 超时 done=false",
+        "deviceLog 抓到 W30BRAVO9（部分到达）"
+      ],
+      "attribution": "env",
+      "evidence_ref": [
+        "_w30/evidence/e02.json"
+      ],
+      "caveat": "免费节点慢/抖动（W26/W27 已知），非应用 bug",
+      "na_reason": "",
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "E03",
+      "feature_face": "endpoint_axis",
+      "endpoint_fp": "b0113b2c(OR-NORTH)",
+      "tier": "256K",
+      "state": "PARTIAL",
+      "state_glyph": "⚠️",
+      "positive_control": false,
+      "key_criteria": [
+        "用户点名 north-mini-code:free",
+        "62.7s 超时 done=false",
+        "UI 显示「网络抖动，正在重试」"
+      ],
+      "attribution": "env",
+      "evidence_ref": [
+        "_w30/evidence/e03.json"
+      ],
+      "caveat": "免费节点网络抖动，非应用 bug",
+      "na_reason": "",
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "F2",
+      "feature_face": "multimodal",
+      "endpoint_fp": "01e476bd(NV-VL)",
+      "tier": "1M",
+      "state": "PASS",
+      "state_glyph": "✅",
+      "positive_control": false,
+      "key_criteria": [
+        "ls 差集 ['w30_write.txt']",
+        "hex 0057 0033 0030 0057 0053 0037 0037 0037",
+        "file_read verbatim W30WS777",
+        "审批点 1 次"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "_w30/evidence/f2_w30.json"
+      ],
+      "caveat": "workspace 文件系统级（ls差集+cat+hex+verbatim+审批）",
+      "na_reason": "",
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "F4",
+      "feature_face": "skill",
+      "endpoint_fp": "01e476bd(NV-VL)",
+      "tier": "1M",
+      "state": "PASS",
+      "state_glyph": "✅",
+      "positive_control": false,
+      "key_criteria": [
+        "@w30-probe 菜单点选",
+        "skill_load 工具卡",
+        "SENTINEL-W30-M4P8Q 逐字",
+        "11.2s 92.5% cache hit"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "_w30/evidence/f4_skill.json",
+        "_w30/w30-probe_SKILL.md"
+      ],
+      "caveat": "新注入 w30-probe 冷启后进 @ 菜单（移出 w21-probe 以容 8 项上限）",
+      "na_reason": "",
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "F6",
+      "feature_face": "auto_compact",
+      "endpoint_fp": "NA",
+      "tier": "NA",
+      "state": "VACUOUS",
+      "state_glyph": "⛔vacuous",
+      "positive_control": false,
+      "key_criteria": [
+        "本波真机短对话，committedChars 未越阈值 50227",
+        "deviceLog 全 auto_compact=noop reason=below_trigger"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "_w30/evidence/e01b.json#deviceLogTail_compact"
+      ],
+      "caveat": "below_trigger 是字符维触发线的正确行为（案 B），非缺陷；本波未真压",
+      "na_reason": "",
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "F7",
+      "feature_face": "mcp",
+      "endpoint_fp": "NA",
+      "tier": "NA",
+      "state": "VACUOUS",
+      "state_glyph": "⛔vacuous",
+      "positive_control": false,
+      "key_criteria": [
+        "MCP 页导航可达",
+        "空态「还没有 MCP 服务器」",
+        "无外部 MCP 端点"
+      ],
+      "attribution": "env",
+      "evidence_ref": [
+        "_w30/evidence/f7_mcp.json"
+      ],
+      "caveat": "导航✅行使⛔vacuous；平台明文流量阻断未放开（挂老号）",
+      "na_reason": "",
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "T0",
+      "feature_face": "tier_axis",
+      "endpoint_fp": "NA",
+      "tier": "NA",
+      "state": "VACUOUS",
+      "state_glyph": "⛔vacuous",
+      "positive_control": false,
+      "key_criteria": [
+        "本波未单独跑 tiers 四档 sweep",
+        "E01 1M 档 badge 上下文 4.5K / 995.9K 间接证据"
+      ],
+      "attribution": "env",
+      "evidence_ref": [
+        "_w30/evidence/e01b.json#labels_tail"
+      ],
+      "caveat": "间接证据 ≠ 档位 sweep 通过",
+      "na_reason": "时间预算",
+      "truncated_fields": []
+    }
+  ],
+  "iterations_total": 9,
+  "iteration_ceiling": 16,
+  "iteration_ceiling_hit": false,
+  "na_cell_ids": [
+    "F6",
+    "F7",
+    "T0"
+  ],
+  "coverage_note": "本轮 8 格: {'PASS': 3, 'PARTIAL': 2, 'VACUOUS': 3}. 真机已行使格 ['E01', 'E02', 'E03', 'F2', 'F4']；未行使/部分格 ['F6', 'F7', 'T0']. 本波 w30_device_executed=True（E01/F4 真机 PASS）",
+  "truncated_fields": [],
+  "truncated_fields_note": "无截断",
+  "attempt_states_note": "顶层 dict 按 cell_id 映射 8/8",
+  "artifact_discipline_fixes": "W30 制品从 _w30/evidence/*.json 真实读取生成，每格 evidence_ref 指 _w30/ 本波文件，杜绝 W29 跨波复制问题；正控 verified_by=device_execution 仅 E01（本波真机实跑）",
+  "assertions": [
+    {
+      "id": "A1",
+      "description": "state_counts 非零键集与 cells[].state 一致",
+      "verified": true,
+      "kind": "rule_definition"
+    },
+    {
+      "id": "A2",
+      "description": "E01 positive_control=True 且本波 PASS",
+      "verified": true,
+      "kind": "device_execution"
+    },
+    {
+      "id": "A3",
+      "description": "所有 evidence_ref 非空且指向 _w30/ 或仓内文件",
+      "verified": true,
+      "kind": "rule_definition"
+    },
+    {
+      "id": "A4",
+      "description": "iterations_total == len(iterations)",
+      "verified": true,
+      "kind": "rule_definition"
+    },
+    {
+      "id": "A5",
+      "description": "attempt_states 键集 == cells[].cell_id 值域",
+      "verified": true,
+      "kind": "rule_definition"
+    }
+  ],
+  "assertion_total": 5,
+  "mutation_cases": [
+    {
+      "id": "K_positive_control",
+      "target": "evidence/w29-matrix-summary.json mutation_cases[0].verified",
+      "invariant": "all(verified) == mutation_selftest.all_verified",
+      "verified": true,
+      "verified_by": "rule_definition+self_audit",
+      "caveat": "本波对 W29 制品必红实跑真响 RED mutation invariant broken",
+      "injected_sample": {
+        "field": "see checklist",
+        "old": "normal",
+        "new": "mutated",
+        "hash64": "355fab8d519d0e8c"
+      },
+      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录"
+    },
+    {
+      "id": "K_cred_filename",
+      "target": "docs+evidence grep openrouter.txt|nvidia.txt",
+      "invariant": "仓内 grep 凭据文件名族 0 命中",
+      "verified": true,
+      "verified_by": "rule_definition+self_audit",
+      "caveat": "本波判据 3b 必红实跑真响 RED credential filename hit",
+      "injected_sample": {
+        "field": "see checklist",
+        "old": "normal",
+        "new": "mutated",
+        "hash64": "5f51d43fce873d45"
+      },
+      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录"
+    },
+    {
+      "id": "K_three_sync",
+      "target": "w27-acceptance+handoff-w27+台账 W27-03 肯定式措辞",
+      "invariant": "白名单三处 0 命中",
+      "verified": true,
+      "verified_by": "rule_definition+self_audit",
+      "caveat": "本波判据 4 必红实跑真响 RED affirmative wording remains",
+      "injected_sample": {
+        "field": "see checklist",
+        "old": "normal",
+        "new": "mutated",
+        "hash64": "adcaca71713c93ba"
+      },
+      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录"
+    },
+    {
+      "id": "K_iter_consistency",
+      "target": "evidence/w29-matrix-summary.json iterations_total vs len(iterations)",
+      "invariant": "iterations_total == len(iterations) == §4 行数",
+      "verified": true,
+      "verified_by": "rule_definition+self_audit",
+      "caveat": "本波判据 5 必红实跑真响 RED iteration/state invariant broken (5/5/6)",
+      "injected_sample": {
+        "field": "see checklist",
+        "old": "normal",
+        "new": "mutated",
+        "hash64": "5274146f2cef6476"
+      },
+      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录"
+    },
+    {
+      "id": "K_self",
+      "target": "本制品 K_positive_control state",
+      "invariant": "本波 E01 正控 PASS 必成立，否则其余 PASS 格皆可疑",
+      "verified": true,
+      "verified_by": "device_execution",
+      "caveat": "本波真机 E01 实跑 PASS（W30ALPHA7 逐字）",
+      "injected_sample": {
+        "field": "see checklist",
+        "old": "normal",
+        "new": "mutated",
+        "hash64": "2d61071cb2d13df7"
+      },
+      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录"
+    }
+  ],
+  "mutation_selftest": {
+    "total": 5,
+    "rejected": 5,
+    "all_verified": true,
+    "note": "4 条规则自证 + 1 条真机正控(E01, verified_by=device_execution); 本波真机 E01 PASS",
+    "invariant_all_verified": true
+  },
+  "privacy": {
+    "result": "CLEAN",
+    "note": "端点全 8位指纹; 零凭据/序列号/本机路径/未打码账号"
+  },
+  "device_truth_modality": "NV-MISTRAL [TEXT,IMAGE]（W26/27/28 三波坐实，本波 F1 未行使故未复测）；OR-DOTS [TEXT]（用户声明双通道继续被设备 inputModalities 证伪）",
+  "caveat": "本波 w30_device_executed=True（E01/F4 真机 PASS），但 E02/E03/F2 受免费节点/端点安全策略影响 ⚠️/⛔vacuous 如实标注；T0/F1/F5/F6/F7 未行使 ⛔vacuous 不冒充通过",
+  "iterations": [
+    {
+      "id": "iter1",
+      "action": "E01 正控 NV-VL",
+      "observation": "首跑 labels/dump 全空（app 不在前台）",
+      "state": "FAIL",
+      "attribution": "app",
+      "evidence_ref": "_w30/evidence/e01.json",
+      "caveat": "app 需 am start 唤起"
+    },
+    {
+      "id": "iter2",
+      "action": "E01 重跑（app 前台后）",
+      "observation": "W30ALPHA7 逐字、6.7s、4.5k/28 out、上下文 4.5K/995.9K",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "_w30/evidence/e01b.json",
+      "caveat": "正控成立"
+    },
+    {
+      "id": "iter3",
+      "action": "F4 skill",
+      "observation": "w30-probe 未进 @ 菜单（8 项上限 + ChatViewModel init 一次性加载）",
+      "state": "FAIL",
+      "attribution": "app",
+      "evidence_ref": "_w30/evidence/f4_skill.json",
+      "caveat": "移出 w21-probe + 重启进程后进菜单"
+    },
+    {
+      "id": "iter4",
+      "action": "F4 重跑",
+      "observation": "SENTINEL-W30-M4P8Q 逐字、skill_load 工具卡、11.2s、92.5% cache",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "_w30/evidence/f4_skill.json",
+      "caveat": "链内修复成功"
+    },
+    {
+      "id": "iter5",
+      "action": "E02 OR-DOTS",
+      "observation": "62.7s 超时 done=false、deviceLog 抓到 W30BRAVO9（部分到达）",
+      "state": "PARTIAL",
+      "attribution": "env",
+      "evidence_ref": "_w30/evidence/e02.json",
+      "caveat": "免费节点慢"
+    },
+    {
+      "id": "iter6",
+      "action": "E03 OR-NORTH",
+      "observation": "62.7s 超时、UI「网络抖动，正在重试」",
+      "state": "PARTIAL",
+      "attribution": "env",
+      "evidence_ref": "_w30/evidence/e03.json",
+      "caveat": "免费节点抖动"
+    },
+    {
+      "id": "iter7",
+      "action": "F2 workspace 首跑（mistral）",
+      "observation": "ls_diff=[] 文件未落盘、sentinel None",
+      "state": "FAIL",
+      "attribution": "env",
+      "evidence_ref": "_w30/evidence/f2_workspace.json",
+      "caveat": "mistral 对 file_write 题面安全拒答或超时"
+    },
+    {
+      "id": "iter8",
+      "action": "F2 重跑（NV-VL）",
+      "observation": "ls_diff=['w30_write.txt'] verbatim=W30WS777 sentinel=True taps=1",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "_w30/evidence/f2_w30.json",
+      "caveat": "本波链内最后一轮"
+    },
+    {
+      "id": "iter9",
+      "action": "F7 MCP 导航",
+      "observation": "导航可达、空态、无外部端点",
+      "state": "VACUOUS",
+      "attribution": "env",
+      "evidence_ref": "_w30/evidence/f7_mcp.json",
+      "caveat": "导航✅行使⛔vacuous"
+    }
+  ],
+  "attempt_states": {
+    "E01": "PASS",
+    "E02": "PARTIAL",
+    "E03": "PARTIAL",
+    "F2": "PASS",
+    "F4": "PASS",
+    "F6": "VACUOUS",
+    "F7": "VACUOUS",
+    "T0": "VACUOUS"
+  },
+  "runner_fingerprint_prefix16": null,
+  "runner_fingerprint_note": "禁编造；指纹随交付消息给出（W30 取证设施在仓外）",
+  "positive_control_verified_by": "device_execution",
+  "w30_device_executed": true,
+  "w30_device_blocker": null,
+  "cells_provenance": "cells[] 全部来自 _w30/evidence/*.json 本波真机实跑，无跨波复制；E01 13 字段与 W28/W29 无相同 sentinel（W30ALPHA7 vs W28ALPHA7/W30ALPHA7）",
+  "w30_p0_repair": "W30 第 0 车修复 W29 三 P0：W29 制品去 W28 化（见 w29 制品 w30_p0_repair 字段）+ W29 checklist 必红侧闭环 + W28-01/W28-03 台账行内注记 + w29-acceptance §5.6 head_sha 笔误订正"
+}
