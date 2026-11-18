@@ -276,10 +276,26 @@
 
 > 以上均不含：会话历史 / 凭据字面量 / 端点完整标识（仅指纹）/ 对下一链的建议。原始截图与 JSONL 取证在仓外 `evidence_ref` 指向路径，供审查团队按需索取，不随交付物入库。
 
-### §5.6 CI / 提交序列（唯一真值源 · 推送后回填）
+### §5.6 CI / 提交序列（唯一真值源）
 
-> 待推送后回填：commit SHA、Build/Secret scan run 链接、CI 红次数、推送次数。
-> 口径预告：本波含仓根非 docs 制品 ⇒ Build 由该 push 自身真实触发；若推送 2 为纯文档 ⇒ Build 0 run（既定口径，不算绿也不算红），独立 Secret scan 仍覆盖。
+| 项 | 值 |
+|---|---|
+| 推送 1 | `7cc5cb9..df8b482 HEAD -> main`（commit `df8b482`，7 files：本波验收物 + 交接 + 台账 W27 段 + 三份历史验收物最小修复 + 仓根非 docs 制品 `evidence/w27-matrix-summary.json`〔11 格〕）；逐文件 add，两份历史未跟踪源码日析全程 `??` 未入库；dry-run RC=0 → 实推 RC=0，PAT inline URL 一次性使用、`git remote -v` 复核干净 URL 0 命中；noreply 身份；不 force-push、不 rewrite history |
+| Build run | run `44240854225` **completed success**（event=push，由仓根非 docs 制品自身真实触发；6 checks 经公开 API 逐项复核全 success：Assemble Debug (JDK 21) / Lint (baseline gate) / Secret scan (gitleaks + trufflehog) / Arch guard (26 guards + mutation selftest) / Unit tests；head_sha `df8b482`） |
+| Secret scan run（独立） | 同一 push 的独立 `secret-scan.yml` run `44240854286` **completed success**（无 `paths-ignore`，覆盖同一 commit） |
+| 最终树守卫复跑 | 推送前文档与制品落盘后复跑 `result=PASS ok=27 vacuous=1 violation=0 fault=0`、rc=0；G20 OK（112 handoff ID 全在台账、`CLOSED` 行证据非空）；本波 handoff 零复合编号，W27 段 3 行对 G20 并集零贡献 |
+| CI 红次数 | **0**（上限 2，未触） |
+| 推送 2 | 本提交（纯文档回填 §5.6 真实 commit 与 CI run 链接）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 覆盖同一 commit；本波不再第三次推送以避免自指循环 |
+| 推送次数 | **2**（上限 3，未触；推送 1 含制品触发 Build 五 job 真跑 + 独立 Secret scan，推送 2 纯文档回填链接） |
+| 归因 | 无构建失败 ⇒ 四分类未触发；环境类（无外部 MCP / 夹具字符维未越 / 平台明文阻断 / 用户视觉声明被设备证伪）不写成应用 bug；推送 1 含制品 ⇒ Build 有真绿 run；推送 2 纯文档 ⇒ Build 0 run 属既定口径，不写「构建再次通过」 |
+
+**run 链接**（公开 API 逐项读 status / conclusion / event / head_sha，零凭据）：
+
+- 推送 1 Build：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44240854225
+- 推送 1 独立 Secret scan：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44240854286
+
+> 本波零 `.kt` 改动 ⇒ 「CI 全绿」指 Build 五 job + 独立 Secret scan 结论 success，**不等于**真机矩阵全格通过（§3 如实登记 8 ✅ / 3 ⛔vacuous），也不等于两条用户可见缺陷已复现。
+> PAT inline 一次性使用后 remote 已复核干净；PAT 已使用一次即视为暴露（轮换为用户侧密钥管理动作，不在仓内写未闭环命令）。
 
 ---
 
