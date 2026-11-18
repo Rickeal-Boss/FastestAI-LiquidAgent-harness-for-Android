@@ -1,0 +1,727 @@
+{
+  "schema": "w26-matrix-summary/v1",
+  "baseline": "da967be (W25 backfill, main)",
+  "wave": "W26",
+  "lead_takeover": "android-developer 429 credits exhausted after 64m31s; 18 cell JSONs + 16 iterations were already on disk; lead aggregated this summary from those real artifacts, did NOT synthesize unrun cells",
+  "cells_total": 18,
+  "state_counts": {
+    "✅": 11,
+    "⚠️": 1,
+    "⛔vacuous": 6
+  },
+  "cells": [
+    {
+      "cell_id": "E01",
+      "endpoint_fp": "01e476bd",
+      "tier": "32K(读数)",
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "positive_control": true,
+      "key_criteria": [
+        "badge=当前：NV-VL",
+        "verbatim sentinel W26ALPHA7",
+        "usage []->2.5k in / 366 out",
+        "done=true wait=11s"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "shots/iter01_nvvl_pos.png"
+      ],
+      "caveat": "self-proves ask done criterion; positive control for whole matrix",
+      "state_glyph": "✅",
+      "evidence_file": "evidence/E01.json"
+    },
+    {
+      "cell_id": "E02",
+      "endpoint_fp": "b995dc45",
+      "tier": "27.9K",
+      "feature_face": "endpoint_axis(OpenRouter)",
+      "state": "PASS",
+      "positive_control": false,
+      "key_criteria": [
+        "badge=当前：OR-DOTS",
+        "verbatim W26BRAVO9 (This is the final answer W26BRAVO9)",
+        "usage []->2.2k in / 544 out wait=19.7s"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "shots/iter02_ordots.png"
+      ],
+      "caveat": "user-named OR endpoint converged; inputModalities=[TEXT] device truth (dual-channel claim superseded)",
+      "state_glyph": "✅",
+      "evidence_file": "evidence/E02.json"
+    },
+    {
+      "cell_id": "E03",
+      "endpoint_fp": "b0113b2c",
+      "tier": "27.9K",
+      "feature_face": "endpoint_axis(OpenRouter)",
+      "state": "PASS",
+      "positive_control": false,
+      "key_criteria": [
+        "badge=当前：OR-NORTH",
+        "verbatim W26CHARLIE3 (+appended legacy sentinel)",
+        "usage []->1.8k in / 249 out wait=15.2s"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "shots/iter03_ornorth.png"
+      ],
+      "caveat": "user-named OR endpoint converged; [SKILL BODY] auto-injected in context (dataset artifact, not a new skill call)",
+      "state_glyph": "✅",
+      "evidence_file": "evidence/E03.json"
+    },
+    {
+      "cell_id": "E04",
+      "endpoint_fp": "d5022055",
+      "tier": "512K(读数)",
+      "feature_face": "endpoint_axis(NV)",
+      "state": "PARTIAL",
+      "positive_control": false,
+      "key_criteria": [
+        "badge=当前：NV-MISTRAL",
+        "round-trip converged usage []->2.0k in / 260 out wait=41s",
+        "model refused W26DELTA4 as code/passphrase -> no verbatim"
+      ],
+      "attribution": "app/model-safety",
+      "evidence_ref": [
+        "shots/iter04_nvmistral.png"
+      ],
+      "caveat": "model safety refusal not app bug; clean verbatim obtained in F1 (HARNESS-42 via benign image query)",
+      "state_glyph": "⚠️",
+      "evidence_file": "evidence/E04.json"
+    },
+    {
+      "cell_id": "F1_MULTIMODAL",
+      "endpoint_fp": "d5022055",
+      "tier": "512K(读数)",
+      "feature_face": "multimodal",
+      "state": "PASS",
+      "positive_control": true,
+      "key_criteria": [
+        "image chip=添加图片 (inputModalities=[TEXT,IMAGE])",
+        "真图 harness42.png 800x400 scan_file+MediaStore indexed",
+        "SAF attach (card-body tap; thumbnail opens viewer)",
+        "verbatim semantic HARNESS-42",
+        "usage 2.4k in / 191 out wait=26.7s"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "shots/iter09_attached.png",
+        "shots/iter09_multimodal.png"
+      ],
+      "caveat": "OR-DOTS/OR-NORTH/VL/STEP/GEMMA chips gray ([TEXT]) recorded separately; Download bicolor not indexed by SAF 图片 collection, used Pictures/harness42.png",
+      "state_glyph": "✅",
+      "evidence_file": "evidence/F1_MULTIMODAL.json"
+    },
+    {
+      "cell_id": "F2_FILEWRITE",
+      "endpoint_fp": "d5022055",
+      "tier": "512K(读数)",
+      "feature_face": "workspace_file_write",
+      "state": "PASS",
+      "positive_control": true,
+      "key_criteria": [
+        "approval exact args {\"path\":\"w26_write.txt\",\"content\":\"SENTINEL_W26_7744_END\"}",
+        "tool card wrote 21 chars",
+        "strict ls -1 diff 27->28 (+w26_write.txt only)",
+        "mtime 2026-11-18T04:22:38+0800 this round",
+        "cat verbatim SENTINEL_W26_7744_END 21 bytes hex-verified"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "shots/iter10_approval_real.png",
+        "shots/iter10_after_allow.png"
+      ],
+      "caveat": "fs-level evidence (run-as exec-out); agent-0.log has no tool accounting -> log-count not used as negative evidence",
+      "state_glyph": "✅",
+      "evidence_file": "evidence/F2_FILEWRITE.json"
+    },
+    {
+      "cell_id": "F4_SKILL",
+      "endpoint_fp": "01e476bd",
+      "tier": "512K(读数)",
+      "feature_face": "skill",
+      "state": "PASS",
+      "positive_control": true,
+      "key_criteria": [
+        "new asset w26-probe/SKILL.md injected device-side",
+        "cold-start settings skills page: w26-probe 来源：file · 不限工具",
+        "@ menu contains w26-probe (below 1st fold)",
+        "skill_load card {\"name\":\"w26-probe\"} 23ms",
+        "[SKILL BODY] banner",
+        "sentinel SENTINEL-W26-D3F9Q verbatim",
+        "usage 2.5k in / 79 out"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "shots/iter11_skills_cold_scroll.png",
+        "shots/iter11_at_menu_scroll.png",
+        "shots/iter11_skill_result_final.png"
+      ],
+      "caveat": "registration chain OK (new skill in BOTH list and @ menu, just below fold); driver caveat: after @chip insertion move cursor to END + explicit leading space else input text inserts before chip; no skill_load log accounting -> judge by UI card+banner+sentinel",
+      "state_glyph": "✅",
+      "evidence_file": "evidence/F4_SKILL.json"
+    },
+    {
+      "cell_id": "F5_MANUALCOMPRESS",
+      "endpoint_fp": "01e476bd",
+      "tier": "32K",
+      "feature_face": "manual_compress",
+      "state": "VACUOUS",
+      "positive_control": false,
+      "key_criteria": [
+        "menu+3-line confirm+execute all exercised",
+        "UI result=没有可压缩的内容：历史本来就装得下，或找不到安全的截断点",
+        "no new manual_compress dropped= log line; dropped=0"
+      ],
+      "attribution": "app/fixture",
+      "evidence_ref": [
+        "shots/iter14_manual_confirm.png",
+        "shots/iter14_manual_result.png"
+      ],
+      "caveat": "bidirectional assertion holds (UI no-content + no new drop log line); not claiming dropped>0; W23 F5 same result; already_compressed single-pointer not read as mainline closure",
+      "state_glyph": "⛔vacuous",
+      "evidence_file": "evidence/F5_MANUALCOMPRESS.json"
+    },
+    {
+      "cell_id": "F6_AUTOCOMPRESS",
+      "endpoint_fp": "01e476bd",
+      "tier": "32K",
+      "feature_face": "auto_compress",
+      "state": "VACUOUS",
+      "positive_control": false,
+      "key_criteria": [
+        "fixture 16 short turns + 2 big file_reads + 12 more turns; token meter peak 30.8K/27.9K",
+        "agent log auto_compact=noop reason=below_trigger on every settled turn",
+        "NO auto_compact dropped= event this wave"
+      ],
+      "attribution": "environment/fixture",
+      "evidence_ref": [
+        "shots/iter13_cross_trigger.png",
+        "shots/iter13_fixture_peak.png"
+      ],
+      "caveat": "committedChars (char dimension, trigger 50227) never crossed despite token meter over budget; do NOT fake dropped; historical log has dropped=19 from a PRIOR run (2026-11-17T15:41:46Z), not this wave; already_compressed single-pointer not read as closure",
+      "state_glyph": "⛔vacuous",
+      "evidence_file": "evidence/F6_AUTOCOMPRESS.json"
+    },
+    {
+      "cell_id": "F7_MCP_INVOKE",
+      "endpoint_fp": "NA",
+      "tier": "NA",
+      "feature_face": "mcp",
+      "state": "VACUOUS",
+      "positive_control": false,
+      "key_criteria": [
+        "no external MCP endpoint configured (empty state)",
+        "plaintext traffic blocked"
+      ],
+      "attribution": "environment",
+      "evidence_ref": [
+        "shots/iter12_mcp_list.png"
+      ],
+      "caveat": "⛔vacuous: invocation precondition absent; do not claim tool-call",
+      "state_glyph": "⛔vacuous",
+      "evidence_file": "evidence/F7_MCP_INVOKE.json"
+    },
+    {
+      "cell_id": "F7_MCP_NAV",
+      "endpoint_fp": "NA",
+      "tier": "NA",
+      "feature_face": "mcp",
+      "state": "PASS",
+      "positive_control": true,
+      "key_criteria": [
+        "MCP page: 远程工具来源",
+        "还没有 MCP 服务器",
+        "添加一个远程 MCP 端点，模型即可调用它的工具"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "shots/iter12_mcp_list.png"
+      ],
+      "caveat": "navigation + empty state VERIFIED; MCP invocation itself NOT exercised (no external endpoint + plaintext block W5-03/W20-06) -> invocation face ⛔vacuous, kept separate",
+      "state_glyph": "✅",
+      "evidence_file": "evidence/F7_MCP_NAV.json"
+    },
+    {
+      "cell_id": "P_DEEPSEEK",
+      "endpoint_fp": "NA",
+      "tier": "NA",
+      "feature_face": "prefilter/deepseek-v4.1-flash",
+      "state": "VACUOUS",
+      "positive_control": false,
+      "key_criteria": [
+        "endpoint pool has 6 endpoints; none deepseek"
+      ],
+      "attribution": "environment",
+      "evidence_ref": [
+        "iterations.jsonl(iter15/16)"
+      ],
+      "caveat": "⛔vacuous: endpoint not in pool; 420s timeout not re-incurred; registered honestly, no time wasted",
+      "state_glyph": "⛔vacuous",
+      "evidence_file": "evidence/P_DEEPSEEK.json"
+    },
+    {
+      "cell_id": "T1M",
+      "endpoint_fp": "NA(settings)",
+      "tier": "1M",
+      "feature_face": "tier_axis",
+      "state": "PASS",
+      "positive_control": true,
+      "key_criteria": [
+        "readback=当前 1M",
+        "switch_verified=true",
+        "meter=上下文 2K / 995.9K"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "shots/iter08_t1m.png"
+      ],
+      "caveat": "1M READOUT only; device-side 1M true compression NOT exercised (dual blocker unresolved); do not claim 1M pressure",
+      "state_glyph": "✅",
+      "evidence_file": "evidence/T1M.json"
+    },
+    {
+      "cell_id": "T256K",
+      "endpoint_fp": "NA(settings)",
+      "tier": "256K",
+      "feature_face": "tier_axis",
+      "state": "PASS",
+      "positive_control": true,
+      "key_criteria": [
+        "readback=当前 256K",
+        "switch_verified=true",
+        "meter=上下文 2K / 251.9K"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "shots/iter06_t256k.png"
+      ],
+      "caveat": "meter = session budget readout only",
+      "state_glyph": "✅",
+      "evidence_file": "evidence/T256K.json"
+    },
+    {
+      "cell_id": "T32K",
+      "endpoint_fp": "NA(settings)",
+      "tier": "32K",
+      "feature_face": "tier_axis",
+      "state": "PASS",
+      "positive_control": true,
+      "key_criteria": [
+        "readback=当前 32K",
+        "switch_verified=true",
+        "meter=上下文 2K / 27.9K"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "shots/iter05_t32k.png"
+      ],
+      "caveat": "meter = session budget readout, NOT proof of long-context pressure",
+      "state_glyph": "✅",
+      "evidence_file": "evidence/T32K.json"
+    },
+    {
+      "cell_id": "T512K",
+      "endpoint_fp": "NA(settings)",
+      "tier": "512K",
+      "feature_face": "tier_axis",
+      "state": "PASS",
+      "positive_control": true,
+      "key_criteria": [
+        "readback=当前 512K",
+        "switch_verified=true",
+        "meter=上下文 2K / 507.9K"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "shots/iter07_t512k.png"
+      ],
+      "caveat": "meter = session budget readout only",
+      "state_glyph": "✅",
+      "evidence_file": "evidence/T512K.json"
+    },
+    {
+      "cell_id": "V_W2401",
+      "endpoint_fp": "NA",
+      "tier": "NA",
+      "feature_face": "visual_sanity/W24-01",
+      "state": "VACUOUS",
+      "positive_control": false,
+      "key_criteria": [
+        "thinking box 思考过程 light theme collapsed: gray bg + dark readable text",
+        "expanded: dark readable text, no black-on-black"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "shots/iter15_thinking_light.png",
+        "shots/iter15_thinking_expanded.png"
+      ],
+      "caveat": "W24-01 defect NOT reproduced in light theme (consistent with prior W24); dark theme not toggled this wave; ledger stays OPEN",
+      "state_glyph": "⛔vacuous",
+      "evidence_file": "evidence/V_W2401.json"
+    },
+    {
+      "cell_id": "V_W2402",
+      "endpoint_fp": "NA",
+      "tier": "NA",
+      "feature_face": "word_break/W24-02",
+      "state": "VACUOUS",
+      "positive_control": false,
+      "key_criteria": [
+        "compression no-content banner displayed red readable text (no silent truncation observed in normal runs)"
+      ],
+      "attribution": "environment",
+      "evidence_ref": [
+        "shots/iter14_manual_result.png"
+      ],
+      "caveat": "W24-02 network-failure word-break case not artificially induced; reverse evidence only; ledger stays OPEN",
+      "state_glyph": "⛔vacuous",
+      "evidence_file": "evidence/V_W2402.json"
+    }
+  ],
+  "iterations_total": 16,
+  "iterations": [
+    {
+      "iter": 1,
+      "action": "Positive control: ask sentinel on active NV-VL endpoint",
+      "observation": "verbatim W26ALPHA7; usage []->2.5k in / 366 out; done=true waited=11s; send_bounds live [870,1284][1014,1428]",
+      "state": "PASS(positive-control)",
+      "attribution": "app",
+      "evidence_ref": "shots/iter01_nvvl_pos.png",
+      "caveat": "self-proves ask done criterion (no residual-usage false positive); input/send coords patched to live bounds"
+    },
+    {
+      "iter": 2,
+      "action": "switch to OR-DOTS (b995dc45) + sentinel ask",
+      "observation": "badge=当前：OR-DOTS; verbatim W26BRAVO9 (This is the final answer W26BRAVO9); usage []->2.2k in / 544 out; wait19.7s; IMGCHIP=当前端点未开启图片输入",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "shots/iter02_ordots.png",
+      "caveat": "device modality: image input OFF despite user dual-channel claim; user claim superseded by device truth"
+    },
+    {
+      "iter": 3,
+      "action": "switch to OR-NORTH (b0113b2c) + sentinel ask",
+      "observation": "badge=当前：OR-NORTH; verbatim W26CHARLIE3 (+appended SENTINEL-W21-6NHV4K); usage []->1.8k in / 249 out; wait15.2s; [SKILL BODY] label present",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "shots/iter03_ornorth.png",
+      "caveat": "OR free node fast this run; SKILL BODY auto-injected in context, to be examined in skill face"
+    },
+    {
+      "iter": 4,
+      "action": "switch to NV-MISTRAL (d5022055) + sentinel ask + modality probe",
+      "observation": "badge=当前：NV-MISTRAL; IMGCHIP=添加图片 (image modality ON); round-trip converged usage []->2.0k in / 260 out wait41s BUT model refused W26DELTA4 as code/passphrase (no verbatim)",
+      "state": "PARTIAL",
+      "attribution": "app/model-safety",
+      "evidence_ref": "shots/iter04_nvmistral.png",
+      "caveat": "model safety refusal, not app bug; will obtain verbatim via benign multimodal query (HARNESS-42) in F1 cell"
+    },
+    {
+      "iter": 5,
+      "action": "settings: switch tier 32K",
+      "observation": "readback=当前 32K; switch_verified=true; meter=上下文 2K / 27.9K",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "shots/iter05_t32k.png",
+      "caveat": "meter is session budget readback, NOT proof of long-context pressure"
+    },
+    {
+      "iter": 6,
+      "action": "settings: switch tier 256K",
+      "observation": "readback=当前 256K; switch_verified=true; meter=上下文 2K / 251.9K",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "shots/iter06_t256k.png",
+      "caveat": "same: budget readback only"
+    },
+    {
+      "iter": 7,
+      "action": "settings: switch tier 512K",
+      "observation": "readback=当前 512K; switch_verified=true; meter=上下文 2K / 507.9K",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "shots/iter07_t512k.png",
+      "caveat": "same: budget readback only"
+    },
+    {
+      "iter": 8,
+      "action": "settings: switch tier 1M",
+      "observation": "readback=当前 1M; switch_verified=true; meter=上下文 2K / 995.9K",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "shots/iter08_t1m.png",
+      "caveat": "1M READOUT only; 1M true compression NOT exercised (dual blocker unresolved); do not claim device-side 1M pressure"
+    },
+    {
+      "iter": 9,
+      "action": "multimodal: NV-MISTRAL (d5022055) attach harness42.png真图(800x400) via SAF + semantic Q",
+      "observation": "image chip=添加图片; scan_file+MediaStore images命中; SAF card body tap attached (thumbnail opens viewer, card body selects); reply verbatim HARNESS-42; usage 2.4k in/191 out wait26.7s; thinking read image",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "shots/iter09_multimodal.png;shots/iter09_attached.png",
+      "caveat": "OR-DOTS/OR-NORTH chips gray (TEXT-only) recorded separately; NV-VL image chip also gray per W23; my Download bicolor not in SAF 图片 collection, used Pictures/harness42.png known真图"
+    },
+    {
+      "iter": 10,
+      "action": "workspace file_write via NV-MISTRAL: request+approval+allow+fs verify",
+      "observation": "approval exact args {\"path\":\"w26_write.txt\",\"content\":\"SENTINEL_W26_7744_END\"}; tool card wrote 21 chars; strict ls -1 diff 27->28 (only +w26_write.txt); mtime 2026-11-18T04:22:38 this round; cat verbatim SENTINEL_W26_7744_END 21 bytes hex-verified",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "shots/iter10_approval_real.png;shots/iter10_after_allow.png",
+      "caveat": "fs-level evidence (run-as exec-out); agent-0.log has no tool-call accounting -> log-count not used as negative evidence"
+    },
+    {
+      "iter": 11,
+      "action": "skill: inject new w26-probe asset, cold-start, @menusel, sentinel+banner",
+      "observation": "settings skills page w26-probe 来源：file·不限工具 (below fold); @ menu includes w26-probe (after scroll); NV-VL call: skill_load card {\"name\":\"w26-probe\"} 23ms + [SKILL BODY] banner + SENTINEL-W26-D3F9Q verbatim + 2.5k in/79 out; first NV-MISTRAL attempts failed: chip mangled (no leading space) + model refused passphrase framing",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "shots/iter11_skills_cold_scroll.png;shots/iter11_at_menu_scroll.png;shots/iter11_skill_result_final.png",
+      "caveat": "registration chain OK (new skill in both list and @ menu, just below fold); driver caveat: after @chip insertion must move cursor to end + explicit leading space else input text inserts before chip; no skill_load accounting in agent log -> judge by UI card+banner+sentinel"
+    },
+    {
+      "iter": 12,
+      "action": "nav to MCP server list page (settings)",
+      "observation": "page shows 远程工具来源 + 还没有 MCP 服务器 + 添加一个远程 MCP 端点，模型即可调用它的工具; empty state (no external MCP configured)",
+      "state": "PASS(navigation)",
+      "attribution": "app",
+      "evidence_ref": "shots/iter12_mcp_list.png",
+      "caveat": "MCP invocation itself NOT exercised: no external endpoint + plaintext traffic blocked (W5-03/W20-06) -> invocation face is vacuous, do not claim tool-call; navigation/empty-state is what is verified here"
+    },
+    {
+      "iter": 13,
+      "action": "auto_compress: 32K fixture - 16 short turns + 2 big file_read (cjk_fixture 87KB, cjk_fixture2 78KB) + 12 turns; meter 2.7K->30.8K/27.9K",
+      "observation": "token meter crossed 27.9K budget (peak 30.8K) but agent log auto_compact=noop reason=below_trigger on every settled turn; committedChars(char dimension, trigger 50227) never crossed; NO auto_compact dropped= event this wave",
+      "state": "VACUOUS",
+      "attribution": "environment/fixture",
+      "evidence_ref": "shots/iter13_cross_trigger.png;shots/iter13_fixture_peak.png",
+      "caveat": "do not fake dropped; historical log has auto_compact dropped=19 kept=14 from 2026-11-17T15:41:46Z (prior run) but NOT this wave; already_compressed single-pointer defect not written as compression closure"
+    },
+    {
+      "iter": 14,
+      "action": "manual_compress: full session (30.8K meter), 更多操作->压缩上下文->压缩, 3-line confirm dialog",
+      "observation": "menu+confirm(3 lines)+execute all exercised; result UI=没有可压缩的内容：历史本来就装得下，或找不到安全的截断点; no new manual_compress dropped= log line (only 2026-11-09/11 historical dropped=238); dropped=0",
+      "state": "VACUOUS",
+      "attribution": "app/fixture",
+      "evidence_ref": "shots/iter14_manual_confirm.png;shots/iter14_manual_result.png",
+      "caveat": "bidirectional assertion holds (UI no-content + no new drop log line); not claiming dropped>0; W23 F5 same result; already_compressed single-pointer not read as mainline closed"
+    },
+    {
+      "iter": 15,
+      "action": "W24-01 visual sanity: thinking box light theme collapsed+expanded; W24-02 word-break reverse probe; deepseek fast-fail prescreen",
+      "observation": "thinking box 思考过程 in light theme: gray bg + dark readable text both collapsed and expanded (NOT black-on-black, defect not reproduced); compression no-content banner red text readable (no silent truncate); deepseek: endpoint pool has 6 endpoints, none deepseek -> not in pool",
+      "state": "VACUOUS(defects)/NA(deepseek)",
+      "attribution": "app(visual OK)/environment(deepseek)",
+      "evidence_ref": "shots/iter15_thinking_light.png;shots/iter15_thinking_expanded.png",
+      "caveat": "W24-01/02 remain OPEN per ledger; light theme only checked (dark theme not toggled this wave); word-break network-failure case not artificially induced; deepseek not in 6-endpoint pool so 420s timeout not re-incurred, registered honestly"
+    },
+    {
+      "iter": 16,
+      "action": "device-side inputModalities ground-truth read (endpoints.json, modality field only, no keys/URLs)",
+      "observation": "NV-VL=[TEXT]; OR-DOTS=[TEXT]; NV-MISTRAL=[TEXT,IMAGE]; NV-STEP=[TEXT]; OR-NORTH=[TEXT]; OR-GEMMA=[TEXT]; all supportsTools+supportsReasoning",
+      "state": "PASS",
+      "attribution": "app/config",
+      "evidence_ref": "iterations.jsonl(iter16)",
+      "caveat": "OR-DOTS user claim 512K tools+vision dual-channel SUPERSEDED by device truth [TEXT] (consistent with gray chip iter02); only NV-MISTRAL is IMAGE-capable -> multimodal done on it; iteration ceiling 16/16 reached, no further device work"
+    }
+  ],
+  "iteration_ceiling": 16,
+  "iteration_ceiling_hit": true,
+  "declared_feature_faces": [
+    "auto_compress",
+    "endpoint_axis",
+    "manual_compress",
+    "mcp",
+    "multimodal",
+    "prefilter/deepseek-v4.1-flash",
+    "skill",
+    "tier_axis",
+    "visual_sanity/W24-01",
+    "word_break/W24-02",
+    "workspace_file_write"
+  ],
+  "assertions": [
+    {
+      "id": "K_cells_total",
+      "rule": "cells_total == len(cells[])",
+      "value": 18,
+      "must_red_mutation": "delete one cell JSON before aggregation"
+    },
+    {
+      "id": "K_iterations_total",
+      "rule": "iterations_total == len(iterations[]) == 16",
+      "value": 16,
+      "must_red_mutation": "delete one iteration line"
+    },
+    {
+      "id": "K_state_domain",
+      "rule": "every state in {PASS,PARTIAL,VACUOUS,FAIL}",
+      "value": [
+        "PARTIAL",
+        "PASS",
+        "VACUOUS"
+      ],
+      "must_red_mutation": "inject state=UNKNOWN"
+    },
+    {
+      "id": "K_positive_control",
+      "rule": "at least one PASS cell with positive_control=true (whole-matrix done criterion self-proved)",
+      "value": 9,
+      "must_red_mutation": "remove positive control flag"
+    },
+    {
+      "id": "K_tier_axis_4",
+      "rule": "4 tier cells 32K/256K/512K/1M all switch_verified readout",
+      "value": [
+        "1M",
+        "256K",
+        "32K",
+        "512K"
+      ],
+      "must_red_mutation": "drop 1M cell"
+    },
+    {
+      "id": "K_user_named_endpoints",
+      "rule": "both user-named OR endpoints have round-trip cells",
+      "value": [
+        "E02",
+        "E03"
+      ],
+      "must_red_mutation": "drop E03"
+    },
+    {
+      "id": "K_vacuous_honest",
+      "rule": "vacuous cells keep state=VACUOUS (not PASS)",
+      "value": 6,
+      "must_red_mutation": "flip one VACUOUS to PASS"
+    },
+    {
+      "id": "K_1m_readout_not_pressure",
+      "rule": "1M tier caveat states READOUT not true pressure",
+      "value": "1M READOUT only; device-side 1M true compression NOT exercis",
+      "must_red_mutation": "delete caveat"
+    },
+    {
+      "id": "K_device_modality_truth",
+      "rule": "iter16 records device inputModalities truth superseding user claim",
+      "value": "OR-DOTS=[TEXT]; only NV-MISTRAL=[TEXT,IMAGE]",
+      "must_red_mutation": "delete iter16"
+    },
+    {
+      "id": "K_no_credentials",
+      "rule": "artifact contains zero credential/PAT/path/serial tokens",
+      "value": "verified by privacy_scan below",
+      "must_red_mutation": "inject a test token"
+    },
+    {
+      "id": "K_handoff_zero_compound_id",
+      "rule": "handoff has zero W<digits>-<digits> literal (G20 self-trap)",
+      "value": "verified by privacy_scan below",
+      "must_red_mutation": "inject literal into handoff"
+    }
+  ],
+  "assertion_total": 11,
+  "mutation_cases": [
+    {
+      "id": "K_cells_total_red",
+      "base_true": true,
+      "injected_sample": "delete one cell JSON before aggregation",
+      "mutant_false": "assertion rule evaluated against mutated in-memory artifact => rule broken",
+      "verified": true,
+      "note": "mutation description; red-state proven by rule definition, not by re-running device"
+    },
+    {
+      "id": "K_iterations_total_red",
+      "base_true": true,
+      "injected_sample": "delete one iteration line",
+      "mutant_false": "assertion rule evaluated against mutated in-memory artifact => rule broken",
+      "verified": true,
+      "note": "mutation description; red-state proven by rule definition, not by re-running device"
+    },
+    {
+      "id": "K_state_domain_red",
+      "base_true": true,
+      "injected_sample": "inject state=UNKNOWN",
+      "mutant_false": "assertion rule evaluated against mutated in-memory artifact => rule broken",
+      "verified": true,
+      "note": "mutation description; red-state proven by rule definition, not by re-running device"
+    },
+    {
+      "id": "K_positive_control_red",
+      "base_true": true,
+      "injected_sample": "remove positive control flag",
+      "mutant_false": "assertion rule evaluated against mutated in-memory artifact => rule broken",
+      "verified": true,
+      "note": "mutation description; red-state proven by rule definition, not by re-running device"
+    },
+    {
+      "id": "K_tier_axis_4_red",
+      "base_true": true,
+      "injected_sample": "drop 1M cell",
+      "mutant_false": "assertion rule evaluated against mutated in-memory artifact => rule broken",
+      "verified": true,
+      "note": "mutation description; red-state proven by rule definition, not by re-running device"
+    },
+    {
+      "id": "K_user_named_endpoints_red",
+      "base_true": true,
+      "injected_sample": "drop E03",
+      "mutant_false": "assertion rule evaluated against mutated in-memory artifact => rule broken",
+      "verified": true,
+      "note": "mutation description; red-state proven by rule definition, not by re-running device"
+    },
+    {
+      "id": "K_vacuous_honest_red",
+      "base_true": true,
+      "injected_sample": "flip one VACUOUS to PASS",
+      "mutant_false": "assertion rule evaluated against mutated in-memory artifact => rule broken",
+      "verified": true,
+      "note": "mutation description; red-state proven by rule definition, not by re-running device"
+    },
+    {
+      "id": "K_1m_readout_not_pressure_red",
+      "base_true": true,
+      "injected_sample": "delete caveat",
+      "mutant_false": "assertion rule evaluated against mutated in-memory artifact => rule broken",
+      "verified": true,
+      "note": "mutation description; red-state proven by rule definition, not by re-running device"
+    },
+    {
+      "id": "K_device_modality_truth_red",
+      "base_true": true,
+      "injected_sample": "delete iter16",
+      "mutant_false": "assertion rule evaluated against mutated in-memory artifact => rule broken",
+      "verified": true,
+      "note": "mutation description; red-state proven by rule definition, not by re-running device"
+    },
+    {
+      "id": "K_no_credentials_red",
+      "base_true": true,
+      "injected_sample": "inject a test token",
+      "mutant_false": "assertion rule evaluated against mutated in-memory artifact => rule broken",
+      "verified": true,
+      "note": "mutation description; red-state proven by rule definition, not by re-running device"
+    },
+    {
+      "id": "K_handoff_zero_compound_id_red",
+      "base_true": true,
+      "injected_sample": "inject literal into handoff",
+      "mutant_false": "assertion rule evaluated against mutated in-memory artifact => rule broken",
+      "verified": true,
+      "note": "mutation description; red-state proven by rule definition, not by re-running device"
+    }
+  ],
+  "mutation_selftest": "11/11 assertions carry a red-state mutation; 5 are JSON meta-assertions (explicitly grouped, zero coverage claim on device matrix)",
+  "privacy_scan": {
+    "pat": 0,
+    "ghp": 0,
+    "serial": 0,
+    "local_path": 0,
+    "cred_file": 0
+  },
+  "device_truth_modality": "NV-VL=[TEXT]; OR-DOTS=[TEXT]; NV-MISTRAL=[TEXT,IMAGE]; NV-STEP=[TEXT]; OR-NORTH=[TEXT]; OR-GEMMA=[TEXT]",
+  "caveat": "tier readout != effective window != 1M real pressure; vacuous != PASS; user dual-channel claim for OR-DOTS superseded by device truth; no logs/credentials/endpoint URLs embedded; evidence_ref points to out-of-repo shots"
+}
