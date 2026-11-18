@@ -177,7 +177,22 @@
 
 ### §5.6 推送与 CI run 链接
 
-待回填。
+| 项 | 值 |
+|---|---|
+| 推送 1 commit | `193f3a7`（7 files：本波验收物 / 交接 / W30 制品 / W29 制品去 W28 化 / W29 checklist 修订 / 台账 W30 段 3 行 + W28-01/W28-03 行内注记 / W29 验收物 §5.6 笔误订正）；两份历史源码日析全程 `??` 未入库；dry-run RC=0 → 实推 RC=0；PAT inline URL 一次性使用、`git remote get-url origin` 复核干净 URL（PAT 未落盘 remote）；noreply 身份；不 force-push、不 rewrite history |
+| Build run（推送 1） | run `44352338394` **completed success**（event=push，由仓根非 docs 制品 `evidence/w30-matrix-summary.json` + `evidence/w29-matrix-summary.json` 自身真实触发；head_sha `193f3a7`；公开 API 四字段复核 status/conclusion/event/head_sha = completed/success/push/193f3a7） |
+| Secret scan run（推送 1，独立） | run `44352338309` **completed success**（无 `paths-ignore`，覆盖同一 commit `193f3a7`） |
+| 推送 2 | 本提交（纯文档回填 §5.6 真实 commit 与 CI run 链接）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 覆盖同一 commit（本推送）；本波不再第三次推送以避免自指回填循环 |
+| 推送次数 | **2**（推送 1 含仓根非 docs 制品触发 Build 五 job 真跑 + 独立 Secret scan；推送 2 纯文档回填链接） |
+| CI 红次数 | **0** |
+| 归因 | 四闸门全绿（编译/守卫/自测/全测）；真机矩阵 8 格（PASS 3 / PARTIAL 2 / VACUOUS 3，设备授权已恢复）；G2 首跑 G20 VIOLATION 为 W30-02 行 `\|\|` 破列 + W28-01 行末尾管道符丢失，改中文「或」+ 补管道符后 PASS；G4 首跑 rc=1 为 `JAVA_HOME` 未设置（fulltest.sh 不注入 env）→ eval 环境后 818/0/0 全绿；推送 1 含仓根非 docs 制品 ⇒ Build 由该 push 自身真实触发；纯文档推送 ⇒ Build 0 run 属既定口径，不写「构建再次通过」 |
+
+**run 链接**（公开 API 逐项读 status / conclusion / event / head_sha，零凭据）：
+
+- 推送 1 Build：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44352338394
+- 推送 1 独立 Secret scan：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44352338309
+
+> 本波零 `.kt` 改动 ⇒ 「CI 全绿」指 Build 五 job + 独立 Secret scan 结论 success，**不等于**真机矩阵通过（本波 F6/F7/T0 ⛔vacuous、E02/E03 ⚠️），也不等于两条用户可见缺陷已复现。
 
 ---
 
