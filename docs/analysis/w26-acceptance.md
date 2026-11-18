@@ -72,7 +72,7 @@
 | 8 | 手动 + 自动上下文压缩 | 32K + 新会话逐条短消息夹具；手动 `dropped>0` 双向断言、自动 `applied=true+dropped>0`；**`already_compressed` 单指针按缺陷实锤登记，不写成压缩主线闭环** | 用户指令 |
 | 9 | **两条用户可见缺陷真机行使（可选，前置决定四态）** | `W24-01` 思考框：浅色/深色 × 收起/展开 reasoning 气泡逐帧截图；`W24-02` 断词：真机限流/排队态观察 error 提示与重试入口。前置不满足即 ⛔vacuous，保持 `OPEN` | 台账 W24 段首两行 |
 | 10 | 本地先行 + adb 调试 + 链内迭代 | 先本地 UI/功能测试 + adb 调试；真机「改→编译→真机→再看」链内循环；每轮追加一行证据（action/observation/state/attribution/evidence_ref/caveat） | 用户指令 |
-| 11 | 收尾契约：W25 P0/P1 收口 | W26 草案三类（收尾契约 / 制品覆盖 / 挂账口径）逐条回源核对：撞号证伪 ⇒ 不落笔；其余历史缺口只登记不改写历史正文 | 用户指令 + 四报告 |
+| 11 | 收尾契约：W25 P0/P1 收口〔本波订正：「收口」= 逐条指到 `文件:行` + 公开 API 复核 + 最小行内修复，不重出历史正文；与 §1.1 #3/§5.4「只登记不改写」同义，非矛盾〕 | W26 草案三类（收尾契约 / 制品覆盖 / 挂账口径）逐条回源核对：撞号证伪 ⇒ 不落笔；其余历史缺口只登记不改写历史正文 | 用户指令 + 四报告 |
 | 12 | 四闸门 + 推送 + CI | G1–G4 串行实跑后推送；每次 commit + run 链接；脱敏正控先自证会响；凭据 inline 一次性、用后清 remote；不 force-push、不 rewrite history | 用户指令 + `AGENTS.md` |
 | 13 | 脱敏 + 零凭据 + 零复合编号 + 四态纪律（全局） | 端点 8 位指纹；产物零 PAT/真 key/本机路径/设备序列号/未打码账号/凭据文件名；交接文档零复合编号字面量；未触发 ≠ 通过、推断带 caveat | 用户指令 + 守卫自指陷阱 |
 
@@ -85,7 +85,7 @@
 | 3 | 设备侧 1M 真压（双阻断未解，只做 1M 档位读数） | W20-05 → W9-11 |
 | 4 | MCP 明文联调 / 放开明文流量开关 / https 夹具 | W20-06 → W5-03 |
 | 5 | git 历史清理 / force-push / rewrite history | W20-07 |
-| 6 | 五项用户终局裁决代做（journal / ≥3 端点 / 占位符口径 / 并行键期望行为 / tip run 闭环方式 / 借鉴独立输入面） | W20-08 |
+| 6 | 六项用户终局裁决代做（journal / ≥3 端点 / 占位符口径 / 并行键期望行为 / tip run 闭环方式 / 借鉴独立输入面） | W20-08 |
 | 7 | 安全波整包 | W20-04 |
 | 8 | 台账同物多名并号 / 台账模板改动 | W20-10、W20-16 |
 | 9 | 守卫侧修复 / G20 扫描面扩展 / 六行漏号补齐 / 幽灵号双断言 K/L 入守卫 | W20-17、W20-03 |
@@ -137,7 +137,7 @@
 **定位一句话**：W26 = 「四报告分歧裁决（含外审草案撞号证伪）+ 新节点×多上下文〔直至 1M 读数〕×多功能面真机矩阵 + W25 收尾契约证据留痕」复合波——用户指令面优先、零 `.kt`、裁决不改方向，唯一新增事实 = 撞号证伪（台账零改动）。
 
 **给用户的主理人通报要点（≤5 行）**：
-1. 四报告转代码波 / 拆三方 / 矩阵挂起主张整包顺延留痕、不改方向；矩阵存续与五项终局裁决维持 `OPEN` 不代裁。
+1. 四报告转代码波 / 拆三方 / 矩阵挂起主张整包顺延留痕、不改方向；矩阵存续与六项终局裁决维持 `OPEN` 不代裁。
 2. 八处分歧逐条裁决全 `改方向=否`；指纹字段名与裁决合计数两处经回源发现现役已部分订正 ⇒ 降级口径订正、不新增门禁。
 3. 新发现：外审三行挂账草案与现役更早波段编号直接撞号，按 ID 唯一性不落笔、试写后完全还原 ⇒ 本波台账零改动。
 4. 本地四闸门全绿（严格测试计数 / 守卫 / 自证 / 全量单测），真机矩阵按四态如实落账，档位读数 ≠ 1M 真压。
@@ -152,7 +152,7 @@
 | G1 全量 JVM 单测（fulltest） | ✅ | `tests=818 failures=0 errors=0 skipped=0`（14 模块）；严格行首 `@Test` = 818 与 `build.yml:135 EXPECTED_TESTS='818'` 一致（宽松 grep 819 是 KDoc 一处 `@Test` 字样，不采用） | `_w26/g4_fulltest.log` |
 | G2 arch-guard | ✅ | `result=PASS ok=27 vacuous=1 violation=0 fault=0`；G20=112 handoff ID 全在台账、`CLOSED` 行证据非空；G15b `usesCleartextTraffic="false"` OK | `_w26/g2_archguard.log` |
 | G3 arch-guard-selftest | ✅ | `30/30 PASS`（260s），含 G20 必红变异「删台账行」会红、VAC-G1b/VAC-G21 空转机制自证 | `_w26/g3_selftest.log` |
-| G4 fulltest 汇总（tests=818） | ✅ | 与 G1 同为 `818/0/0/0`，12 模块全绿（G1/G4 同值口径） | `_w26/g4_fulltest.log` |
+| G4 fulltest 汇总（tests=818） | ✅ | 与 G1 同为 `818/0/0/0`，14 模块全绿〔本波订正：原写 12 模块与 G1 的 14 模块不一致，W27 fulltest 实跑 14 模块〕 | `_w26/g4_fulltest.log` |
 
 > 四闸门串行前置；零 `.kt` 改动故与 W25 基线一致。脱敏正控：产物生成前后各扫一遍，端点仅以 sha256 前 8 位指纹出现，零凭据 / 设备序列号 / 本机绝对路径 / 未打码账号 / 凭据文件名（见 §5.5）。
 > `rc=0` ≠ 产物已重生成的铁律已守（本波无 APK 出包需求，纯文档 + 制品波）。
@@ -230,7 +230,7 @@
 | 步 2 | 本地先行 + adb 调试 + 唤醒三步法 + 非全黑 screencap | ✅ | `_w26/shots/w26_alive_probe.png`、§1.4.1 |
 | 步 3 | 真机矩阵 18 格按四态如实落账（✅11 / ⚠️1 / ⛔vacuous6）+ 链内迭代 16 轮触及上限 | ⚠️（11 ✅ / 1 ⚠️ / 6 ⛔vacuous，逐格如实；非全格通过） | §3、§4、`evidence/w26-matrix-summary.json` |
 | 步 4 | 收尾契约：历史口径订正留痕（不改写历史正文）+ W26 段草案撞号证伪（不落笔） | ✅ | §5.3、§5.4；台账 `git diff` 空 |
-| 步 5 | 四闸门 ✅ + 推送 2 次 + CI 全绿（run 链接见 §5.6） | ✅（闸门 + CI）/ 完成 | §2、`_w26/g4_fulltest.log`、`g2_archguard.log`、`g3_selftest.log`、§5.6 |
+| 步 5 | 四闸门 ✅ + 推送 2 次 + CI 全绿（run 链接见 §5.6） | ✅（闸门 + 推送 1 CI）；推送 2 tip run 见 §5.6〔本波订正：原「完成」过早，tip run 由 W27 跨提交公开 API 复核回填〕 | §2、`_w26/g4_fulltest.log`、`g2_archguard.log`、`g3_selftest.log`、§5.6 |
 
 ### §5.2 明确未做（逐条带挂账号 · 与 §1.3 同源）
 
@@ -240,7 +240,7 @@
 |---|---|---|
 | 1 | 拆分三方 / 任何 `.kt` 增量 / 调行数与测试数上限 | W20-02、W24-01、W24-02 |
 | 2 | journal / FreezeClock 二选一代裁决（第 20 次顺延只留痕不新开行） | W24-03 → W21-03 → W20-01 → W9-05 |
-| 3 | 设备侧 1M 真压 / MCP 明文 / git 历史清理 / 五项终局裁决代做 | W20-05、W20-06、W20-07、W20-08 |
+| 3 | 设备侧 1M 真压 / MCP 明文 / git 历史清理 / 六项终局裁决代做 | W20-05、W20-06、W20-07、W20-08 |
 | 4 | 转代码波 / B1 压缩结构 / 两缺陷修复（用户裁决域，整包顺延） | W9-01、W12-02、W17-01、W24-01、W24-02 |
 | 5 | 守卫侧修复 / G20 扫描面扩展 / 六行漏号补齐 / 幽灵号双断言 K/L 机器化 | W20-17、W20-03 |
 | 6 | 取证设施入仓 / 工具记账 / 观测缝（需 `.kt`） | W20-14、W21-06、W22-06 |
@@ -281,7 +281,7 @@
 | 特征码 | 结果 |
 |---|---|
 | inline PAT / 已知 PAT 前缀形态 | 0 命中 |
-| 凭据文件名 / 真 key / 已知 key 前缀 | 0 命中（`nvidia.txt` 仅 6 个模型链接、无密钥字面量，已实读核） |
+| 凭据文件名 / 真 key / 已知 key 前缀 | 0 命中（随附模型链接清单经本波实读核仅 6 个公开链接、无密钥字面量；原写出的文件名形态已按本波隐私红线删去）〔本波最小修复：删字面量、保留语义；脱敏正控已存在且自证 11/11 会响，报告所述「缺正控」经回源不成立〕 |
 | 设备序列号 / 本机绝对路径 / 未打码账号字段 | 0 命中 |
 | 交接文档复合编号字面量（G20 自指陷阱） | 0（转中文段位；待 handoff 落盘后复扫） |
 
@@ -300,11 +300,11 @@
 | 项 | 值 |
 |---|---|
 | 推送 1 | `da967be..42c7d48 HEAD -> main`（commit `42c7d48`，3 files：本波验收物 + 交接 + 仓根非 docs 制品 `evidence/w26-matrix-summary.json`〔18 格〕）；逐文件 add，两份历史未跟踪源码日析全程 `??` 未入库；dry-run RC=0 → 实推 RC=0，PAT inline URL 一次性使用、`git remote -v` 复核干净 URL 0 命中；noreply 身份；不 force-push、不 rewrite history |
-| Build run | run `44233948648` **completed success**（event=push，由仓根非 docs 制品自身真实触发；五 job 经公开 API 逐项复核全 success：Lint (baseline gate) / Assemble Debug (JDK 21) / Unit tests / Arch guard (26 guards + mutation selftest) / Secret scan (gitleaks + trufflehog)；head_sha `42c7d48`） |
+| Build run | run `44233948648` **completed success**（event=push，由仓根非 docs 制品自身真实触发；五 job 逐项 success〔W27 主理人公开 API 复核 run 级四字段 success@`42c7d48`，未再逐 job 展开；原波 API 限流未逐项联网复核属实时点，不追认为当时已核〕：Lint (baseline gate) / Assemble Debug (JDK 21) / Unit tests / Arch guard (26 guards + mutation selftest) / Secret scan (gitleaks + trufflehog)；head_sha `42c7d48`） |
 | Secret scan run（独立） | 同一 push 的独立 `secret-scan.yml` run `44233948628` **completed success**（无 `paths-ignore`，覆盖同一 commit） |
 | 最终树守卫复跑 | 推送前文档与制品落盘后复跑 `result=PASS ok=27 vacuous=1 violation=0 fault=0`、rc=0；G20 OK（112 handoff ID 全在台账、`CLOSED` 行证据非空）；台账零改动（`git diff` 空） |
 | CI 红次数 | **0**（上限 2，未触） |
-| 推送 2 | 本提交（纯文档回填 §5.6 真实 commit 与 CI run 链接 + 闸门日志路径订正）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 覆盖同一 commit；本波不再第三次推送以避免自指循环 |
+| 推送 2 | 本提交（纯文档回填 §5.6 真实 commit 与 CI run 链接 + 闸门日志路径订正）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 覆盖同一 commit，其 run `44234213197` **completed success**（W27 主理人公开 API 四字段复核：status=completed / conclusion=success / event=push / head_sha=`7cc5cb9c`）；本波不再第三次推送以避免自指循环 |
 | 推送次数 | **2**（上限 3，未触；推送 1 含制品触发 Build 五 job 真跑 + 独立 Secret scan，推送 2 纯文档回填链接） |
 | 归因 | 无构建失败 ⇒ 四分类未触发；环境类（限流 / 夹具夹紧 / 无外部 MCP / 明文阻断 / 模型安全拒答）不写成应用 bug；推送 1 含制品 ⇒ Build 有真绿 run；推送 2 纯文档 ⇒ Build 0 run 属既定口径，不写「构建再次通过」 |
 | 开发席 429 中断 | android-developer 在第 16 轮后遇 `429 Credits exhausted`（运行 64m31s），未回传最终报告；其 18 格 evidence JSON + 16 轮 iterations + 37 张截图已落盘，主理人接手仅做聚合与文档回填，**未编造任何未跑格**；不重试 spawn（额度耗尽，按纪律主理人补完） |
@@ -313,6 +313,7 @@
 
 - 推送 1 Build：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44233948648
 - 推送 1 独立 Secret scan：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44233948628
+- 推送 2 独立 Secret scan（W27 跨提交回填）：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44234213197
 
 > 本波零 `.kt` 改动 ⇒ 「CI 全绿」指 Build 五 job + 独立 Secret scan 结论 success，**不等于**真机矩阵全格通过（§3 如实登记 11 ✅ / 1 ⚠️ / 6 ⛔vacuous），也不等于两条新缺陷已复现。
 > PAT inline 一次性使用后 remote 已复核干净；PAT 已使用一次即视为暴露（轮换为用户侧密钥管理动作，不在仓内写未闭环命令）。

@@ -223,12 +223,12 @@
 | E3 | endpoint_axis | b0113b2c (north) / 32K | ⛔ | 首请求 59s 仍等待、stop；`_w24/shots/north_wait.png`。环境侧；用户标注可用≠本机本轮可用 |
 | T1 | tier_axis | 01e476bd / 1M | ✅ | 档位回读「当前 1M」、上下文条 `2.5K / 995.9K`、token `W24DELTA77` 逐字、usage `2.4k in / 435 out`；`_w24/shots/e5_1m_readout.png`。caveat：**档位读数 ≠ 1M 真压**（输入仅 2.5K） |
 | F1 | multimodal | d5022055 (mistral) / 1M | ✅ | mistral `添加图片` chip → SAF 选真图 → 回复逐字 `W24 VISION 737` + `RED FRAME TEST`、usage `2.2k in / 75 out`；`_w24/shots/mm_semantic_reply.png`。NV-VL 同按钮为「当前端点未开启图片输入」⇒ 以真机 inputModalities 为准 |
-| F2 | workspace | 01e476bd / 1M | ⚠️ | 审批框 exact args `{"path":"w24sentinel.txt","content":"W24SENTINEL9182"}` 完整、工具调用成立；但 workspace `ls` 无该文件、落盘副作用未坐实；read 轮 done + tool 参数；`_w24/shots/f2_after_allow.png`。从严 ⚠️ 同 W23（工具记账观测缝需 `.kt`） |
+| F2 | workspace | 01e476bd / 1M | ⚠️ | 审批框 exact args `{"path":"w24sentinel.txt","content":"W24SENTINEL9182"}` 完整、工具调用成立；但 workspace `ls` 无该文件、落盘副作用未坐实；read 轮 done + tool 参数；`_w24/shots/f2_after_allow.png`。从严 ⚠️ 同 W23（工具记账观测缝需 `.kt`）〔本波订正：「同 W23」仅同为回复级/⚠️ 取证等级，不抹平 W23 F2 与 W24 F2 各自格；工具记账需 `.kt` 仍 `OPEN`〕 |
 | F4 | skill | 01e476bd / 1M | ✅ | 冷启动注入 skill → skill 页「来源：file」可见 → @ 点选 → 工具 `{"name":…}` + `[SKILL BODY]` → 回复逐字 `SENTINEL-W22-Q7X3M`、usage `2.6k in / 154 out`；`_w24/shots/skill_sentinel_reply.png`。caveat：本波新注入 file skill 在 skill 页可见但 @ 菜单未含（需额外注册），逐字用已在 @ 的历史资产验 |
 | F7 | mcp | NA / NA | ⛔vacuous | 设置→MCP 服务器页可达、「远程工具来源 / 还没有 MCP 服务器 / 空态」；`_w24/shots/mcp_page.png`。导航 ✅ ≠ 行使 ✅；无外部端点 + 平台明文开关阻断，不放开明文、不造 https 夹具 |
 | W24-01 | multimodal（缺陷推导） | 01e476bd / 32K | ⚠️（未复现） | 浅色主题 reasoning 气泡收起/展开 3 帧均浅米底 + 深色可读文字、逐字可读、未现全黑；`_w24/shots/w2401_expand_f1.png`。深色主题未测 ⇒ 保持 `OPEN`、不证伪不销账；像素坐标多次校准后以视觉判据为准 |
 | W24-02 | endpoint_axis（缺陷推导） | b995dc45 / 32K | ⛔vacuous | dots/north 50–102s 无产出、UI 等待/已停止、未见半截静默；无 MockWebServer 前端；`_w24/shots/north_wait.png`。限流/无响应归环境侧、保持 `OPEN`、不写成复现事实 |
-| F6 | auto_compress | 01e476bd / 32K | ⛔vacuous（夹具夹紧） | 32K 档连续短问答累积，agent log 全程 `auto_compact=noop reason=below_trigger`，未达 `dropped>0`；`_w24/evidence/compress_probe.json`。夹具几何夹紧，同 W23；不写硬出口判据，不改判据凑绿。（明细见 §4 收敛后回填） |
+| F6 | auto_compress | 01e476bd / 32K | ⛔vacuous（夹具夹紧） | 32K 档连续短问答累积，agent log 全程 `auto_compact=noop reason=below_trigger`，未达 `dropped>0`；`_w24/evidence/compress_probe.json`。夹具几何夹紧，同 W23；不写硬出口判据，不改判据凑绿。（明细见 §4 收敛后回填）〔本波订正：「同 W23」仅同为 ⛔vacuous 四态，不抹平 W23 F6 曾 ✅ `dropped=19` 的历史格；本波不改写任何历史判级〕 |
 
 > **本波未设格**：manual_compress（手动压缩，W23 判 ⛔vacuous；本波零 `.kt` 且夹具几何夹紧，无独立证据 ⇒
 > 在 `coverage_note` 说明从历史推断、不硬造格）；`declared_feature_faces` 仍 declared 9 面、

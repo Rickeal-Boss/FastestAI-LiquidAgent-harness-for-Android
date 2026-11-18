@@ -229,11 +229,11 @@
 | W24-01 | defect_probe | `01e476bd` | 1M | ⛔vacuous | 浅色主题 reasoning 气泡 mean `233/230/223`、深色可读文字，未现全黑面板；深色×展开未行使；台账保持 `OPEN` | `_w25/evidence/w2401_thinking_box.json` |
 | W24-02 | defect_probe | NA | NA | ⛔vacuous | 未跑 MockWebServer；遇网络失败 UI 明确显示「本次请求失败」（反向证据，非静默）；台账保持 `OPEN` | `_w25/evidence/env_wifi_event.json` |
 
-> **本波实质增量**：① F2 拿到**文件系统级**落盘硬证据（`ls` 差集 + mtime + `cat` 逐字），证据等级高于 W23/W24 的回复级/⚠️；
+> **本波实质增量**：① F2 拿到**文件系统级**落盘硬证据（`ls` 差集 + mtime + `cat` 逐字），证据等级高于 W23/W24 的回复级/⚠️〔本波订正：「回复级/⚠️」仅指 W23/W24 历史等级，不抹平本波 F2 文件系统级 ✅ 与其各自格〕；
 > ② F4 真机坐实 W24 F4 caveat 新面（新注入 file skill 在技能页可见但 @ 菜单未含）；
 > ③ F1 真图语义逐字命中（mistral `HARNESS-42`）；④ T1 1M 档位读数 `2.5K/995.9K`。
 > **未达格如实**：F7/F6/两缺陷 ⛔vacuous，均为前置缺失/环境侧/未行使，不冒充通过、不改写历史结论。
-> 制品 `evidence/w25-matrix-summary.json`：9 cells、state_counts{pass5,vacuous4}、iterations 10、11 条出厂断言各配必红变异（11/11 实跑会红）、字段名 `runner_fingerprint_prefix16`（名实相符，订正报告甲 P1-1）、NA 白名单对齐（F7/W24-02）、`truncated_fields` 据实空数组。
+> 制品 `evidence/w25-matrix-summary.json`：9 cells、state_counts{pass5,vacuous4}、iterations 10（§4 共 12 行 = 10 真机轮 + iter10 判据修正 + iter11 本地闸门两行，非 12 个真机轮；本波仅文档口径统一，历史制品 `iterations[]`=10 不重出）、11 条出厂断言各配必红变异（11/11 实跑会红）、字段名 `runner_fingerprint_prefix16`（名实相符，订正报告甲 P1-1）、NA 白名单对齐（F7/W24-02）、`truncated_fields` 据实空数组。
 
 ---
 
@@ -268,7 +268,7 @@
 |---|---|---|---|
 | 步 1 | 范围裁决（两报告 14 条，全 `改方向=否`）+ 做什么/不做写入 §1 | ✅ | 本文件 §1.1–§1.5 |
 | 步 2 | 本地先行 + adb 调试 + 唤醒三步法 + 非全黑 screencap | ✅ | `_w25/shots/_w25_alive.png`、§4 iter0 |
-| 步 3 | 真机矩阵 9 格按四态如实落账（含链内迭代 12 轮） | ⚠️（5 ✅ / 4 ⛔vacuous，逐格如实；非全格通过） | §3、§4、`evidence/w25-matrix-summary.json` |
+| 步 3 | 真机矩阵 9 格按四态如实落账（§4 共 12 行，其中真机迭代 10 轮 + 判据修正/本地闸门各 1 行；历史制品 iterations[]=10） | ⚠️（5 ✅ / 4 ⛔vacuous，逐格如实；非全格通过） | §3、§4、`evidence/w25-matrix-summary.json` |
 | 步 4 | 收尾契约：W24 P0/P1 收口（补 run 链接 / W24-03 补行 / 订正数字口径 / 字段名 / PAT 句）+ 新制品字段实算 | ✅ | §5.4、§5.6、制品 |
 | 步 5 | 四闸门 + 推送 + CI（CI run 链接推送后回填 §5.6） | ✅（闸门）/ 待回填（CI） | §2、`_w25/g1..g4.log`、§5.6 |
 
@@ -315,7 +315,7 @@
 | `docs/handoff-20261118-wave25.md` | 新增 | 本波交接摘要（零复合编号、不写推断为事实、不写下一链建议） |
 | `docs/06-deferred-ledger.md` | 新增 1 行 + 最小注记 | W24 段末补 `W24-03` 一行（`OPEN`）；不新开 W25 段 |
 | `docs/analysis/w24-acceptance.md` | 最小结构修复（零 `.kt`） | §5.6 推送 2 行回填 run `44144142295`（公开 API 复核 success@`846301c`）；§5.6 末尾 PAT 句按报告甲 P1-5 订正为已闭环动作表述；§1.1 #12 注记补「第 19 次顺延已由本波补行承接」溯源 |
-| `evidence/w25-matrix-summary.json` | 新增 | 本波矩阵制品（9 cells / 10 iterations / 11 断言必红 / 隐私全清） |
+| `evidence/w25-matrix-summary.json` | 新增 | 本波矩阵制品（9 cells / iterations[]=10（§4 12 行含 2 本地行）/ 11 断言必红 / 隐私全清） |
 
 > 边界：W23 及更早各波正文不动、历史制品 JSON 不重出不覆盖；只修上一波本体注记 + 本波新文件。
 
@@ -336,7 +336,7 @@
 
 1. `docs/analysis/w25-acceptance.md` — 本波验收物（§1–§5 全文）
 2. `docs/handoff-20261118-wave25.md` — 本波交接摘要
-3. `evidence/w25-matrix-summary.json` — 机器可读矩阵制品（schema 版本 + 9 cells + 10 iterations + 逐格四态 + evidence_ref + attempt_states + caveat + 11 必红变异 + assertion_source + runner_fingerprint_prefix16）
+3. `evidence/w25-matrix-summary.json` — 机器可读矩阵制品（schema 版本 + 9 cells + iterations[]=10（§4 12 行含 2 本地行）+ 逐格四态 + evidence_ref + attempt_states + caveat + 11 必红变异 + assertion_source + runner_fingerprint_prefix16）
 4. `docs/06-deferred-ledger.md`（W24 段补行 diff）— 挂账真值源变更
 5. 本地闸门日志摘要（`_w25/g1_tests.log`、`g2_archguard.log`、`g3_selftest.log`、`g4_fulltest.log` 的脱敏结论段；原始日志在仓外取证设施，不入库）
 
@@ -353,7 +353,7 @@
 | Secret scan run（独立） | 同一 push 的独立 `secret-scan.yml` run `44155306217` **completed success**（无 `paths-ignore`，覆盖同一 commit） |
 | 最终树守卫复跑 | 推送前文档落盘后复跑 `result=PASS ok=27 vacuous=1 violation=0 fault=0`、rc=0；G20 OK（112 handoff ID 全在台账、CLOSED 行证据非空）；补 W24 段一行后复核仍覆盖（`_w25/g2_final.log`） |
 | CI 红次数 | **0**（上限 2，未触） |
-| 推送 2 | 本提交（纯文档回填 §5.6 真实 commit 与 CI run 链接）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 覆盖同一 commit，其 run 可按本提交的公开 check-runs 查得；本波不再第三次推送以避免自指循环 |
+| 推送 2 | 本提交（纯文档回填 §5.6 真实 commit 与 CI run 链接）：Build **0 run**（`paths-ignore` 既定口径，判据未行使，不算绿也不算红）；独立 Secret scan 覆盖同一 commit，其 run `44156141650` **completed success**（W27 主理人公开 API 四字段复核：status=completed / conclusion=success / event=push / head_sha=`da967be`）；本波不再第三次推送以避免自指循环 |
 | 推送次数 | **2**（上限 3，未触；推送 1 含制品触发 Build 五 job 真跑 + 独立 Secret scan，推送 2 纯文档回填链接） |
 | 归因 | 无构建失败 ⇒ 四分类未触发；环境类（WiFi 掉线 / 夹具夹紧 / 无外部 MCP / 平台明文阻断）不写成应用 bug；推送 1 含制品 ⇒ Build 有真绿 run；推送 2 纯文档 ⇒ Build 0 run 属既定口径，不写「构建再次通过」 |
 
@@ -361,6 +361,7 @@
 推送 1 Build：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44155306069
 推送 1 Build Unit tests job：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44155306069/job/134294327842
 推送 1 独立 Secret scan：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44155306217
+推送 2 独立 Secret scan（W27 跨提交回填）：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44156141650
 
 > 本波零 `.kt` 改动 ⇒ 「CI 全绿」指 Build 五 job + 独立 Secret scan 结论 success，**不等于**真机矩阵全格通过（§3 如实登记 5 ✅ / 4 ⛔vacuous），也不等于两条新缺陷已复现。
 > PAT inline 一次性使用后 remote 已复核干净；PAT 已使用一次即视为暴露（轮换为用户侧密钥管理动作，不在仓内写未闭环命令）。

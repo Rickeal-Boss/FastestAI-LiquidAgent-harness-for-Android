@@ -1,0 +1,569 @@
+{
+  "schema": "liquidharness.w27.matrix-summary.v1",
+  "baseline": "7cc5cb9 (W26 tip, main)",
+  "wave": "W27",
+  "zero_kotlin": true,
+  "assertion_source": "_w27/make_summary_w27.py (仓外取证设施,老号W20-14不入库)",
+  "runner_fingerprint_prefix16": "e147a2119942f0db",
+  "cells_total": 11,
+  "unique_cell_ids": 11,
+  "state_counts": {
+    "PASS": 8,
+    "PARTIAL": 0,
+    "VACUOUS": 3,
+    "FAIL": 0
+  },
+  "declared_feature_faces": [
+    "endpoint_axis",
+    "tier_axis",
+    "multimodal",
+    "workspace",
+    "skill",
+    "mcp",
+    "manual_compress",
+    "auto_compress",
+    "defect_probe",
+    "capability_probe",
+    "context_meter"
+  ],
+  "feature_faces_with_cells": [
+    "auto_compress",
+    "context_meter",
+    "endpoint_axis",
+    "manual_compress",
+    "mcp",
+    "multimodal",
+    "skill",
+    "tier_axis",
+    "workspace"
+  ],
+  "cells": [
+    {
+      "cell_id": "E01",
+      "feature_face": "endpoint_axis",
+      "endpoint_fp": "01e476bd",
+      "tier": "27.9K(默认)",
+      "state": "PASS",
+      "state_glyph": "✅",
+      "positive_control": true,
+      "key_criteria": [
+        "verbatim W27ALPHA7 in reply",
+        "done=true + usage_changed=true",
+        "wait 6.7s / 4.4k in,46 out",
+        "log tail auto_compact=noop below_trigger"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "evidence/iter1_e01.json",
+        "evidence/iter1_log.json",
+        "shots/iter1_e01_nvvl.png"
+      ],
+      "caveat": "positive control: sentinel chosen so done-criterion must fire; if it did not, all other PASS cells would be suspect",
+      "attempt_states": [
+        "attempted"
+      ],
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "E02",
+      "feature_face": "endpoint_axis",
+      "endpoint_fp": "b995dc45",
+      "tier": "512K读数",
+      "state": "PASS",
+      "state_glyph": "✅",
+      "positive_control": true,
+      "key_criteria": [
+        "verbatim W27BRAVO9",
+        "done=true usage_changed=true wait 11.0s",
+        "live bounds handled shifted input row [240,1897]"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "evidence/iter2_e02.json",
+        "shots/iter2_e02_ordots.png"
+      ],
+      "caveat": "inputModalities=[TEXT]; user double-modal claim not endorsed (device truth)",
+      "attempt_states": [
+        "attempted"
+      ],
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "E03",
+      "feature_face": "endpoint_axis",
+      "endpoint_fp": "b0113b2c",
+      "tier": "256K读数",
+      "state": "PASS",
+      "state_glyph": "✅",
+      "positive_control": true,
+      "key_criteria": [
+        "verbatim W27CHARLIE3",
+        "done=true usage_changed=true wait 11.0s",
+        "2.8k in / 324 out"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "evidence/iter3_e03.json",
+        "shots/iter3_e03_ornorth.png"
+      ],
+      "caveat": "",
+      "attempt_states": [
+        "attempted"
+      ],
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "T0",
+      "feature_face": "tier_axis",
+      "endpoint_fp": "01e476bd",
+      "tier": "32K/256K/512K/1M",
+      "state": "PASS",
+      "state_glyph": "✅",
+      "positive_control": true,
+      "key_criteria": [
+        "options 32K/128K/192K/256K/512K/1M observed",
+        "256K/512K/1M badge 当前 实读",
+        "32K 当前 32K 实读",
+        "档位读数≠生效窗口≠1M真压"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "evidence/iter4_tiers_final.json",
+        "evidence/iter4_tier1M.json",
+        "evidence/iter10_tier32k.json"
+      ],
+      "caveat": "档位=会话软预算(SwitchGuard / BudgetFormula 同源), 非端点 contextLength; 1M 真压双阻断未解(挂老号)",
+      "attempt_states": [
+        "attempted"
+      ],
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "F1",
+      "feature_face": "multimodal",
+      "endpoint_fp": "d5022055",
+      "tier": "1M读数",
+      "state": "PASS",
+      "state_glyph": "✅",
+      "positive_control": true,
+      "key_criteria": [
+        "添加图片 chip (inputModalities=[TEXT,IMAGE])",
+        "真图 800x400 scan_file+SAF indexed",
+        "SAF card-body tap attached",
+        "verbatim W27-VISION-747 in reasoning",
+        "3.7k/411 wait 39.9s"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "evidence/iter5_multimodal.json",
+        "evidence/iter5_multimodal_v2.json",
+        "shots/iter5_attached.png",
+        "shots/iter5_multimodal.png"
+      ],
+      "caveat": "首轮题面空格未编码截断为 What 仍读出 sentinel；v2 修正编码但 newchat 清附件退化浏览目录(负控)。其余5端点[TEXT]该面⛔vacuous",
+      "attempt_states": [
+        "attempted"
+      ],
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "F2",
+      "feature_face": "workspace",
+      "endpoint_fp": "01e476bd",
+      "tier": "1M读数",
+      "state": "PASS",
+      "state_glyph": "✅",
+      "positive_control": true,
+      "key_criteria": [
+        "file_write exact args {\"path\":\"w27_write.txt\",\"content\":\"W27WS777\"}",
+        "ls -1 diff +1 w27_write.txt",
+        "mtime 2026-11-18 12:40 8 bytes",
+        "content hex 5732 3757 5337 3737 = W27WS777",
+        "file_read reply verbatim W27WS777"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "evidence/iter6_ws_write.json",
+        "evidence/iter7_ws_read.json",
+        "evidence/ws_before.txt",
+        "evidence/ws_after.txt"
+      ],
+      "caveat": "文件落盘以文件系统级 ls差集+mtime+hex 为准，高于回复级；审批框 exact args 完整",
+      "attempt_states": [
+        "attempted"
+      ],
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "F4",
+      "feature_face": "skill",
+      "endpoint_fp": "01e476bd",
+      "tier": "1M读数",
+      "state": "PASS",
+      "state_glyph": "✅",
+      "positive_control": true,
+      "key_criteria": [
+        "w27-probe 技能页 来源：file 可见",
+        "@菜单滚动后含 w27-probe",
+        "tool card skill_load {\"name\":\"w27-probe\"} 2ms",
+        "[SKILL BODY] banner",
+        "SENTINEL-W27-K8M4P verbatim"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "evidence/iter8_skills_page.json",
+        "evidence/iter8_at_menu_v2.json",
+        "evidence/iter8_skill_sentinel.json",
+        "shots/iter8_skill_sentinel.png"
+      ],
+      "caveat": "@菜单首屏仅4项需滚动出现 w27-probe；题面 @chip 与文字拼接成 @wUse...27-probe 仍解析出 skill",
+      "attempt_states": [
+        "attempted"
+      ],
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "F7",
+      "feature_face": "mcp",
+      "endpoint_fp": "NA",
+      "tier": "NA",
+      "state": "VACUOUS",
+      "state_glyph": "⛔vacuous",
+      "positive_control": false,
+      "key_criteria": [
+        "MCP 服务器页可达(顶栏返回箭头绕系统BACK)",
+        "空态 还没有 MCP 服务器",
+        "导航✅与行使分离"
+      ],
+      "attribution": "env",
+      "evidence_ref": [
+        "evidence/iter9_mcp.json",
+        "shots/iter9_mcp_page.png"
+      ],
+      "caveat": "无外部 MCP 端点；平台明文流量阻断未放开(挂老号)，行使面前置缺失",
+      "attempt_states": [
+        "attempted"
+      ],
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "F5",
+      "feature_face": "manual_compress",
+      "endpoint_fp": "01e476bd",
+      "tier": "32K",
+      "state": "VACUOUS",
+      "state_glyph": "⛔vacuous",
+      "positive_control": false,
+      "key_criteria": [
+        "更多操作 压缩上下文 可达",
+        "确认对话框出现",
+        "结果 没有可压缩的内容：历史本来就装得下，或找不到安全的截断点",
+        "log 无 dropped>0"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "evidence/iter10_manual_compress.json",
+        "evidence/iter10_manual_compress_done.json",
+        "shots/iter10_manual_compress_done.png"
+      ],
+      "caveat": "4轮短消息+16KB大read 历史字符积累未越 50227，无安全截断点，dropped=0 非缺陷",
+      "attempt_states": [
+        "attempted"
+      ],
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "F6",
+      "feature_face": "auto_compress",
+      "endpoint_fp": "01e476bd",
+      "tier": "32K",
+      "state": "VACUOUS",
+      "state_glyph": "⛔vacuous",
+      "positive_control": false,
+      "key_criteria": [
+        "token维 14.2k in / 上下文 14.2K/27.9K 越软预算方向",
+        "全程 auto_compact=noop reason=below_trigger",
+        "committedChars 字符维未越 50227 ⇒ 不触发",
+        "两把尺子真机复现(W9-01老号)"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "evidence/iter10_compress_turns.json",
+        "evidence/iter10_compress_log.json",
+        "evidence/iter11_bigread.json",
+        "shots/iter11_bigread_done.png"
+      ],
+      "caveat": "token 计量条越 ≠ 触发压缩；触发线走字符维。不改写 W23 F6 历史 dropped=19，不冒充本波已达",
+      "attempt_states": [
+        "attempted"
+      ],
+      "truncated_fields": []
+    },
+    {
+      "cell_id": "T1",
+      "feature_face": "context_meter",
+      "endpoint_fp": "01e476bd",
+      "tier": "14.2K读数",
+      "state": "PASS",
+      "state_glyph": "✅",
+      "positive_control": true,
+      "key_criteria": [
+        "file_read 大文件后 上下文 14K→14.2K/27.9K",
+        "usage 13.9k→14.2k in, 4.0k out",
+        "13008 cached 91.4%",
+        "档位读数非1M真压"
+      ],
+      "attribution": "app",
+      "evidence_ref": [
+        "evidence/iter11_bigread.json",
+        "shots/iter11_bigread_done.png"
+      ],
+      "caveat": "",
+      "attempt_states": [
+        "attempted"
+      ],
+      "truncated_fields": []
+    }
+  ],
+  "iterations_total": 12,
+  "iterations": [
+    {
+      "id": "iter0",
+      "action": "唤醒三步法+端点池勘察",
+      "observation": "SCREEN_STATE_ON+screencap非全黑;6支端点指纹复算",
+      "state": "PASS",
+      "attribution": "device",
+      "evidence_ref": "_w27_screen0.png;evidence/iter4_tiers_final.json",
+      "caveat": "唤醒判据实跑通过"
+    },
+    {
+      "id": "iter1",
+      "action": "NV-VL正控sentinel往返",
+      "observation": "W27ALPHA7 verbatim done=true wait6.7s",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "evidence/iter1_e01.json",
+      "caveat": "正控先行验证done判据会响"
+    },
+    {
+      "id": "iter2",
+      "action": "切OR-DOTS+sentinel",
+      "observation": "W27BRAVO9 verbatim wait11s live bounds",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "evidence/iter2_e02.json",
+      "caveat": "输入行位移由live bounds处理"
+    },
+    {
+      "id": "iter3",
+      "action": "切OR-NORTH+sentinel",
+      "observation": "W27CHARLIE3 verbatim wait11s",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "evidence/iter3_e03.json",
+      "caveat": "首个tail set_current超时SIGTERM但ask已完成落盘"
+    },
+    {
+      "id": "iter4",
+      "action": "档位轴32K/256K/512K/1M回读",
+      "observation": "当前 256K/512K/1M/32K 逐档实读",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "evidence/iter4_tiers_final.json",
+      "caveat": "set_tier慢致两次前台SIGTERM,改用live bounds直点+确认"
+    },
+    {
+      "id": "iter5",
+      "action": "多模态真图语义",
+      "observation": "W27-VISION-747 verbatim in reasoning wait39.9s",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "evidence/iter5_multimodal.json",
+      "caveat": "首轮空格未编码截断为What仍读图;v2 newchat清附件负控"
+    },
+    {
+      "id": "iter6",
+      "action": "file_write workspace落盘",
+      "observation": "ls差集+1 mtime+hex W27WS777",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "evidence/iter6_ws_write.json",
+      "caveat": "审批框exact args完整;done误判因审批弹窗,改点允许一次"
+    },
+    {
+      "id": "iter7",
+      "action": "file_read回读",
+      "observation": "W27WS777 verbatim",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "evidence/iter7_ws_read.json",
+      "caveat": "本会话允许相同调用继承,无二次审批"
+    },
+    {
+      "id": "iter8",
+      "action": "skill w27-probe sentinel",
+      "observation": "skill_load 2ms + SENTINEL-W27-K8M4P",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "evidence/iter8_skill_sentinel.json",
+      "caveat": "@菜单需滚动;题面chip与文字拼接仍解析"
+    },
+    {
+      "id": "iter9",
+      "action": "MCP页导航+空态",
+      "observation": "还没有 MCP 服务器",
+      "state": "PASS",
+      "attribution": "env",
+      "evidence_ref": "evidence/iter9_mcp.json",
+      "caveat": "行使⛔vacuous无外部端点"
+    },
+    {
+      "id": "iter10",
+      "action": "32K压缩夹具4轮+手动压缩",
+      "observation": "auto_compact=noop below_trigger;手动 没有可压缩的内容",
+      "state": "VACUOUS",
+      "attribution": "app",
+      "evidence_ref": "evidence/iter10_compress_log.json",
+      "caveat": "两把尺子复现:字符维未越50227"
+    },
+    {
+      "id": "iter11",
+      "action": "大文件读长上下文",
+      "observation": "上下文14.2K/27.9K 13008 cached91.4%;仍below_trigger",
+      "state": "PASS",
+      "attribution": "app",
+      "evidence_ref": "evidence/iter11_bigread.json",
+      "caveat": "token维涨但字符维未越,压缩不触发为正确行为"
+    }
+  ],
+  "iteration_ceiling": 16,
+  "iteration_ceiling_hit": false,
+  "truncated_fields": [],
+  "truncated_fields_note": "本波无字段被截断；所有逐格字段据本波真机落盘",
+  "na_allowlist": [
+    "F7",
+    "W24-01",
+    "W24-02"
+  ],
+  "attempt_states_note": "cells[].attempt_states 记录尝试形态；本波格单次收敛为主",
+  "coverage_note": "11 声明面中 capability_probe/defect_probe 无独立格(前置未满足,从历史推断不硬造);F7 mcp 导航✅行使⛔vacuous分开",
+  "artifact_discipline_fixes": "相对W26补回8字段(assertion_source/runner_fingerprint_prefix16/na_allowlist/truncated_fields(_note)/attempt_states/coverage_note/artifact_discipline_fixes),schema串归一,枚举统一为PASS/PARTIAL/VACUOUS/FAIL+state_glyph桥,加K_feature_enum与K_state_domain,mutation带可重放样本与哈希",
+  "assertions": [
+    {
+      "id": "K_state_domain",
+      "description": "state_counts 键集 = cells[].state 值域",
+      "assertion_source": "artifact.self_check",
+      "mutation_sample": "注入 state_counts 新增键 PARTIAL 但无 cell 用 ⇒ 判红"
+    },
+    {
+      "id": "K_feature_enum",
+      "description": "每个 cells[].feature_face 在 declared_feature_faces 内",
+      "assertion_source": "artifact.self_check",
+      "mutation_sample": "注入 feature_face=endpoint_axis(OpenRouter) ⇒ 判红"
+    },
+    {
+      "id": "K_cell_total",
+      "description": "cells_total = len(cells)",
+      "assertion_source": "artifact.self_check",
+      "mutation_sample": "把 cells_total 改大1 ⇒ 判红"
+    },
+    {
+      "id": "K_mutation_replay",
+      "description": "每条 mutation_cases 有可重放 injected_sample",
+      "assertion_source": "artifact.self_check",
+      "mutation_sample": "删某条 injected_sample ⇒ 判红"
+    },
+    {
+      "id": "K_privacy",
+      "description": "制品零凭据/序列号/路径形态",
+      "assertion_source": "artifact.self_check",
+      "mutation_sample": "注入 sk-假值形态 ⇒ 判红"
+    }
+  ],
+  "assertion_total": 5,
+  "mutation_cases": [
+    {
+      "id": "K_state_domain",
+      "injected_sample": "注入 state_counts 新增键 PARTIAL 但无 cell 用 ⇒ 判红",
+      "injected_into": "copy of this artifact",
+      "observed_output": "assertion fired (REJECTED)",
+      "exit_code": 1,
+      "sample_hash": "ba85766d6c55",
+      "verified_by": "rule_definition+self_audit",
+      "note": "red-state proven by rule in generator self-audit; NOT re-run on device"
+    },
+    {
+      "id": "K_feature_enum",
+      "injected_sample": "注入 feature_face=endpoint_axis(OpenRouter) ⇒ 判红",
+      "injected_into": "copy of this artifact",
+      "observed_output": "assertion fired (REJECTED)",
+      "exit_code": 1,
+      "sample_hash": "dc01b2924406",
+      "verified_by": "rule_definition+self_audit",
+      "note": "red-state proven by rule in generator self-audit; NOT re-run on device"
+    },
+    {
+      "id": "K_cell_total",
+      "injected_sample": "把 cells_total 改大1 ⇒ 判红",
+      "injected_into": "copy of this artifact",
+      "observed_output": "assertion fired (REJECTED)",
+      "exit_code": 1,
+      "sample_hash": "6d9088e0ed65",
+      "verified_by": "rule_definition+self_audit",
+      "note": "red-state proven by rule in generator self-audit; NOT re-run on device"
+    },
+    {
+      "id": "K_mutation_replay",
+      "injected_sample": "删某条 injected_sample ⇒ 判红",
+      "injected_into": "copy of this artifact",
+      "observed_output": "assertion fired (REJECTED)",
+      "exit_code": 1,
+      "sample_hash": "c105da08493d",
+      "verified_by": "rule_definition+self_audit",
+      "note": "red-state proven by rule in generator self-audit; NOT re-run on device"
+    },
+    {
+      "id": "K_privacy",
+      "injected_sample": "注入 sk-假值形态 ⇒ 判红",
+      "injected_into": "copy of this artifact",
+      "observed_output": "assertion fired (REJECTED)",
+      "exit_code": 1,
+      "sample_hash": "d3b9578760da",
+      "verified_by": "rule_definition+self_audit",
+      "note": "red-state proven by rule in generator self-audit; NOT re-run on device"
+    }
+  ],
+  "mutation_selftest": {
+    "total": 5,
+    "rejected": 5,
+    "note": "5条为制品规则自证(self-audit)，zero coverage claim on device matrix；沿用W26诚实口径"
+  },
+  "privacy": {
+    "scan": "11 forbidden forms self-audit + artifact blob scan",
+    "result": "CLEAN",
+    "endpoint_repr": "sha256-prefix8 only"
+  },
+  "device_truth_modality": {
+    "NV-VL": [
+      "TEXT"
+    ],
+    "OR-DOTS": [
+      "TEXT"
+    ],
+    "NV-MISTRAL": [
+      "TEXT",
+      "IMAGE"
+    ],
+    "NV-STEP": [
+      "TEXT"
+    ],
+    "OR-NORTH": [
+      "TEXT"
+    ],
+    "OR-GEMMA": [
+      "TEXT"
+    ],
+    "note": "设备真相;用户OR-DOTS视觉双通声明以真机为准不背书"
+  },
+  "caveat": "档位读数≠生效窗口≠1M真压;F5/F6字符维未越50227 vacuous非缺陷;必红变异为规则自证非真机重放;推断带caveat不写成事实"
+}
