@@ -180,7 +180,7 @@ $ grep -rn "旧 MCP 口径短语（W32 的『不塞触发格』表述）" docs/ 
 2. **第 0 车零 `.kt` 收口** ✅（缓解维度）— W33-01/02/03 缓解动作实跑（§2.2/§2.3），判据 6 四条必红全 RED；W30 三行判据 2/4/5 实跑入账（§2.4），W31-02/03 复核未塌。**三行/老行挂账状态仍 `OPEN`，销账待外审复核**。
 3. **真机矩阵** ✅（8/4/1）— §三；F1 三项语义全中、F2/F3/审批 ✅、E03 严格复核关闭 W32 caveat；F5/F6 ⚠️ 如实（判据行使、未 applied）；F4 ⛔vacuous；1M 真压 ⛔vacuous 单列。
 4. **四闸门** ✅ — §四/§5.5（G1 deterministic、G2 27/1/0、G3/G4 见 §5.5）。
-5. **推送 + CI** — §5.6（推送后回填）。
+5. **推送 + CI** ✅ — §5.6：推送 3 次（主体 `c4dc1a0` + 修复 `00fe9c5` + 纯文档回填 tip），`00fe9c5` 的 Build `44523994075` 与 Secret scan `44523994218` 双 success；首次推送的 gitleaks hex 误报已修并如实记录。
 
 ### 5.2 明确未做（逐条带挂账号）
 
@@ -224,6 +224,15 @@ $ grep -rn "旧 MCP 口径短语（W32 的『不塞触发格』表述）" docs/ 
 - **G2 arch-guard** ✅ `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`；G20「130 个 handoff ID 全在台账内、CLOSED 行证据均非空」（含 W33 段 3 行）。
 - **G3 selftest** ✅ `30/30 PASS（250s）`（`_w33/g3_selftest.log`）：28 个变异 case + VAC-G1b / VAC-G21 空转自证全 PASS。
 - **G4 fulltest** ✅ `tests=818 failures=0 errors=0 skipped=0`（14 模块，`_w33/g4_fulltest.log`），与基线一致（零 `.kt`）。
+
+### 5.6 commit 与 CI run
+
+- **推送 3 次**：主体 `c4dc1a0`（W33 全部改动，56 文件）+ 修复 `00fe9c5`（删除 `t_1m_longinput.json` 的 hex 尾巴，gitleaks `generic-api-key` 误报）+ 纯文档回填 tip（本提交，回填本节文字；tip SHA 随交付消息给出，按既定降级规则不补链接、不逐波判 P0）。
+- **CI（head_sha = `00fe9c5`，四字段复核 completed / success / push / `00fe9c5`）**：
+  - **Build** run `44523994075`：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44523994075>
+  - **Secret scan** run `44523994218`：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44523994218>
+- **首次推送红→绿的如实记录（INC-w33-gitleaks）**：`c4dc1a0` 的 Build `44523609951` 与 Secret scan `44523609956` 均红，唯一原因是 gitleaks 把 `evidence/raw/w33/t_1m_longinput.json` 的 64 位 hex 尾巴判成 `generic-api-key`（误报）；该字段已删、改数字 `max_context_tokens=1000000`，`00fe9c5` 双绿。**没有给扫描步骤加 continue-on-error，也没有改 `.gitleaks.toml` 放行**。
+- PAT 仅以 URL inline 一次性使用、未落盘；`origin` 保持干净 URL。轮换属用户侧动作（按 W24 先例，不在仓内写未完成命令）。
 
 ### 5.7 交给外部审查团队的制品清单
 
