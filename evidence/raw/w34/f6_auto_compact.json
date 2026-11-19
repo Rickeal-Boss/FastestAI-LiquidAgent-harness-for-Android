@@ -1,0 +1,13 @@
+{
+ "cell": "F6",
+ "face": "auto_compact",
+ "log_signals": [
+  "R1–R4：auto_compact=noop reason=below_trigger",
+  "R5–R6：auto_compact=noop reason=insufficient_savings:net=-256（触发线已越过，进入收益判定分支）",
+  "压缩后下一轮：auto_compact=noop reason=already_compressed（互斥守卫正确）"
+ ],
+ "observed": "同一会话、同一份气泡快照下：自动路径判 savingChars=0（net = 0 - AUTO_COMPACT_COST_CHARS(256) = -256）⇒ 不 applied；随后手动路径对同一会话 applied（dropped=9 kept=11），且下一轮请求真实缩短 8k tokens",
+ "state": "PARTIAL",
+ "reading": "自动压缩判据被行使且触发线已越（else 分支可达），但自动路径与手动路径对同一快照的压缩结论不一致；根因未定位（候选：Finished 时快照含 streaming 气泡 / 切点映射差异），不推断为缺陷，交外审裁决",
+ "trigger": "下次复现：同一 6 轮 × 16k 工具结果会话，分别观察 auto_compact 与 manual_compress 的 dropped/kept"
+}

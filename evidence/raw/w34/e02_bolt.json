@@ -1,0 +1,9 @@
+{
+ "cell": "E02",
+ "face": "endpoint_axis",
+ "endpoint": "nvidia/nemotron-3.5-bolt-e4b",
+ "q": "Reply_with_exactly_W34-E02-R1",
+ "strict": {"verbatim_hit": false, "raw_reply": ["This is the final answer"], "usage": ["1.4k in / 6 out (0 cached, 0.0%)"]},
+ "state": "PARTIAL",
+ "reading": "端点可切换、请求成功、有回复与 usage；但未按 strict sentinel 逐字回复（语义不服从）⇒ 仅连通性通过，不冒充 PASS（与 W32 E02 同型）"
+}

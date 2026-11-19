@@ -1,0 +1,322 @@
+{
+  "schema": "liquidharness.w34.matrix-summary.v1",
+  "wave": "W34",
+  "matrix_type": "device_real_run",
+  "generated_at": "2026-11-19",
+  "device_executed": true,
+  "zero_kotlin": true,
+  "cells": [
+    {
+      "cell_id": "E01_lightning",
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "reading": "新 key 录入后首测：sentinel 严格逐字 W34-E01-R1，usage 1.8k in / 69 out",
+      "evidence_ref": "evidence/raw/w34/e01_lightning_r1.json"
+    },
+    {
+      "cell_id": "E02_bolt",
+      "feature_face": "endpoint_axis",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "reading": "连通与 usage 成立，但未按 strict sentinel 逐字回复（This is the final answer）⇒ 不冒充 PASS",
+      "evidence_ref": "evidence/raw/w34/e02_bolt.json"
+    },
+    {
+      "cell_id": "E03_nano_strict",
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "reading": "严格逐字 W34-E03-R1，usage 1.8k in / 112 out，无失败横幅",
+      "evidence_ref": "evidence/raw/w34/e03_nano_strict.json"
+    },
+    {
+      "cell_id": "E05_supervl",
+      "feature_face": "endpoint_axis",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "reading": "旧 key 立即 403、新 key 延迟约 80s 后仍 HTTP 403 ⇒ 模型级授权（同 key 的 E01 同波 PASS）",
+      "evidence_ref": "evidence/raw/w34/e05_supervl_r2.json"
+    },
+    {
+      "cell_id": "E06_or_dots3",
+      "feature_face": "endpoint_axis",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "reading": "两次新会话均 120s 超时；设备侧 ping openrouter.ai 0% 丢包 219ms ⇒ 供给侧拥塞，非全局断网",
+      "evidence_ref": "evidence/raw/w34/e06_or_dots3.json"
+    },
+    {
+      "cell_id": "E07_or_north",
+      "feature_face": "endpoint_axis",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "reading": "同窗口 120s 超时（重试后终态超时）⇒ 免费池拥塞",
+      "evidence_ref": "evidence/raw/w34/e07_or_north.json"
+    },
+    {
+      "cell_id": "T_tier",
+      "feature_face": "tier_axis",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "reading": "32K/1M 两次切换均 readback（当前 32K → 当前 1M）+ 32K 档软预算 27.9K 实测；1M tokens 真压 NOT_EXERCISED",
+      "evidence_ref": "evidence/raw/w34/t_tier.json"
+    },
+    {
+      "cell_id": "F1_vision",
+      "feature_face": "multimodal",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "reading": "480x240 真图附件链路成立（添加图片→选中→附件 chip）；dots3 供给侧 SocketTimeout，重试一次后可见报错",
+      "evidence_ref": "evidence/raw/w34/f1_vision_dots3.json"
+    },
+    {
+      "cell_id": "F2_workspace",
+      "feature_face": "workspace_rw",
+      "state": "PASS",
+      "glyph": "✅",
+      "reading": "file_write 审批 → 允许一次 → wrote 13 chars → 设备侧 run-as 逐字 W34WS-F2-Q7K2",
+      "evidence_ref": "evidence/raw/w34/f2_workspace.json"
+    },
+    {
+      "cell_id": "F3_skill",
+      "feature_face": "skill",
+      "state": "PASS",
+      "glyph": "✅",
+      "reading": "@ 菜单选中 notes-organizer → skill_load（2ms）→ 回复 W34-SKILL-OK 逐字",
+      "evidence_ref": "evidence/raw/w34/f3_skill.json"
+    },
+    {
+      "cell_id": "F4_mcp",
+      "feature_face": "mcp",
+      "state": "VACUOUS",
+      "glyph": "⛔vacuous",
+      "reading": "MCP 页 0 server（还没有 MCP 服务器）；只登记未行使",
+      "unexercised_reason": "无外部 https MCP 端点（G15b 禁明文 http）",
+      "evidence_ref": "evidence/raw/w34/f4_mcp_state.json"
+    },
+    {
+      "cell_id": "F5_manual_compact",
+      "feature_face": "manual_compact",
+      "state": "PASS",
+      "glyph": "✅",
+      "reading": "确认框行使 → manual_compress dropped=9 kept=11；下一轮请求 usage 30.9k→22.9k in ⇒ 真压缩",
+      "evidence_ref": "evidence/raw/w34/f5_manual_compact.json"
+    },
+    {
+      "cell_id": "F6_auto_compact",
+      "feature_face": "auto_compact",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "reading": "触发线已越（R5/R6 进入收益分支 insufficient_savings:net=-256）但未 applied；同一快照手动路径可 dropped=9 ⇒ 自动/手动结论不一致，根因待核",
+      "evidence_ref": "evidence/raw/w34/f6_auto_compact.json"
+    }
+  ],
+  "cells_total": 13,
+  "state_counts": {
+    "PASS": 5,
+    "PARTIAL": 7,
+    "VACUOUS": 1
+  },
+  "feature_faces_with_cells": [
+    "auto_compact",
+    "endpoint_axis",
+    "manual_compact",
+    "mcp",
+    "multimodal",
+    "skill",
+    "tier_axis",
+    "workspace_rw"
+  ],
+  "declared_feature_faces": [
+    "approval_gate",
+    "auto_compact",
+    "endpoint_axis",
+    "manual_compact",
+    "mcp",
+    "multimodal",
+    "skill",
+    "tier_axis",
+    "workspace_rw"
+  ],
+  "iterations": [
+    {
+      "id": "iter1",
+      "action": "设备三步法唤醒 + 应用冷启 + logcat 落盘",
+      "observation": "SCREEN_STATE_ON + AWAKE，WARM 564ms，/data/local/tmp/w34.log 持续增长",
+      "state": "PASS",
+      "evidence_ref": "evidence/raw/w34/deviceLogTail.txt",
+      "derived_from": "_w34/(会话记录)"
+    },
+    {
+      "id": "iter2",
+      "action": "E05 旧 key 复测（当前端点）",
+      "observation": "立即 HTTP 403",
+      "state": "PARTIAL",
+      "evidence_ref": "evidence/raw/w34/e05_supervl_r2.json"
+    },
+    {
+      "id": "iter3",
+      "action": "新 key 录入（端点编辑 → API Key → MOVE_END → DEL → input → 保存）",
+      "observation": "字段回显 70 个掩码点；E01 首测通过证明录入成功",
+      "state": "PASS",
+      "evidence_ref": "evidence/raw/w34/e01_lightning_r1.json"
+    },
+    {
+      "id": "iter4",
+      "action": "E01 Lightning sentinel + usage",
+      "observation": "严格逐字 W34-E01-R1 / 1.8k in 69 out",
+      "state": "PASS",
+      "evidence_ref": "evidence/raw/w34/e01_lightning_r1.json"
+    },
+    {
+      "id": "iter5",
+      "action": "E05 新 key 复测",
+      "observation": "等待约 80s 后仍 403（模型级授权）",
+      "state": "PARTIAL",
+      "evidence_ref": "evidence/raw/w34/e05_supervl_r2.json"
+    },
+    {
+      "id": "iter6",
+      "action": "E03 Nano Omni 严格复核",
+      "observation": "W34-E03-R1 逐字 / 1.8k in 112 out",
+      "state": "PASS",
+      "evidence_ref": "evidence/raw/w34/e03_nano_strict.json"
+    },
+    {
+      "id": "iter7",
+      "action": "E06 dots3 两次尝试",
+      "observation": "两次 timeout 120s；ping openrouter.ai 通（219ms）",
+      "state": "PARTIAL",
+      "evidence_ref": "evidence/raw/w34/e06_or_dots3.json"
+    },
+    {
+      "id": "iter8",
+      "action": "E07 north",
+      "observation": "timeout 120s（重试后终态超时）",
+      "state": "PARTIAL",
+      "evidence_ref": "evidence/raw/w34/e07_or_north.json"
+    },
+    {
+      "id": "iter9",
+      "action": "E02 Bolt",
+      "observation": "连通+usage，但回复 This is the final answer（非 strict）",
+      "state": "PARTIAL",
+      "evidence_ref": "evidence/raw/w34/e02_bolt.json"
+    },
+    {
+      "id": "iter10",
+      "action": "F2 workspace 审批闸门",
+      "observation": "允许一次 → wrote 13 chars → run-as 逐字 W34WS-F2-Q7K2",
+      "state": "PASS",
+      "evidence_ref": "evidence/raw/w34/f2_workspace.json"
+    },
+    {
+      "id": "iter11",
+      "action": "F3 skill @ 菜单",
+      "observation": "skill_load 2ms → W34-SKILL-OK 逐字",
+      "state": "PASS",
+      "evidence_ref": "evidence/raw/w34/f3_skill.json"
+    },
+    {
+      "id": "iter12",
+      "action": "T 档位切 32K（确认框 char_floor_unmeasured）",
+      "observation": "readback 当前 32K；软预算 27.9K",
+      "state": "PARTIAL",
+      "evidence_ref": "evidence/raw/w34/t_tier.json"
+    },
+    {
+      "id": "iter13",
+      "action": "F6 构造：6 轮 × big60k.txt file_read",
+      "observation": "R5/R6 insufficient_savings:net=-256；上下文 30.9K/27.9K",
+      "state": "PARTIAL",
+      "evidence_ref": "evidence/raw/w34/f6_auto_compact.json"
+    },
+    {
+      "id": "iter14",
+      "action": "F5 手动压缩",
+      "observation": "dropped=9 kept=11；下轮 22.9k in",
+      "state": "PASS",
+      "evidence_ref": "evidence/raw/w34/f5_manual_compact.json"
+    },
+    {
+      "id": "iter15",
+      "action": "F1 视觉附件（480x240 PNG）",
+      "observation": "附件 chip 成立；请求 SocketTimeout",
+      "state": "PARTIAL",
+      "evidence_ref": "evidence/raw/w34/f1_vision_dots3.json"
+    },
+    {
+      "id": "iter16",
+      "action": "F4 MCP 页核对",
+      "observation": "还没有 MCP 服务器（0 server）",
+      "state": "VACUOUS",
+      "evidence_ref": "evidence/raw/w34/f4_mcp_state.json"
+    },
+    {
+      "id": "iter17",
+      "action": "T 档位恢复 1M",
+      "observation": "readback 当前 1M",
+      "state": "PARTIAL",
+      "evidence_ref": "evidence/raw/w34/t_tier.json"
+    }
+  ],
+  "iterations_total": 17,
+  "iterations_note": "iterations[] 为本波真机动作链重述（非独立取证计数）；逐格原始证据以 cells[].evidence_ref 指向的 .json 为准；*.jsonl 不入库。",
+  "attempt_states": {
+    "E01_lightning": "PASS",
+    "E02_bolt": "PARTIAL",
+    "E03_nano_strict": "PASS",
+    "E05_supervl": "PARTIAL",
+    "E06_or_dots3": "PARTIAL",
+    "E07_or_north": "PARTIAL",
+    "T_tier": "PARTIAL",
+    "F1_vision": "PARTIAL",
+    "F2_workspace": "PASS",
+    "F3_skill": "PASS",
+    "F4_mcp": "VACUOUS",
+    "F5_manual_compact": "PASS",
+    "F6_auto_compact": "PARTIAL"
+  },
+  "state_glyph_mapping": {
+    "PASS": "✅",
+    "PARTIAL": "⚠️",
+    "VACUOUS": "⛔vacuous"
+  },
+  "state_glyph_mapping_assertion": "state_counts 非零键集 == cells[].state 值域，零值键 0；glyph 只列有 cell 的三态（与 W31/W32/W33 统一）。",
+  "mcp": {
+    "status": "NOT_EXERCISED",
+    "feature_face": "mcp",
+    "cell": "F4_mcp",
+    "cell_state": "VACUOUS",
+    "evidence_ref": "evidence/raw/w34/f4_mcp_state.json",
+    "reason": "设备 MCP 页 0 server；只登记未行使，不冒充覆盖。",
+    "trigger": "需外部 MCP server（https，避开 G15b 明文拒绝）"
+  },
+  "coverage_note": "多模型（NV Lightning/Nano Omni/Bolt/super-vl 1M + OR dots3/north）× 上下文档位（32K↔1M readback + 32K 软预算实测）× 功能面（F1 视觉附件 / F2 workspace+审批 / F3 skill / F5 手动压缩 applied / F6 自动压缩触发）覆盖；MCP 面显式 NOT_EXERCISED 并留 VACUOUS 触发格。",
+  "cells_provenance": "cells[] 来自本波真机取证（_w34/ 仓外原始件，脱敏后入仓 evidence/raw/w34/），非跨波复制。",
+  "judge_policy": "strict_sentinel：排除输入气泡与错误横幅；vision 用真图（480x240，非 1×1）语义回读；workspace 用设备侧 run-as 逐字复核；压缩用日志 dropped/kept + 下一轮 usage 双向判据。",
+  "credential_policy": "API key 仅存真机 AndroidKeyStore 加密文件；证据文件与文档不含 key 明文；新 key 经端点编辑界面录入（不回显）。",
+  "privacy": "证据已脱敏：无凭据明文、无本机绝对路径（用仓内相对路径）、无个人信息字段。",
+  "positive_control_verified_by": "device_execution（E01 Lightning / E03 Nano Omni sentinel 严格逐字，无失败横幅）",
+  "baseline_note": "W29 全 VACUOUS（11 格）；W30 3/2/3；W31 3/2/4；W32 8/3/3；W33 8/4/1；W34 5/7/1（OR 免费池同窗口双超时 + super-vl 仍 403，PASS 数下降为供给侧原因，非 harness 回归；E02 Bolt 本波回归为 PARTIAL：连通但语义不服从）。",
+  "matrix_vs_gate_order": "矩阵先于闸门：真机取证（23:00–23:33）→ G1 编译 → G2 arch-guard → G3 selftest → G4 fulltest → 提交 → CI。",
+  "full_context_1M_stress": "NOT_EXERCISED",
+  "environment_incidents": [
+    {
+      "id": "INC-w34-timeout",
+      "scope": "E06/E07/F1",
+      "detail": "OR 免费池同窗口 120s 超时；设备侧 ping openrouter.ai 0% 丢包 219ms，NV 端点同窗口可用 ⇒ 供给侧拥塞，不写成 harness 缺陷"
+    },
+    {
+      "id": "INC-w34-auth",
+      "scope": "E05",
+      "detail": "super-vl 120B 模型级授权：旧 key 立即 403，新 key 等待约 80s 后仍 403；同 key 其它 NV 端点可用"
+    },
+    {
+      "id": "INC-w34-autokv",
+      "scope": "F6",
+      "detail": "自动压缩在触发线已越时判 insufficient_savings:net=-256（savingChars=0），同一快照手动压缩 dropped=9 成功 ⇒ 自动/手动结论不一致，根因未定位，交外审裁决（不推断为缺陷）"
+    }
+  ]
+}

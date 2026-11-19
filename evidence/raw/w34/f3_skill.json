@@ -1,0 +1,10 @@
+{
+ "cell": "F3",
+ "face": "skill",
+ "endpoint": "nvidia/nemotron-3.5-lightning-30b-a3b",
+ "flow": "@ 菜单（items: notes-organizer / pdf-toolkit）→ 选中 notes-organizer → 题面 'Use this skill and reply with exactly W34-SKILL-OK' → skill_load 工具卡",
+ "ui": ["@Use this skill and reply with exactly W34-SKILL-OKnotes-organizer", "skill_load", "2ms", "W34-SKILL-OK"],
+ "usage": "2.2k in / 61 out (0 cached, 0.0%)",
+ "state": "PASS",
+ "note": "@ 菜单只列 2 项（notes-organizer / pdf-toolkit），无第 9 项截断现象；skill_load 调用与 sentinel 逐字均成立"
+}

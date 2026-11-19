@@ -361,7 +361,7 @@
     "total": 5,
     "rejected": 5,
     "all_verified": true,
-    "note": "W33 五条规则自证，实跑输出见 checklist 判据 6 与验收物 §2.3；真机正控另见 positive_control_verified_by。"
+    "note": "W33 五条规则自证；W34 参数化（checklist 判据 6，ARTIFACT 可指向任一制品）对 w33 实跑：正常态 OK feature/evidence invariants + 五类必红全 RED（含 K_evidence_ref 的 `RED missing ref evidence/raw/__missing__.json`，此前无仓内必红输出），输出见 checklist 判据 6 与 W34 验收物 §2。真机正控另见 positive_control_verified_by。"
   },
   "positive_control_verified_by": "device_execution（OR dots3 / NV Lightning sentinel 严格逐字，无失败横幅）",
   "judge_policy": "strict_sentinel：排除输入气泡与错误横幅；skill 面用 skill 采用判据；vision 用三项语义逐字回读（非 1×1）。",

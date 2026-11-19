@@ -377,6 +377,16 @@
         "mutation": "delete middle iteration to create gap",
         "expected": "RED iteration invariant broken"
       }
+    },
+    {
+      "id": "K_feature_enum_no_cell_claim",
+      "description": "mcp.cell 声明的格必须在 cells[] 中存在；删格不删声明 ⇒ RED（W33 第 0 车新增，W34 补入 assertions 使断言数与必红数 4=4）",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "remove F4_mcp cell while mcp.cell still claims it",
+        "expected": "RED mcp claims cell F4_mcp but cells[] lacks it"
+      }
     }
   ],
   "mutation_cases": [
@@ -417,7 +427,7 @@
     "total": 4,
     "rejected": 4,
     "all_verified": true,
-    "note": "W33 第 0 车扩为 5 条（新增删字段 / 删格两条必红），逐条在现役树实跑；实跑输出见 checklist 判据 2b 与 W33 验收物 §2.3。"
+    "note": "W33 第 0 车扩为 4 条（新增删字段 / 删格两条必红；K_feature_enum_no_cell_claim 于 W34 补入 assertions，断言数=必红数=4），逐条在现役树实跑；实跑输出见 checklist 判据 6 与 W34 验收物 §2。"
   },
   "positive_control_verified_by": "device_execution（Lightning W32-FINAL-LIGHT-9D4K 严格逐字回读，无失败横幅，证明判据链会响）",
   "coverage_note": "14 格: 8 PASS / 3 PARTIAL / 3 VACUOUS。真机已行使 E01/E02/E03/E06/E07/F2/F3/approval_gate；E05 super-vl（403 ⚠️）/F1 vision（语义回读失败 ⚠️）/T tier（⚠️ sweep 已行使、真压未达）为部分；F4/F5/F6 VACUOUS 带触发信号。1M 真压与 MCP 用顶层 NOT_EXERCISED 显式声明，不造假格。 跨波 MCP 面定义（W33 补）：W31 制品=顶层 mcp 字段 + cells 无 mcp 格；W32 制品=顶层字段 + F4_mcp VACUOUS 触发格（本波维持，文档口径已同步为「NOT_EXERCISED 并留触发格」）；K_feature_enum 用 AND 覆盖两种形态。state_glyph_mapping 两制品已统一为 PASS/PARTIAL/VACUOUS 三键（W31 删 FAIL→⛔）。",

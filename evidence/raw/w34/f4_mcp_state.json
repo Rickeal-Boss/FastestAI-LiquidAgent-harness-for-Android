@@ -1,0 +1,9 @@
+{
+ "cell": "F4",
+ "face": "mcp",
+ "page": "MCP 服务器 → 「还没有 MCP 服务器 / 添加一个远程 MCP 端点，模型即可调用它的工具」",
+ "state": "VACUOUS",
+ "unexercised_reason": "设备 0 个 MCP server；本波未架设外部 https MCP 端点（G15b 禁止明文 http）",
+ "trigger": "需外部 MCP server 端点（https，避开 G15b 明文拒绝）",
+ "note": "只登记未行使，不冒充覆盖"
+}

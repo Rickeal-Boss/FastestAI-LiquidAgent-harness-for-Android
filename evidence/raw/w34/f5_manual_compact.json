@@ -1,0 +1,13 @@
+{
+ "cell": "F5",
+ "face": "manual_compact",
+ "entry": "更多操作→压缩上下文（入口可点）",
+ "dialog_labels": ["压缩这段对话的上下文？", "压缩后本会话的提示缓存会从头重建，下一次请求缓存命中为 0、费用更高。", "较早的消息不再发给模型（模型会忘掉它们），但仍留在本页可展开回看。撤销能把历史还原，已经发生的请求费用不会退。", "取消", "压缩"],
+ "confirmed": "压缩",
+ "log": "manual_compress dropped=9 kept=11 cache_invalidated=false",
+ "post_effect": "压缩后下一轮请求 usage 由 30.9k in 降至 22.9k in（22.9K/27.9K）⇒ 压缩真实生效，非仅指针",
+ "tier": "32K（readback 当前 32K，软预算 27.9K tokens）",
+ "state": "PASS",
+ "trigger": "会话由 6 轮 file_read（每轮 ~16k 字符工具结果）构造，committedChars > COMPACT_TRIGGER_CHARS=50227",
+ "note": "W33 首次行使到判定层（noop）；W34 首次 applied（dropped=9）"
+}

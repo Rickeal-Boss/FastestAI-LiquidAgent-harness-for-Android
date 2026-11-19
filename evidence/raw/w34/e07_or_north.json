@@ -1,0 +1,10 @@
+{
+ "cell": "E07",
+ "face": "endpoint_axis",
+ "endpoint": "openrouter/north-mini-code:free",
+ "q": "Reply_with_exactly_W34-E07-R1",
+ "result": "timeout: no response from provider within 120000ms（重试路径后终态超时）",
+ "state": "PARTIAL",
+ "reading": "同窗口设备 ping openrouter.ai 0% 丢包/219ms ⇒ 非全局断网；OR 免费池拥塞。归 INC-w34-timeout，不写成 harness 缺陷",
+ "note": "与 E06 同窗口同型；NV 端点同窗口可用"
+}

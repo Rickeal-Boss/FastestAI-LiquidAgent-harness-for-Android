@@ -266,17 +266,19 @@ printf 两段拼装 | grep -c 全称模式 = 1（必然命中样本，证明判�
 
 ---
 
-## 判据 6 — 制品面定义 AND 断言 + evidence_ref 可复核（W33 新增）
+## 判据 6 — 制品面定义 AND 断言 + evidence_ref 可复核（W33 新增；W34 参数化 `ARTIFACT`）
 
-**出口判据来源**：W33-03（W32 制品 `K_feature_enum` OR 恒真 + `F4_mcp` 格与文档矛盾 + 14 格 `evidence_ref` 指向仓内不存在文件——外审 14/14 MISSING）。
+**出口判据来源**：W33-03（W32 制品 `K_feature_enum` OR 恒真 + `F4_mcp` 格与文档矛盾 + 14 格 `evidence_ref` 指向仓内不存在文件——外审 14/14 MISSING）；W34-02（W33 新制品 5 条断言全自报、判据只覆盖 w32、`K_evidence_ref` 无必红输出，且原代码块 `cd harness-v2` 在仓根会被吞、`../_w33/mut/` 未预建导致必红块跑不起来）。
 
-**正常态（期望 OK）** —— 面枚举 AND、mcp 字段/格一致、state 值域、迭代一致、证据可复核，五项一次跑：
+**正常态（期望 OK）** —— 面枚举 AND、mcp 字段/格一致、state 值域、迭代一致、证据可复核，五项一次跑；`ARTIFACT` 默认 w32，可对任一 `evidence/*-matrix-summary.json` 跑：
 
 ```bash
-cd harness-v2
-python - <<'PY'
-import json,io,os
-d=json.load(io.open("evidence/w32-matrix-summary.json",encoding="utf-8"))
+cd "$(git rev-parse --show-toplevel)"
+mkdir -p _w34
+cat > _w34/k6_check.py <<'PY'
+import json,io,os,sys
+art=sys.argv[1]
+d=json.load(io.open(art,encoding="utf-8"))
 cells=d["cells"]; declared=set(d["declared_feature_faces"]); errs=[]
 if not {c["feature_face"] for c in cells} <= declared: errs.append("face not declared")
 if "mcp" in declared and "mcp" not in d: errs.append("mcp field missing")
@@ -284,42 +286,49 @@ mcp_cells=[c for c in cells if c["feature_face"]=="mcp"]
 for c in mcp_cells:
     if c["state"]!="PASS" and not c.get("unexercised_reason"): errs.append("mcp cell without reason")
 mc=(d.get("mcp") or {}).get("cell")
-if mc and mc!="none_by_design" and not any(c["cell_id"]==mc for c in cells): errs.append("mcp cell claim mismatch")
-if not mcp_cells and "none_by_design" not in (d.get("coverage_note") or ""): errs.append("no mcp cell without declaration")
+if mc and mc!="none_by_design" and not any(c["cell_id"]==mc for c in cells):
+    errs.append("mcp claims cell "+mc+" but cells[] lacks it")
+if not mcp_cells and "none_by_design" not in (d.get("coverage_note") or ""):
+    errs.append("no mcp cell without declaration")
 sc=d["state_counts"]
-if [k for k,v in sc.items() if v==0]: errs.append("zero value key")
+zv=[k for k,v in sc.items() if v==0]
+if zv: errs.append("zero-value keys: "+str(zv))
 if set(sc)!={c["state"] for c in cells}: errs.append("state domain")
 if sum(sc.values())!=len(cells): errs.append("state sum")
-if d["iterations_total"]!=len(d["iterations"]): errs.append("iterations")
+if d["iterations_total"]!=len(d["iterations"]): errs.append("iterations_total != len")
 if set(d["attempt_states"])!={c["cell_id"] for c in cells}: errs.append("attempt keys")
 for c in cells:
     if not os.path.exists(c["evidence_ref"]): errs.append("missing ref "+c["evidence_ref"])
 print("OK feature/evidence invariants" if not errs else "RED "+"; ".join(errs))
 PY
+ARTIFACT="${ARTIFACT:-evidence/w32-matrix-summary.json}"
+python _w34/k6_check.py "$ARTIFACT"
 ```
 
-**必红变异（期望 RED，四条）**：工作区副本上分别注入，重跑上面的检查应各得 RED：
+**必红变异（期望 RED，五类）**：工作区副本注入后逐条重跑 `_w34/k6_check.py`（`K_evidence_ref` 必红 = 把某格 `evidence_ref` 指向不存在文件）：
 
 ```bash
-cd harness-v2
+cd "$(git rev-parse --show-toplevel)"
+export ARTIFACT="${ARTIFACT:-evidence/w32-matrix-summary.json}"
+mkdir -p _w34/mut
 python - <<'PY'
-import json,io
-src="evidence/w32-matrix-summary.json"
-d=json.load(io.open(src,encoding="utf-8"))
+import json,io,os
+src=os.environ.get("ARTIFACT") or "evidence/w32-matrix-summary.json"
 muts={"k6_fail":lambda x:x["state_counts"].__setitem__("FAIL",0),
       "k6_nomcp":lambda x:x.pop("mcp"),
       "k6_nocell":lambda x:x.__setitem__("cells",[c for c in x["cells"] if c["cell_id"]!=(x.get("mcp") or {}).get("cell")]),
-      "k6_iter":lambda x:x["iterations"].pop(len(x["iterations"])//2)}
+      "k6_iter":lambda x:x["iterations"].pop(len(x["iterations"])//2),
+      "k6_ref":lambda x:x["cells"][0].__setitem__("evidence_ref","evidence/raw/__missing__.json")}
 for name,fn in muts.items():
     x=json.load(io.open(src,encoding="utf-8")); fn(x)
-    io.open("../_w33/mut/w32."+name+".json","w",encoding="utf-8").write(json.dumps(x,ensure_ascii=False))
+    io.open("_w34/mut/"+os.path.basename(src)+"."+name+".json","w",encoding="utf-8").write(json.dumps(x,ensure_ascii=False))
 print("mutations written")
 PY
+for f in _w34/mut/*.json; do echo "== $f"; python _w34/k6_check.py "$f"; done
 ```
 
-> W33 实跑输出（2026-11-19）：正常态 `OK`；四条变异分别 `RED zero-value keys: ['FAIL']`、`RED mcp field missing`、`RED mcp claims cell F4_mcp but cells[] lacks it`、`RED iterations_total != len`（见 `_w33/k6_output.txt` 与 W33 验收物 §2.3）。
-
----
+> W33 实跑输出（2026-11-19，原 w32 块）：正常态 `OK`；四条变异分别 `RED zero-value keys: ['FAIL']`、`RED mcp field missing`、`RED mcp claims cell F4_mcp but cells[] lacks it`、`RED iterations_total != len`（见 `_w33/k6_output.txt` 与 W33 验收物 §2.3）。
+> W34 实跑输出（2026-11-19，参数化后对 w32 与 w33 双制品）：正常态 `OK feature/evidence invariants` ×2；`k6_ref` 首次真响 `RED missing ref evidence/raw/__missing__.json`（W33 制品 `K_evidence_ref` 此前无任何仓内必红输出）；其余四类同 W33。
 
 ## 判据 7 — CLOSED 行须带判据实跑输出指路（W33 新增）
 
@@ -357,6 +366,35 @@ PY
 > 复核方式：本地按规则拼装 → `sha256sum` 对比；再 `grep -rniE` 扫该副本 → 必须输出 `RED credential filename hit`。W33 实跑已通过（正常态 `OK no credential filename`、必红 `RED credential filename hit`）。
 
 ---
+
+---
+
+## W34 判据实跑摘录（2026-11-19，仓根执行；参数化后）
+
+> 命令均在仓库根（`harness-v2`）执行，不再依赖 `cd harness-v2`；判据 6 使用 `_w34/k6_check.py`（见上）。
+
+```text
+[判据 1] W30 rows = 3 | W31 rows = 3 | W32 rows = 3 | W33 rows = 3；W3x 段无重复/缺失号
+[判据 2 正常态] all(verified)=True | all_verified=True | w29_device_executed=False
+               OK(vacuous: positive control inherited, device NOT executed)
+[判据 2 必红]   RED mutation invariant broken
+[判据 3b 正常态] OK no credential filename
+[判据 3b 必红]   ../_w29/mut/cred_probe.md:1:ref: <凭据文件名族 A> → RED credential filename hit
+[判据 4 正常态]  w27-acceptance=0 | handoff-w27=0 | ledger=0
+[判据 4 必红]    mut hits = 1 → RED affirmative wording remains
+[判据 5 正常态]  iterations_total/len/sec4 = 6 6 6 | ok1=True | attempt keys==cell_ids=True | vacuous consistency=True → OK
+[判据 5 必红]    RED iteration/state invariant broken
+[判据 6 正常态]  w32 → OK feature/evidence invariants；w33 → OK feature/evidence invariants；w34 → OK feature/evidence invariants
+[判据 6 必红 w32] k6_fail → RED zero-value keys: ['FAIL']; state domain
+                  k6_nomcp → RED mcp field missing
+                  k6_nocell → RED mcp claims cell F4_mcp but cells[] lacks it; no mcp cell without declaration; state sum; attempt keys
+                  k6_iter → RED iterations_total != len
+                  k6_ref  → RED missing ref evidence/raw/__missing__.json
+[判据 6 必红 w33] 同上五类全 RED（k6_ref 为 K_evidence_ref 首次仓内必红实证）
+[判据 7 正常态]   OK closed rows carry runnable pointers (W30+)（本波销账 8 行后复跑）
+```
+
+> 判据 6 原 W33 版的两处不可执行根因（`cd harness-v2` 在仓根被吞、`../_w33/mut/` 未预建）已修；`ARTIFACT` 可指向任一 `evidence/*-matrix-summary.json`，W34 起新制品默认同样可查。
 
 ## 本 checklist 覆盖 / 不覆盖（诚实标注）
 

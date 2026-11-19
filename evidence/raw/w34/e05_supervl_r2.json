@@ -1,0 +1,10 @@
+{
+ "cell": "E05",
+ "face": "endpoint_axis",
+ "endpoint": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+ "q": "Reply_with_exactly_W34-E05-R2",
+ "result": "本次请求失败：authentication failed (HTTP 403)",
+ "state": "PARTIAL",
+ "reading": "新 key 录入后复测：请求发出并等待约 80s（重试路径），终态仍 HTTP 403 ⇒ 模型级授权（同 key 的 Lightning 同波 PASS）。归 INC-w34-auth，不写成 harness 缺陷",
+ "note": "旧 key 立即 403、新 key 延迟后 403，两次同结论；端点可切换可发送为真"
+}

@@ -1,0 +1,9 @@
+{
+ "cell": "E03",
+ "face": "endpoint_axis",
+ "endpoint": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+ "q": "Reply_with_exactly_W34-E03-R1",
+ "strict": {"verbatim_hit": true, "raw_verbatim": ["W34-E03-R1"], "has_failure_banner": false, "usage": ["1.8k in / 112 out (0 cached, 0.0%)"]},
+ "state": "PASS",
+ "note": "严格逐字 + usage 变化；无失败横幅"
+}

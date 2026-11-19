@@ -1,0 +1,11 @@
+{
+ "cell": "F1",
+ "face": "multimodal",
+ "endpoint": "openrouter/dots-3-note-preview:free（IMAGE 端点）",
+ "fixture": "480x240 PNG：红方块 + 绿圆 + 文本 W34VISION（非 1x1）",
+ "attach": "添加图片 → DocumentsUI → Pictures/w34vision.png 选中（附件 chip 显示 w34vision.png + 移除附件）",
+ "result": "本次请求失败：giving up after 1 retries: network error: SocketTimeoutException",
+ "state": "PARTIAL",
+ "reading": "图片附件链路与 IMAGE 端点可发送为真（附件 chip + 发起请求）；dots3 免费池供给侧超时（同窗口 E06/E07 同型），重试一次后可见报错（非静默）。归 INC-w34-timeout，不写成 harness 缺陷",
+ "w33_reference": "W33 F1 在 dots3 三项语义逐字全中（PASS）；本波回退为端点不可用，非语义判据失败"
+}

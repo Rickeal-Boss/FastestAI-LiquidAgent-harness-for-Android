@@ -1,0 +1,11 @@
+{
+ "cell": "F2",
+ "face": "workspace_rw",
+ "endpoint": "nvidia/nemotron-3.5-lightning-30b-a3b",
+ "flow": "file_write 请求授权 → 允许一次 → 工具执行 → 设备侧 run-as 复核",
+ "ui": ["工具「file_write」请求授权", "wrote 13 chars to workspace/w34probe.txt", "done"],
+ "device_check": "run-as ... cat files/harness/workspace/workspace/w34probe.txt → W34WS-F2-Q7K2（13 字符逐字）",
+ "usage": "1.9k in / 10 out (0 cached, 0.0%)",
+ "state": "PASS",
+ "note": "题面含 workspace/ 前缀而沙箱根已是 workspace ⇒ 落盘于 workspace/workspace/w34probe.txt（模型按字面路径执行，非缺陷；夹具后续改用裸文件名）"
+}

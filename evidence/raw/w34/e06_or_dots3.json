@@ -1,0 +1,11 @@
+{
+ "cell": "E06",
+ "face": "endpoint_axis",
+ "endpoint": "openrouter/dots-3-note-preview:free",
+ "q": "Reply_with_exactly_W34-E06-R1 / R2（两次）",
+ "result": "两次均 timeout: no response from provider within 120000ms",
+ "retry": "新会话重试一次，同样 120s 超时",
+ "state": "PARTIAL",
+ "reading": "免费端点供给侧抖动（超时非报错、无失败横幅文案为 timeout）。归 INC-w34-timeout，不写成 harness 网络层缺陷",
+ "note": "同 key 的 OR North / NV 端点在同窗口可用（见 E07/E01），排除全局断网"
+}

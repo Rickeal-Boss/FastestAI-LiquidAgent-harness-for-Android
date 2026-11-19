@@ -67,15 +67,18 @@
 - **W33-02**：`W31-01`/`W32-01` 两行各加「主从联动」；W32 handoff §三加表注（四态=缓解动作、非挂账状态）；W32 验收物 §二/§5.1 注明；`W32-01` 证据列行号订正为 `:248-265`。
 - **W33-03**：W32 制品取方案 b（保留 `F4_mcp` VACUOUS 触发格 + 文档改「NOT_EXERCISED 并留触发格」）；`K_feature_enum` OR→AND 并新增 `K_feature_enum_no_cell_claim`；四条必红实跑；14 格与 iterations 的 `evidence_ref` 改指 `evidence/raw/w32/`（26 个脱敏文件入仓）；两制品 glyph 统一；W32 制品补 `matrix_vs_gate_order`。
 
-**判据 6 实跑（正常态 + 四条必红）**：
+**判据 6 实跑（正常态 + 四条必红；W34 参数化后对 w32/w33 双制品复跑，见 §2.5a）**：
 
 ```text
-[判据 6 正常态 W32] OK
-[判据 6 必红 K_state_domain/add FAIL:0] RED zero-value keys: ['FAIL']; state_counts keys != cell states
+[判据 6 正常态 W32] OK feature/evidence invariants
+[判据 6 必红 K_state_domain/add FAIL:0] RED zero-value keys: ['FAIL']; state domain
 [判据 6 必红 K_feature_enum/delete mcp field] RED mcp field missing
-[判据 6 必红 K_feature_enum_no_cell_claim/remove mcp cell while mcp.cell claims it] RED mcp claims cell F4_mcp but cells[] lacks it
+[判据 6 必红 K_feature_enum_no_cell_claim/remove mcp cell while mcp.cell claims it] RED mcp claims cell F4_mcp but cells[] lacks it; no mcp cell without declaration; state sum; attempt keys
 [判据 6 必红 K_iteration_consistency/delete middle iteration] RED iterations_total != len
+[判据 6 必红 K_evidence_ref/point ref to missing file] RED missing ref evidence/raw/__missing__.json   ← W34 新增，首次真响
 ```
+
+> W34 注记：本节原摘录为 W33 自建副本复刻输出、且 `cd harness-v2` 硬编码在仓根跑不起来（外审 P1-1）；W34 已把代码块参数化（`ARTIFACT`）+ 自算仓根 + `mkdir -p`，并对 w32 与 w33 **双制品**各跑正常态与五类必红，原文见 W34 验收物 §2.5a / `docs/notes/w29-closeout-checklist.md` 判据 6。K_evidence_ref 的必红在此前从未行使，W34 首次真响。
 
 ### 2.4 W30 三行判据实跑入账（状态维持 OPEN，待外审复核）
 
@@ -140,7 +143,7 @@ $ grep -rn "旧 MCP 口径短语（W32 的『不塞触发格』表述）" docs/ 
 ### 3.4 判据订正与环境事件
 - **正控**：E01/E06 严格逐字证明「注入→响应→UI 回读→日志落痕」判据链会响，之后才采信各格。
 - **判据订正**：W32 的 `strict_sentinel` 排除 `Reply_with_*` 前缀输入气泡；本波题面统一用 `Reply_with_exactly_*` 形态，避免用户气泡自命中。
-- **INC-w33-empty**：OR dots3 长会话首轮出现 `giving up after 1 retries: empty output` —— harness 重试一次后**可见报错**（非静默），归免费端点抖动。
+- **INC-w33-empty**：OR dots3 长会话首轮出现 `giving up after 1 retries: empty output` —— harness 重试一次后**可见报错**（非静默），归免费端点抖动。**W34 订正**：设备侧原始 tail 未留存（`/data/local/tmp` 无 W33 代 logcat、`evidence/raw/w33/` 全搜 0 命中）⇒ 仅现场观察记录；且属「首字节前空输出」路径，不等于「吐字后关流」（`W24-02` 行内注记）。
 - **INC-w33-auth**：super-vl 403（模型级授权 ≠ 密钥级授权：同 key 其它 NV 端点可用）。
 - **INC-w33-budget**：多次 `file_read` 同一大文件导致 `prompt token budget exceeded: used=463457 limit=400000` —— L3 字符闸门按预期熔断（正确行为）。
 - **环境事实**：`adb shell input text` 单次仅落 ~333 字符（15,000 字符注入实测只进 333）；`file_read` 单次 16k 字符上限 —— 两条通道共同限制「>50,227 chars 会话」的可构造性。
@@ -153,9 +156,9 @@ $ grep -rn "旧 MCP 口径短语（W32 的『不塞触发格』表述）" docs/ 
 ### 3.6 顶层键数环比（报告 4 的方法）
 | 制品 | 顶层键数 | 格数 | 备注 |
 |---|---|---|---|
-| `w31-matrix-summary.json` | 29 | 9 | W32 补 14→29 |
-| `w32-matrix-summary.json` | 31 | 14 | W33 补 `matrix_vs_gate_order`，断言扩到 4 条 |
-| `w33-matrix-summary.json` | 30 | 13 | 含 `matrix_vs_gate_order` / `iterations_note` / `full_context_1M_stress` / 5 条断言 |
+| `w31-matrix-summary.json` | 29 | 9 | W32 补 14→29；`iterations_total=6` |
+| `w32-matrix-summary.json` | 31 | 14 | W33 补 `matrix_vs_gate_order`；W34 补 `K_feature_enum_no_cell_claim` 进 assertions（断言=必红=4）；`iterations_total=18` |
+| `w33-matrix-summary.json` | 30 | 13 | 含 `matrix_vs_gate_order` / `iterations_note` / `full_context_1M_stress` / 5 条断言；`iterations_total=10`（W32 18 → W33 10，迭代链随取证粒度变化，非回归） |
 
 > 键数只作环比观察，不以「键多=好」判质量；W31 的退化教训是**丢键**，不是键少本身。
 
@@ -166,7 +169,7 @@ $ grep -rn "旧 MCP 口径短语（W32 的『不塞触发格』表述）" docs/ 
 | 闸 | 命令 | 结果 | 证据 |
 |---|---|---|---|
 | G1 编译 | `bash scripts/localbuild.sh :app:assembleDebug`（删 APK 后重出包） | ✅ rc=0 | `_w33/g1_build.log` / `g1_rebuild2.log`；APK 68,407,402 B、sha256 前缀 `b41be9cc92ee6f90` 与重出包前**逐字节一致**（deterministic）；`localbuild.sh` 不自动安装（仅打印提示），本波未重装 |
-| G2 arch-guard | `bash scripts/arch-guard.sh`（仓根） | ✅ PASS | `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`；`G20 130 个 handoff ID 全在台账内`（含 W33 段 3 行） |
+| G2 arch-guard | `bash scripts/arch-guard.sh`（仓根） | ✅ PASS | `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`；`G20 handoff ID 全在台账内`（计数以 `arch-guard` 实跑为准，真值源不写死派生数；含 W33 段 3 行） |
 | G3 selftest | `bash scripts/arch-guard-selftest.sh`（后台） | 见 §5.5 | `_w33/g3_selftest.log` |
 | G4 fulltest | `eval env` + `bash scripts/fulltest.sh` | 见 §5.5 | `_w33/g4_fulltest.log` |
 
@@ -218,10 +221,12 @@ $ grep -rn "旧 MCP 口径短语（W32 的『不塞触发格』表述）" docs/ 
 | `docs/analysis/w33-acceptance.md` / `docs/handoff-20261119-wave33.md`（新增） | 本波验收物与交接 |
 | 删除 `docs/analysis/source-review-2026-11-*.md`（8 份） | 用户确认已整合进 `source-review-consolidated-2026-11-19.md`（仓外），无需保留 |
 
+> **W34 裁决留痕（补）**：删除依据 = 用户 2026-11-19 在《源码级深度审查-W33》头部的显式批注「历史 `source-review-*.md` 属自动化产物，删除无问题，本次不再作为问题项」⇒ 维持删除（案 b）。整合件 `source-review-consolidated-2026-11-19.md` 在仓外（工作区 `Desktop/W/` 目录，非本仓）；8 份原文可按 git 历史恢复（删除提交 = W33 主体 `c4dc1a0`）。全仓对 `source-review-2026-11-` 的引用 **26 处 / 14 文件**（`w19-acceptance` 6、`w20-acceptance` 4、`w8-solution` 3、台账 2、`handoff-w11/w14/w15/w19` 各 1–2、`w14/w15/w17` 验收物、`evidence/w19-matrix-summary.json` 1）**未逐处加抬头**——批量改 W8–W20 历史正文违反「不重出更早正文」边界，作为 `W34-03` 出口判据的残余项登记；`W19-14` 已同步改 `CLOSED`（对象消失、易误读问题随之消失），不再形成幽灵行。
+
 ### 5.5 推送前闸门实跑
 
 - **G1 编译** ✅ rc=0（`_w33/g1_build.log` / `g1_rebuild2.log`）：删 `app-debug.apk` 后重出包，68,407,402 B、sha256 前缀 `b41be9cc92ee6f90` 与删前**逐字节一致**（deterministic）；本波零 `.kt`，未重装 APK。
-- **G2 arch-guard** ✅ `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`；G20「130 个 handoff ID 全在台账内、CLOSED 行证据均非空」（含 W33 段 3 行）。
+- **G2 arch-guard** ✅ `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`；G20「handoff ID 全在台账内、CLOSED 行证据均非空」（计数以 `arch-guard` 实跑为准，不写死派生数；含 W33 段 3 行）。
 - **G3 selftest** ✅ `30/30 PASS（250s）`（`_w33/g3_selftest.log`）：28 个变异 case + VAC-G1b / VAC-G21 空转自证全 PASS。
 - **G4 fulltest** ✅ `tests=818 failures=0 errors=0 skipped=0`（14 模块，`_w33/g4_fulltest.log`），与基线一致（零 `.kt`）。
 

@@ -1,0 +1,11 @@
+{
+ "cell": "T",
+ "face": "tier_axis",
+ "readback_32k": "设置→上下文窗口：当前 32K / 已选（32K 行）；会话软预算 27.9K tokens（状态条分母）",
+ "readback_1m": "切回后 readback：当前 1M（本波两次切换均经确认框：诊断 unverified_window char_floor_unmeasured）",
+ "observed": "32K 档下 6 轮 × ~16k 工具结果会话：状态条 30.9K/27.9K（越软预算）",
+ "state": "PARTIAL",
+ "full_context_1M_stress": "NOT_EXERCISED",
+ "reading": "档位切换与 readback 真行使；1M tokens 真压仍未构造（注入通道硬限制：adb input 单次 ~333 字符 / file_read 16k/次），不冒充",
+ "note": "512K 第三数据点未行使（需大请求触发 L3 熔断报文），如实 NOT_EXERCISED"
+}

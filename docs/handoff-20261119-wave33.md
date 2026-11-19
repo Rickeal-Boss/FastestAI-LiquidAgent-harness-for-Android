@@ -69,7 +69,7 @@
 
 ### 4.3 判据订正与环境事件
 - **判据订正**：题面统一 `Reply_with_exactly_*`，避免用户气泡自命中（W32 strict_sentinel 的已知边界）。
-- **INC-w33-empty**：OR dots3 `giving up after 1 retries: empty output` —— 重试一次后可见报错，非静默。
+- **INC-w33-empty**：OR dots3 `giving up after 1 retries: empty output` —— 重试一次后可见报错，非静默。**W34 复核**：设备侧原始 tail 未留存（`/data/local/tmp` 无 W33 代 logcat、`evidence/raw/w33/` 14 件 0 命中）⇒ 本条为现场观察记录，不作机器可复核证据；已登记 `W24-02` 行内注记。
 - **INC-w33-auth**：super-vl 403（模型级授权 ≠ 密钥级授权）。
 - **INC-w33-budget**：多次 file_read 同一大文件触发 `prompt token budget exceeded: used=463457 limit=400000`（L3 字符闸门正确熔断）。
 - **环境事实**：`adb input text` 单次仅落 ~333 字符；`file_read` 单次 16k 字符上限 —— 限制「>50,227 chars 会话」的可构造性，是 F5/F6 未 applied 的直接原因之一。
@@ -79,7 +79,7 @@
 | 闸 | 结果 | 备注 |
 |---|---|---|
 | G1 编译 | ✅ rc=0 | 删 APK 后重出包 sha256 `b41be9cc92ee6f90` 与删前逐字节一致（deterministic）；`localbuild.sh` 不自动安装，未重装 |
-| G2 arch-guard | ✅ PASS | `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`；G20 130 ID 全在台账 |
+| G2 arch-guard | ✅ PASS | `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`；G20 handoff ID 全在台账（计数以 `arch-guard` 实跑为准） |
 | G3 selftest | ✅ 30/30 | 250s，后台跑 |
 | G4 fulltest | ✅ 818-0-0 | 14 模块，零 `.kt` 无回归 |
 
@@ -90,7 +90,7 @@
 - **W33-01/02/03** 三行 `OPEN`：缓解动作已做、出口判据已实跑，按台账 §三.3 待外部审查复核后再销账。
 - **W31-01** 维持 `OPEN`（W32 真修后待复核）；**W31-02/03** 维持 `CLOSED`（W33 复核通过）。
 - **W30-01/02/03** 维持 `OPEN` + W33 实跑入账注记（只差外审复核）。
-- **W24-02** 静默断词：W33 实测 dots3 出现 `giving up after 1 retries: empty output`（重试一次后放弃并可见报错，非静默）——可作顺带样本，但 MockWebServer 红态用例仍必备。
+- **W24-02** 静默断词：W33 实测 dots3 出现 `giving up after 1 retries: empty output`（重试一次后放弃并可见报错，非静默）——可作顺带样本（**首字节前空输出路径**，非「吐字后关流」；原始 tail 未留存，见上条 W34 复核），但 MockWebServer 红态用例仍必备。
 - **W20-02** 拆分三方 / **W21-04** 矩阵未达成格 / **W24-03** journal 二选一 / **W20-05** 1M 真压 / **W5-03** MCP 明文 / **W12-02** 四态生产读者：沿用老号。
 
 ---
