@@ -145,7 +145,32 @@ G4 结果目录清除成功（无 Windows 句柄锁残留），故未出现「�
 
 ## §5.6 提交与 CI 回填
 
-> 待推送后回填（按降级规则：纯文档 tip 只 Secret scan、Build 0 run 不写成构建通过；推送次数写序列不写「1 次」）。
+### 5.6.1 本波提交
+
+| 项 | 值 |
+|---|---|
+| 分支 | `main`（已在 `build.yml` / `secret-scan.yml` 的 `on.push.branches` 白名单内，0-run 风险已排除） |
+| commit | `8af409071540c94a465f69458b6d63bb6ba168bb`（`feat(w35): 零 .kt 账实收口 + 多模型×上下文档位×功能面真机矩阵`） |
+| 提交身份 | `Rickeal-Boss <263587600+Rickeal-Boss@users.noreply.github.com>` |
+| 变更规模 | 45 文件 / +1236 −35：6 改（`06-deferred-ledger`、`w33`/`w34` 验收物、`w29-closeout-checklist`、`w34-matrix-summary.json` + 本验收物）+ 新增 `w35-acceptance.md`、`w35-matrix-summary.json`、`evidence/raw/w35/` 38 件 |
+| 入暂存纪律 | 全程显式 `git add <路径>`，未用 `git add -A`；25 个历史 stat/EOL 脏 M 与未跟踪 `_w34/` 未入库；`evidence/raw/w35/iterations.jsonl` 被全局 `.gitignore:42:*.jsonl` 误伤，单独 `git add -f` 纳入（内容已核验脱敏：serial 仅 8 位、key 只记 mtime 不记明文） |
+| 推送判据 | `git push --dry-run` 先行：`ab5148f..8af4090 main -> main`（RC=0）；实推同结果（RC=0）。PAT 仅 URL inline 一次性使用、未落盘、remote 仍为干净 URL。用户所给 PAT 尾部重复粘贴一段（长度 129，含重复段）失效，去掉重复段后长度 93、`/user` API 返回 200 校验通过后方推送。 |
+
+### 5.6.2 CI run 四字段复核（公开 API 按 head_sha 查，不采信任何转述）
+
+| 工作流 | run ID | status | conclusion | event | head_sha | 四字段齐备且匹配 | 链接 |
+|---|---|---|---|---|---|---|---|
+| Build | `44583693258` | `completed` | `success` | `push` | `8af409071540…`（前 12 位匹配本波 commit） | ✅ | https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44583693258 |
+| Secret scan | `44583693221` | `completed` | `success` | `push` | `8af409071540…`（前 12 位匹配本波 commit） | ✅ | https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44583693221 |
+
+- **本波非纯文档**：含仓根 `evidence/*.json`（`evidence/w35-matrix-summary.json`、`evidence/w34-matrix-summary.json`），
+  避开 `paths-ignore` 黑名单（`docs/**` 与 `**/*.md`），故 Build 五 job + 独立 Secret scan 均正常触发，非 0-run。
+- **Build 五 job 明细**（均 `completed/success`，非 vacuous 绿）：Unit tests / Arch guard (26 guards + mutation selftest) /
+  Assemble Debug (JDK 21) / Secret scan (gitleaks + trufflehog) / Lint (baseline gate)。
+- **推送次数序列（不写「1 次」）**：主体推送 **1 次**（本波 commit `8af4090` 触发上表两条 run）；
+  §5.6 CI 回填本身构成第 2 次推送（纯文档 tip）——该 tip 因 `paths-ignore` 命中纯文档（仅 `docs/**` 与 `*.md`），
+  Build 为 **0 run**（按既定口径 **不写成「构建通过」**），只有独立 Secret scan 仍跑。该回填 tip 的
+  commit / run ID / 四字段在交接记录与回传消息中据实登记，不在此处循环回填。
 
 ---
 
