@@ -215,7 +215,7 @@ $ grep -c "130" docs/analysis/w33-acceptance.md docs/handoff-20261119-wave33.md
 
 ### 5.6 commit 与 CI run
 
-- **推送 1 次**：主体 `dc3fb14`（W34 全部改动，22 文件：7 文档 + 3 制品 + 14 件证据；改了 `evidence/**` ⇒ Build 五 job + Secret scan 双触发）。tip 纯文档回填（本提交）按既定降级规则不逐波判 P0、不补 tip run 链接。
+- **推送 3 次**：主体 `dc3fb14`（W34 全部改动，22 文件：7 文档 + 3 制品 + 14 件证据；改了 `evidence/**` ⇒ Build 五 job + Secret scan 双触发）→ 纯文档回填 `55630d8`（§5.6 CI 链接）→ 本条口径订正（纯文档，SHA 随交付消息给出）。两次纯文档 tip 按既定降级规则不逐波判 P0、不补链接；Build 对纯文档 0 run 是既定口径，不写成「构建通过」。
 - **CI（head_sha = `dc3fb1445556e050ffe3a17e1190e58b20e7ab6f`，四字段复核 completed / success / push / 全 40 位匹配）**：
   - **Build** run `44559513390`：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44559513390>（五 job：Assemble Debug ✅ / Lint ✅ / Arch guard ✅ / Unit tests ✅ / Secret scan ✅）
   - **Secret scan** run `44559513521`：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44559513521>（gitleaks ✅ + trufflehog ✅）
