@@ -1,0 +1,37 @@
+{
+ "tag": "e2e_nano",
+ "q": "Reply_with_exactly_W32-PROBE-NANO-5K2M",
+ "input_bounds": "[240,1897][816,2041]",
+ "send_bounds": "[870,1284][1014,1428]",
+ "base_usage": [],
+ "done": true,
+ "usage_changed": true,
+ "waited": 10.9,
+ "usage": [
+  "1.8k in / 126 out (0 cached, 0.0%)"
+ ],
+ "stopped": false,
+ "labels_tail": [
+  "LiquidHarness",
+  "NV Nano Omni 30B · nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+  "Reply_with_exactly_W32-PROBE-NANO-5K2M",
+  "思考过程",
+  "We need to obey instructions: The user says \"Reply with exactly W32-PROBE-NANO-5K2M\". So the assistant should reply with",
+  "W32-PROBE-NANO-5K2M",
+  "复制",
+  "检查 JSON",
+  "1.8k in / 126 out (0 cached, 0.0%)",
+  "上下文 1.9K / 27.9K",
+  "对话",
+  "设置"
+ ],
+ "endpoint": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+ "sentinel": "W32-PROBE-NANO-5K2M",
+ "sentinel_in_ui": true,
+ "token_labels": [
+  "1.8k in / 126 out (0 cached, 0.0%)",
+  "上下文 1.9K / 27.9K"
+ ],
+ "devlog_kept": 4,
+ "shot_bytes": 406740
+}

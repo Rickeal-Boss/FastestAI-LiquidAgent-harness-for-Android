@@ -1,0 +1,23 @@
+{
+ "cell": "F1",
+ "face": "vision",
+ "endpoint": "NV Bolt E4B",
+ "image": "w32_vision_real.png(480x240)",
+ "done": true,
+ "code_hit": false,
+ "red_green_semantic": true,
+ "fail": false,
+ "usage": [
+  "1.6k in / 6 out (0 cached, 0.0%)"
+ ],
+ "outputs": [
+  "NV Bolt E4B · nvidia/nemotron-3.5-bolt-e4b",
+  "This is the final answer",
+  "复制",
+  "检查 JSON",
+  "1.6k in / 6 out (0 cached, 0.0%)",
+  "上下文 1.7K / 127K"
+ ],
+ "devlog": 10,
+ "shot": 377055
+}

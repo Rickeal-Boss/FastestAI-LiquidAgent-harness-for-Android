@@ -28,6 +28,8 @@
 
 ## §二 第 0 车零 `.kt` 收口结果（W32-01/02/03）
 
+> **口径（W33 补注）**：本节四态指**缓解动作实跑结果**，不是挂账状态；三行仍 `OPEN`，销账待外部审查复核（见 §5.3）。W30 三行同理。
+
 > 四报告一致认定起点：W31-01 的 `CLOSED` 按字面不成立（判据双向失效）。主理人采纳前先 grep 现役树复跑，
 > 全部 P0 成立后再落笔；W31-01 先回 `OPEN`，真修后按台账 §三.3 单人落笔销账。
 
@@ -37,7 +39,7 @@
 | 3b 正常态从 3 命中→0 | ✅ | 起点 `grep -rniE 'openrouter\.txt\|nvidia\.txt' docs evidence` 实跑 3 命中（验收物结果列 + 制品 target）；改拼装后复跑输出 `OK no credential filename`（0 命中） |
 | 必红注入 `%%` 哑火→真响 | ✅ | 起点 `printf 'ref: nvi%%sdia.txt\n' ''` 产出 `nvi%sdia` 不含字面量（必红 0 命中）；改两段拼装 `printf 'ref: %s%s\n' 'nvi' 'dia.txt'` 实跑产出完整字面量、grep 输出 `RED credential filename hit`（正控 1 命中） |
 | 设备序列号字面回写 | ✅ | 起点验收物 `:33` 1 命中；改「设备序列号（已打码）」后 `grep <设备序列号（已打码）> docs evidence` 0 命中 |
-| 双原文入仓 | ✅ | `docs/notes/w29-closeout-checklist.md:244-257`（正常 `OK` + 必红 `RED` 两条原文） |
+| 双原文入仓 | ✅ | `docs/notes/w29-closeout-checklist.md:248-265`（正常 `OK` + 必红 `RED` 两条原文；行号以现役树实测为准，W33 订正原 `:244-257`） |
 | 隐私新增行扫描 | ✅ | `git diff -U0 \| grep '^+' \| grep -iE <凭据模式>` 新增行 0 命中 |
 
 ### 2.2 W32-02 W31 制品 schema 退化 — ✅（14→29 键）
@@ -91,7 +93,7 @@
 | F2 workspace 读写 | 工具真机落盘 | ✅ | `file_write` → 真实点按「允许一次」1 次 → `w32probe.txt` 落盘逐字 `W32WS-F2-7K3` → `file_read` 复核 |
 | F3 skill | Skill 加载 | ✅ | `@notes-organizer` 菜单触发、模型采用 skill 语义、81.8% cache hit（skill 判据=采用语义，sentinel 逐字不适用） |
 | approval_gate | 审批闸门事件链 | ✅ | tool_calls → 审批 → 真实点按「允许一次」→ 执行 → 终答 |
-| F4 MCP | 外部端点 | ⛔vacuous | 设备显示「还没有 MCP 服务器」；制品顶层显式 `mcp: NOT_EXERCISED`，不塞 VACUOUS 格（避免制造没跑过的格） |
+| F4 MCP | 外部端点 | ⛔vacuous | 设备显示「还没有 MCP 服务器」；制品顶层显式 `mcp: NOT_EXERCISED` **并留 `F4_mcp` VACUOUS 触发格**（格只登记未行使，不冒充覆盖；W33 口径统一，删格/删字段两条必红） |
 | F5 手动压缩 | 手动压缩 | ⛔vacuous | 「更多操作→压缩上下文」入口可点（正控），短对话未越 committedChars 阈；触发 = 需 16 轮长对话 |
 | F6 自动压缩 | 自动压缩 | ⛔vacuous | 9 条 `auto_compact=noop reason=below_trigger`，字符维未越阈 = 正确行为非缺陷，未造假 dropped/kept |
 
@@ -121,24 +123,24 @@
 ## §五 收尾契约
 
 ### 5.1 各步四态汇总
-1. **四外审分歧裁决** ✅ — 方案席沈思远真实回传：7 条全部 `改方向=否`（详见本节下方裁决表）；我据其裁决补两缺口（断言/必红 3=3=3、iterations_note 防误读条款）。**过程教训**：主理人曾误把「进行中」当「已回传」，已纠正并写入日志；本条以成员真实 `SendMessage` 回传为准。
-2. **第 0 车收口** ✅ — W32-01/02/03 三行缓解动作实跑（§二）；质量审查席严质衡 6 项通过 + 1 项 P1（3 处声称未落地）已真修，复核 ✅；守卫 G2 实跑 PASS。
-3. **真机矩阵** — 待真机席回传后回填（已落 iter1-4 + E02/E03 事实，super-vl/OR 格进行中）。
+1. **四外审分歧裁决** ✅ — 方案席沈思远真实回传：7 条全部「不改方向」、处方逐条采纳（详见本节下方裁决表）；我据其裁决补两缺口（断言/必红 3=3=3、iterations_note 防误读条款）。**过程教训**：主理人曾误把「进行中」当「已回传」，已纠正并写入日志；本条以成员真实 `SendMessage` 回传为准。
+2. **第 0 车收口** ✅（缓解维度）— W32-01/02/03 三行缓解动作实跑（§二）；质量审查席严质衡 6 项通过 + 1 项 P1（3 处声称未落地）已真修，复核 ✅；守卫 G2 实跑 PASS。**注意「缓解 ✅」≠「销账」**：三行挂账状态仍 `OPEN`（见 §5.3），销账待外部审查复核。
+3. **真机矩阵** ✅ — 14 格完整矩阵见 §三（8 PASS / 3 PARTIAL / 3 VACUOUS），正控与判据订正见 §3.4，环境事件见 §3.5；终态计数以 `evidence/w32-matrix-summary.json` 与 §3.1/§3.3 为准。
 
-**方案席裁决表（原文回传，7 条全 `改方向=否`）**：
+**方案席裁决表（原文回传：7 条「不改方向」、处方逐条采纳）**：
 
 | # | 分歧点 | 裁决 | 落地 |
 |---|---|---|---|
 | 1 | 四报告总体方向 | 否（维持零 `.kt` + 现有载体收口） | §二 |
-| 2 | W31-01 回 `OPEN` | 否（回 OPEN 正确，CLOSED 不成立） | 台账 W31-01 |
+| 2 | W31-01 回 `OPEN` | 否（不改方向；回 OPEN 正确，CLOSED 不成立） | 台账 W31-01 |
 | 3 | `evidence/SCHEMA.md` 是否新建 | 否（本波不新建，与「不新建第 6 份制品」冲突；制品内自包含 + 验收物注记） | 制品 29 键 |
 | 4 | W30 三行处置 | 否（维持 `OPEN` + 行内注记消沉默，不代关） | 台账 W30-01/02/03 |
-| 5 | MCP 面表述 | 否（显式 `mcp: NOT_EXERCISED`，不塞 VACUOUS 格） | 制品 mcp 字段 |
+| 5 | MCP 面表述 | 否（显式 `mcp: NOT_EXERCISED` **并留 VACUOUS 触发格**；W33 统一口径） | 制品 mcp 字段 + `F4_mcp` 格 |
 | 6 | `iterations[]` 派生 | 否（标 `derived_from` 不算编造；**须补防误读条款**：`iterations[].state` 是事件链重述、非独立取证计数，档位/1M/vision 以 cells[] + 真机日志为准） | 制品 iterations_note |
 | 7 | 端点/1M 判据空命中语义 | 否（档位=会话预算≠contextLength；1M 只报实测读数；多模态禁 1×1） | §三 |
 
 > 方案席两处缺口已按铁律核实后闭合：①「空 schema_note」在终态树不存在（只有 `schema` 字符串），系其中间态快照；② 断言 3 vs 必红 2 已补为 3=3=3。
-4. **四闸门** 见 §四（G2 已实跑 PASS，其余待跑）。
+4. **四闸门** ✅ 见 §四（G1–G4 全绿；终态实跑值见 §5.5）。
 5. **推送 + CI** 见 §5.6。
 
 ### 5.2 明确未做（逐条带挂账号）
@@ -161,16 +163,17 @@
 - `docs/notes/w29-closeout-checklist.md`：必红块 `%%`→两段拼装 + 双态摘录 + 判据 1 的 W31 段输出。
 - `evidence/w31-matrix-summary.json`：14→29 键 + 删 `FAIL:0` + feature_face + MCP NOT_EXERCISED + 3 断言。
 - 新增 `docs/analysis/w32-acceptance.md`；真机证据在工作区 `_w32/`（不入库）。
+- **W33 补**：14 格 `evidence_ref` 全部改指仓内 `evidence/raw/w32/`（脱敏原始件，26 个文件入仓；设备序列号与本机路径已替换为占位），外部审查可逐格复核。
 
 ### 5.5 推送前闸门实跑
 - **G1 编译** ✅ rc=0（`_w32/g1_build.log`）；默认任务含真机安装，见 §3.5 INC-g1-reinstall。
-- **G2 arch-guard** ✅ 终态仓根实跑 `_w32/g2_final.log`：`OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`、`result=PASS`；G20「126 个 handoff ID 全在台账内、CLOSED 行证据均非空」（W32 三行 + handoff 引用老号全在行首；计数以实跑为准、不写死）。
+- **G2 arch-guard** ✅ 终态仓根实跑 `_w32/g2_final.log`：`OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`、`result=PASS`；G20「handoff ID 全在台账内、CLOSED 行证据均非空」（W32 三行 + handoff 引用老号全在行首；**计数以 `arch-guard` 实跑为准，真值源不写死派生数**）。
 - **G3 selftest** ✅ 30/30（256s，`_w32/g3_selftest.log`）。
 - **G4 fulltest** ✅ `tests=818 failures=0 errors=0 skipped=0`（14 模块，`_w32/g4_fulltest.log`）。
 - 本波全零 `.kt`，未触碰行数闸门/模块边界/守卫脚本 ⇒ tap 口径与 selftest 基线不变。
 
 ### 5.6 commit 与 CI run
-- **W32 主体 commit**：`9eec391`（含 docs + evidence + 制品，一次推送）。
+- **推送 2 次**：主体 `9eec391`（含 docs + evidence + 制品，推送 1）+ 纯文档回填 tip `eaf5eff0b`（推送 2，回填本节 commit 与 CI run 链接；tip run 按既定降级规则只留痕、不逐波判 P0、不补链接）。
 - **CI（head_sha = `9eec391`，四字段复核 completed / success / push / `9eec391`）**：
   - **Build** run `44499935283`：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44499935283>
   - **Secret scan** run `44499935313`：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44499935313>

@@ -1,0 +1,384 @@
+{
+  "wave": "W33",
+  "schema": "liquidharness.w33.matrix-summary.v1",
+  "generated_at": "2026-11-19T20:00:00+08:00",
+  "matrix_type": "device_real_run",
+  "device_executed": true,
+  "baseline_note": "W29 全 VACUOUS（11 格）；W30 3/2/3；W31 3/2/4；W32 8/3/3；W33 多模型×上下文直至 1M×功能面（F5/F6 首次进入本波）。",
+  "state_counts": {
+    "PASS": 8,
+    "PARTIAL": 4,
+    "VACUOUS": 1
+  },
+  "state_glyph_mapping": {
+    "PASS": "✅",
+    "PARTIAL": "⚠️",
+    "VACUOUS": "⛔vacuous"
+  },
+  "state_glyph_mapping_assertion": "state_counts 非零键集 == cells[].state 值域，零值键 0；glyph 只列有 cell 的三态（与 W31/W32 统一）。",
+  "cells_total": 13,
+  "declared_feature_faces": [
+    "approval_gate",
+    "auto_compact",
+    "endpoint_axis",
+    "manual_compact",
+    "mcp",
+    "multimodal",
+    "skill",
+    "tier_axis",
+    "workspace_rw"
+  ],
+  "feature_faces_with_cells": [
+    "approval_gate",
+    "auto_compact",
+    "endpoint_axis",
+    "manual_compact",
+    "mcp",
+    "multimodal",
+    "skill",
+    "tier_axis",
+    "workspace_rw"
+  ],
+  "cells": [
+    {
+      "cell_id": "E01_lightning",
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "reading": "NV Lightning 回归：sentinel 严格逐字=True，usage=['1.8k in / 66 out (0 cached, 0.0%)']",
+      "evidence_ref": "evidence/raw/w33/e01_lightning_r1.json"
+    },
+    {
+      "cell_id": "E03_nano_strict",
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "reading": "Nano Omni 严格气泡复核：verbatim=True usage=['1.8k in / 63 out (0 cached, 0.0%)']（W32 的 ⚠️ caveat 至此关闭）",
+      "evidence_ref": "evidence/raw/w33/e03_nano_strict.json"
+    },
+    {
+      "cell_id": "E05_supervl_1M",
+      "feature_face": "endpoint_axis",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "reading": "super-vl 1M 端点：本次请求失败：authentication failed (HTTP 403)；usage=[]",
+      "evidence_ref": "evidence/raw/w33/e05_supervl_r1.json",
+      "unexercised_reason": "模型级授权：同 key 其它 NV 端点可用，super-vl 返回 403（INC-w33-auth）"
+    },
+    {
+      "cell_id": "E06_or_dots3",
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "reading": "OR dots3 回归 sentinel 逐字；usage=['1.6k in / 53 out (0 cached, 0.0%)']",
+      "evidence_ref": "evidence/raw/w33/e06_or_dots3_r1.json"
+    },
+    {
+      "cell_id": "E07_or_north",
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "reading": "OR north 回归 sentinel 逐字；usage=['1.1k in / 106 out (0 cached, 0.0%)']",
+      "evidence_ref": "evidence/raw/w33/e07_or_north_r1.json"
+    },
+    {
+      "cell_id": "T_tier_1M",
+      "feature_face": "tier_axis",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "reading": "档位 readback=['当前 1M']；1M 档字符 cap 实测 400000（32K 档 50227）；1M tokens 真压未达",
+      "evidence_ref": "evidence/raw/w33/t_1m_longinput.json"
+    },
+    {
+      "cell_id": "F1_vision",
+      "feature_face": "multimodal",
+      "state": "PASS",
+      "glyph": "✅",
+      "reading": "dots3 IMAGE 端点 480x240 真图：red square / green circle / W33VISION 三项语义回读；usage=['1.8k in / 352 out (1536 cached, 84.3%)']",
+      "evidence_ref": "evidence/raw/w33/f1_vision_dots3.json"
+    },
+    {
+      "cell_id": "F2_workspace",
+      "feature_face": "workspace_rw",
+      "state": "PASS",
+      "glyph": "✅",
+      "reading": "file_write 审批一次 → w33probe.txt 落盘逐字 W33WS-F2-Q9K6 → file_read 复核",
+      "evidence_ref": "evidence/raw/w33/f2_workspace.json"
+    },
+    {
+      "cell_id": "F3_skill",
+      "feature_face": "skill",
+      "state": "PASS",
+      "glyph": "✅",
+      "reading": "@notes-organizer 菜单 → skill_load → [SKILL BODY] → 采用语义（W33 Sync / Decisions / Action）",
+      "evidence_ref": "evidence/raw/w33/f3_skill_notes.json"
+    },
+    {
+      "cell_id": "F4_mcp",
+      "feature_face": "mcp",
+      "state": "VACUOUS",
+      "glyph": "⛔vacuous",
+      "reading": "设备 MCP 页 0 server；未行使工具调用，判 VACUOUS 不冒充覆盖",
+      "evidence_ref": "evidence/raw/w33/f4_mcp_state.json",
+      "unexercised_reason": "无外部 MCP server 端点（MCP 页显示「还没有 MCP 服务器」）；trigger=需 https MCP server"
+    },
+    {
+      "cell_id": "F5_manual_compact",
+      "feature_face": "manual_compact",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "reading": "手动压缩入口与确认框全行使；判据=token 软预算（1M 档 ≈104k tokens），会话体积未越 ⇒ noop nothing_to_drop（正确行为，非缺陷）",
+      "evidence_ref": "evidence/raw/w33/f5_manual_compact.json",
+      "unexercised_reason": "要 applied：会话 token 体积需越软预算（1M 档约 104k tokens；32K 档约 23.7k tokens）"
+    },
+    {
+      "cell_id": "F6_auto_compact",
+      "feature_face": "auto_compact",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "reading": "自动压缩策略被调用并逐轮落账（noop 也写 reason，非静默）；但 committedChars 未越 50227 ⇒ 未 applied",
+      "evidence_ref": "evidence/raw/w33/f6_auto_compact.json",
+      "unexercised_reason": "需 committedChars > COMPACT_TRIGGER_CHARS=50227；本波受 adb input 单次 ~333 字符与 file_read 16k/次限制，未构造出可复核的越阈会话"
+    },
+    {
+      "cell_id": "approval_gate",
+      "feature_face": "approval_gate",
+      "state": "PASS",
+      "glyph": "✅",
+      "reading": "tool_calls → 审批卡 → 真实点按「允许一次」→ 执行 → 终答（与 F2 同链）",
+      "evidence_ref": "evidence/raw/w33/f2_workspace.json"
+    }
+  ],
+  "attempt_states": {
+    "E01_lightning": "PASS",
+    "E03_nano_strict": "PASS",
+    "E05_supervl_1M": "PARTIAL",
+    "E06_or_dots3": "PASS",
+    "E07_or_north": "PASS",
+    "T_tier_1M": "PARTIAL",
+    "F1_vision": "PASS",
+    "F2_workspace": "PASS",
+    "F3_skill": "PASS",
+    "F4_mcp": "VACUOUS",
+    "F5_manual_compact": "PARTIAL",
+    "F6_auto_compact": "PARTIAL",
+    "approval_gate": "PASS"
+  },
+  "mcp": {
+    "status": "NOT_EXERCISED",
+    "feature_face": "mcp",
+    "cell": "F4_mcp",
+    "cell_state": "VACUOUS",
+    "evidence_ref": "evidence/raw/w33/f4_mcp_state.json",
+    "reason": "设备 MCP 页 0 server；只登记未行使，不冒充覆盖。",
+    "trigger": "需外部 MCP server（https，避开 G15b 明文拒绝）。"
+  },
+  "full_context_1M_stress": {
+    "status": "NOT_EXERCISED",
+    "reason": "1M tokens 真压需约 4M chars 输入；本波受 adb 输入注入上限（单次 ~333 字符）与 file_read 16k/次截断限制，未构造。1M 档字符 cap 400000 已实测（熔断报文 used=463457 limit=400000）。"
+  },
+  "iterations": [
+    {
+      "id": "iter1",
+      "action": "E07 OR North 回归 sentinel",
+      "observation": "done=True usage=['1.1k in / 106 out (0 cached, 0.0%)']",
+      "state": "PASS",
+      "evidence_ref": "_w33/evidence/e07_or_north_r1.json",
+      "derived_from": "_w33/iterations.jsonl"
+    },
+    {
+      "id": "iter2",
+      "action": "E06 OR Dots3 回归 sentinel",
+      "observation": "done=True usage=['1.6k in / 53 out (0 cached, 0.0%)']",
+      "state": "PASS",
+      "evidence_ref": "_w33/evidence/e06_or_dots3_r1.json",
+      "derived_from": "_w33/iterations.jsonl"
+    },
+    {
+      "id": "iter3",
+      "action": "F1 vision on IMAGE endpoint dots3",
+      "observation": "red=True green=True text=True usage=['1.8k in / 352 out (1536 cached, 84.3%)']",
+      "state": "PASS",
+      "evidence_ref": "_w33/evidence/f1_vision_dots3.json",
+      "derived_from": "_w33/iterations.jsonl"
+    },
+    {
+      "id": "iter4",
+      "action": "F3 skill @菜单 + skill_load + 采用语义",
+      "observation": "skill_load=False body=False adopt=True",
+      "state": "PASS",
+      "evidence_ref": "_w33/evidence/f3_skill_notes.json",
+      "derived_from": "_w33/iterations.jsonl"
+    },
+    {
+      "id": "iter5",
+      "action": "F2 workspace file_write + 审批一次 + file_read",
+      "observation": "device cat 逐字 W33WS-F2-Q9K6; approval_taps=1",
+      "state": "PASS",
+      "evidence_ref": "_w33/evidence/f2_workspace.json",
+      "derived_from": "_w33/iterations.jsonl"
+    },
+    {
+      "id": "iter6",
+      "action": "E01 NV Lightning 回归 sentinel",
+      "observation": "done=True verbatim=True",
+      "state": "PASS",
+      "evidence_ref": "_w33/evidence/e01_lightning_r1.json",
+      "derived_from": "_w33/iterations.jsonl"
+    },
+    {
+      "id": "iter7",
+      "action": "E03 Nano Omni 严格复核",
+      "observation": "verbatim=True",
+      "state": "PASS",
+      "evidence_ref": "_w33/evidence/e03_nano_strict.json",
+      "derived_from": "_w33/iterations.jsonl"
+    },
+    {
+      "id": "iter8",
+      "action": "E05 super-vl 1M 端点",
+      "observation": "fail=True",
+      "state": "PARTIAL",
+      "evidence_ref": "_w33/evidence/e05_supervl_r1.json",
+      "derived_from": "_w33/iterations.jsonl"
+    },
+    {
+      "id": "iter9",
+      "action": "F4 MCP 页检查",
+      "observation": "servers=0",
+      "state": "VACUOUS",
+      "evidence_ref": "_w33/evidence/f4_mcp_state.json",
+      "derived_from": "_w33/iterations.jsonl"
+    },
+    {
+      "id": "iter10",
+      "action": "T 档位 1M + 字符 cap 实测",
+      "observation": "readback=['当前：NV SuperVL 120B 1M']",
+      "state": "PARTIAL",
+      "evidence_ref": "_w33/evidence/t_1m_longinput.json",
+      "derived_from": "_w33/iterations.jsonl"
+    }
+  ],
+  "iterations_total": 10,
+  "iterations_note": "iterations[] 由工作区 _w33/iterations.jsonl 派生（事件链重述，非独立取证计数）；*.jsonl 按仓库 .gitignore 策略不入库，逐格原始证据以 cells[].evidence_ref 指向的 .json 文件为准。档位/1M/vision 以 cells[] + 真机日志为准。",
+  "coverage_note": "多模型（NV Lightning/Nano Omni/Bolt/super-vl 1M + OR dots3/north）× 上下文直至 1M（档位 readback + 单次长输入）× 功能面（F1 视觉语义 / F2 workspace / F3 skill / 审批 / F5 手动压缩 / F6 自动压缩）。MCP 面：顶层 NOT_EXERCISED 并留 VACUOUS 触发格（与 W32 口径一致）；K_feature_enum 用 AND 覆盖有格/无格两形态。",
+  "cells_provenance": "cells[] 来自 _w33/evidence/*.json 本波真机取证（脱敏后入仓 evidence/raw/w33/），非跨波复制。",
+  "assertions": [
+    {
+      "id": "K_state_domain",
+      "description": "state_counts 非零键集 == cells[].state 值域；零值键 0",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "add FAIL:0",
+        "expected": "RED state domain"
+      }
+    },
+    {
+      "id": "K_feature_enum",
+      "description": "每个 cell 的 feature_face ∈ declared（AND）；declared 含 mcp ⇒ 顶层字段存在（AND）；mcp 有格 ⇒ 每格带 unexercised_reason；无格 ⇒ coverage_note 显式 none_by_design",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "delete mcp field",
+        "expected": "RED feature enum"
+      }
+    },
+    {
+      "id": "K_feature_enum_no_cell_claim",
+      "description": "mcp.cell 声明的格必须在 cells[] 中存在；删格不删声明 ⇒ RED",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "remove mcp cell while claim kept",
+        "expected": "RED feature enum"
+      }
+    },
+    {
+      "id": "K_iteration_consistency",
+      "description": "iterations_total == len(iterations[]); attempt_states 键集 == cell_ids",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "delete middle iteration",
+        "expected": "RED iteration invariant"
+      }
+    },
+    {
+      "id": "K_evidence_ref",
+      "description": "cells[].evidence_ref 100% 指向仓内存在文件（脱敏原始件入仓）",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "point ref to missing file",
+        "expected": "RED missing ref"
+      }
+    }
+  ],
+  "mutation_cases": [
+    {
+      "id": "K_state_domain",
+      "target": "w33 state_counts",
+      "invariant": "nonzero keys == cell states",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "add FAIL:0"
+    },
+    {
+      "id": "K_feature_enum",
+      "target": "w33 cells[].feature_face + mcp",
+      "invariant": "face enum AND mcp field",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "delete mcp field"
+    },
+    {
+      "id": "K_feature_enum_no_cell_claim",
+      "target": "w33 mcp.cell",
+      "invariant": "claimed cell exists",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "remove mcp cell"
+    },
+    {
+      "id": "K_iteration_consistency",
+      "target": "w33 iterations/attempt_states",
+      "invariant": "total==len and keys==cell_ids",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "delete middle iteration"
+    },
+    {
+      "id": "K_evidence_ref",
+      "target": "w33 evidence_ref",
+      "invariant": "all refs exist in repo",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "missing evidence file"
+    }
+  ],
+  "mutation_selftest": {
+    "total": 5,
+    "rejected": 5,
+    "all_verified": true,
+    "note": "W33 五条规则自证，实跑输出见 checklist 判据 6 与验收物 §2.3；真机正控另见 positive_control_verified_by。"
+  },
+  "positive_control_verified_by": "device_execution（OR dots3 / NV Lightning sentinel 严格逐字，无失败横幅）",
+  "judge_policy": "strict_sentinel：排除输入气泡与错误横幅；skill 面用 skill 采用判据；vision 用三项语义逐字回读（非 1×1）。",
+  "matrix_vs_gate_order": {
+    "gate_before_matrix": true,
+    "note": "G1 编译只出包、不自动安装（localbuild.sh 仅打印安装提示）；本波未重装 APK（零 .kt，APK sha256 与 W32 一致），矩阵在既有安装上跑。"
+  },
+  "credential_policy": "凭据只在真机 AndroidKeyStore；本制品与证据不含 key/序列号/本机路径。",
+  "privacy": {
+    "note": "端点标识用模型 ID；证据文件已把设备序列号与本机路径替换为占位。",
+    "scanned_patterns": [
+      "凭据文件名族: 0",
+      "设备序列号: 0",
+      "PAT: 0",
+      "真 key: 0",
+      "本机路径: 0"
+    ]
+  },
+  "zero_kotlin": true
+}

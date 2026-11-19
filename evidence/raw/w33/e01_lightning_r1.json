@@ -1,0 +1,25 @@
+{
+ "cell": "E01",
+ "face": "endpoint_axis",
+ "endpoint": "nv-lightning",
+ "done": true,
+ "usage": [
+  "1.8k in / 66 out (0 cached, 0.0%)"
+ ],
+ "strict": {
+  "verbatim_hit": true,
+  "raw_verbatim": [
+   "The user wants a reply with exactly \"W33-E01-R1\". So I just need to output that string. No tool needed.  But the instructions say: \"Reply_with_exactly_W33-E01-R",
+   "W33-E01-R1"
+  ],
+  "usage": [
+   "1.8k in / 66 out (0 cached, 0.0%)"
+  ],
+  "has_failure_banner": false
+ },
+ "waited": 6.6,
+ "state": "PASS",
+ "reading": "NV Lightning 回归：sentinel 严格逐字=True，usage=['1.8k in / 66 out (0 cached, 0.0%)']",
+ "devlog": 18,
+ "shot": 383040
+}

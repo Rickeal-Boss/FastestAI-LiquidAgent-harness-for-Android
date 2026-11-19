@@ -1,0 +1,8 @@
+{
+ "tier": "1M",
+ "endpoint": "NV SuperVL 120B 1M",
+ "contextLength": 1048576,
+ "meter_bar": [],
+ "settings_readback": "当前 1M",
+ "note": "档位=会话输入预算; 端点contextLength=1048576"
+}

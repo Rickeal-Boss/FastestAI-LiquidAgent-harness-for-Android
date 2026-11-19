@@ -1,0 +1,12 @@
+{
+ "cell": "F4",
+ "face": "MCP",
+ "mcp_page_labels": [
+  "MCP 服务器",
+  "远程工具来源",
+  "还没有 MCP 服务器",
+  "添加一个远程 MCP 端点，模型即可调用它的工具"
+ ],
+ "verdict": "⛔vacuous",
+ "trigger": "需外部 MCP server 端点（设备当前 0 个）"
+}

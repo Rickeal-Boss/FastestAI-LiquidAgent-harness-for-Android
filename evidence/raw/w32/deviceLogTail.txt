@@ -1,0 +1,115 @@
+
+==== CTRL lightning sentinel ====
+2026-11-19T04:16:53.631221Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T04:25:45.346812Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T05:52:16.794286Z INFO auto_compact=noop reason=below_trigger
+
+==== E_NANO sentinel+reasoning ====
+2026-11-19T04:16:53.631221Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T04:25:45.346812Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T05:52:16.794286Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:00:02.592741Z INFO auto_compact=noop reason=below_trigger
+
+==== e2e_bolt e2e ====
+2026-11-19T04:16:53.631221Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T04:25:45.346812Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T05:52:16.794286Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:00:02.592741Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:02:42.486778Z INFO auto_compact=noop reason=below_trigger
+
+==== E_BOLT sentinel ====
+2026-11-19T04:16:53.631221Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T04:25:45.346812Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T05:52:16.794286Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:00:02.592741Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:02:42.486778Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:08:31.241406Z INFO auto_compact=noop reason=below_trigger
+
+==== E_SUPERVL sentinel+1M ====
+2026-11-19T04:16:53.631221Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T04:25:45.346812Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T05:52:16.794286Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:00:02.592741Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:02:42.486778Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:08:31.241406Z INFO auto_compact=noop reason=below_trigger
+
+==== E_SUPERVL_R2 retry150s ====
+2026-11-19T04:16:53.631221Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T04:25:45.346812Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T05:52:16.794286Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:00:02.592741Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:02:42.486778Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:08:31.241406Z INFO auto_compact=noop reason=below_trigger
+
+==== F3_SKILL notes-organizer ====
+2026-11-19T04:16:53.631221Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T04:25:45.346812Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T05:52:16.794286Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:00:02.592741Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:02:42.486778Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:08:31.241406Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:35:10.084431Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:36:03.451714Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:38:57.422593Z INFO auto_compact=noop reason=below_trigger
+
+==== F1_VISION bolt image ====
+2026-11-19T04:16:53.631221Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T04:25:45.346812Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T05:52:16.794286Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:00:02.592741Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:02:42.486778Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:08:31.241406Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:35:10.084431Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:36:03.451714Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:38:57.422593Z INFO auto_compact=noop reason=below_trigger
+
+==== F1_VISION2 bolt resend ====
+2026-11-19T04:16:53.631221Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T04:25:45.346812Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T05:52:16.794286Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:00:02.592741Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:02:42.486778Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:08:31.241406Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:35:10.084431Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:36:03.451714Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:38:57.422593Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:51:20.900243Z INFO auto_compact=noop reason=below_trigger
+
+==== OR_DOTS sentinel ====
+2026-11-19T04:16:53.631221Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T04:25:45.346812Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T05:52:16.794286Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:00:02.592741Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:02:42.486778Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:08:31.241406Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:35:10.084431Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:36:03.451714Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:38:57.422593Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:51:20.900243Z INFO auto_compact=noop reason=below_trigger
+
+==== OR_DOTS_R2 key-added ====
+2026-11-19T04:16:53.631221Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T04:25:45.346812Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T05:52:16.794286Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:00:02.592741Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:02:42.486778Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:08:31.241406Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:35:10.084431Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:36:03.451714Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:38:57.422593Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:51:20.900243Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:58:18.430934Z INFO auto_compact=noop reason=below_trigger
+
+==== OR_NORTH sentinel ====
+2026-11-19T04:16:53.631221Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T04:25:45.346812Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T05:52:16.794286Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:00:02.592741Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:02:42.486778Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:08:31.241406Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:35:10.084431Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:36:03.451714Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:38:57.422593Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:51:20.900243Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:58:18.430934Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T07:00:33.484546Z INFO auto_compact=noop reason=below_trigger

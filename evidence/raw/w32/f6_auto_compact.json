@@ -1,0 +1,8 @@
+{
+ "cell": "F6",
+ "face": "auto_compact",
+ "log_signal": "auto_compact=noop reason=below_trigger",
+ "noop_count_in_tail": 9,
+ "verdict": "⛔vacuous",
+ "note": "字符维 committedChars 未越阈, below_trigger 为正确行为非缺陷; 无 dropped/kept"
+}

@@ -1,0 +1,24 @@
+{
+ "cell": "E03",
+ "face": "endpoint_axis",
+ "endpoint": "nv-nano-omni",
+ "done": true,
+ "usage": [
+  "1.8k in / 63 out (0 cached, 0.0%)"
+ ],
+ "strict": {
+  "verbatim_hit": true,
+  "raw_verbatim": [
+   "The user says: \"Reply with exactly W33-E03-R1\". They want a specific string. No task, no context. According to rules, respond with exactly that string. So just ",
+   "W33-E03-R1"
+  ],
+  "usage": [
+   "1.8k in / 63 out (0 cached, 0.0%)"
+  ],
+  "has_failure_banner": false
+ },
+ "state": "PASS",
+ "reading": "Nano Omni 严格气泡复核：verbatim=True usage=['1.8k in / 63 out (0 cached, 0.0%)']（W32 的 ⚠️ caveat 至此关闭）",
+ "devlog": 25,
+ "shot": 387458
+}

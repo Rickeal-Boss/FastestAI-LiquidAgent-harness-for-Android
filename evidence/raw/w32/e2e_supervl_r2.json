@@ -1,0 +1,50 @@
+{
+ "tag": "e2e_supervl_r2",
+ "q": "Reply_with_exactly_W32-PROBE-SUPERVL-R2",
+ "input_bounds": "[240,1285][816,1429]",
+ "send_bounds": "[870,1284][1014,1428]",
+ "base_usage": [],
+ "done": false,
+ "usage_changed": false,
+ "waited": 153.9,
+ "usage": [],
+ "stopped": false,
+ "labels_tail": [
+  "LiquidHarness",
+  "NV SuperVL 120B 1M · nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "Reply_with_exactly_W32-PROBE-SUPERVL-R2",
+  "本次请求失败：authentication failed (HTTP 403)",
+  "对话",
+  "设置"
+ ],
+ "full_labels": [
+  "LiquidHarness",
+  "NV SuperVL 120B 1M · nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "Reply_with_exactly_W32-PROBE-SUPERVL-R2",
+  "本次请求失败：authentication failed (HTTP 403)",
+  "对话",
+  "设置"
+ ],
+ "endpoint_model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+ "header": [
+  "NV SuperVL 120B 1M · nvidia/nemotron-3.5-super-vl-120b-a12b"
+ ],
+ "sentinel": "W32-PROBE-SUPERVL-R2",
+ "strict": {
+  "verbatim_hit": false,
+  "output_labels": [
+   "LiquidHarness",
+   "NV SuperVL 120B 1M · nvidia/nemotron-3.5-super-vl-120b-a12b",
+   "本次请求失败：authentication failed (HTTP 403)",
+   "对话",
+   "设置"
+  ],
+  "verbatim_labels": [],
+  "usage": []
+ },
+ "token_labels": [
+  "NV SuperVL 120B 1M · nvidia/nemotron-3.5-super-vl-120b-a12b"
+ ],
+ "devlog_kept": 6,
+ "shot_bytes": 312175
+}

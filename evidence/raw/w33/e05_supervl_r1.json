@@ -1,0 +1,15 @@
+{
+ "cell": "E05",
+ "face": "endpoint_axis",
+ "endpoint": "nv-supervl-1M",
+ "done": false,
+ "usage": [],
+ "fail_banner": [
+  "本次请求失败：authentication failed (HTTP 403)"
+ ],
+ "state": "PARTIAL",
+ "reading": "super-vl 1M 端点：本次请求失败：authentication failed (HTTP 403)；usage=[]",
+ "trigger": "模型级授权：同 key 其它 NV 端点可用，super-vl 返回 403（INC-w33-auth）",
+ "devlog": 25,
+ "shot": 298043
+}

@@ -1,0 +1,38 @@
+{
+ "tag": "e2e_bolt2",
+ "q": "Reply_with_exactly_W32-PROBE-BOLT-8R1T",
+ "input_bounds": "[240,1897][816,2041]",
+ "send_bounds": "[870,1284][1014,1428]",
+ "base_usage": [],
+ "done": true,
+ "usage_changed": true,
+ "waited": 6.6,
+ "usage": [
+  "1.4k in / 6 out (0 cached, 0.0%)"
+ ],
+ "stopped": false,
+ "labels_tail": [
+  "LiquidHarness",
+  "NV Bolt E4B · nvidia/nemotron-3.5-bolt-e4b",
+  "Reply_with_exactly_W32-PROBE-BOLT-8R1T",
+  "This is the final answer",
+  "复制",
+  "检查 JSON",
+  "1.4k in / 6 out (0 cached, 0.0%)",
+  "上下文 1.4K / 27.9K",
+  "对话",
+  "设置"
+ ],
+ "endpoint_model": "nvidia/nemotron-3.5-bolt-e4b",
+ "header": [
+  "NV Bolt E4B · nvidia/nemotron-3.5-bolt-e4b"
+ ],
+ "sentinel": "W32-PROBE-BOLT-8R1T",
+ "sentinel_in_ui": true,
+ "token_labels": [
+  "1.4k in / 6 out (0 cached, 0.0%)",
+  "上下文 1.4K / 27.9K"
+ ],
+ "devlog_kept": 6,
+ "shot_bytes": 337087
+}

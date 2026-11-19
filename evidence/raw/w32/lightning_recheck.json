@@ -1,0 +1,78 @@
+{
+ "tag": "lightning_recheck",
+ "q": "Reply_with_exactly_W32-FINAL-LIGHT-9D4K",
+ "input_bounds": "[240,1897][816,2041]",
+ "send_bounds": "[870,1284][1014,1428]",
+ "base_usage": [],
+ "done": true,
+ "usage_changed": true,
+ "waited": 6.7,
+ "usage": [
+  "1.8k in / 73 out (0 cached, 0.0%)"
+ ],
+ "stopped": false,
+ "labels_tail": [
+  "LiquidHarness",
+  "NV Lightning 30B · nvidia/nemotron-3.5-lightning-30b-a3b",
+  "Reply_with_exactly_W32-FINAL-LIGHT-9D4K",
+  "思考过程",
+  "The user wants me to reply with exactly \"W32-FINAL-LIGHT-9D4K\". That's it. I need to output exactly that string. Accordi",
+  "W32-FINAL-LIGHT-9D4K",
+  "复制",
+  "检查 JSON",
+  "1.8k in / 73 out (0 cached, 0.0%)",
+  "上下文 1.9K / 127K",
+  "对话",
+  "设置"
+ ],
+ "full_labels": [
+  "LiquidHarness",
+  "NV Lightning 30B · nvidia/nemotron-3.5-lightning-30b-a3b",
+  "Reply_with_exactly_W32-FINAL-LIGHT-9D4K",
+  "思考过程",
+  "The user wants me to reply with exactly \"W32-FINAL-LIGHT-9D4K\". That's it. I need to output exactly that string. According to instructions, I must reply with exactly that. No tool calls needed. I'll just output the string.",
+  "W32-FINAL-LIGHT-9D4K",
+  "复制",
+  "检查 JSON",
+  "1.8k in / 73 out (0 cached, 0.0%)",
+  "上下文 1.9K / 127K",
+  "对话",
+  "设置"
+ ],
+ "header": [
+  "NV Lightning 30B · nvidia/nemotron-3.5-lightning-30b-a3b"
+ ],
+ "strict": {
+  "verbatim_hit": true,
+  "raw_verbatim": [
+   "The user wants me to reply with exactly \"W32-FINAL-LIGHT-9D4K\". That's it. I need to output exactly that string. According to instructions, I must reply with ex",
+   "W32-FINAL-LIGHT-9D4K"
+  ],
+  "output_labels": [
+   "LiquidHarness",
+   "NV Lightning 30B · nvidia/nemotron-3.5-lightning-30b-a3b",
+   "思考过程",
+   "The user wants me to reply with exactly \"W32-FINAL-LIGHT-9D4K\". That's it. I need to output exactly that string. According to instructions, I must reply with exactly that. No tool calls needed. I'll just output the strin",
+   "W32-FINAL-LIGHT-9D4K",
+   "复制",
+   "检查 JSON",
+   "1.8k in / 73 out (0 cached, 0.0%)",
+   "上下文 1.9K / 127K",
+   "对话",
+   "设置"
+  ],
+  "verbatim_labels": [
+   "The user wants me to reply with exactly \"W32-FINAL-LIGHT-9D4K\". That's it. I need to output exactly that string. According to instructions, I must reply with exactly that. No tool calls needed. I'll just output the strin",
+   "W32-FINAL-LIGHT-9D4K"
+  ],
+  "usage": [
+   "1.8k in / 73 out (0 cached, 0.0%)"
+  ],
+  "has_failure_banner": false
+ },
+ "meter_bar_1M_tier": [
+  "1.8k in / 73 out (0 cached, 0.0%)",
+  "上下文 1.9K / 127K"
+ ],
+ "tier": "1M"
+}

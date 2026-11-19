@@ -29,7 +29,7 @@
 - [ ] Skill 加载（`SKILL.md` + 三级渐进披露，W4）
 - [ ] MCP Client（Streamable HTTP，双 era，W5）
 
-> 勾选状态以 `docs/02-roadmap.md` 为准，本列表只是索引。
+> 勾选状态以 `docs/06-deferred-ledger.md` 为准（台账 + 各波 `docs/handoff-*.md` / 验收物是现役真值源；`docs/02-roadmap.md` 的 W1–W8 表止于原规划，仅作历史参照）。
 
 ## 构建
 
@@ -47,7 +47,7 @@ CI 见 `.github/workflows/`：`build.yml` 零密钥可跑；`release.yml` 走 ta
 |---|---|
 | `docs/00-brief.md` | 定位、非目标、与上一代的关系、裁决清单 |
 | `docs/01-architecture.md` | 模块图、依赖拓扑、关键接口、数据流 |
-| `docs/02-roadmap.md` | W1–W8 波次与验收判据 |
+| `docs/02-roadmap.md` | W1–W8 原规划与验收判据（时点快照，现行状态见台账） |
 | `docs/03-contracts.md` | 核心数据契约 |
 | `docs/04-risk-register.md` | 风险登记与缓解 |
 | `AGENTS.md` | **给 agent 的作业契约**（构建、边界、纪律） |

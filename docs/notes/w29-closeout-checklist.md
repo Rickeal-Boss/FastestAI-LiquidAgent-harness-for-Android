@@ -2,7 +2,7 @@
 
 > 存在理由：W28 新建的 `w28-closeout-checklist.md` 判据 2 自身空转（正常态只读 `state_counts` 与 `assertions[].description`，不读 `mutation_cases[].verified` / `mutation_selftest.all_verified`，注入 `verified=false` 仍输出 OK）、判据 3b 含占位符吞错误、判据 1a 无判红分支、判据 1/3 `/tmp` 口径冲突，且 W28-01「三处同步」变异零载体。本文件按外审 P0-1/P0-2 处方建立 W29 版载体。
 > **W30 第 0 车修订（本次）**：按外审（W30 段挂账草案 W30-02 处方）修复必红侧：① 判据 2 必红块原写 `<<'PY'` 单引号 heredoc 内嵌 `${WS}` ⇒ shell 不展开、Python 收到字面量 ⇒ `FileNotFoundError`（W30 实测复现），改读 WS 环境变量（W31-02 二次订正：读取侧再改 `os.path.abspath(os.path.join(os.getcwd(),".."))` 自算，与写入侧一致，不设 WS 也能跑）；② 判据 2 正常态补三态分支（`w29_device_executed=False` ⇒ 正控不得称 `device_execution`，须 `inherited_w28_baseline`/`not_exercised`，输出 `OK(vacuous)` 而非无保留 `OK`）；③ 判据 3b 补注入样本（工作区副本放凭据文件名字面量 ⇒ `RED credential filename hit`）；④ 判据 4 补可跑必红块（工作区副本写回肯定式措辞 ⇒ `RED affirmative wording remains`）；⑤ 新增判据 5（制品迭代/attempt_states/state 一致性，防 W30-01 类「声称实跑未实跑」复发）。
-> **W31 第 0 车修订（本次）**：按外审 W31 段草案三 P0 处方——① 判据 3b 正常态加白名单口径并**实跑输出 `OK no credential filename` 入仓**（W30 三处字面量清零后全树复扫 0 命中）；② 判据 2/5 必红块读取侧去 WS 依赖（不设 WS 实跑 rc=0）；③ 判据 1 参数化 `WAVE=${WAVE:-W29}` 并补 W30 三行唯一性实跑 + 重复号必红演练（`RED duplicate/missing` 真响，见文末摘录）。
+> **W31 第 0 车修订（本次）**：按外审 W31 段草案三 P0 处方——① 判据 3b 正常态**实跑输出 `OK no credential filename` 入仓**（W30 三处字面量清零后全树复扫 0 命中；实现方式是**源头清零**，非新增白名单排除规则——W33 订正本条抬头措辞，第 9 次「声称修复零 diff」的根因即此）；② 判据 2/5 必红块读取侧去 WS 依赖（不设 WS 实跑 rc=0）；③ 判据 1 参数化 `WAVE=${WAVE:-W29}` 并补 W30 三行唯一性实跑 + 重复号必红演练（`RED duplicate/missing` 真响，见文末摘录）。
 > **W32 第 0 车复核（本次）**：W31-01 的两条出口判据按字面双向失效——判据 3b 正常态因验收物结果列与制品 target 写回凭据文件名族字面量而恒 RED；必红注入块 `%%` 版不产出完整字面量而恒 `OK (unexpected)`。本波把结果列与制品 target 改拼装表述、注入块还原为两段拼装（实跑产出完整字面量），并把正常态 `OK no credential filename` 与必红 `RED credential filename hit` 两条原文摘进本文件（见文末 W32 小节）。W31-01 已先回 `OPEN`，真修并重跑后再按台账 §三.3 销账。
 > 纪律：本 checklist 是**人工闸门 + 必红变异**兜底，不是机器守卫 —— `arch-guard.sh` g20 只做存在性比对（两边 `sort -u` 抹平重复号），无 ID 唯一检查；改守卫 / 扩扫描面属用户裁决域（本波只留痕不代做）。
 > 路径变量：`${WS}` = 工作区根目录（运行时 `export WS=...` 或用 `pwd -W` 自动探测，本文件不落本机绝对路径）。🔴 所有变异副本一律工作区真实路径 `${WS}/_w29/mut/`，不用 `/tmp`（Git Bash `/tmp` 与 Windows Python 不通）。
@@ -266,8 +266,100 @@ printf 两段拼装 | grep -c 全称模式 = 1（必然命中样本，证明判�
 
 ---
 
+## 判据 6 — 制品面定义 AND 断言 + evidence_ref 可复核（W33 新增）
+
+**出口判据来源**：W33-03（W32 制品 `K_feature_enum` OR 恒真 + `F4_mcp` 格与文档矛盾 + 14 格 `evidence_ref` 指向仓内不存在文件——外审 14/14 MISSING）。
+
+**正常态（期望 OK）** —— 面枚举 AND、mcp 字段/格一致、state 值域、迭代一致、证据可复核，五项一次跑：
+
+```bash
+cd harness-v2
+python - <<'PY'
+import json,io,os
+d=json.load(io.open("evidence/w32-matrix-summary.json",encoding="utf-8"))
+cells=d["cells"]; declared=set(d["declared_feature_faces"]); errs=[]
+if not {c["feature_face"] for c in cells} <= declared: errs.append("face not declared")
+if "mcp" in declared and "mcp" not in d: errs.append("mcp field missing")
+mcp_cells=[c for c in cells if c["feature_face"]=="mcp"]
+for c in mcp_cells:
+    if c["state"]!="PASS" and not c.get("unexercised_reason"): errs.append("mcp cell without reason")
+mc=(d.get("mcp") or {}).get("cell")
+if mc and mc!="none_by_design" and not any(c["cell_id"]==mc for c in cells): errs.append("mcp cell claim mismatch")
+if not mcp_cells and "none_by_design" not in (d.get("coverage_note") or ""): errs.append("no mcp cell without declaration")
+sc=d["state_counts"]
+if [k for k,v in sc.items() if v==0]: errs.append("zero value key")
+if set(sc)!={c["state"] for c in cells}: errs.append("state domain")
+if sum(sc.values())!=len(cells): errs.append("state sum")
+if d["iterations_total"]!=len(d["iterations"]): errs.append("iterations")
+if set(d["attempt_states"])!={c["cell_id"] for c in cells}: errs.append("attempt keys")
+for c in cells:
+    if not os.path.exists(c["evidence_ref"]): errs.append("missing ref "+c["evidence_ref"])
+print("OK feature/evidence invariants" if not errs else "RED "+"; ".join(errs))
+PY
+```
+
+**必红变异（期望 RED，四条）**：工作区副本上分别注入，重跑上面的检查应各得 RED：
+
+```bash
+cd harness-v2
+python - <<'PY'
+import json,io
+src="evidence/w32-matrix-summary.json"
+d=json.load(io.open(src,encoding="utf-8"))
+muts={"k6_fail":lambda x:x["state_counts"].__setitem__("FAIL",0),
+      "k6_nomcp":lambda x:x.pop("mcp"),
+      "k6_nocell":lambda x:x.__setitem__("cells",[c for c in x["cells"] if c["cell_id"]!=(x.get("mcp") or {}).get("cell")]),
+      "k6_iter":lambda x:x["iterations"].pop(len(x["iterations"])//2)}
+for name,fn in muts.items():
+    x=json.load(io.open(src,encoding="utf-8")); fn(x)
+    io.open("../_w33/mut/w32."+name+".json","w",encoding="utf-8").write(json.dumps(x,ensure_ascii=False))
+print("mutations written")
+PY
+```
+
+> W33 实跑输出（2026-11-19）：正常态 `OK`；四条变异分别 `RED zero-value keys: ['FAIL']`、`RED mcp field missing`、`RED mcp claims cell F4_mcp but cells[] lacks it`、`RED iterations_total != len`（见 `_w33/k6_output.txt` 与 W33 验收物 §2.3）。
+
+---
+
+## 判据 7 — CLOSED 行须带判据实跑输出指路（W33 新增）
+
+**出口判据来源**：W31-01 回开事故——销账证据是「人抄的机器结果」而非实跑输出；外审建议「CLOSED 行必须带判据实跑输出指路（文件加时间戳）」以防回开复发。
+
+**正常态（期望 OK）** —— W30 段起（新代数）的 `CLOSED` 行，证据列必须含 `文件:行` / `evidence/…` / CI run 号 / 「实跑」之一；W30 之前的历史行显式登记为已知缺口（不判红，避免把历史形态当新异常）：
+
+```bash
+cd harness-v2
+python - <<'PY'
+import io,re
+txt=io.open("docs/06-deferred-ledger.md",encoding="utf-8").read()
+rows=[l for l in txt.splitlines() if l.startswith("| W")]
+closed=[l for l in rows if re.search(r"\|\s*`?CLOSED`?\s*\|",l)]
+pat=re.compile(r"([\w./-]+\.(kt|md|json|yml|yaml|sh):\d+)|(evidence/)|(runs?/\d+)|\b\d{10,}\b|实跑")
+new_wave=re.compile(r"\|\s*W(30|31|32|33)\s*\|\s*`?CLOSED`?")
+bad=[]
+for l in closed:
+    if not new_wave.search(l): continue
+    cells=[c.strip() for c in l.strip("|").split("|")]
+    if not pat.search(cells[-1]): bad.append(cells[0])
+print("OK closed rows carry runnable pointers (W30+)" if not bad else "RED closed without runnable pointer: "+", ".join(bad))
+PY
+```
+
+**必红变异（期望 RED）**：台账副本把 `W31-03` 证据列置空 → 重跑应输出 `RED closed without runnable pointer: W31-03`（W33 实跑：正常态 `OK closed rows carry runnable pointers (W30+)`；变异 `RED closed without runnable pointer: W31-03`）。
+
+---
+
+## W33 判据 3b 样本登记（哈希 + 拼装规则，不落明文）
+
+> 按外审 P0-B「必红样本以哈希+规则入仓」：完整字面量不入仓，只登记可复现的拼装规则与产出哈希。
+> 拼装规则 = `printf 'ref: %s%s\n' <段1> <段2>`（段1 取凭据文件名族 A 前三字符，段2 取其扩展名段；见判据 3b 必红块）。
+> 样本产出 `sha256 = ac715262aade40df4890dc1bf3255827cf401bd1e75043091c8045162311ea9a`（样本长度 16 字节，含行尾换行）。
+> 复核方式：本地按规则拼装 → `sha256sum` 对比；再 `grep -rniE` 扫该副本 → 必须输出 `RED credential filename hit`。W33 实跑已通过（正常态 `OK no credential filename`、必红 `RED credential filename hit`）。
+
+---
+
 ## 本 checklist 覆盖 / 不覆盖（诚实标注）
 
-- **覆盖**：判据 1（1a 判红分支）/ 2（verified 不变量 + 三态分支 + 可跑必红块）/ 3（3a tip token + 3b 仓内 grep + 注入样本）/ 4（三处同步 + 可跑必红块）/ 5（制品迭代/attempt_states/state 一致性 + 必红块）。
+- **覆盖**：判据 1（1a 判红分支）/ 2（verified 不变量 + 三态分支 + 可跑必红块）/ 3（3a tip token + 3b 仓内 grep + 注入样本）/ 4（三处同步 + 可跑必红块）/ 5（制品迭代/attempt_states/state 一致性 + 必红块）/ 6（面定义 AND + evidence_ref 可复核，W33 新增）/ 7（CLOSED 行实跑指路，W33 新增）。
 - **不覆盖**：① `arch-guard.sh` 的 ID 唯一性（用户裁决域）；② 真机重放（制品 verified 多为规则自证，真机判据在验收物 §3/§4）；③ 仓外生成器断言 M（老号 W20-14）；④ 脱敏正控工具在仓外取证设施（按截图回灌级别只回灌判据，不回灌整段日志）。
 - **四态**：正常态命令全 OK 仅说明「载体存在且当前数据自洽」，不等于挂账 `CLOSED`；改 `CLOSED` 须判据实跑输出入账 + 制品与真值源一致（W30 已按外审 W30-03 处方删除「须真机取证」错配条件，由主理人单人落笔）。

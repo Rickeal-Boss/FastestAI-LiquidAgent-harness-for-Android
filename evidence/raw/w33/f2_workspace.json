@@ -1,0 +1,28 @@
+{
+ "cell": "F2",
+ "face": "workspace_rw",
+ "endpoint": "or-dots3",
+ "file_name": "w33probe.txt",
+ "expected": "W33WS-F2-Q9K6",
+ "file_verbatim_device_read": true,
+ "approval_taps": 1,
+ "model_confirm": true,
+ "usage": [
+  "1.7k in / 79 out (1536 cached, 85.4%)"
+ ],
+ "labels": [
+  "LiquidHarness",
+  "OR Dots3 Note Free · dots-3-note-preview:free",
+  "思考过程",
+  "The user wants me to: 1. Create a file named w33probe.txt in the workspace containing exactly \"W33WS-F2-Q9K6\" 2. Read it back with file_read 3. Confirm the exact content  Let me do",
+  "Done. I created `w33probe.txt` with the content `W33WS-F2-Q9K6` and read it back — the exact content is confirmed as **W33WS-F2-Q9K6**.",
+  "复制",
+  "检查 JSON",
+  "1.7k in / 79 out (1536 cached, 85.4%)",
+  "上下文 1.8K / 520.2K",
+  "对话"
+ ],
+ "evidence_device_ls": "w33probe.txt 落盘（12B 量级）",
+ "devlog": 18,
+ "shot": 429545
+}

@@ -1,0 +1,98 @@
+{
+ "wave": "W32",
+ "device": "<device-serial>",
+ "scope": "多模型×多功能面真机矩阵",
+ "apk_changes": "zero .kt, no harness-v2 writes",
+ "credential_policy": "指纹only: NV=3c36539f OR=9ea0840d; 无明文/无整段logcat",
+ "judge_policy": "strict_sentinel: 排除输入气泡Reply_with_*与错误横幅; skill面用skill采用判据",
+ "state_counts": {
+  "PASS": 8,
+  "PARTIAL": 3,
+  "VACUOUS": 3
+ },
+ "cells": {
+  "E01_lightning": {
+   "verdict": "✅",
+   "evidence": "evidence/lightning_recheck.json",
+   "reading": "W32-FINAL-LIGHT-9D4K逐字; 1.8k in/73 out; 1M档计量条=上下文1.9K/127K"
+  },
+  "E02_bolt": {
+   "verdict": "✅",
+   "evidence": "evidence/e2e_bolt2.json",
+   "reading": "W32-PROBE-BOLT-8R1T; header确认; 1.4k in/6 out"
+  },
+  "E03_nano": {
+   "verdict": "✅",
+   "evidence": "evidence/e2e_nano.json",
+   "reading": "1.8k in/126 out; header当时确认为Nano; reasoning型响应; caveat=未做末次严格气泡复核(但有usage变化型硬证据)"
+  },
+  "E05_supervl_1M": {
+   "verdict": "⚠️",
+   "evidence": "evidence/e2e_supervl_r2.json",
+   "reading": "端点新增成功(contextLength=1048576)+密钥落盘; 但两次HTTP403 authentication failed, 模型级授权问题(INC-w32-auth)"
+  },
+  "E06_or_dots3": {
+   "verdict": "✅",
+   "evidence": "evidence/or_dots_r2.json",
+   "reading": "录or-dots3.bin后 W32-ORDOTS-R2逐字; 1.6k/48; 上下文1.7K/520.2K"
+  },
+  "E07_or_north": {
+   "verdict": "✅",
+   "evidence": "evidence/or_north.json",
+   "reading": "录or-north.bin后 W32-ORNORTH-7M3P逐字; 1.1k/242"
+  },
+  "F1_vision": {
+   "verdict": "⚠️",
+   "evidence": "evidence/f1_vision2.json",
+   "reading": "480x240真图SAF选图+附加+发送链路通; 但Bolt回This is the final answer(6out)语义失败"
+  },
+  "F2_workspace": {
+   "verdict": "✅",
+   "evidence": "evidence/f2_workspace.json",
+   "reading": "file_write→允许一次→w32probe.txt落盘逐字W32WS-F2-7K3→file_read"
+  },
+  "F3_skill": {
+   "verdict": "✅",
+   "evidence": "evidence/f3_skill.json",
+   "reading": "@notes-organizer菜单触发; 模型采用skill语义; 81.8% cache hit"
+  },
+  "F4_mcp": {
+   "verdict": "⛔vacuous",
+   "evidence": "evidence/f4_mcp.json",
+   "reading": "还没有MCP服务器; trigger=需外部MCP server端点"
+  },
+  "F5_manual_compact": {
+   "verdict": "⛔vacuous",
+   "evidence": "evidence/f5_manual_compact.json",
+   "reading": "入口可点(正控); trigger=需16轮长对话越committedChars阈值"
+  },
+  "F6_auto_compact": {
+   "verdict": "⛔vacuous",
+   "evidence": "evidence/f6_auto_compact.json",
+   "reading": "9条auto_compact=noop below_trigger; 字符维未越阈=正确行为"
+  },
+  "T_tier_1M": {
+   "verdict": "⚠️",
+   "evidence": "evidence/tier_1m_badge.json",
+   "reading": "档位sweep选项32K/128K/192K/256K/512K/1M; 1M档设置readback=当前1M; 计量条1.9K/127K; 档位≠端点contextLength"
+  },
+  "approval_gate": {
+   "verdict": "✅",
+   "evidence": "evidence/f2_workspace.json",
+   "reading": "真实点按允许一次1次; tool_calls→审批→执行→终答链"
+  }
+ },
+ "positive_control": "Lightning端点W32-FINAL-LIGHT-9D4K严格逐字回读(无失败横幅)+正控初轮; 证明注入→响应→回读→落痕判据链会响",
+ "environment_incidents": [
+  "INC-w32-keyentry: OR两端点标hasSecret但无bin→发送missing API key; 按W31流程录入or-dots3.bin/or-north.bin后PASS(环境配置, 非harness缺陷)",
+  "INC-w32-auth: super-vl 120B两次HTTP403 authentication failed(模型级授权; 同key其它NV端点可用, 非harness缺陷)"
+ ],
+ "iteration_note": "名义真机迭代8轮(E轴+T轴); 功能面F1-F6/OR端点为同批取证, 逐行写入iterations.jsonl共18行, 均如实标注",
+ "notes": [
+  "nano_final.json因切换失败实为OR North端点, 已从E03归因移除, 归入E07额外证据",
+  "早期E02-bolt首测(e2e_bolt.json)因切换失败实为Nano回, 已由e2e_bolt2.json(header确认Bolt)取代为准",
+  "super-vl/tier早期基于假阳性判据的行以strict复核后的e2e_supervl_r2.json/lightning_recheck.json为准",
+  "verdict映射: ✅=PASS ⚠️=PARTIAL ⛔vacuous=VACUOUS; state_counts键集去零值FAIL(遵W28-02/W31空转键纪律)",
+  "计数订正: 原state_counts PASS=7漏计approval_gate, 实为8; 8+3+3=14=cells数"
+ ]
+}

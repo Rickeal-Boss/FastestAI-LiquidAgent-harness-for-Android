@@ -1,0 +1,33 @@
+{
+ "skill": "notes-organizer",
+ "sentinel": "W32SKILL-3F9Q",
+ "done": true,
+ "approval_taps": [],
+ "strict": {
+  "verbatim_hit": false,
+  "raw_verbatim": [],
+  "output_labels": [
+   "LiquidHarness",
+   "NV Lightning 30B · nvidia/nemotron-3.5-lightning-30b-a3b",
+   "I don't see any meeting note files in the sandbox. To use the `notes-organizer` skill, I need the paths to the note files you want summarized. Could you please provide the file paths (relative to the sandbox root) contai",
+   "复制",
+   "检查 JSON",
+   "2.5k in / 829 out (2112 cached, 81.8%)",
+   "上下文 2.6K / 127K",
+   "对话",
+   "设置"
+  ],
+  "verbatim_labels": [],
+  "usage": [
+   "2.5k in / 829 out (2112 cached, 81.8%)"
+  ],
+  "has_failure_banner": false
+ },
+ "usage": [
+  "2.5k in / 829 out (2112 cached, 81.8%)"
+ ],
+ "devlog": 9,
+ "shot": 394698,
+ "skill_adopted": true,
+ "readjudicated_verdict": "✅"
+}

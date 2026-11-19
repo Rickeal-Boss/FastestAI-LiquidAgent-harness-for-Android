@@ -1,0 +1,12 @@
+{
+ "cell": "F6",
+ "face": "auto_compact",
+ "log_signals": [
+  "auto_compact=noop reason=below_trigger ×6（12:04–12:07Z 区间 4 条 + 11:54/11:05 两条）"
+ ],
+ "observed": "4 次 file_read 各 16k 上限工具结果、上下文 50.3k tokens 的会话上仍报 below_trigger",
+ "state": "PARTIAL",
+ "reading": "自动压缩策略被调用并逐轮落账（noop 也写 reason，非静默）；但 committedChars 未越 50227 ⇒ 未 applied",
+ "trigger": "需 committedChars > COMPACT_TRIGGER_CHARS=50227；本波受 adb input 单次 ~333 字符与 file_read 16k/次限制，未构造出可复核的越阈会话",
+ "note": "committedChars 口径（是否计入 toolResults.output）与真机表现存在待核点，交外审复核；不推断为缺陷"
+}

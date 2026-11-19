@@ -1,0 +1,36 @@
+{
+ "endpoint": "NV SuperVL 120B 1M (contextLength=1048576)",
+ "sweep": [
+  {
+   "tier_tapped": "32K",
+   "readback": [],
+   "confirm": true
+  },
+  {
+   "tier_tapped": "128K",
+   "readback": [],
+   "confirm": true
+  },
+  {
+   "tier_tapped": "192K",
+   "readback": [],
+   "confirm": true
+  },
+  {
+   "tier_tapped": "256K",
+   "readback": [],
+   "confirm": true
+  },
+  {
+   "tier_tapped": "512K",
+   "readback": [],
+   "confirm": true
+  },
+  {
+   "tier_tapped": "1M",
+   "readback": [],
+   "confirm": true
+  }
+ ],
+ "note": "档位=会话输入预算, 非端点contextLength"
+}

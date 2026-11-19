@@ -1,0 +1,32 @@
+{
+ "tag": "e2e_supervl",
+ "q": "Reply_with_exactly_W32-PROBE-SUPERVL-1M9Q",
+ "input_bounds": "[240,1897][816,2041]",
+ "send_bounds": "[870,1284][1014,1428]",
+ "base_usage": [],
+ "done": false,
+ "usage_changed": false,
+ "waited": 123.6,
+ "usage": [],
+ "stopped": false,
+ "labels_tail": [
+  "LiquidHarness",
+  "NV SuperVL 120B 1M · nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "Reply_with_exactly_W32-PROBE-SUPERVL-1M9Q",
+  "本次请求失败：authentication failed (HTTP 403)",
+  "对话",
+  "设置"
+ ],
+ "endpoint_model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+ "header": [
+  "NV SuperVL 120B 1M · nvidia/nemotron-3.5-super-vl-120b-a12b"
+ ],
+ "sentinel": "W32-PROBE-SUPERVL-1M9Q",
+ "sentinel_in_ui": true,
+ "token_labels": [
+  "NV SuperVL 120B 1M · nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "Reply_with_exactly_W32-PROBE-SUPERVL-1M9Q"
+ ],
+ "devlog_kept": 6,
+ "shot_bytes": 316610
+}

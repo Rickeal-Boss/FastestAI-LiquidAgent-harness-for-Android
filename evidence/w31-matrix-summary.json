@@ -19,10 +19,9 @@
   "state_glyph_mapping": {
     "PASS": "✅",
     "PARTIAL": "⚠️",
-    "VACUOUS": "⛔vacuous",
-    "FAIL": "⛔"
+    "VACUOUS": "⛔vacuous"
   },
-  "state_glyph_mapping_assertion": "state_counts 非零键集 == cells[].state 值域（W32 删 FAIL:0 零值键）；state_glyph_mapping 列全四态 glyph 供外部工具，FAIL 无 cell 不在计数键集；PARTIAL 对应 ⚠️、未行使记 VACUOUS。",
+  "state_glyph_mapping_assertion": "state_counts 非零键集 == cells[].state 值域（W32 删 FAIL:0 零值键）；state_glyph_mapping 只列有 cell 的三态（PASS/PARTIAL/VACUOUS），FAIL 无 cell 不入映射（W33 与 W32 统一）。",
   "cells": [
     {
       "cell_id": "E01_lightning",

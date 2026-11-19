@@ -15,7 +15,7 @@
     "PARTIAL": "⚠️",
     "VACUOUS": "⛔vacuous"
   },
-  "state_glyph_mapping_assertion": "state_counts 非零键集 == cells[].state 值域，零值键 0（无 FAIL:0）；state_glyph_mapping 列全四态 glyph 供外部工具，FAIL 无 cell 不在计数键集。",
+  "state_glyph_mapping_assertion": "state_counts 非零键集 == cells[].state 值域，零值键 0（无 FAIL:0）；state_glyph_mapping 只列有 cell 的三态（PASS/PARTIAL/VACUOUS），FAIL 无 cell 不入映射（W33 与 W31 统一）。",
   "cells_total": 14,
   "declared_feature_faces": [
     "approval_gate",
@@ -46,7 +46,7 @@
       "feature_face": "endpoint_axis",
       "state": "PASS",
       "glyph": "✅",
-      "evidence_ref": "evidence/lightning_recheck.json",
+      "evidence_ref": "evidence/raw/w32/lightning_recheck.json",
       "reading": "W32-FINAL-LIGHT-9D4K逐字; 1.8k in/73 out; 1M档计量条=上下文1.9K/127K"
     },
     {
@@ -55,7 +55,7 @@
       "feature_face": "endpoint_axis",
       "state": "PASS",
       "glyph": "✅",
-      "evidence_ref": "evidence/e2e_bolt2.json",
+      "evidence_ref": "evidence/raw/w32/e2e_bolt2.json",
       "reading": "W32-PROBE-BOLT-8R1T; header确认; 1.4k in/6 out"
     },
     {
@@ -64,7 +64,7 @@
       "feature_face": "endpoint_axis",
       "state": "PASS",
       "glyph": "✅",
-      "evidence_ref": "evidence/e2e_nano.json",
+      "evidence_ref": "evidence/raw/w32/e2e_nano.json",
       "reading": "1.8k in/126 out; header当时确认为Nano; reasoning型响应; caveat=未做末次严格气泡复核(但有usage变化型硬证据)"
     },
     {
@@ -73,7 +73,7 @@
       "feature_face": "endpoint_axis",
       "state": "PARTIAL",
       "glyph": "⚠️",
-      "evidence_ref": "evidence/e2e_supervl_r2.json",
+      "evidence_ref": "evidence/raw/w32/e2e_supervl_r2.json",
       "reading": "端点新增成功(contextLength=1048576)+密钥落盘; 但两次HTTP403 authentication failed, 模型级授权问题(INC-w32-auth)"
     },
     {
@@ -82,7 +82,7 @@
       "feature_face": "endpoint_axis",
       "state": "PASS",
       "glyph": "✅",
-      "evidence_ref": "evidence/or_dots_r2.json",
+      "evidence_ref": "evidence/raw/w32/or_dots_r2.json",
       "reading": "录or-dots3.bin后 W32-ORDOTS-R2逐字; 1.6k/48; 上下文1.7K/520.2K"
     },
     {
@@ -91,7 +91,7 @@
       "feature_face": "endpoint_axis",
       "state": "PASS",
       "glyph": "✅",
-      "evidence_ref": "evidence/or_north.json",
+      "evidence_ref": "evidence/raw/w32/or_north.json",
       "reading": "录or-north.bin后 W32-ORNORTH-7M3P逐字; 1.1k/242"
     },
     {
@@ -100,7 +100,7 @@
       "feature_face": "multimodal",
       "state": "PARTIAL",
       "glyph": "⚠️",
-      "evidence_ref": "evidence/f1_vision2.json",
+      "evidence_ref": "evidence/raw/w32/f1_vision2.json",
       "reading": "480x240真图SAF选图+附加+发送链路通; 但Bolt回This is the final answer(6out)语义失败"
     },
     {
@@ -109,7 +109,7 @@
       "feature_face": "workspace_rw",
       "state": "PASS",
       "glyph": "✅",
-      "evidence_ref": "evidence/f2_workspace.json",
+      "evidence_ref": "evidence/raw/w32/f2_workspace.json",
       "reading": "file_write→允许一次→w32probe.txt落盘逐字W32WS-F2-7K3→file_read"
     },
     {
@@ -118,17 +118,18 @@
       "feature_face": "skill",
       "state": "PASS",
       "glyph": "✅",
-      "evidence_ref": "evidence/f3_skill.json",
+      "evidence_ref": "evidence/raw/w32/f3_skill.json",
       "reading": "@notes-organizer菜单触发; 模型采用skill语义; 81.8% cache hit"
     },
     {
       "cell_id": "F4_mcp",
-      "face": "还没有MCP服务器; trigger=需外部MCP server端点",
+      "face": "mcp",
       "feature_face": "mcp",
       "state": "VACUOUS",
       "glyph": "⛔vacuous",
-      "evidence_ref": "evidence/f4_mcp.json",
-      "reading": "还没有MCP服务器; trigger=需外部MCP server端点"
+      "evidence_ref": "evidence/raw/w32/f4_mcp.json",
+      "reading": "MCP 页 4 条标签确认 0 server；未行使工具调用，判 VACUOUS 不冒充覆盖。",
+      "unexercised_reason": "无外部 MCP server 端点（设备 MCP 页显示「还没有 MCP 服务器」）；trigger=需外部 MCP server（https）。"
     },
     {
       "cell_id": "F5_manual_compact",
@@ -136,7 +137,7 @@
       "feature_face": "manual_compact",
       "state": "VACUOUS",
       "glyph": "⛔vacuous",
-      "evidence_ref": "evidence/f5_manual_compact.json",
+      "evidence_ref": "evidence/raw/w32/f5_manual_compact.json",
       "reading": "入口可点(正控); trigger=需16轮长对话越committedChars阈值"
     },
     {
@@ -145,7 +146,7 @@
       "feature_face": "auto_compact",
       "state": "VACUOUS",
       "glyph": "⛔vacuous",
-      "evidence_ref": "evidence/f6_auto_compact.json",
+      "evidence_ref": "evidence/raw/w32/f6_auto_compact.json",
       "reading": "9条auto_compact=noop below_trigger; 字符维未越阈=正确行为"
     },
     {
@@ -154,7 +155,7 @@
       "feature_face": "tier_axis",
       "state": "PARTIAL",
       "glyph": "⚠️",
-      "evidence_ref": "evidence/tier_1m_badge.json",
+      "evidence_ref": "evidence/raw/w32/tier_1m_badge.json",
       "reading": "档位sweep选项32K/128K/192K/256K/512K/1M; 1M档设置readback=当前1M; 计量条1.9K/127K; 档位≠端点contextLength"
     },
     {
@@ -163,7 +164,7 @@
       "feature_face": "approval_gate",
       "state": "PASS",
       "glyph": "✅",
-      "evidence_ref": "evidence/f2_workspace.json",
+      "evidence_ref": "evidence/raw/w32/f2_workspace.json",
       "reading": "真实点按允许一次1次; tool_calls→审批→执行→终答链"
     }
   ],
@@ -175,7 +176,12 @@
   "mcp": {
     "status": "NOT_EXERCISED",
     "feature_face": "mcp",
-    "reason": "设备显示「还没有 MCP 服务器」，无外部 MCP server 端点；触发信号 = 需外部 MCP server 端点。"
+    "cell": "F4_mcp",
+    "cell_state": "VACUOUS",
+    "evidence_ref": "evidence/raw/w32/f4_mcp.json",
+    "reason": "设备显示「还没有 MCP 服务器」，无外部 MCP server 端点；格只登记未行使，不冒充覆盖。",
+    "trigger": "需外部 MCP server 端点（https，避开 G15b 明文拒绝）。",
+    "decision": "W33-03 方案 b：保留 VACUOUS 触发格，文档口径改为「显式 NOT_EXERCISED 并留触发格」。"
   },
   "iterations_total": 18,
   "iterations": [
@@ -184,7 +190,7 @@
       "action": "正控：Lightning 端点发 sentinel 证明判据会响",
       "observation": "sentinel_in_ui=True usage=['1.8k in / 774 out (0 cached, 0.0%)'] waited=10.9s",
       "state": "✅",
-      "evidence_ref": "_w32/evidence/ctrl_lightning.json",
+      "evidence_ref": "evidence/raw/w32/ctrl_lightning.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -192,7 +198,7 @@
       "action": "E轴 Nano Omni 端到端+sentinel逐字",
       "observation": "in_ui=True usage=['1.8k in / 126 out (0 cached, 0.0%)'] waited=10.9s",
       "state": "✅",
-      "evidence_ref": "_w32/evidence/e2e_nano.json",
+      "evidence_ref": "evidence/raw/w32/e2e_nano.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -200,7 +206,7 @@
       "action": "E轴 NV Bolt E4B 端到端+sentinel逐字",
       "observation": "in_ui=True usage=['1.8k in / 245 out (0 cached, 0.0%)'] waited=11.0s switched=(False, 'not-found')",
       "state": "✅",
-      "evidence_ref": "_w32/evidence/e2e_bolt.json",
+      "evidence_ref": "evidence/raw/w32/e2e_bolt.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -208,7 +214,7 @@
       "action": "E轴 Bolt 切换确认后重做端到端（修正 iter此前误归因）",
       "observation": "header=['NV Bolt E4B · nvidia/nemotron-3.5-bolt-e4b'] in_ui=True usage=['1.4k in / 6 out (0 cached, 0.0%)']",
       "state": "✅",
-      "evidence_ref": "_w32/evidence/e2e_bolt2.json",
+      "evidence_ref": "evidence/raw/w32/e2e_bolt2.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -216,7 +222,7 @@
       "action": "E轴 super-vl 120B(1M) 新增端点+端到端+sentinel逐字",
       "observation": "header=['NV SuperVL 120B 1M · nvidia/nemotron-3.5-super-vl-120b-a12b'] in_ui=True usage=[] waited=123.6s",
       "state": "✅",
-      "evidence_ref": "_w32/evidence/e2e_supervl.json",
+      "evidence_ref": "evidence/raw/w32/e2e_supervl.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -224,7 +230,7 @@
       "action": "super-vl 复测(150s)+收紧判据复核",
       "observation": "strict_verbatim=False usage=[] waited=153.9s",
       "state": "⚠️",
-      "evidence_ref": "_w32/evidence/e2e_supervl_r2.json",
+      "evidence_ref": "evidence/raw/w32/e2e_supervl_r2.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -232,7 +238,7 @@
       "action": "T档位轴 sweep 32K→1M",
       "observation": "readbacks=[[], [], [], [], [], []]",
       "state": "⚠️",
-      "evidence_ref": "evidence/tier_sweep.json",
+      "evidence_ref": "evidence/raw/w32/tier_sweep.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -240,7 +246,7 @@
       "action": "T轴 1M 档切换确认+计量条读数",
       "observation": "meter=[] readback=当前1M",
       "state": "⚠️",
-      "evidence_ref": "evidence/tier_1m_badge.json",
+      "evidence_ref": "evidence/raw/w32/tier_1m_badge.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -248,7 +254,7 @@
       "action": "E轴Lightning严格判据复核 + 1M档计量条(Lightning可用端点)",
       "observation": "strict=True fail=False usage=['1.8k in / 73 out (0 cached, 0.0%)'] meter=['1.8k in / 73 out (0 cached, 0.0%)', '上下文 1.9K / 127K']",
       "state": "✅",
-      "evidence_ref": "evidence/lightning_recheck.json",
+      "evidence_ref": "evidence/raw/w32/lightning_recheck.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -256,7 +262,7 @@
       "action": "F2 workspace file_write+审批+file_read真机落盘",
       "observation": "w32probe.txt verbatim W32WS-F2-7K3, 1次允许一次",
       "state": "✅",
-      "evidence_ref": "evidence/f2_workspace.json",
+      "evidence_ref": "evidence/raw/w32/f2_workspace.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -264,7 +270,7 @@
       "action": "F3 skill notes-organizer @菜单触发",
       "observation": "模型采用skill语义, 81.8% cache hit",
       "state": "✅",
-      "evidence_ref": "evidence/f3_skill.json",
+      "evidence_ref": "evidence/raw/w32/f3_skill.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -272,7 +278,7 @@
       "action": "F4 MCP 端点检查",
       "observation": "还没有 MCP 服务器",
       "state": "⛔vacuous",
-      "evidence_ref": "evidence/f4_mcp.json",
+      "evidence_ref": "evidence/raw/w32/f4_mcp.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -280,7 +286,7 @@
       "action": "F1 多模态视觉 SAF选图480x240",
       "observation": "SAF附加+发送链路通, 但模型回This is the final answer(6out)语义失败",
       "state": "⚠️",
-      "evidence_ref": "evidence/f1_vision2.json",
+      "evidence_ref": "evidence/raw/w32/f1_vision2.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -288,7 +294,7 @@
       "action": "OR dots3 录密钥后端到端",
       "observation": "W32-ORDOTS-R2 verbatim, 1.6k/48, wait11s",
       "state": "✅",
-      "evidence_ref": "evidence/or_dots_r2.json",
+      "evidence_ref": "evidence/raw/w32/or_dots_r2.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -296,7 +302,7 @@
       "action": "OR north 录密钥后端到端",
       "observation": "W32-ORNORTH-7M3P verbatim, 1.1k/242, wait11s",
       "state": "✅",
-      "evidence_ref": "evidence/or_north.json",
+      "evidence_ref": "evidence/raw/w32/or_north.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -304,7 +310,7 @@
       "action": "super-vl 120B(1M) 403授权失败(INC)",
       "observation": "两次HTTP403 authentication failed, 不冒充PASS",
       "state": "⚠️",
-      "evidence_ref": "evidence/e2e_supervl_r2.json",
+      "evidence_ref": "evidence/raw/w32/e2e_supervl_r2.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -312,7 +318,7 @@
       "action": "F5 手动压缩入口",
       "observation": "入口可点(正控), 短对话未越committedChars阈",
       "state": "⛔vacuous",
-      "evidence_ref": "evidence/f5_manual_compact.json",
+      "evidence_ref": "evidence/raw/w32/f5_manual_compact.json",
       "derived_from": "_w32/iterations.jsonl"
     },
     {
@@ -320,7 +326,7 @@
       "action": "F6 自动压缩",
       "observation": "日志9条 auto_compact=noop below_trigger",
       "state": "⛔vacuous",
-      "evidence_ref": "evidence/f6_auto_compact.json",
+      "evidence_ref": "evidence/raw/w32/f6_auto_compact.json",
       "derived_from": "_w32/iterations.jsonl"
     }
   ],
@@ -354,11 +360,11 @@
     },
     {
       "id": "K_feature_enum",
-      "description": "每个 cell 的 feature_face ∈ declared_feature_faces；mcp 面有格或显式 NOT_EXERCISED",
+      "description": "每个 cell 的 feature_face ∈ declared_feature_faces（AND）；declared 含 mcp ⇒ 顶层 mcp 字段存在（AND）；mcp 有格时每格须带 unexercised_reason 或 state 证据（AND）；mcp 无格时 coverage_note 须显式 none_by_design（AND）。删字段 或 删格而文档仍称有格，两条均判 RED。",
       "verified": true,
       "kind": "rule_definition",
       "injected_sample": {
-        "mutation": "remove mcp NOT_EXERCISED field",
+        "mutation": "delete mcp top-level field",
         "expected": "RED feature enum violation"
       }
     },
@@ -385,10 +391,10 @@
     {
       "id": "K_feature_enum",
       "target": "w32 cells[].feature_face + mcp",
-      "invariant": "face enums declared and mcp present",
+      "invariant": "every cell.face in declared AND ('mcp' in d) AND (mcp cells all carry unexercised_reason) AND (cell/field consistency declared in coverage_note)",
       "verified": true,
-      "verified_by": "rule_definition",
-      "injected_sample": "remove mcp field"
+      "verified_by": "rule_definition+w33_rerun",
+      "injected_sample": "delete mcp field"
     },
     {
       "id": "K_iteration_consistency",
@@ -397,17 +403,25 @@
       "verified": true,
       "verified_by": "rule_definition",
       "injected_sample": "delete middle iteration"
+    },
+    {
+      "id": "K_feature_enum_no_cell_claim",
+      "target": "w32 cells[] vs mcp.cell",
+      "invariant": "mcp.cell 声明的格必须在 cells[] 中存在；删格不删声明 ⇒ RED",
+      "verified": true,
+      "verified_by": "rule_definition+w33_rerun",
+      "injected_sample": "remove F4_mcp cell while mcp.cell still claims it"
     }
   ],
   "mutation_selftest": {
-    "total": 3,
-    "rejected": 3,
+    "total": 4,
+    "rejected": 4,
     "all_verified": true,
-    "note": "W32 三条规则自证；真机正控另见 positive_control_verified_by"
+    "note": "W33 第 0 车扩为 5 条（新增删字段 / 删格两条必红），逐条在现役树实跑；实跑输出见 checklist 判据 2b 与 W33 验收物 §2.3。"
   },
   "positive_control_verified_by": "device_execution（Lightning W32-FINAL-LIGHT-9D4K 严格逐字回读，无失败横幅，证明判据链会响）",
-  "coverage_note": "14 格: 8 PASS / 3 PARTIAL / 3 VACUOUS。真机已行使 E01/E02/E03/E06/E07/F2/F3/approval_gate；E05 super-vl（403 ⚠️）/F1 vision（语义回读失败 ⚠️）/T tier（⚠️ sweep 已行使、真压未达）为部分；F4/F5/F6 VACUOUS 带触发信号。1M 真压与 MCP 用顶层 NOT_EXERCISED 显式声明，不造假格。",
-  "cells_provenance": "cells[] 14 格来自 _w32/evidence/*.json 本波真机取证（汇总层 W32_SUMMARY.json 的 emoji verdict 转换为四态枚举），非跨波复制。判据缺陷已订正：早期 sentinel-in-UI 被输入气泡污染的假阳性行由 strict 复核件取代（e2e_bolt.json→e2e_bolt2.json、tier 早期→lightning_recheck.json、super-vl 早期→e2e_supervl_r2.json）；归因订正 nano_final.json→E07 OR North。详见 W32_SUMMARY.json notes。",
+  "coverage_note": "14 格: 8 PASS / 3 PARTIAL / 3 VACUOUS。真机已行使 E01/E02/E03/E06/E07/F2/F3/approval_gate；E05 super-vl（403 ⚠️）/F1 vision（语义回读失败 ⚠️）/T tier（⚠️ sweep 已行使、真压未达）为部分；F4/F5/F6 VACUOUS 带触发信号。1M 真压与 MCP 用顶层 NOT_EXERCISED 显式声明，不造假格。 跨波 MCP 面定义（W33 补）：W31 制品=顶层 mcp 字段 + cells 无 mcp 格；W32 制品=顶层字段 + F4_mcp VACUOUS 触发格（本波维持，文档口径已同步为「NOT_EXERCISED 并留触发格」）；K_feature_enum 用 AND 覆盖两种形态。state_glyph_mapping 两制品已统一为 PASS/PARTIAL/VACUOUS 三键（W31 删 FAIL→⛔）。",
+  "cells_provenance": "cells[] 14 格来自 _w32/evidence/*.json 本波真机取证（汇总层 W32_SUMMARY.json 的 emoji verdict 转换为四态枚举），非跨波复制。判据缺陷已订正：早期 sentinel-in-UI 被输入气泡污染的假阳性行由 strict 复核件取代（e2e_bolt.json→e2e_bolt2.json、tier 早期→lightning_recheck.json、super-vl 早期→e2e_supervl_r2.json）；归因订正 nano_final.json→E07 OR North。详见 W32_SUMMARY.json notes。 W33 补：14 格 evidence_ref 全部改指仓内 evidence/raw/w32/ 真实文件（脱敏后入仓），外部审查可逐格复核。",
   "environment_incidents": [
     "INC-w32-keyentry: OR两端点标hasSecret但无bin→发送missing API key; 按W31流程录入or-dots3.bin/or-north.bin后PASS(环境配置, 非harness缺陷)",
     "INC-w32-auth: super-vl 120B两次HTTP403 authentication failed(模型级授权; 同key其它NV端点可用, 非harness缺陷)"
@@ -424,5 +438,10 @@
       "本机新增路径: 0"
     ]
   },
-  "zero_kotlin": true
+  "zero_kotlin": true,
+  "matrix_vs_gate_order": {
+    "gate_before_matrix": true,
+    "incident": "INC-g1-reinstall",
+    "note": "W32 主理人跑 G1 后按 localbuild.sh 打印提示手动 pm install -r + monkey，重置真机 UI；矩阵在重开会话后继续。APK 与 W31 字节一致（零 .kt）。本字段供跨波复现时区分「闸门后」与「闸门前」环境。"
+  }
 }

@@ -1,0 +1,19 @@
+{
+ "tier": "1M",
+ "meter_empty": [],
+ "meter_after": [],
+ "usage": [],
+ "strict": {
+  "verbatim_hit": false,
+  "raw_verbatim": [],
+  "output_labels": [
+   "LiquidHarness",
+   "NV SuperVL 120B 1M · nvidia/nemotron-3.5-super-vl-120b-a12b",
+   "对话",
+   "设置"
+  ],
+  "verbatim_labels": [],
+  "usage": [],
+  "has_failure_banner": true
+ }
+}

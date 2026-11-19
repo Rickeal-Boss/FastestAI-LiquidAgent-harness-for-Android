@@ -1,0 +1,36 @@
+{
+ "tag": "ctrl_lightning",
+ "q": "Reply_with_exactly_W32-PROBE-CNTRL-7Q4_and_nothing_else",
+ "input_bounds": "[240,1285][816,1429]",
+ "send_bounds": "[870,1256][1014,1400]",
+ "base_usage": [],
+ "done": true,
+ "usage_changed": true,
+ "waited": 10.9,
+ "usage": [
+  "1.8k in / 774 out (0 cached, 0.0%)"
+ ],
+ "stopped": false,
+ "labels_tail": [
+  "LiquidHarness",
+  "NV Lightning 30B · nvidia/nemotron-3.5-lightning-30b-a3b",
+  "Reply_with_exactly_W32-PROBE-CNTRL-7Q4_and_nothing_else",
+  "思考过程",
+  "The user asks: \"Reply_with_exactly_W32-PROBE-CNTRL-7Q4_and_nothing_else\". So we must output exactly that string, nothing",
+  "W32-PROBE-CNTRL-7Q4_and_nothing_else",
+  "复制",
+  "检查 JSON",
+  "1.8k in / 774 out (0 cached, 0.0%)",
+  "上下文 1.9K / 27.9K",
+  "对话",
+  "设置"
+ ],
+ "sentinel": "W32-PROBE-CNTRL-7Q4",
+ "sentinel_in_ui": true,
+ "token_labels": [
+  "1.8k in / 774 out (0 cached, 0.0%)",
+  "上下文 1.9K / 27.9K"
+ ],
+ "devlog_kept": 3,
+ "shot_bytes": 394184
+}

@@ -1,0 +1,18 @@
+{
+ "cell": "F5",
+ "face": "manual_compact",
+ "entry": "更多操作→压缩上下文（入口可点）",
+ "dialog_labels": [
+  "压缩这段对话的上下文？",
+  "压缩后本会话的提示缓存会从头重建…",
+  "较早的消息不再发给模型…",
+  "取消",
+  "压缩"
+ ],
+ "confirmed": "压缩",
+ "outcome_ui": "没有可压缩的内容：历史本来就装得下，或找不到安全的截断点。",
+ "log": "manual_compress=noop（nothing_to_drop）",
+ "state": "PARTIAL",
+ "reading": "手动压缩入口与确认框全行使；判据=token 软预算（1M 档 ≈104k tokens），会话体积未越 ⇒ noop nothing_to_drop（正确行为，非缺陷）",
+ "trigger": "要 applied：会话 token 体积需越软预算（1M 档约 104k tokens；32K 档约 23.7k tokens）"
+}

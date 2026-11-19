@@ -1,0 +1,19 @@
+{
+ "cell": "T",
+ "face": "tier_axis",
+ "readback": [
+  "当前：NV SuperVL 120B 1M"
+ ],
+ "max_context_tokens_hex_tail": "18c0843d0a160a10636f6d70726573735f636f6e7465787412020801",
+ "char_cap_evidence": "1M 档实测熔断 used=463457 limit=400000（32K 档 COMPACT_TRIGGER_CHARS=50227 的 8 倍量级）",
+ "note": "档位=会话预算 ≠ 端点 contextLength；1M tokens 真压 NOT_EXERCISED",
+ "state": "PARTIAL",
+ "reading": "档位 readback=['当前 1M']；1M 档字符 cap 实测 400000（32K 档 50227）；1M tokens 真压未达",
+ "stress": {
+  "status": "NOT_EXERCISED",
+  "reason": "1M tokens 真压需约 4M chars 输入；本波受 adb 输入注入上限（单次 ~333 字符）与 file_read 16k/次截断限制，未构造。1M 档字符 cap 400000 已实测（熔断报文 used=463457 limit=400000）。"
+ },
+ "tier_readback": [
+  "当前 1M"
+ ]
+}

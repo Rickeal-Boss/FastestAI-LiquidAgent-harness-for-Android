@@ -1,0 +1,23 @@
+{
+ "meter_bar_before": [],
+ "meter_bar_after": [],
+ "badge": [
+  "NV SuperVL 120B 1M · nvidia/nemotron-3.5-super-vl-120b-a12b"
+ ],
+ "strict": {
+  "verbatim_hit": true,
+  "output_labels": [
+   "LiquidHarness",
+   "NV SuperVL 120B 1M · nvidia/nemotron-3.5-super-vl-120b-a12b",
+   "Say W32TIER1M ok",
+   "本次请求失败：authentication failed (HTTP 403)",
+   "对话",
+   "设置"
+  ],
+  "verbatim_labels": [
+   "Say W32TIER1M ok"
+  ],
+  "usage": []
+ },
+ "usage": []
+}

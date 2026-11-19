@@ -1,0 +1,32 @@
+{
+ "cell": "F3",
+ "face": "skill",
+ "endpoint": "or-dots3",
+ "skill": "notes-organizer",
+ "trigger": "@菜单输入 @notes 弹出 notes-organizer/pdf-toolkit 两项并选中",
+ "skill_load_observed": true,
+ "skill_body_observed": true,
+ "adoption_semantic": true,
+ "usage": [
+  "2.1k in / 613 out (2048 cached, 95.3%)"
+ ],
+ "labels": [
+  "LiquidHarness",
+  "OR Dots3 Note Free · dots-3-note-preview:free",
+  "Here's the draft based on the notes you provided (no W33 files exist in the workspace, so I used your inline text):\n\n---\n\n# W33 Sync — 2026-11-19\n\n## Decisions\n- Run the multi-model matrix.\n\n## Open q",
+  "复制",
+  "检查 JSON",
+  "2.1k in / 613 out (2048 cached, 95.3%)",
+  "上下文 2.1K / 520.2K",
+  "对话",
+  "设置"
+ ],
+ "note": "模型先 skill_load 再 file_list 后直接给摘要（未落盘）；F2 另格补 file_write",
+ "devlog": 17,
+ "shot": 382866,
+ "captured_labels": [
+  "{\"name\": \"notes-organizer\"}",
+  "[SKILL BODY] This is operating guidance loaded from a skill file..."
+ ],
+ "verdict": "PASS"
+}

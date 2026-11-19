@@ -1,0 +1,46 @@
+{
+ "tag": "or_dots",
+ "q": "Reply_with_exactly_W32-ORDOTS-4P8Q",
+ "input_bounds": "[240,1897][816,2041]",
+ "send_bounds": "[870,1284][1014,1428]",
+ "base_usage": [],
+ "done": false,
+ "usage_changed": false,
+ "waited": 124.9,
+ "usage": [],
+ "stopped": false,
+ "labels_tail": [
+  "LiquidHarness",
+  "OR Dots3 Note Free · dots-3-note-preview:free",
+  "Reply_with_exactly_W32-ORDOTS-4P8Q",
+  "本次请求失败：missing API key for endpoint",
+  "对话",
+  "设置"
+ ],
+ "full_labels": [
+  "LiquidHarness",
+  "OR Dots3 Note Free · dots-3-note-preview:free",
+  "Reply_with_exactly_W32-ORDOTS-4P8Q",
+  "本次请求失败：missing API key for endpoint",
+  "对话",
+  "设置"
+ ],
+ "header": [
+  "OR Dots3 Note Free · dots-3-note-preview:free"
+ ],
+ "strict": {
+  "verbatim_hit": false,
+  "raw_verbatim": [],
+  "output_labels": [
+   "LiquidHarness",
+   "OR Dots3 Note Free · dots-3-note-preview:free",
+   "对话",
+   "设置"
+  ],
+  "verbatim_labels": [],
+  "usage": [],
+  "has_failure_banner": true
+ },
+ "devlog": 10,
+ "shot": 310129
+}

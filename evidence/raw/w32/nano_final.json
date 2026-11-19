@@ -1,0 +1,72 @@
+{
+ "tag": "nano_final",
+ "q": "Reply_with_exactly_W32-NANO-FINAL-2X8K",
+ "input_bounds": "[240,1897][816,2041]",
+ "send_bounds": "[870,1284][1014,1428]",
+ "base_usage": [],
+ "done": true,
+ "usage_changed": true,
+ "waited": 10.8,
+ "usage": [
+  "1.1k in / 251 out (0 cached, 0.0%)"
+ ],
+ "stopped": false,
+ "labels_tail": [
+  "LiquidHarness",
+  "OR North Mini Code Free · north-mini-code:free",
+  "Reply_with_exactly_W32-NANO-FINAL-2X8K",
+  "思考过程",
+  "The user has given me a very specific request: \"Reply_with_exactly_W32-NANO-FINAL-2X8K\". This appears to be some type of",
+  "W32-NANO-FINAL-2X8K",
+  "复制",
+  "检查 JSON",
+  "1.1k in / 251 out (0 cached, 0.0%)",
+  "上下文 1.1K / 127K",
+  "对话",
+  "设置"
+ ],
+ "full_labels": [
+  "LiquidHarness",
+  "OR North Mini Code Free · north-mini-code:free",
+  "Reply_with_exactly_W32-NANO-FINAL-2X8K",
+  "思考过程",
+  "The user has given me a very specific request: \"Reply_with_exactly_W32-NANO-FINAL-2X8K\". This appears to be some type of code or instruction that they want me to respond with exactly.  Looking at the rules, I need to be careful here. The user is asking for a specific response with exact formatting. ",
+  "W32-NANO-FINAL-2X8K",
+  "复制",
+  "检查 JSON",
+  "1.1k in / 251 out (0 cached, 0.0%)",
+  "上下文 1.1K / 127K",
+  "对话",
+  "设置"
+ ],
+ "header": [],
+ "strict": {
+  "verbatim_hit": true,
+  "raw_verbatim": [
+   "The user has given me a very specific request: \"Reply_with_exactly_W32-NANO-FINAL-2X8K\". This appears to be some type of code or instruction that they want me t",
+   "W32-NANO-FINAL-2X8K"
+  ],
+  "output_labels": [
+   "LiquidHarness",
+   "OR North Mini Code Free · north-mini-code:free",
+   "思考过程",
+   "The user has given me a very specific request: \"Reply_with_exactly_W32-NANO-FINAL-2X8K\". This appears to be some type of code or instruction that they want me to respond with exactly.  Looking at the rules, I need to be ",
+   "W32-NANO-FINAL-2X8K",
+   "复制",
+   "检查 JSON",
+   "1.1k in / 251 out (0 cached, 0.0%)",
+   "上下文 1.1K / 127K",
+   "对话",
+   "设置"
+  ],
+  "verbatim_labels": [
+   "The user has given me a very specific request: \"Reply_with_exactly_W32-NANO-FINAL-2X8K\". This appears to be some type of code or instruction that they want me to respond with exactly.  Looking at the rules, I need to be ",
+   "W32-NANO-FINAL-2X8K"
+  ],
+  "usage": [
+   "1.1k in / 251 out (0 cached, 0.0%)"
+  ],
+  "has_failure_banner": false
+ },
+ "shot": 390696
+}

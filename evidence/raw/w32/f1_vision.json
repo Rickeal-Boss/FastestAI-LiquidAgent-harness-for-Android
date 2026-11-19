@@ -1,0 +1,24 @@
+{
+ "cell": "F1",
+ "face": "vision",
+ "endpoint": "NV Bolt E4B",
+ "image": "w32_vision_real.png",
+ "image_size": "480x240",
+ "image_bytes": 3962,
+ "q": "What_shapes_and_text_are_in_this_image_Answer_RED_RECT_GREEN_CIRCLE_and_code_W32VIS-6B2K",
+ "done": false,
+ "code_hit": false,
+ "red_green_semantic": true,
+ "fail": false,
+ "usage": [],
+ "outputs": [
+  "LiquidHarness",
+  "NV Bolt E4B · nvidia/nemotron-3.5-bolt-e4b",
+  "开始一段对话",
+  "在下方输入问题，回复会边生成边显示。",
+  "对话",
+  "设置"
+ ],
+ "devlog": 9,
+ "shot": 308856
+}

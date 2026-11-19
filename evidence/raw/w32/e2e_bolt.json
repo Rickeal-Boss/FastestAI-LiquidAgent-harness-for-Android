@@ -1,0 +1,56 @@
+{
+ "tag": "e2e_bolt",
+ "q": "Reply_with_exactly_W32-PROBE-BOLT-8R1T",
+ "input_bounds": "[240,1285][816,1429]",
+ "send_bounds": "[870,1284][1014,1428]",
+ "base_usage": [],
+ "done": true,
+ "usage_changed": true,
+ "waited": 11.0,
+ "usage": [
+  "1.8k in / 245 out (0 cached, 0.0%)"
+ ],
+ "stopped": false,
+ "labels_tail": [
+  "LiquidHarness",
+  "NV Nano Omni 30B · nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+  "Reply_with_exactly_W32-PROBE-BOLT-8R1T",
+  "思考过程",
+  "The user says: \"Reply_with_exactly_W32-PROBE-BOLT-8R1T\". According to instructions, we must respond with exactly that te",
+  "W32-PROBE-BOLT-8R1T",
+  "复制",
+  "检查 JSON",
+  "1.8k in / 245 out (0 cached, 0.0%)",
+  "上下文 1.9K / 27.9K",
+  "对话",
+  "设置"
+ ],
+ "endpoint_model": "nvidia/nemotron-3.5-bolt-e4b",
+ "switch": [
+  false,
+  "not-found"
+ ],
+ "sentinel": "W32-PROBE-BOLT-8R1T",
+ "sentinel_in_ui": true,
+ "approval_taps": [],
+ "token_labels": [
+  "1.8k in / 245 out (0 cached, 0.0%)",
+  "上下文 1.9K / 27.9K"
+ ],
+ "logcat_connect": [
+  "W/WindowMagnificationMgr( 2059): requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED",
+  "W/WindowMagnificationMgr( 2059): requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED",
+  "W/AccessibilityNodeInfoDumper(10646): Fetch time: 26ms",
+  "W/WindowMagnificationMgr( 2059): requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED",
+  "W/WindowMagnificationMgr( 2059): requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED",
+  "W/WindowMagnificationMgr( 2059): requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED",
+  "W/AccessibilityNodeInfoDumper(10664): Fetch time: 54ms",
+  "W/WindowMagnificationMgr( 2059): requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED",
+  "W/WindowMagnificationMgr( 2059): requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED",
+  "W/WindowMagnificationMgr( 2059): requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED",
+  "W/AccessibilityNodeInfoDumper(10687): Fetch time: 29ms",
+  "W/WindowMagnificationMgr( 2059): requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED"
+ ],
+ "devlog_kept": 5,
+ "shot_bytes": 400247
+}
