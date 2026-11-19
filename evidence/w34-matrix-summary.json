@@ -295,13 +295,116 @@
   },
   "coverage_note": "多模型（NV Lightning/Nano Omni/Bolt/super-vl 1M + OR dots3/north）× 上下文档位（32K↔1M readback + 32K 软预算实测）× 功能面（F1 视觉附件 / F2 workspace+审批 / F3 skill / F5 手动压缩 applied / F6 自动压缩触发）覆盖；MCP 面显式 NOT_EXERCISED 并留 VACUOUS 触发格。",
   "cells_provenance": "cells[] 来自本波真机取证（_w34/ 仓外原始件，脱敏后入仓 evidence/raw/w34/），非跨波复制。",
+  "assertions": [
+    {
+      "id": "K_state_domain",
+      "description": "state_counts 非零键集 == cells[].state 值域；零值键 0（本波 5/7/1，13 格）",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "add FAIL:0",
+        "expected": "RED state domain"
+      }
+    },
+    {
+      "id": "K_feature_enum",
+      "description": "每个 cell 的 feature_face ∈ declared_feature_faces（AND）；declared 含 mcp ⇒ 顶层 mcp 字段存在（AND）；mcp 有格 ⇒ 每格带 unexercised_reason；无格 ⇒ coverage_note 显式 none_by_design",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "delete mcp field",
+        "expected": "RED mcp field missing"
+      }
+    },
+    {
+      "id": "K_feature_enum_no_cell_claim",
+      "description": "mcp.cell 声明的格必须在 cells[] 中存在；删格不删声明 ⇒ RED（本波 mcp.cell=F4_mcp 实存）",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "remove mcp cell while claim kept",
+        "expected": "RED mcp claims cell F4_mcp but cells[] lacks it"
+      }
+    },
+    {
+      "id": "K_iteration_consistency",
+      "description": "iterations_total == len(iterations[]) == 17（本波实测）；attempt_states 键集 == cells[].cell_id 值域",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "delete middle iteration",
+        "expected": "RED iterations_total != len"
+      }
+    },
+    {
+      "id": "K_evidence_ref",
+      "description": "cells[].evidence_ref 100% 指向仓内存在文件（本波 13 格指向 evidence/raw/w34/ 脱敏原始件）",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "point ref to missing file",
+        "expected": "RED missing ref"
+      }
+    }
+  ],
+  "mutation_cases": [
+    {
+      "id": "K_state_domain",
+      "target": "w34 state_counts",
+      "invariant": "nonzero keys == cell states; zero keys absent",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "add FAIL:0"
+    },
+    {
+      "id": "K_feature_enum",
+      "target": "w34 cells[].feature_face + mcp",
+      "invariant": "face enum AND mcp field",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "delete mcp field"
+    },
+    {
+      "id": "K_feature_enum_no_cell_claim",
+      "target": "w34 mcp.cell",
+      "invariant": "claimed cell exists",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "remove mcp cell while claim kept"
+    },
+    {
+      "id": "K_iteration_consistency",
+      "target": "w34 iterations/attempt_states",
+      "invariant": "total==len==17 and keys==cell_ids",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "delete middle iteration"
+    },
+    {
+      "id": "K_evidence_ref",
+      "target": "w34 evidence_ref",
+      "invariant": "all 13 refs exist in repo",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "missing evidence file"
+    }
+  ],
+  "mutation_selftest": {
+    "total": 5,
+    "rejected": 5,
+    "all_verified": true,
+    "note": "W34 五条出厂断言自证（5 断言 / 5 必红，与 §5.4 对齐）；判据 6 参数化 ARTIFACT 实跑：正常态 OK feature/evidence invariants + 五类必红全 RED。W35-03 加固后判据 6 新增第 6 类 K_assertion_presence（删 assertions 字段 ⇒ RED assertions missing，对 w33 实跑正常态 OK + 六类必红全 RED），原文见 docs/notes/w29-closeout-checklist.md 判据 6 与 W35 摘录。真机正控另见 positive_control_verified_by。"
+  },
   "judge_policy": "strict_sentinel：排除输入气泡与错误横幅；vision 用真图（480x240，非 1×1）语义回读；workspace 用设备侧 run-as 逐字复核；压缩用日志 dropped/kept + 下一轮 usage 双向判据。",
   "credential_policy": "API key 仅存真机 AndroidKeyStore 加密文件；证据文件与文档不含 key 明文；新 key 经端点编辑界面录入（不回显）。",
   "privacy": "证据已脱敏：无凭据明文、无本机绝对路径（用仓内相对路径）、无个人信息字段。",
   "positive_control_verified_by": "device_execution（E01 Lightning / E03 Nano Omni sentinel 严格逐字，无失败横幅）",
   "baseline_note": "W29 全 VACUOUS（11 格）；W30 3/2/3；W31 3/2/4；W32 8/3/3；W33 8/4/1；W34 5/7/1（OR 免费池同窗口双超时 + super-vl 仍 403，PASS 数下降为供给侧原因，非 harness 回归；E02 Bolt 本波回归为 PARTIAL：连通但语义不服从）。",
   "matrix_vs_gate_order": "矩阵先于闸门：真机取证（23:00–23:33）→ G1 编译 → G2 arch-guard → G3 selftest → G4 fulltest → 提交 → CI。",
-  "full_context_1M_stress": "NOT_EXERCISED",
+  "full_context_1M_stress": {
+    "status": "NOT_EXERCISED",
+    "reason": "1M tokens 真压需约 4M chars 输入；本波受 adb input 单次 ~333 字符与 file_read 16k/次双通道上限约束，未构造。只做档位 readback（32K→1M）与 32K 档软预算 27.9K 实测；1M 档字符 cap 未在本波重测（W33 实测 used=463457 limit=400000）。挂 W20-05。"
+  },
   "environment_incidents": [
     {
       "id": "INC-w34-timeout",

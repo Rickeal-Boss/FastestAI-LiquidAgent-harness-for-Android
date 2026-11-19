@@ -1,0 +1,19 @@
+{
+  "cell": "E01_lightning",
+  "face": "endpoint_axis",
+  "endpoint_public_name": "NV Lightning 30B",
+  "model": "nvidia/nemotron-3.5-lightning-30b-a3b (public)",
+  "q": "Reply with exactly: W35-E01-LIGHT-STRICT",
+  "positive_control": true,
+  "strict": {
+    "verbatim_hit": true,
+    "raw_verbatim": ["W35-E01-LIGHT-STRICT"],
+    "has_failure_banner": false,
+    "has_thinking_block": true,
+    "usage": ["1.8k in / 184 out (0 cached, 0.0%)"],
+    "context_readback": "1.9K / 127K"
+  },
+  "state": "PASS",
+  "note": "正控先行：新对话清空残留后 strict sentinel 严格逐字命中，无失败横幅。证明 sentinel 判据会响、端点连通、key 有效。agent-0.log 16:42:42Z auto_compact=noop below_trigger。",
+  "evidence_files": ["e01_lightning_strict.png", "e01_agentlog.txt", "deviceLogTail.txt"]
+}

@@ -1,0 +1,21 @@
+{
+  "cell": "E05_supervl",
+  "face": "endpoint_axis",
+  "endpoint_public_name": "NV SuperVL 120B 1M",
+  "model": "nvidia/nemotron-3.5-super-vl-120b-a12b (public)",
+  "old_key": {
+    "result": "authentication failed (HTTP 403)",
+    "ui": "本次请求失败：authentication failed (HTTP 403)；60s 无回复横幅",
+    "evidence_files": ["e05_supervl_oldkey.png"]
+  },
+  "new_key": {
+    "entered_via": "端点编辑页 API Key 字段（UI 录入；secret 文件 mtime 01:14 更新；不落任何明文）",
+    "result": "strict verbatim W35-E05-SUPERVL-NEWKEY",
+    "usage": "1.8k in / 49 out (0 cached, 0.0%)",
+    "context_readback": "1.9K / 995.9K（1M 端点）",
+    "evidence_files": ["e05_supervl_newkey.png"]
+  },
+  "state": "PASS",
+  "note": "403 复核：旧 key 立即 HTTP 403；经 UI 录入新 key 后 403 消失、strict sentinel 逐字命中。证明 W34 的 super-vl 403 是密钥授权面（新 key 已录入并生效），非 harness 缺陷。密钥全文不落证据/报告/回传消息。",
+  "credential_policy": "key 仅经真机端点编辑 UI 录入；证据仅记 masked 掩码点与 secret 文件 mtime"
+}

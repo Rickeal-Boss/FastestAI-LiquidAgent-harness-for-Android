@@ -1,0 +1,16 @@
+{
+  "cell": "F1_vision",
+  "face": "multimodal",
+  "endpoint_public_name": "NV Nano Omni 30B",
+  "fixture": "480x240 PNG：红方块（左）+ 绿圆（右）+ 文本 W35VISION（非 1×1）",
+  "attach": "添加图片 → DocumentsUI 搜索 w35vision → 选中 w35vision.png（2.65 kB）→ 附件 chip + 移除附件",
+  "queries": [
+    {"q": "What shapes ... Reply with exactly W35-VISION-RED-SQUARE-GREEN-CIRCLE", "note": "答案泄漏在题面，模型逐字回显，不作语义判据"},
+    {"q": "What color is the square on the left, and what color is the circle on the right? Answer briefly.", "answer": "The square is red and the circle is green.", "usage": "2.1k in / 123 out (2128 cached, 98.3%)"}
+  ],
+  "semantic_verbatim": true,
+  "semantic_readback": "红方块→red，绿圆→green，与 480×240 真图一致；答案未在题面泄漏；98.3% cache hit 证明图像 token 参与请求",
+  "state": "PASS",
+  "note": "遵循「多模态判据禁用 1×1 / 答案不得泄漏题面」纪律：用非空语义题（颜色）验证真实视觉理解。Nano Omni inputModalities 含 IMAGE，本波实证视觉链路成立。",
+  "evidence_files": ["f1_vision_nano.png", "w35vision.png"]
+}

@@ -59,11 +59,11 @@ $ grep -c "130" docs/analysis/w33-acceptance.md docs/handoff-20261119-wave33.md
 
 ### 2.2 W34-02 制品断言账实 + 判据 6 可执行化
 
-- **判据 6 参数化**：`ARTIFACT` 默认 `evidence/w32-matrix-summary.json`，可指向任一制品；`cd "$(git rev-parse --show-toplevel)"` 替代 `cd harness-v2`；`mkdir -p _w34/mut`；检查逻辑落 `_w34/k6_check.py`（仓内文档块可原样跑）。
-- **五类必红**：`k6_fail` / `k6_nomcp` / `k6_nocell` / `k6_iter` / `k6_ref`。`k6_ref` 为 `K_evidence_ref` 的**首次仓内必红输出**（此前 `verified=true` 全自报）。
+- **判据 6 参数化**：`ARTIFACT` 默认 `evidence/w32-matrix-summary.json`，可指向任一制品；原 `cd "$(git rev-parse --show-toplevel)"` 替代 `cd harness-v2`，W35-03 再加 `REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"` 兜底（无 `.git` 快照也 rc=0）；`mkdir -p _w34/mut`；检查逻辑落 `_w34/k6_check.py`（仓内文档块可原样跑）。
+- **必红（W34 五类；W35-03 加第六类）**：`k6_fail` / `k6_nomcp` / `k6_nocell` / `k6_iter` / `k6_ref`；W35-03 增 `k6_noassert`（删 `assertions` ⇒ `RED assertions missing`）。`k6_ref` 为 `K_evidence_ref` 的**首次仓内必红输出**（此前 `verified=true` 全自报）。
 - **w32 制品**：`assertions` 由 3 补到 4（新增 `K_feature_enum_no_cell_claim`），与 `mutation_cases` 4=4；`mutation_selftest.note` 改「4 条 / 判据 6」，删「扩为 5 条」「判据 2b」。
 - **w33 制品**：`mutation_selftest.note` 指向 W34 参数化实跑（5=5）。
-- **验收物 §2.3/§3.6**：补 `RED missing ref` 原文；键数表补 `iterations_total`（W31 6 / W32 18 / W33 10，W33 注释「随取证粒度变化，非回归」）。
+- **验收物 §2.3/§3.6**：此处指 `w33-acceptance.md` 的两节——补 `RED missing ref` 原文；键数表补 `iterations_total`（W31 6 / W32 18 / W33 10，W33 注释「随取证粒度变化，非回归」）。本波制品自身 `iterations_total=17` 与三字段补回记录见本文件 §3.6。
 
 ```text
 [正常态] w32 → OK feature/evidence invariants
@@ -104,8 +104,10 @@ $ grep -c "130" docs/analysis/w33-acceptance.md docs/handoff-20261119-wave33.md
 [判据 4 必红]    mut hits = 1 → RED affirmative wording remains
 [判据 5 正常态]  6 6 6 | ok1=True | attempt keys==cell_ids=True → OK
 [判据 5 必红]    RED iteration/state invariant broken
-[判据 6]        见 §2.2
-[判据 7 正常态]  OK closed rows carry runnable pointers (W30+)（8 行销账后复跑）
+[判据 6]        见 §2.2；W35-03 加 `K_assertion_presence`（删 `assertions` ⇒ `RED assertions missing`）+ `REPO_ROOT` 兜底
+[判据 7 正常态]  OK closed rows carry runnable pointers (W30+)
+                OK closed rows carry current-wave pointers (W34)（8 行销账后复跑）
+[判据 7 必红·W35] 副本删空 W30-01 本波复核指路 ⇒ 第一行仍 OK（旧正则不响）+ `RED closed without current-wave pointer: W30-01`；原文见 `docs/notes/w29-closeout-checklist.md` W35 摘录
 ```
 
 > 判据 1 的 W33 段 rows=3 与 W34 段 rows=3 均确认；台账总行 210（33 `CLOSED` / 166 `OPEN` / 11 `CARRIED`），净 OPEN −5。
@@ -152,6 +154,17 @@ $ grep -c "130" docs/analysis/w33-acceptance.md docs/handoff-20261119-wave33.md
 | INC-w34-timeout | E06/E07/F1 | OR 免费池同窗口 120s 超时；设备 ping openrouter.ai 通、NV 端点同窗口可用 |
 | INC-w34-auth | E05 | super-vl 120B 模型级 403（新旧 key 同结论） |
 | INC-w34-autokv | F6 | 自动压缩 `net=-256` 与手动 `dropped=9` 对同一快照结论不一致；根因未定位，交外审裁决 |
+
+### 3.6 顶层键数环比与迭代计数（报告 4 的方法；W35-03 补回本波三字段）
+
+| 制品 | 顶层键数 | 格数 | 备注 |
+|---|---|---|---|
+| `w31-matrix-summary.json` | 29 | 9 | W32 补 14→29；`iterations_total=6` |
+| `w32-matrix-summary.json` | 31 | 14 | W33 补 `matrix_vs_gate_order`；W34 补 `K_feature_enum_no_cell_claim` 进 assertions（断言=必红=4）；`iterations_total=18` |
+| `w33-matrix-summary.json` | 30 | 13 | 含 `matrix_vs_gate_order` / `iterations_note` / `full_context_1M_stress` / 5 条断言；`iterations_total=10`（W32 18 → W33 10，迭代链随取证粒度变化，非回归） |
+| `w34-matrix-summary.json` | 31 | 13 | W35-03 补回 `assertions` / `mutation_cases` / `mutation_selftest`（28→31，5 断言 / 5 必红，与 §5.4 对齐）；`iterations_total=17`；`full_context_1M_stress` 由纯字符串补回 `{status,reason}` dict |
+
+> 键数只作环比观察，不以「键多=好」判质量；W31 的退化教训是**丢键**，不是键少本身。本波制品原 28 键缺三字段、§5.4 却写「5 断言 / 5 必红」属空口，W35-03 按 `w33` 同 schema 补回后才账实一致；判据 6 对补回后 w34 正常态 `OK feature/evidence invariants`、六类必红全 RED（含 `RED assertions missing`），原文见 `docs/notes/w29-closeout-checklist.md` W35 摘录。
 
 ---
 

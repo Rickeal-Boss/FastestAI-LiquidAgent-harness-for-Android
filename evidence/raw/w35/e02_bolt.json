@@ -1,0 +1,16 @@
+{
+  "cell": "E02_bolt",
+  "face": "endpoint_axis",
+  "endpoint_public_name": "NV Bolt E4B",
+  "model": "nvidia/nemotron-3.5-bolt-e4b (public)",
+  "q": "Reply with exactly: W35-E02-BOLT-STRICT",
+  "strict": {
+    "verbatim_hit": true,
+    "raw_verbatim": ["W35-E02-BOLT-STRICT"],
+    "has_failure_banner": false,
+    "usage": ["1.4k in / 14 out (0 cached, 0.0%)"]
+  },
+  "state": "PASS",
+  "note": "Bolt 连通 + 语义本波回归：strict sentinel 严格逐字命中，无失败横幅，无 thinking 块。W34 同端点曾回 This is the final answer（非 strict）判 PARTIAL；本波模型遵循改善，以真机为准判 PASS。",
+  "evidence_files": ["e02_bolt.png"]
+}

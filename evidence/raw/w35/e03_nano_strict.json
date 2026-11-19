@@ -1,0 +1,17 @@
+{
+  "cell": "E03_nano_strict",
+  "face": "endpoint_axis",
+  "endpoint_public_name": "NV Nano Omni 30B",
+  "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning (public)",
+  "q": "Reply with exactly: W35-E03-NANO-STRICT",
+  "strict": {
+    "verbatim_hit": true,
+    "raw_verbatim": ["W35-E03-NANO-STRICT"],
+    "has_failure_banner": false,
+    "usage": ["1.8k in / 68 out (0 cached, 0.0%)"],
+    "context_readback": "1.9K / 127K"
+  },
+  "state": "PASS",
+  "note": "第二个正控：Nano Omni strict sentinel 严格逐字，无失败横幅。上下文有效窗口 127K 受端点 contextLength=131072 限制（档位仍 1M），证实档位/端点两轴独立。",
+  "evidence_files": ["e03_nano_strict.png"]
+}

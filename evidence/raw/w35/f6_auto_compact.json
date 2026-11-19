@@ -1,0 +1,25 @@
+{
+  "cell": "F6_auto_compact",
+  "face": "auto_compression",
+  "endpoint_public_name": "NV Lightning 30B",
+  "device_log_excerpt": [
+    "2026-11-19T17:41:09.254755Z INFO auto_compact=noop reason=below_trigger",
+    "2026-11-19T17:41:59.340290Z INFO auto_compact=noop reason=below_trigger",
+    "2026-11-19T17:42:14.975144Z INFO auto_compact=noop reason=insufficient_savings:net=-256",
+    "2026-11-19T17:42:25.476487Z INFO auto_compact dropped=4 kept=10 cache_invalidated=false",
+    "2026-11-19T17:42:59.720639Z INFO auto_compact=noop reason=already_compressed",
+    "2026-11-19T17:43:24.072466Z INFO auto_compact=noop reason=already_compressed"
+  ],
+  "key_observations": [
+    "17:42:14 auto_compact=noop reason=insufficient_savings:net=-256",
+    "17:42:25 auto_compact dropped=4 kept=10 cache_invalidated=false  ← 自动路径 applied",
+    "17:42:59 / 17:43:24 auto_compact=noop reason=already_compressed"
+  ],
+  "state": "PARTIAL",
+  "note": "本波首次在同一会话捕获自动路径三段序列：试算 insufficient_savings:net=-256 → 自动 dropped=4 kept=10（applied）→ 后续 already_compressed。这实证 W9-01 的两个确定性命题（net=-256 ⇔ 试算 compression=null；noop 是正确行为、标签语义错配），且比 W34「自动 noop vs 手动 applied 分裂」更进一步——自动路径自身在条件满足后 applied。未持有当时 bubbles 快照，不判定具体 untouched 分支、不写成已修复。",
+  "evidence_files": [
+    "f6_auto_compact_log.txt",
+    "f6_auto_compact.png",
+    "deviceLogTail.txt"
+  ]
+}

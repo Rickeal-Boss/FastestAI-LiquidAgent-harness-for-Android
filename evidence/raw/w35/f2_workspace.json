@@ -1,0 +1,22 @@
+{
+  "cell": "F2_workspace",
+  "face": "workspace_rw",
+  "endpoint_public_name": "NV Lightning 30B",
+  "flow": "file_write 请求授权 → 允许一次 → 工具执行 → 设备侧 run-as 复核（ls -l + cat + hex）",
+  "approval_exact_args": {
+    "path": "w35probe.txt",
+    "content": "W35WS-F2-K7M2"
+  },
+  "ui": [
+    "工具「file_write」请求授权",
+    "wrote 13 chars to w35probe.txt",
+    "1.9k in / 43 out"
+  ],
+  "device_check": "run-as ... cat files/harness/workspace/w35probe.txt → W35WS-F2-K7M2（13 字符逐字）；hex 57 33 35 57 53 2d 46 32 2d 4b 37 4d 32；mtime 2026-11-20 00:45",
+  "state": "PASS",
+  "note": "本波用裸文件名（非 workspace/ 前缀）⇒ 落盘于 workspace/w35probe.txt，修正 W34 的双层路径。审批 exact args 与设备侧 hex/mtime 双向一致。",
+  "evidence_files": [
+    "f2_workspace.png",
+    "f2_device_check.txt"
+  ]
+}

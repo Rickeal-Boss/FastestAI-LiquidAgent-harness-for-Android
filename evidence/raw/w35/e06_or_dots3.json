@@ -1,0 +1,15 @@
+{
+  "cell": "E06_or_dots3",
+  "face": "endpoint_axis",
+  "endpoint_public_name": "OR Dots3 Note Free",
+  "model": "dots-3-note-preview:free (public)",
+  "attempts": [
+    {"key": "旧 key", "result": "网络抖动正在重试 → giving up after 1 retries: network error: SocketTimeoutException（~3.5min）", "evidence_files": ["e06_or_dots3_timeout.png"]},
+    {"key": "新 key（UI 录入，secret mtime 01:22）", "result": "同一 SocketTimeoutException（~1.5min）", "evidence_files": ["e06_or_dots3_newkey.png"]}
+  ],
+  "network_probe": "设备侧 ping openrouter.ai 3 包 2 收 33% 丢包 196-200ms ⇒ 网络可达",
+  "device_log": "无 403/401；断网非因；请求承担 1 次 retry 后非静默报错",
+  "state": "PARTIAL",
+  "note": "免费池供给侧拥塞：新旧 key 均 SocketTimeout；ping 通 NV 端点同窗口可用 ⇒ 归 INC-w35-timeout，不写成 harness 缺陷、不冒充 PASS。按用户指令超时归 INC。",
+  "evidence_files": ["e06_or_dots3_timeout.png", "e06_or_dots3_newkey.png"]
+}

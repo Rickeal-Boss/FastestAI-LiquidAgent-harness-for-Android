@@ -1,0 +1,17 @@
+{
+  "cell": "T_tier",
+  "face": "tier_axis",
+  "readback": {
+    "32K": "当前 32K / 已选; pb 18 80 fa 01 = 32000; chat meter 上下文 1.9K / 27.9K（软预算实测）",
+    "256K": "当前 256K / 已选（切换确认框 unverified_window char_floor_unmeasured）",
+    "512K": "当前 512K / 已选（同上确认框）",
+    "1M": "当前 1M / 已选; pb 18 c0 84 3d = 1000000"
+  },
+  "soft_budget_32k": "27.9K tokens（chat 上下文 1.9K / 27.9K 读回）",
+  "all_four_switched": true,
+  "tier_vs_endpoint_ctx": "档位=会话预算; 端点 contextLength=131072（Lightning）独立; 两者分轴判定",
+  "state": "PARTIAL",
+  "note": "32K/256K/512K/1M 四档开关 readback 全部成立 + 32K 软预算 27.9K 实测。1M tokens 真压受双通道（端点 128K context + 4K maxOutput）硬限 ⇒ NOT_EXERCISED，不冒充 PASS。切换均经 confirm 对话框（unverified_window char_floor_unmeasured），符合预期守卫。",
+  "full_context_1M_stress": "NOT_EXERCISED",
+  "evidence_files": ["tier_32k.png", "tier_1m.png"]
+}

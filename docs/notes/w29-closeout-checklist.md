@@ -270,16 +270,19 @@ printf 两段拼装 | grep -c 全称模式 = 1（必然命中样本，证明判�
 
 **出口判据来源**：W33-03（W32 制品 `K_feature_enum` OR 恒真 + `F4_mcp` 格与文档矛盾 + 14 格 `evidence_ref` 指向仓内不存在文件——外审 14/14 MISSING）；W34-02（W33 新制品 5 条断言全自报、判据只覆盖 w32、`K_evidence_ref` 无必红输出，且原代码块 `cd harness-v2` 在仓根会被吞、`../_w33/mut/` 未预建导致必红块跑不起来）。
 
-**正常态（期望 OK）** —— 面枚举 AND、mcp 字段/格一致、state 值域、迭代一致、证据可复核，五项一次跑；`ARTIFACT` 默认 w32，可对任一 `evidence/*-matrix-summary.json` 跑：
+**正常态（期望 OK）** —— 面枚举 AND、mcp 字段/格一致、state 值域、迭代一致、证据可复核、出厂断言存在，六项一次跑；`ARTIFACT` 默认 w32，可对任一 `evidence/*-matrix-summary.json` 跑：
 
 ```bash
-cd "$(git rev-parse --show-toplevel)"
+# W35-03：REPO_ROOT 兜底替代 `cd "$(git rev-parse --show-toplevel)"` 硬依赖（无 .git 快照也 rc=0）
+REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+cd "$REPO_ROOT" || exit 1
 mkdir -p _w34
 cat > _w34/k6_check.py <<'PY'
 import json,io,os,sys
 art=sys.argv[1]
 d=json.load(io.open(art,encoding="utf-8"))
 cells=d["cells"]; declared=set(d["declared_feature_faces"]); errs=[]
+if "assertions" not in d: errs.append("assertions missing")   # K_assertion_presence（W35-03 必红六类）
 if not {c["feature_face"] for c in cells} <= declared: errs.append("face not declared")
 if "mcp" in declared and "mcp" not in d: errs.append("mcp field missing")
 mcp_cells=[c for c in cells if c["feature_face"]=="mcp"]
@@ -305,10 +308,11 @@ ARTIFACT="${ARTIFACT:-evidence/w32-matrix-summary.json}"
 python _w34/k6_check.py "$ARTIFACT"
 ```
 
-**必红变异（期望 RED，五类）**：工作区副本注入后逐条重跑 `_w34/k6_check.py`（`K_evidence_ref` 必红 = 把某格 `evidence_ref` 指向不存在文件）：
+**必红变异（期望 RED，六类；W35-03 新增 `K_assertion_presence`）**：工作区副本注入后逐条重跑 `_w34/k6_check.py`（`K_evidence_ref` 必红 = 把某格 `evidence_ref` 指向不存在文件；`K_assertion_presence` 必红 = 删顶层 `assertions` 字段）：
 
 ```bash
-cd "$(git rev-parse --show-toplevel)"
+REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+cd "$REPO_ROOT" || exit 1
 export ARTIFACT="${ARTIFACT:-evidence/w32-matrix-summary.json}"
 mkdir -p _w34/mut
 python - <<'PY'
@@ -318,7 +322,8 @@ muts={"k6_fail":lambda x:x["state_counts"].__setitem__("FAIL",0),
       "k6_nomcp":lambda x:x.pop("mcp"),
       "k6_nocell":lambda x:x.__setitem__("cells",[c for c in x["cells"] if c["cell_id"]!=(x.get("mcp") or {}).get("cell")]),
       "k6_iter":lambda x:x["iterations"].pop(len(x["iterations"])//2),
-      "k6_ref":lambda x:x["cells"][0].__setitem__("evidence_ref","evidence/raw/__missing__.json")}
+      "k6_ref":lambda x:x["cells"][0].__setitem__("evidence_ref","evidence/raw/__missing__.json"),
+      "k6_noassert":lambda x:x.pop("assertions")}
 for name,fn in muts.items():
     x=json.load(io.open(src,encoding="utf-8")); fn(x)
     io.open("_w34/mut/"+os.path.basename(src)+"."+name+".json","w",encoding="utf-8").write(json.dumps(x,ensure_ascii=False))
@@ -330,31 +335,70 @@ for f in _w34/mut/*.json; do echo "== $f"; python _w34/k6_check.py "$f"; done
 > W33 实跑输出（2026-11-19，原 w32 块）：正常态 `OK`；四条变异分别 `RED zero-value keys: ['FAIL']`、`RED mcp field missing`、`RED mcp claims cell F4_mcp but cells[] lacks it`、`RED iterations_total != len`（见 `_w33/k6_output.txt` 与 W33 验收物 §2.3）。
 > W34 实跑输出（2026-11-19，参数化后对 w32 与 w33 双制品）：正常态 `OK feature/evidence invariants` ×2；`k6_ref` 首次真响 `RED missing ref evidence/raw/__missing__.json`（W33 制品 `K_evidence_ref` 此前无任何仓内必红输出）；其余四类同 W33。
 
-## 判据 7 — CLOSED 行须带判据实跑输出指路（W33 新增）
+## 判据 7 — CLOSED 行须带判据实跑输出指路（W33 新增；W35-03 加本波复核指路必红）
 
-**出口判据来源**：W31-01 回开事故——销账证据是「人抄的机器结果」而非实跑输出；外审建议「CLOSED 行必须带判据实跑输出指路（文件加时间戳）」以防回开复发。
+**出口判据来源**：W31-01 回开事故——销账证据是「人抄的机器结果」而非实跑输出；外审建议「CLOSED 行必须带判据实跑输出指路（文件加时间戳）」以防回开复发。W35-03 补：W34 同一提交把 8 行 `OPEN`→`CLOSED`，但原正则只查「证据列有任意指针形态」，不校验指针是否指向**本波复核** ⇒ 把本波复核指路删空后旧判据仍 OK（注入即假绿）；本波改为双输出。
 
-**正常态（期望 OK）** —— W30 段起（新代数）的 `CLOSED` 行，证据列必须含 `文件:行` / `evidence/…` / CI run 号 / 「实跑」之一；W30 之前的历史行显式登记为已知缺口（不判红，避免把历史形态当新异常）：
+**正常态（期望 OK×2）** —— ① W30 段起（新代数）的 `CLOSED` 行，证据列必须含 `文件:行` / `evidence/…` / CI run 号 / 「实跑」之一；W30 之前的历史行显式登记为已知缺口（不判红，避免把历史形态当新异常）。② **仅** W34 销账的 8 行（`CUR_IDS`，可用环境变量覆盖；锚定范围严格 = `W30-01/W30-02/W30-03/W31-01/W32-01/W33-01/W33-02/W33-03`，不扫全表 `CLOSED`），证据列必须同时含 `本波复核指路` + 本波号 `W34` + `§2.4` + `§2.5`（W34 侧写入的精确锚点为「`W35 本波复核指路**：W34 验收物 §2.4 加 §2.5 实跑摘录在案（8 行同车复核），状态维持 CLOSED`」，连接词是中文「加」、非半角 `+`；本检查只钉锚点语义 token、不假设连接符字面）。未在本波销账的历史行（如 W31-02/W31-03，停在 W33 复核、无 W34 指路）**不在 `CUR_IDS` 内、正常态不得判红**——否则旧判据会把「本来就没有」当「被删空」，必红变异失去区分力。检查逻辑落 `_w34/k7_check.py`：
 
 ```bash
-cd harness-v2
-python - <<'PY'
-import io,re
-txt=io.open("docs/06-deferred-ledger.md",encoding="utf-8").read()
+REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+cd "$REPO_ROOT" || exit 1
+mkdir -p _w34
+cat > _w34/k7_check.py <<'PY'
+import io,re,os
+txt=io.open(os.environ.get("LEDGER","docs/06-deferred-ledger.md"),encoding="utf-8").read()
 rows=[l for l in txt.splitlines() if l.startswith("| W")]
+cells=lambda l:[c.strip() for c in l.strip("|").split("|")]
 closed=[l for l in rows if re.search(r"\|\s*`?CLOSED`?\s*\|",l)]
 pat=re.compile(r"([\w./-]+\.(kt|md|json|yml|yaml|sh):\d+)|(evidence/)|(runs?/\d+)|\b\d{10,}\b|实跑")
-new_wave=re.compile(r"\|\s*W(30|31|32|33)\s*\|\s*`?CLOSED`?")
+new_wave=re.compile(r"\|\s*W(30|31|32|33|34)\s*\|\s*`?CLOSED`?")
 bad=[]
 for l in closed:
     if not new_wave.search(l): continue
-    cells=[c.strip() for c in l.strip("|").split("|")]
-    if not pat.search(cells[-1]): bad.append(cells[0])
+    c=cells(l)
+    if not pat.search(c[-1]): bad.append(c[0])
 print("OK closed rows carry runnable pointers (W30+)" if not bad else "RED closed without runnable pointer: "+", ".join(bad))
+cur_wave=os.environ.get("CUR_WAVE","W34")
+cur_ids=[x for x in os.environ.get("CUR_IDS","W30-01,W30-02,W30-03,W31-01,W32-01,W33-01,W33-02,W33-03").split(",") if x]
+cmap={cells(l)[0]:cells(l) for l in closed}
+cur_bad=[]
+for rid in cur_ids:
+    c=cmap.get(rid)
+    if c is None: cur_bad.append(rid+"(not CLOSED)"); continue
+    ev=c[-1]
+    if not ("本波复核指路" in ev and cur_wave in ev and "§2.4" in ev and "§2.5" in ev): cur_bad.append(rid)
+print("OK closed rows carry current-wave pointers ("+cur_wave+")" if not cur_bad else "RED closed without current-wave pointer: "+", ".join(cur_bad))
 PY
+python _w34/k7_check.py
 ```
 
-**必红变异（期望 RED）**：台账副本把 `W31-03` 证据列置空 → 重跑应输出 `RED closed without runnable pointer: W31-03`（W33 实跑：正常态 `OK closed rows carry runnable pointers (W30+)`；变异 `RED closed without runnable pointer: W31-03`）。
+**必红变异 A（W33 原版，期望 RED）**：台账副本把 `W31-03` 证据列置空 → 重跑应输出 `RED closed without runnable pointer: W31-03`。
+
+**必红变异 B（W35-03 新增，期望 RED）**：台账副本把某 CLOSED 行（示例 `W30-01`）证据列的本波复核指路删空 → 重跑第一条 `OK closed rows carry runnable pointers (W30+)` 仍 OK（历史自带指针还在），第二条必须输出 `RED closed without current-wave pointer: W30-01`。两条同时成立才证明新检查不是旧正则的复述：
+
+```bash
+REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+cd "$REPO_ROOT" || exit 1
+mkdir -p _w34/mut
+python - <<'PY'
+import io,re
+txt=io.open("docs/06-deferred-ledger.md",encoding="utf-8").read()
+out=[];hit=0
+for l in txt.splitlines():
+    if re.match(r"\|\s*W30-01\s*\|",l):
+        p=l.split("|")
+        p[-2]=re.sub(r"\*\*W35 本波复核指路\*\*：.*$","（本波复核指路已删空）",p[-2])
+        l="|".join(p); hit+=1
+    out.append(l)
+io.open("_w34/mut/ledger.k7_nopointer.md","w",encoding="utf-8").write("\n".join(out)+"\n")
+print("mut written; rows mutated =",hit)
+PY
+LEDGER=_w34/mut/ledger.k7_nopointer.md python _w34/k7_check.py
+rm -f _w34/mut/ledger.k7_nopointer.md
+```
+
+> 变异有效性：删后该行仍是 6 列、`CLOSED` 态（否则会被 `closed` 过滤掉造成假绿）；换 `W33-03` 同样注入 ⇒ `RED closed without current-wave pointer: W33-03`，证明非硬编码单行。两条判据正常态/必红原文见文末 W35 摘录。
 
 ---
 
@@ -396,8 +440,42 @@ PY
 
 > 判据 6 原 W33 版的两处不可执行根因（`cd harness-v2` 在仓根被吞、`../_w33/mut/` 未预建）已修；`ARTIFACT` 可指向任一 `evidence/*-matrix-summary.json`，W34 起新制品默认同样可查。
 
+---
+
+## W35 判据 6/7 加固实跑摘录（2026-11-19，零 `.kt`；先实跑后落笔）
+
+> 按 W35-03 出口判据「判据 6 在无 `.git` 快照仍 rc=0 且必红 RED；判据 7 正常态 OK 加注入删空后 RED」。全部在现役树仓根实跑，输出原文如下；`K_assertion_presence` 注入前先确认 w33 正常态 OK，注入后只出单条 `RED assertions missing`（唯一错误、非连带 state/attempt 报错）才落笔写「会响」。
+
+```text
+[判据 6 正常态·w33 有 assertions] OK feature/evidence invariants
+[判据 6 必红 K_assertion_presence·w33 删 assertions 字段]
+                                RED assertions missing
+[判据 6 正常态·w34（W35 补回三字段后）] OK feature/evidence invariants
+[判据 6 必红·w34 六类]
+  k6_fail     → RED zero-value keys: ['FAIL']; state domain
+  k6_nomcp    → RED mcp field missing
+  k6_nocell   → RED mcp claims cell F4_mcp but cells[] lacks it; no mcp cell without declaration; state domain; state sum; attempt keys
+  k6_iter     → RED iterations_total != len
+  k6_ref      → RED missing ref evidence/raw/__missing__.json
+  k6_noassert → RED assertions missing
+[判据 6·无 .git 快照 REPO_ROOT 兜底] REPO_ROOT=<无 .git 快照目录>；git rev-parse 失败 ⇒ 退回 pwd；
+                                   正常态 rc=0 `OK feature/evidence invariants`；
+                                   删 assertions 变异 rc=0 `RED assertions missing`
+[判据 7 正常态] OK closed rows carry runnable pointers (W30+)
+                OK closed rows carry current-wave pointers (W34)
+[判据 7 必红 B·副本删空 W30-01 本波复核指路]
+                OK closed rows carry runnable pointers (W30+)   ← 旧正则仍绿，证明新检查非复述
+                RED closed without current-wave pointer: W30-01
+[判据 7 必红 B·换 W33-03 复核非硬编码] RED closed without current-wave pointer: W33-03
+[判据 7 范围负控·W31-02 历史 CLOSED 行（本就无锚点、不在 CUR_IDS）]
+                OK closed rows carry runnable pointers (W30+)
+                OK closed rows carry current-wave pointers (W34)   ← 不得判红，否则「本来就没有」被当「被删空」
+```
+
+> 变异有效性：判据 7 删指路后该行仍是 6 列且 `CLOSED`（否则会被 `closed` 过滤造成假绿——即「删末尾仍连续」式无效变异已排除）；锚点字面量按现役树 grep 为 `**W35 本波复核指路**：W34 验收物 §2.4 加 §2.5 实跑摘录在案（8 行同车复核），状态维持 CLOSED`（中文「加」，非半角 `+`），必红注入以 `\*\*W35 本波复核指路\*\*：` 前缀整段删空，不误删前一段 `W34 销账`；范围严格 = 8 个 `CUR_IDS`，W31-02/03 历史行不参与（已实跑负控）。判据 6 的 `K_assertion_presence` 对补字段前的现役 w34（28 键）同检查亦输出 `RED assertions missing`，是该缺陷的真实正控，不是设计出来的恒绿式。仓内逐条原始输出另见 `_w34/w35_k6_run.txt`、`_w34/w35_k7_run.txt`（工作区副本，不入仓）。
+
 ## 本 checklist 覆盖 / 不覆盖（诚实标注）
 
-- **覆盖**：判据 1（1a 判红分支）/ 2（verified 不变量 + 三态分支 + 可跑必红块）/ 3（3a tip token + 3b 仓内 grep + 注入样本）/ 4（三处同步 + 可跑必红块）/ 5（制品迭代/attempt_states/state 一致性 + 必红块）/ 6（面定义 AND + evidence_ref 可复核，W33 新增）/ 7（CLOSED 行实跑指路，W33 新增）。
+- **覆盖**：判据 1（1a 判红分支）/ 2（verified 不变量 + 三态分支 + 可跑必红块）/ 3（3a tip token + 3b 仓内 grep + 注入样本）/ 4（三处同步 + 可跑必红块）/ 5（制品迭代/attempt_states/state 一致性 + 必红块）/ 6（面定义 AND + evidence_ref 可复核 + 出厂断言存在 `K_assertion_presence`，W33 新增 / W35 加固为六类必红 + `REPO_ROOT` 兜底）/ 7（CLOSED 行实跑指路 + 本波复核指路必红，W33 新增 / W35 加固）。
 - **不覆盖**：① `arch-guard.sh` 的 ID 唯一性（用户裁决域）；② 真机重放（制品 verified 多为规则自证，真机判据在验收物 §3/§4）；③ 仓外生成器断言 M（老号 W20-14）；④ 脱敏正控工具在仓外取证设施（按截图回灌级别只回灌判据，不回灌整段日志）。
 - **四态**：正常态命令全 OK 仅说明「载体存在且当前数据自洽」，不等于挂账 `CLOSED`；改 `CLOSED` 须判据实跑输出入账 + 制品与真值源一致（W30 已按外审 W30-03 处方删除「须真机取证」错配条件，由主理人单人落笔）。

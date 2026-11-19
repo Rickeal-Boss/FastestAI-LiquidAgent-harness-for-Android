@@ -67,7 +67,7 @@
 - **W33-02**：`W31-01`/`W32-01` 两行各加「主从联动」；W32 handoff §三加表注（四态=缓解动作、非挂账状态）；W32 验收物 §二/§5.1 注明；`W32-01` 证据列行号订正为 `:248-265`。
 - **W33-03**：W32 制品取方案 b（保留 `F4_mcp` VACUOUS 触发格 + 文档改「NOT_EXERCISED 并留触发格」）；`K_feature_enum` OR→AND 并新增 `K_feature_enum_no_cell_claim`；四条必红实跑；14 格与 iterations 的 `evidence_ref` 改指 `evidence/raw/w32/`（26 个脱敏文件入仓）；两制品 glyph 统一；W32 制品补 `matrix_vs_gate_order`。
 
-**判据 6 实跑（正常态 + 四条必红；W34 参数化后对 w32/w33 双制品复跑，见 §2.5a）**：
+**判据 6 实跑（正常态 + 四条必红；W34 参数化后对 w32/w33 双制品复跑，见 W34 验收物 §2.5 + §2.2）**：
 
 ```text
 [判据 6 正常态 W32] OK feature/evidence invariants
@@ -78,7 +78,7 @@
 [判据 6 必红 K_evidence_ref/point ref to missing file] RED missing ref evidence/raw/__missing__.json   ← W34 新增，首次真响
 ```
 
-> W34 注记：本节原摘录为 W33 自建副本复刻输出、且 `cd harness-v2` 硬编码在仓根跑不起来（外审 P1-1）；W34 已把代码块参数化（`ARTIFACT`）+ 自算仓根 + `mkdir -p`，并对 w32 与 w33 **双制品**各跑正常态与五类必红，原文见 W34 验收物 §2.5a / `docs/notes/w29-closeout-checklist.md` 判据 6。K_evidence_ref 的必红在此前从未行使，W34 首次真响。
+> W34 注记：本节原摘录为 W33 自建副本复刻输出、且 `cd harness-v2` 硬编码在仓根跑不起来（外审 P1-1）；W34 已把代码块参数化（`ARTIFACT`）+ 自算仓根 + `mkdir -p`，并对 w32 与 w33 **双制品**各跑正常态与五类必红，原文见 W34 验收物 §2.5 + §2.2 / `docs/notes/w29-closeout-checklist.md` 判据 6。K_evidence_ref 的必红在此前从未行使，W34 首次真响。
 
 ### 2.4 W30 三行判据实跑入账（状态维持 OPEN，待外审复核）
 

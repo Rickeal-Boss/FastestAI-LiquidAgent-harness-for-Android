@@ -1,0 +1,12 @@
+{
+  "cell": "E07_or_north",
+  "face": "endpoint_axis",
+  "endpoint_public_name": "OR North Mini Code Free",
+  "model": "north-mini-code:free (public)",
+  "q": "Reply with exactly: W35-E07-NORTH",
+  "result": "网络抖动正在重试 → giving up after 1 retries: network error: SocketTimeoutException（~2.5min）",
+  "network_probe": "同窗口 E06 设备侧 ping openrouter.ai 通（33% 丢包 196ms）",
+  "state": "PARTIAL",
+  "note": "OR 免费池同窗口超时（与 E06 dots3 同型）：请求承担 1 次 retry 后非静默报错；非 harness 缺陷。按用户指令超时归 INC-w35-timeout，不冒充 PASS。",
+  "evidence_files": ["e07_or_north.png"]
+}

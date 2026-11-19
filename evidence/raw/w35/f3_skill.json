@@ -1,0 +1,13 @@
+{
+  "cell": "F3_skill",
+  "face": "skill",
+  "endpoint_public_name": "NV Lightning 30B",
+  "flow": "@ 菜单（items: notes-organizer / pdf-toolkit）→ 选中 notes-organizer → 题面 'Use this skill and reply with exactly W35-SKILL-OK3' → 观察 skill_load 工具卡 + sentinel",
+  "ui": ["@Use this skill and reply with exactly: W35-SKILL-OK3notes-organizer", "思考过程（长 thinking block）", "W35-SKILL-OK3notes-organizer", "1.8k in / 1.9k out"],
+  "sentinel_verbatim": true,
+  "skill_load_card_observed": false,
+  "attempts": 3,
+  "state": "PARTIAL",
+  "note": "@ 菜单列 2 项且 skill 注入正文成立（thinking 中可见 'skills listed: notes-organizer'）；sentinel 逐字命中。但本波三次（OK/OK2/OK3）模型均以直接回答 + 长 thinking 完成，未调用 skill_load 工具卡；W34 同题曾 2ms 命中 skill_load。不冒充 PASS；skill_load 卡耗时判据本波未行使。模型安全/遵循策略差异，非 app bug。",
+  "evidence_files": ["f3_skill.png", "f3_ui.txt"]
+}

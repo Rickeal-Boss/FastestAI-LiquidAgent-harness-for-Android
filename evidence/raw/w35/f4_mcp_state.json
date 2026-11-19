@@ -1,0 +1,10 @@
+{
+  "cell": "F4_mcp",
+  "face": "mcp",
+  "mcp_page": "还没有 MCP 服务器（0 server）",
+  "add_form": "新增 MCP 服务器需别名 + 服务器 URL(https://example.com/mcp 占位) + Bearer Token + 启用；无外部 https MCP 端点提供",
+  "state": "VACUOUS",
+  "unexercised_reason": "无外部 https MCP server（G15b 禁明文 http；本单未提供 MCP 端点/令牌），只登记未行使",
+  "trigger": "需外部 https MCP 端点 + Bearer token 才能行使工具调用审批",
+  "evidence_files": ["f4_mcp_state.png"]
+}

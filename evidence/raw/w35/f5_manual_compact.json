@@ -1,0 +1,17 @@
+{
+  "cell": "F5_manual_compact",
+  "face": "manual_compression",
+  "endpoint_public_name": "NV Lightning 30B",
+  "fixture": "32K 档 + 多轮对话后打开压缩菜单",
+  "ui": [
+    "f5_menu.png：更多菜单含手动压缩入口",
+    "f5_dialog.png：压缩确认对话框（原文存于截图，脱敏）"
+  ],
+  "log_evidence": "本波 deviceLogTail.txt 未捕获 manual_compress dropped/kept 行（比对窗口截断）",
+  "state": "PARTIAL",
+  "note": "UI 走通手动压缩菜单与确认对话框（截图佐证），但缺 W34 式的 `manual_compress dropped=9 kept=11` + 下轮 usage 双向判据；不冒充 PASS，按四态记 PARTIAL。W34 已有 applied 硬证据（dropped=9 kept=11、30.9k→22.9k），本波不重复下结论。",
+  "evidence_files": [
+    "f5_menu.png",
+    "f5_dialog.png"
+  ]
+}

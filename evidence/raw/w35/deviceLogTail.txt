@@ -1,0 +1,60 @@
+11-20 00:43:05.479   991 27167 E netd    : handleGetRttCmd: netId = 108, uid = 10307
+11-20 00:43:05.484   991 27167 E netd    : dispachCmd cmd:oplusGetRtt  result:0
+11-20 00:43:07.259 26108 26108 I adbd    : UsbFfs: offline
+11-20 00:43:07.260 26108 26108 I adbd    : Calling send_auth_request...
+11-20 00:43:07.266 26108 26108 I adbd    : adbd_auth: loading keys from /data/misc/adb/adb_keys
+11-20 00:43:07.268 26108 26108 I adbd    : adb client authorized
+11-20 00:43:07.712  1266  1266 D vendor.oplus.hardware.charger@1.0-service: getPsyUsbType type: USB, ret_value = 3
+11-20 00:43:07.712  1266  1266 D vendor.oplus.hardware.charger@1.0-service: getPsyUsbType type: USB is usb charging.
+11-20 00:43:07.713  2059  2059 D OplusBrJobSchedulerService: in restriction white list com.oplus.battery action: android.intent.action.BATTERY_CHANGED
+11-20 00:43:07.714  2059  2059 D OplusBrJobSchedulerService: in restriction white list com.oplus.battery action: android.intent.action.BATTERY_CHANGED
+11-20 00:43:07.714  2059  2059 D OplusBrJobSchedulerService: in restriction white list com.oplus.battery action: android.intent.action.BATTERY_CHANGED
+11-20 00:43:07.714  2059  2059 D OplusBrJobSchedulerService: in restriction white list com.oplus.location action: android.intent.action.BATTERY_CHANGED
+11-20 00:43:07.718  5297  6529 E Battery : ChargeProtectionUtils: mCanlendarTmp.isEmpty()!
+11-20 00:43:08.502   991 27167 E netd    : dispachCmd:oplusGetRtt
+11-20 00:43:08.502   991 27167 E netd    : handleGetRttCmd: netId = 108, uid = 10307
+11-20 00:43:08.507   991 27167 E netd    : dispachCmd cmd:oplusGetRtt  result:0
+11-20 00:43:09.426   991 27167 E TetherController: property_get sys.radio.data.modem_share_flag return 0, 1!
+11-20 00:43:10.350  2059  6320 D PhoneWindowManagerExtImpl: overrideInterceptKeyBeforeQueueing:KeyEvent { action=ACTION_DOWN, keyCode=KEYCODE_WAKEUP, scanCode=0, metaState=0, flags=0x0, repeatCount=0, eventTime=132726742000000, downTime=132726742000000, deviceId=-1, source=0x0, displayId=-1 },  keyguardOn = false,  screenOn = true,  policyFlags = 721420288,  SosPowerKeyEnabled = false,  WalletSwitchState = 0,  IsQuickLaunchSupport = true,  canceled = false
+11-20 00:43:10.350  2059  6320 I OplusJoystickManager: read game pad state for game manager -> false
+11-20 00:43:10.350  2059  6320 W OplusJoystickManager: mInterceptGamepadKey is false
+11-20 00:43:10.350  2059  6320 D OplusCustomizeRestrictionManagerService: isLongPressVolumeUpDisabled start
+11-20 00:43:10.350  2059  6320 I StrategyDisableBottomKey: onBeforeQueueing : mIsUpGestureMode=false,mDisableBottomKeyMode0
+11-20 00:43:10.350  2059  6320 D StrategyBlackscreenshot: notifyKeyBeforeQueueing, downTime132726742, action=0, interactive=true
+11-20 00:43:10.350  2059  6320 D WindowManager: interceptKeyBeforeQueueing downTime=132726742 action = 0 interactive=true keyguardActive=false policyFlags=2b000000 isInjected=true isWakeKey=true
+11-20 00:43:10.350  2059  6320 D KeyCombinationManager: down true downTime 132726742 action 0 count 0 interactive true eventTime 132726742 mDownTimes: {}
+11-20 00:43:10.351  2059  6320 I intercept_power: 1
+11-20 00:43:10.351  2059  6320 E DpcExtImpl[0]: execute mBlockReasonList.clear
+11-20 00:43:10.351  2059  6320 I DisplayManagerService: unblockScreenOnByBiometrics displayId = 0
+11-20 00:43:10.351  2059  6320 D OplusFeatureAOD: notifySfUnBlockScreenOn
+11-20 00:43:10.351  2059  6320 D OplusPowerManagerHelper: scheduleNotifyStopDream
+11-20 00:43:10.351  2059  2418 D DpcExtImpl[0]: final brightness:138.0
+11-20 00:43:10.351  2059  2418 D OplusPowerManagerHelper: handleMessage:102
+11-20 00:43:10.352  2059  2418 D OplusPowerManagerHelper: MSG_STOP_DEAM
+11-20 00:43:10.352  2059  6320 D PhoneWindowManagerExtImpl: overrideInterceptKeyBeforeQueueing:KeyEvent { action=ACTION_UP, keyCode=KEYCODE_WAKEUP, scanCode=0, metaState=0, flags=0x0, repeatCount=0, eventTime=132726742000000, downTime=132726742000000, deviceId=-1, source=0x0, displayId=-1 },  keyguardOn = false,  screenOn = true,  policyFlags = 721420288,  SosPowerKeyEnabled = false,  WalletSwitchState = 0,  IsQuickLaunchSupport = true,  canceled = false
+11-20 00:43:10.352  2059  6320 I OplusJoystickManager: read game pad state for game manager -> false
+11-20 00:43:10.352  2059  6320 W OplusJoystickManager: mInterceptGamepadKey is false
+11-20 00:43:10.352  2059  6320 D OplusCustomizeRestrictionManagerService: isLongPressVolumeUpDisabled start
+11-20 00:43:10.352  2059  6320 I StrategyDisableBottomKey: onBeforeQueueing : mIsUpGestureMode=false,mDisableBottomKeyMode0
+11-20 00:43:10.352  2059  6320 D StrategyBlackscreenshot: notifyKeyBeforeQueueing, downTime132726742, action=1, interactive=true
+11-20 00:43:10.352  2059  6320 D WindowManager: interceptKeyBeforeQueueing downTime=132726742 action = 1 interactive=true keyguardActive=false policyFlags=2b000000 isInjected=true isWakeKey=true
+11-20 00:43:10.352  2059  6320 D KeyCombinationManager: down false downTime 132726742 action 1 count 0 interactive true eventTime 132726742 mDownTimes: {224=132726742}
+11-20 00:43:10.352  1384  3339 I DispPerfService: NOTIFY_UNBLOCKSCREEN
+11-20 00:43:10.352  2059  6320 I intercept_power: 2
+11-20 00:43:10.352  2059  6320 E DpcExtImpl[0]: execute mBlockReasonList.clear
+11-20 00:43:10.352  2059  6320 I DisplayManagerService: unblockScreenOnByBiometrics displayId = 0
+11-20 00:43:10.352  2059  6320 D OplusFeatureAOD: notifySfUnBlockScreenOn
+11-20 00:43:10.352  2059  6320 D OplusPowerManagerHelper: scheduleNotifyStopDream
+11-20 00:43:10.352  1384  3339 I DispPerfService: NOTIFY_UNBLOCKSCREEN
+11-20 00:43:10.352  2059  2418 D DpcExtImpl[0]: final brightness:138.0
+11-20 00:43:10.352  2059  2418 D OplusPowerManagerHelper: handleMessage:102
+11-20 00:43:10.352  2059  2418 D OplusPowerManagerHelper: MSG_STOP_DEAM
+11-20 00:43:10.621 18445 18445 E libEGL  : No entry found in platform lookup table for eglSurfaceAttribMTK
+11-20 00:43:10.622 18445 18445 D ExtensionsLoader: createInstance(64bit) : createExtendedFactory
+11-20 00:43:10.622 18445 18445 D ExtensionsLoader: Opened libguiextimpl.so
+11-20 00:43:10.628 18445 18445 D OplusUtils: OplusUtils [89]: 
+11-20 00:43:10.631 18445 18445 E screencap: createInstance(64bit) : createExtendedFactory
+11-20 00:43:10.631 18445 18445 E screencap: createInstance(64bit) : createExtendedFactory
+11-20 00:43:10.631 18445 18445 E screencap: Opened libinputextensionsimpl.so
+11-20 00:43:10.631 18445 18445 E screencap: Opened libinputextensionsimpl.so
+11-2

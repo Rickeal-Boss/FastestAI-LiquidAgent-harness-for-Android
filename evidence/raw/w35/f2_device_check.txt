@@ -1,0 +1,4 @@
+# F2 device-side forensic 2026-11-19T16:45:56Z
+-rw------- 1 u0_a307 u0_a307 13 2026-11-20 00:45 files/harness/workspace/w35probe.txt
+W35WS-F2-K7M2
+ 57 33 35 57 53 2d 46 32 2d 4b 37 4d 32
