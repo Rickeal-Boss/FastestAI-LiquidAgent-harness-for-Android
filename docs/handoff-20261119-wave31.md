@@ -74,11 +74,12 @@ reasoning + content，并触发完整工具循环（审批闸门 → file_write 
 | 闸 | 结果 | 备注 |
 |---|---|---|
 | G1 编译 | ✅ rc=0 | `assembleDebug` 删旧 APK 强制重出包；真机安装 Success |
-| G2 arch-guard | 见验收物 §四 | 本地仓库根实跑 |
-| G3 selftest | 见验收物 §四 | 零 `.kt` 不回归 |
-| G4 fulltest | 见验收物 §四 | `@Test` 计数不变 |
+| G2 arch-guard | ✅ PASS | `OK=27 VACUOUS=1 VIOLATION=0`；G20 = 121 handoff ID 全在台账 |
+| G3 selftest | ✅ 30/30 | 235s；VACUOUS 机制自证 |
+| G4 fulltest | ✅ 818-0-0 | `tests=818 failures=0 errors=0 skipped=0`，14 模块 |
 
-CI 绿以验收物 §5.6 回填的 run 为准。
+**CI（commit `453b8b5`，四字段复核 completed/success/push/453b8b5）**：Build run `44460198699` success；
+Secret scan run `44460198625` success。CI 红 0。
 
 ---
 

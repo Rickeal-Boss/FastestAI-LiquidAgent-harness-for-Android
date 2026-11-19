@@ -141,7 +141,11 @@
 - **G4 fulltest**：`tests=818 failures=0 errors=0 skipped=0`（全部用例绿，14 模块；与基线 818 完全一致，零 `.kt` 无回归）。
 
 ### 5.6 commit 与 CI run
-（推送后回填：W31 commit 与 Build/Secret-scan run 链接。）
+- **W31 commit**：`453b8b5f5853d69d324a6645f089639a14b19532`（含全部 docs + evidence + 制品，单次推送即含证据，无需为代码二次推送）。
+- **CI（head_sha = `453b8b5`，四字段复核 completed / success / push / `453b8b5`）**：
+  - **Build** run `44460198699`（run_number 46）：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44460198699>
+  - **Secret scan** run `44460198625`（run_number 42）：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44460198625>
+- CI 红 0；PAT inline 用后 `git remote set-url` 清干净（PAT 视为暴露须轮换）。工作树仅剩 2 份历史未跟踪审查笔记（沿用既定口径不入库）。
 
 ### 5.7 交给外部审查团队的制品清单
 - `evidence/w31-matrix-summary.json`（本波真机矩阵机器可读制品，四态 + 证据 + 未行使原因 + 隐私扫描）
