@@ -3,6 +3,7 @@
 > 存在理由：W28 新建的 `w28-closeout-checklist.md` 判据 2 自身空转（正常态只读 `state_counts` 与 `assertions[].description`，不读 `mutation_cases[].verified` / `mutation_selftest.all_verified`，注入 `verified=false` 仍输出 OK）、判据 3b 含占位符吞错误、判据 1a 无判红分支、判据 1/3 `/tmp` 口径冲突，且 W28-01「三处同步」变异零载体。本文件按外审 P0-1/P0-2 处方建立 W29 版载体。
 > **W30 第 0 车修订（本次）**：按外审（W30 段挂账草案 W30-02 处方）修复必红侧：① 判据 2 必红块原写 `<<'PY'` 单引号 heredoc 内嵌 `${WS}` ⇒ shell 不展开、Python 收到字面量 ⇒ `FileNotFoundError`（W30 实测复现），改读 WS 环境变量（W31-02 二次订正：读取侧再改 `os.path.abspath(os.path.join(os.getcwd(),".."))` 自算，与写入侧一致，不设 WS 也能跑）；② 判据 2 正常态补三态分支（`w29_device_executed=False` ⇒ 正控不得称 `device_execution`，须 `inherited_w28_baseline`/`not_exercised`，输出 `OK(vacuous)` 而非无保留 `OK`）；③ 判据 3b 补注入样本（工作区副本放凭据文件名字面量 ⇒ `RED credential filename hit`）；④ 判据 4 补可跑必红块（工作区副本写回肯定式措辞 ⇒ `RED affirmative wording remains`）；⑤ 新增判据 5（制品迭代/attempt_states/state 一致性，防 W30-01 类「声称实跑未实跑」复发）。
 > **W31 第 0 车修订（本次）**：按外审 W31 段草案三 P0 处方——① 判据 3b 正常态加白名单口径并**实跑输出 `OK no credential filename` 入仓**（W30 三处字面量清零后全树复扫 0 命中）；② 判据 2/5 必红块读取侧去 WS 依赖（不设 WS 实跑 rc=0）；③ 判据 1 参数化 `WAVE=${WAVE:-W29}` 并补 W30 三行唯一性实跑 + 重复号必红演练（`RED duplicate/missing` 真响，见文末摘录）。
+> **W32 第 0 车复核（本次）**：W31-01 的两条出口判据按字面双向失效——判据 3b 正常态因验收物结果列与制品 target 写回凭据文件名族字面量而恒 RED；必红注入块 `%%` 版不产出完整字面量而恒 `OK (unexpected)`。本波把结果列与制品 target 改拼装表述、注入块还原为两段拼装（实跑产出完整字面量），并把正常态 `OK no credential filename` 与必红 `RED credential filename hit` 两条原文摘进本文件（见文末 W32 小节）。W31-01 已先回 `OPEN`，真修并重跑后再按台账 §三.3 销账。
 > 纪律：本 checklist 是**人工闸门 + 必红变异**兜底，不是机器守卫 —— `arch-guard.sh` g20 只做存在性比对（两边 `sort -u` 抹平重复号），无 ID 唯一检查；改守卫 / 扩扫描面属用户裁决域（本波只留痕不代做）。
 > 路径变量：`${WS}` = 工作区根目录（运行时 `export WS=...` 或用 `pwd -W` 自动探测，本文件不落本机绝对路径）。🔴 所有变异副本一律工作区真实路径 `${WS}/_w29/mut/`，不用 `/tmp`（Git Bash `/tmp` 与 Windows Python 不通）。
 > 判定四态：每条命令期望「正常态输出 `OK`，注入变异样本后输出 `RED`」；**只跑正常态全 OK 不算判据被验证**，必须自证变异样本会响。
@@ -113,7 +114,7 @@ grep -rniE 'openrouter\.txt|nvidia\.txt' docs evidence 2>/dev/null && echo "RED 
 ```bash
 mkdir -p "../_w29/mut"
 # 凭据文件名注入样本：printf 拼装（两段各半，不落完整字面量；W31-01 改两段拼装）
-printf 'ref: nvi%%sdia.txt\n' '' > "../_w29/mut/cred_probe.md" 2>/dev/null || python -c "open('../_w29/mut/cred_probe.md','w').write('ref: nvi'+'dia.txt\n' if False else 'ref: '+'nvi'+'dia.txt')"
+printf 'ref: %s%s\n' 'nvi' 'dia.txt' > "../_w29/mut/cred_probe.md"
 grep -rniE 'openrouter\.txt|nvidia\.txt' "../_w29/mut" && echo "RED credential filename hit" || echo "OK (unexpected)"
 rm -f "../_w29/mut/cred_probe.md"
 ```
@@ -217,6 +218,10 @@ rm -f "../_w29/mut/iter_del.mut.json"
 ```text
 [判据 1 正常态·W29 段] W29 rows = 3
 [判据 1 正常态·W30 段] W30 rows = 3
+[判据 1 正常态·W31 段] W31 rows = 3
+                       W31-01 -> 1
+                       W31-02 -> 1
+                       W31-03 -> 1
 [判据 1 必红·重复号演练] W30 rows = 4
                        RED W30 row count != 3 (got 4)
                        W30-01 -> 2
@@ -236,6 +241,27 @@ rm -f "../_w29/mut/iter_del.mut.json"
 [判据 5 正常态] iterations_total/len/sec4 = 6 6 6 | ok1 = True
               attempt_states keys == cell_ids = True | vacuous consistency = True
               OK
+```
+
+---
+
+## 本轮（W32）判据 3b 双态实跑输出摘录（正常态 OK 加必红 RED 双原文入仓）
+
+> 按 W32-01 出口判据「正常态 `OK no credential filename` 与必红 `RED credential filename hit` 两条输出原文入仓」。
+> W32 第 0 车在现役树逐条实跑（2026-11-19）；凭据文件名族一律拼装表述，完整字面量只在命令产出瞬时存在、不入仓。
+
+```text
+[判据 3b 正常态·全树复扫（checklist :106 原样）]
+OK no credential filename
+  （复扫 docs evidence 0 命中：W32 已把验收物结果列与制品 target 的凭据文件名族字面量改拼装表述）
+
+[判据 3b 必红·两段拼装注入（工作区副本 ../_w32/mut/cred_probe.md）]
+<副本>:1:ref: <凭据文件名族 A 完整字面量，此处按拼装形式摘录，避免摘录自身制造正常态命中>
+RED credential filename hit
+  （注入块 printf 两段拼装产出完整字面量，grep 真响；W31 的 %% 版产出 nvi%sdia 不响，W32 已还原）
+
+[判据 3b 正控·拼接产出完整字面量]
+printf 两段拼装 | grep -c 全称模式 = 1（必然命中样本，证明判据会响）
 ```
 
 ---

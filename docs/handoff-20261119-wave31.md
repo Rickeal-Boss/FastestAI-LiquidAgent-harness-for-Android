@@ -5,8 +5,8 @@
 > 真机矩阵制品 = `evidence/w31-matrix-summary.json`。
 > 判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；「未触发」≠「已验证通过」。
 
-> **本交接不引入新挂账号**：全文出现的编号字面量均为台账 §一 已有行首行（W31-01/02/03 本波新落且已落台账；
-> W24-02 / W24-03 / W17-02 / W20-02 为既有老号）。未新增任何不在台账行首的复合编号。
+> **本交接不引入新挂账号**：全文出现的编号字面量均为台账 §一 已有行首行（W31-01/02/03 本波新落且已落台账、其中 W31-01 于 W32 复核回 `OPEN`；
+> W24-02 / W24-03 / W17-02 / W20-02 / W28-03 为既有老号）。未新增任何不在台账行首的复合编号。（W32 订正口径：原句「不引入新挂账号」按字面与正文 W31 三行已落台账自相矛盾；准确表述应为「不引入不在台账行首的复合编号」，本句作为 W31 历史原话保留、此处以订正注记澄清。）
 
 ---
 
@@ -33,8 +33,8 @@ reasoning + content，并触发完整工具循环（审批闸门 → file_write 
 ## 三、真机矩阵（`evidence/w31-matrix-summary.json`）
 
 ### 3.1 核心结论
-`state_counts = {PASS:3, PARTIAL:2, VACUOUS:4, FAIL:0}`。这是 W29/W30 连续两波全 `VACUOUS` 后
-**首次真实行使**。
+`state_counts = {PASS:3, PARTIAL:2, VACUOUS:4}`（`FAIL:0` 零值键 W32 已删，见制品）。W29 全 `VACUOUS`（11 格），W30 为 3 PASS/2 PARTIAL/3 VACUOUS（E01/F2/F4 三 ✅），
+**W31 首次工具链闭环**（E01 端到端加 file_write 真机落盘）。
 
 ### 3.2 格明细
 | 格 | 面 | 状态 | 证据要点 |
@@ -64,7 +64,7 @@ reasoning + content，并触发完整工具循环（审批闸门 → file_write 
 - **W24-02** 静默断词/重试：本波真机未复现完全静默（连接失败有「网络抖动，正在重试…」提示）；MockWebServer
   红态用例仍为必备，不得用真机替代。挂 `W24-02`。
 - **W20-02** 拆分 / **W17-02** skillNames：需 `.kt`，挂既有老号，下一波拆分承接。
-- **W24-03** journal 二选一：第 19 次顺延，多值待裁，等用户二选一。挂 `W24-03`。
+- **W24-03** journal 二选一：多值待裁（含历轮 19/20/22 等代数口径），等用户二选一。挂 `W24-03`。
 - 真机矩阵未行使面（F1/F3/F5/F6 + OpenRouter）作为验收物 §3.4 触发信号留痕，**不新开台账行**。
 
 ---
@@ -74,7 +74,7 @@ reasoning + content，并触发完整工具循环（审批闸门 → file_write 
 | 闸 | 结果 | 备注 |
 |---|---|---|
 | G1 编译 | ✅ rc=0 | `assembleDebug` 删旧 APK 强制重出包；真机安装 Success |
-| G2 arch-guard | ✅ PASS | `OK=27 VACUOUS=1 VIOLATION=0`；G20 = 121 handoff ID 全在台账 |
+| G2 arch-guard | ✅ PASS | `OK=27 VACUOUS=1 VIOLATION=0`；G20 计数以 `arch-guard` 实跑为准、不写死数（handoff ID 全在台账） |
 | G3 selftest | ✅ 30/30 | 235s；VACUOUS 机制自证 |
 | G4 fulltest | ✅ 818-0-0 | `tests=818 failures=0 errors=0 skipped=0`，14 模块 |
 

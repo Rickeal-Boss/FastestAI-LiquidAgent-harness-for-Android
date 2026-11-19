@@ -29,8 +29,8 @@
 ### 2.1 W31-01 脱敏回退收口 — ✅
 | 项 | 结果 | 证据 |
 |---|---|---|
-| 全树凭据文件名字面清零 | ✅ | `grep nvidia.txt/openrouter.txt docs evidence` → 0 |
-| 设备序列号字面清零 | ✅ | `grep 13309cc8 docs evidence` → 0 |
+| 全树凭据文件名字面清零 | ✅ | 凭据文件名族 A 与 B 字面 0 命中（W32 复核订正：原判据文本把被清零字面量写进结果列，自指悖论；改拼装表述，不再落完整字面量） |
+| 设备序列号字面清零 | ✅ | 设备序列号（已打码）字面 0 命中（W32 复核订正：原判据文本把被清零字面量写进结果列，自指悖论；改拼装表述，不再落完整字面量） |
 | 判据 3b 正常态实跑 | ✅ | `grep -rniE openrouter\.txt\|nvidia\.txt docs evidence` → `OK no credential filename`（摘进 checklist §本波 W31） |
 | 3b 必红注入样本 | ✅ | printf 拼装样本 → `RED credential filename hit`（真响） |
 | W30 制品 K_cred_filename 断言 | ✅ | target 改「按白名单 0 命中」、privacy note 与实跑一致 |
@@ -95,7 +95,7 @@
 | 闸 | 命令 | 结果 | 证据 |
 |---|---|---|---|
 | G1 编译 | `assembleDebug`（删旧 APK 重出） | ✅ rc=0 | 新 APK 字节；真机安装 Success |
-| G2 arch-guard | `bash scripts/arch-guard.sh` | ✅ PASS | `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`；**G20 = 121 个 handoff ID 全在台账、CLOSED 行证据均非空** |
+| G2 arch-guard | `bash scripts/arch-guard.sh` | ✅ PASS | `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`；**G20 计数以 `arch-guard` 实跑为准、不写死数**（handoff ID 全在台账、CLOSED 行证据均非空） |
 | G3 selftest | arch-guard-selftest | ✅ 30/30 | 235s；VACUOUS 机制自证含 G20 判红 |
 | G4 fulltest | `fulltest.sh` | ✅ 818-0-0 | `tests=818 failures=0 errors=0 skipped=0`（14 模块全覆盖） |
 
@@ -113,9 +113,9 @@
 5. **推送+CI** 见 §5.6。
 
 ### 5.2 明确未做（逐条带挂账号）
-- F1 多模态视觉输入未行使 — ⛔vacuous，无新挂账号（属多功能面矩阵内部格，留 §3.4 触发信号）。
-- F5/F6 压缩未行使 — ⛔vacuous，同上。
-- OpenRouter dots-3 / north-mini 未行使 — 无凭据，不新开挂账（端点池已备）。
+- F1 多模态视觉输入未行使 — ⛔vacuous，挂 `W14-11`（功能矩阵未取全项：多模态真机输入；留 §3.4 触发信号）。
+- F5/F6 压缩未行使 — ⛔vacuous，挂 `W21-04`（真机矩阵未达成格清单：手动压缩 dropped>0 未达）；自动压缩 1M 档读数挂 `W20-05`。
+- OpenRouter dots-3 / north-mini 未行使 — 端点池已备、本波无凭据，不新开挂账（触发信号留 §3.4；挂 `W21-04` 矩阵未达成格）。
 - **B1 压缩三方 / SM-3 skillNames / 静默断词** 需 `.kt` 修复 — 挂既有老号（W20-02 拆分波 / W17-02 / W24-02），本波不新开行。
 
 ### 5.3 OPEN 挂账（触发信号 + 缓解动作 + 挂账号）
@@ -136,16 +136,16 @@
 - 新增 `evidence/w31-matrix-summary.json` + 本验收物。
 
 ### 5.5 推送前闸门实跑
-- **G2 arch-guard**：`result=PASS ok=27 vacuous=1 violation=0 fault=0`；G20「121 个 handoff ID 全在台账内，CLOSED 行证据均非空」。
+- **G2 arch-guard**：`result=PASS ok=27 vacuous=1 violation=0 fault=0`；G20「handoff ID 全在台账内、CLOSED 行证据均非空」（计数以实跑为准、不写死数）。
 - **G3 selftest**：`selftest: 30/30 PASS`（235s；VACUOUS 机制自证含 G20「从台账副本删一行」判红）。
 - **G4 fulltest**：`tests=818 failures=0 errors=0 skipped=0`（全部用例绿，14 模块；与基线 818 完全一致，零 `.kt` 无回归）。
 
 ### 5.6 commit 与 CI run
-- **W31 commit**：`453b8b5f5853d69d324a6645f089639a14b19532`（含全部 docs + evidence + 制品，单次推送即含证据，无需为代码二次推送）。
+- **W31 commit**：`453b8b5f5853d69d324a6645f089639a14b19532`（主体推送，含全部 docs + evidence + 制品）。**W32 复核订正**：W31 实际推送 2 次——主体 `453b8b5` + 纯文档回填 tip `7b10cc8`（回填 §5.6 真实 commit 与 CI run 链接）；tip run 按既定降级规则只留痕、不逐波判 P0、不补链接。
 - **CI（head_sha = `453b8b5`，四字段复核 completed / success / push / `453b8b5`）**：
   - **Build** run `44460198699`（run_number 46）：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44460198699>
   - **Secret scan** run `44460198625`（run_number 42）：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44460198625>
-- CI 红 0；PAT inline 用后 `git remote set-url` 清干净（PAT 视为暴露须轮换）。工作树仅剩 2 份历史未跟踪审查笔记（沿用既定口径不入库）。
+- CI 红 0；PAT inline 用后 `git remote set-url` 清干净（已闭环动作；密钥轮换属用户侧动作，不在仓内写未完成命令）。工作树仅剩 2 份历史未跟踪审查笔记（沿用既定口径不入库）。
 
 ### 5.7 交给外部审查团队的制品清单
 - `evidence/w31-matrix-summary.json`（本波真机矩阵机器可读制品，四态 + 证据 + 未行使原因 + 隐私扫描）

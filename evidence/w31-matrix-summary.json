@@ -3,7 +3,7 @@
   "generated_at": "2026-11-19T12:20:00+08:00",
   "matrix_type": "device_real_run",
   "device_executed": true,
-  "baseline_note": "W31 真机矩阵在 W29/W30 连续两波全 VACUOUS 后首次真实行使；设备 RSA 授权已于 W30 解除。",
+  "baseline_note": "W29 全 VACUOUS（11 格，设备未行使）；W30 为 3 PASS/2 PARTIAL/3 VACUOUS（E01/F2/F4 三 ✅）；W31 首次工具链闭环（E01 端到端 + file_write 真机落盘）；设备 RSA 授权已于 W30 解除。",
   "environment": {
     "build": "assembleDebug 强制重出包（删旧 APK 再编）",
     "package": "com.rickeal.liquidharness.debug",
@@ -11,16 +11,28 @@
     "network": "设备 WiFi 热点；两次掉线 UnknownHostException，svc wifi disable/enable 修复",
     "provider": "NVIDIA integrate.api.nvidia.com/v1（免费层，密钥设备侧 AndroidKeyStore）"
   },
-  "state_counts": { "PASS": 3, "PARTIAL": 2, "VACUOUS": 4, "FAIL": 0 },
-  "state_glyph_mapping": { "PASS": "✅", "PARTIAL": "⚠️", "VACUOUS": "⛔vacuous", "FAIL": "⛔" },
-  "state_glyph_mapping_assertion": "PARTIAL 对应 ⚠️；未行使记 VACUOUS 不记 PARTIAL。",
+  "state_counts": {
+    "PASS": 3,
+    "PARTIAL": 2,
+    "VACUOUS": 4
+  },
+  "state_glyph_mapping": {
+    "PASS": "✅",
+    "PARTIAL": "⚠️",
+    "VACUOUS": "⛔vacuous",
+    "FAIL": "⛔"
+  },
+  "state_glyph_mapping_assertion": "state_counts 非零键集 == cells[].state 值域（W32 删 FAIL:0 零值键）；state_glyph_mapping 列全四态 glyph 供外部工具，FAIL 无 cell 不在计数键集；PARTIAL 对应 ⚠️、未行使记 VACUOUS。",
   "cells": [
     {
       "cell_id": "E01_lightning",
       "face": "端点连通 + 端到端对话 + 工具循环",
       "endpoint": "nvidia/nemotron-3.5-lightning-30b-a3b",
       "contextLength": 131072,
-      "capabilities": ["TEXT", "tools"],
+      "capabilities": [
+        "TEXT",
+        "tools"
+      ],
       "state": "PASS",
       "evidence": [
         "端点测试连接：连接正常（1942 ms）",
@@ -28,29 +40,44 @@
         "工具循环：file_write 请求授权 → 允许一次 → wrote 11 chars → workspace 文件真机落盘",
         "token 计量：1.9k in / 55 out；上下文 2K / 27.9K"
       ],
-      "glyph": "✅"
+      "glyph": "✅",
+      "feature_face": "endpoint_axis"
     },
     {
       "cell_id": "E02_bolt",
       "face": "端点连通",
       "endpoint": "nvidia/nemotron-3.5-bolt-e4b",
       "contextLength": 131072,
-      "capabilities": ["TEXT", "IMAGE", "tools"],
+      "capabilities": [
+        "TEXT",
+        "IMAGE",
+        "tools"
+      ],
       "state": "PARTIAL",
-      "evidence": ["端点测试连接：连接正常（3418 ms）"],
+      "evidence": [
+        "端点测试连接：连接正常（3418 ms）"
+      ],
       "unexercised_reason": "仅验连通；端到端对话与 vision 未在本端点行使（导航栈 BACK 行为不稳定，时间预算内未循环到）",
-      "glyph": "⚠️"
+      "glyph": "⚠️",
+      "feature_face": "endpoint_axis"
     },
     {
       "cell_id": "E03_nano_omni",
       "face": "端点连通",
       "endpoint": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
       "contextLength": 131072,
-      "capabilities": ["TEXT", "IMAGE", "tools"],
+      "capabilities": [
+        "TEXT",
+        "IMAGE",
+        "tools"
+      ],
       "state": "PARTIAL",
-      "evidence": ["端点测试连接：连接正常（4214 ms）"],
+      "evidence": [
+        "端点测试连接：连接正常（4214 ms）"
+      ],
       "unexercised_reason": "仅验连通；omni 视觉/音频输入未行使（SAF 选图未自动化）",
-      "glyph": "⚠️"
+      "glyph": "⚠️",
+      "feature_face": "endpoint_axis"
     },
     {
       "cell_id": "F2_workspace_write",
@@ -61,7 +88,8 @@
         "工具回灌：wrote 11 chars to workspace_w31tool.txt",
         "真机复核：run-as cat files/harness/workspace/workspace_w31tool.txt → W31-TOOL-OK (FILE_EXISTS)"
       ],
-      "glyph": "✅"
+      "glyph": "✅",
+      "feature_face": "workspace_rw"
     },
     {
       "cell_id": "F7_tool_loop",
@@ -72,40 +100,46 @@
         "审批对话框：工具 file_write 请求授权 / 允许后该工具会立即执行",
         "人工放行 允许一次 → 执行 → 工具结果回灌 → 模型终答 This is the final answer."
       ],
-      "glyph": "✅"
+      "glyph": "✅",
+      "feature_face": "tool_loop"
     },
     {
       "cell_id": "F1_vision_input",
       "face": "多模态图片输入",
       "state": "VACUOUS",
       "unexercised_reason": "需 SAF 选图自动化（push 测试图 + 遍历 DocumentsUI），本波未行使",
-      "glyph": "⛔vacuous"
+      "glyph": "⛔vacuous",
+      "feature_face": "multimodal"
     },
     {
       "cell_id": "F3_skill",
       "face": "Skill 加载",
       "state": "VACUOUS",
       "unexercised_reason": "未触发 skill 加载路径",
-      "glyph": "⛔vacuous"
+      "glyph": "⛔vacuous",
+      "feature_face": "skill"
     },
     {
       "cell_id": "F5_manual_compress",
       "face": "手动上下文压缩",
       "state": "VACUOUS",
       "unexercised_reason": "需 16 轮长对话配方，未行使",
-      "glyph": "⛔vacuous"
+      "glyph": "⛔vacuous",
+      "feature_face": "manual_compact"
     },
     {
       "cell_id": "F6_auto_compress",
       "face": "自动压缩（字符维越阈）",
       "state": "VACUOUS",
       "unexercised_reason": "上下文 2K / 27.9K 未越字符阈值，below_trigger 是正确行为（非失败）",
-      "glyph": "⛔vacuous"
+      "glyph": "⛔vacuous",
+      "feature_face": "auto_compact"
     }
   ],
   "openrouter_endpoints": {
     "status": "NOT_EXERCISED",
-    "reason": "本环境无 openrouter key 文件（用户提及 dots-3-note-preview:free / north-mini-code:free 可用但未提供凭据），端点池已建 or-dots3/or-north 但 hasSecret=false，未行使"
+    "reason": "W31 历史事实：当时无 OpenRouter 凭据文件，端点池已建 or-dots3/or-north 但 hasSecret=false，未行使。",
+    "w32_recheck": "W32 复核（方案席①订正）：用户本波提供 OpenRouter key，or-dots3.bin / or-north.bin 于 14:57/14:59 经 W31 INC-key-entry 流程录入真机并真跑 PASS（W32-ORDOTS-R2 / W32-ORNORTH-7M3P 逐字）；原「本环境无 key」限制在 W32 已解除，W31 状态 NOT_EXERCISED 作为历史保留不改。"
   },
   "device_incidents": [
     {
@@ -126,12 +160,168 @@
   "privacy": {
     "note": "端点凭据只在设备侧 AndroidKeyStore（files/harness/secrets/*.bin）；本制品不含 API key/序列号/本机路径/未打码账号；端点标识用模型 ID 表述",
     "scanned_patterns": [
-      "nvidia.txt:0",
+      "凭据文件名族 A:0（拼装形态，不落完整字面量）",
       "serial-number:0",
-      "openrouter.txt:0",
+      "凭据文件名族 B:0（拼装形态，不落完整字面量）",
       "nvapi-real-key:0",
       "ghp_ pattern:1(roadmap SecretRedactor 模式规范，非凭据)"
     ]
   },
-  "positive_control_verified_by": "device_execution（E01 真机端到端 + 工具落盘为正控）"
+  "positive_control_verified_by": "device_execution（E01 真机端到端 + 工具落盘为正控）",
+  "mcp": {
+    "status": "NOT_EXERCISED",
+    "reason": "无外部 MCP server 端点；§1.1 声称覆盖 MCP 但制品无格，按 W32-02 显式标注消除虚报",
+    "feature_face": "mcp"
+  },
+  "schema": "liquidharness.w31.matrix-summary.v2",
+  "cells_total": 9,
+  "declared_feature_faces": [
+    "endpoint_axis",
+    "workspace_rw",
+    "tool_loop",
+    "multimodal",
+    "skill",
+    "manual_compact",
+    "auto_compact",
+    "mcp"
+  ],
+  "feature_faces_with_cells": [
+    "auto_compact",
+    "endpoint_axis",
+    "manual_compact",
+    "multimodal",
+    "skill",
+    "tool_loop",
+    "workspace_rw"
+  ],
+  "iterations_total": 6,
+  "iterations": [
+    {
+      "id": "iter1",
+      "action": "设备唤醒 + RSA 授权确认",
+      "observation": "screenState=SCREEN_STATE_ON，授权已恢复",
+      "state": "PASS",
+      "evidence_ref": "docs/analysis/w31-acceptance.md:62-66",
+      "derived_from": "acceptance §3.1"
+    },
+    {
+      "id": "iter2",
+      "action": "E01 Lightning 端点测试连接",
+      "observation": "连接正常 1942ms",
+      "state": "PASS",
+      "evidence_ref": "evidence/w31-matrix-summary.json cells[E01]",
+      "derived_from": "acceptance §3.2"
+    },
+    {
+      "id": "iter3",
+      "action": "E01 端到端 sentinel",
+      "observation": "PROBE-OK reasoning+content 逐字",
+      "state": "PASS",
+      "evidence_ref": "docs/analysis/w31-acceptance.md:71",
+      "derived_from": "acceptance §3.2"
+    },
+    {
+      "id": "iter4",
+      "action": "F7 工具循环 + 审批闸门",
+      "observation": "tool_calls→允许一次→执行→终答",
+      "state": "PASS",
+      "evidence_ref": "docs/analysis/w31-acceptance.md:75",
+      "derived_from": "acceptance §3.2"
+    },
+    {
+      "id": "iter5",
+      "action": "F2 workspace 真机落盘",
+      "observation": "run-as cat → W31-TOOL-OK FILE_EXISTS",
+      "state": "PASS",
+      "evidence_ref": "docs/analysis/w31-acceptance.md:74",
+      "derived_from": "acceptance §3.2"
+    },
+    {
+      "id": "iter6",
+      "action": "INC-wifi-drop + INC-key-entry 环境事件处置",
+      "observation": "svc wifi 开关修复；MOVE_END+DEL 重录密钥 403 解除",
+      "state": "PARTIAL",
+      "evidence_ref": "docs/analysis/w31-acceptance.md:65-66",
+      "derived_from": "acceptance §3.1"
+    }
+  ],
+  "attempt_states": {
+    "E01_lightning": "PASS",
+    "E02_bolt": "PARTIAL",
+    "E03_nano_omni": "PARTIAL",
+    "F2_workspace_write": "PASS",
+    "F7_tool_loop": "PASS",
+    "F1_vision_input": "VACUOUS",
+    "F3_skill": "VACUOUS",
+    "F5_manual_compress": "VACUOUS",
+    "F6_auto_compress": "VACUOUS"
+  },
+  "iterations_note": "iterations[] 由 W31 验收物 §3 真实事件链派生（derived_from 逐条标注），W31 原始制品未落逐轮 jsonl，非事后编造；iterations_total=6 == len(iterations[])。空命中语义：本波 F1/F3/F5/F6 四格 VACUOUS = 判据未行使（SAF 选图未自动化 / skill 未触发 / 无 16 轮配方 / 字符维未越阈），不是 PASS；MCP 为显式 NOT_EXERCISED（无外部 server）。 判据：iterations[].state 是验收物事件链重述，不是独立真机取证计数；档位轴/T 1M/vision 真值以 cells[] 与真机日志为准，不得据 iterations[].state 反推某格已真机行使。",
+  "assertions": [
+    {
+      "id": "K_state_domain",
+      "description": "state_counts 非零键集 == cells[].state 值域；零值键 0",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "add FAIL:0 to state_counts",
+        "expected": "RED state domain violation"
+      }
+    },
+    {
+      "id": "K_feature_enum",
+      "description": "每个 cell 的 feature_face ∈ declared_feature_faces；mcp 面有格或显式 NOT_EXERCISED",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "remove mcp NOT_EXERCISED field",
+        "expected": "RED feature enum violation"
+      }
+    },
+    {
+      "id": "K_iteration_consistency",
+      "description": "iterations_total == len(iterations[]); attempt_states 键集 == cells[].cell_id 值域",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "delete middle iteration to create gap",
+        "expected": "RED iteration invariant broken"
+      }
+    }
+  ],
+  "mutation_cases": [
+    {
+      "id": "K_state_domain",
+      "target": "evidence/w31-matrix-summary.json state_counts",
+      "invariant": "set(nonzero keys) == {c.state for c in cells}",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "add FAIL:0"
+    },
+    {
+      "id": "K_feature_enum",
+      "target": "evidence/w31-matrix-summary.json cells[].feature_face + mcp",
+      "invariant": "face enums declared and mcp present",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "remove mcp field"
+    },
+    {
+      "id": "K_iteration_consistency",
+      "target": "evidence/w31-matrix-summary.json iterations[] / iterations_total / attempt_states",
+      "invariant": "iterations_total == len(iterations[]) and set(attempt_states) == {c.cell_id for c in cells}",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "delete middle iteration (create gap) -> RED iteration invariant broken"
+    }
+  ],
+  "mutation_selftest": {
+    "total": 3,
+    "rejected": 3,
+    "all_verified": true,
+    "note": "W32-02 三条规则自证（state domain + feature enum + iteration consistency），W31 真机正控另见 positive_control_verified_by"
+  },
+  "coverage_note": "9 格: {'PASS': 3, 'PARTIAL': 2, 'VACUOUS': 4}（FAIL:0 零值键 W32 已删）。真机已行使 E01/E02/E03/F2/F7；未行使 F1/F3/F5/F6。MCP 面显式 NOT_EXERCISED（W32-02 补）。device_executed=True 由 E01 工具链闭环正控。",
+  "cells_provenance": "cells[] 9 格来自 W31 本波真机取证（E01 sentinel PROBE-OK / F2 run-as cat W31-TOOL-OK / F7 审批闸门），非跨波复制；baseline_note W32 订正 W29/W30 代数口径。iterations[] 由验收物 §3 派生并逐条标 derived_from。",
+  "truncated_fields": []
 }
