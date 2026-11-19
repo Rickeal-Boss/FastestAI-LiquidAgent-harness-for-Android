@@ -212,3 +212,12 @@ $ grep -c "130" docs/analysis/w33-acceptance.md docs/handoff-20261119-wave33.md
 - F6 `net=-256` 与手动 `dropped=9` 的不一致：只记录事实与候选方向，**不下缺陷结论**（交外审）。
 - E05 403 / OR 超时：归 INC（模型级授权 / 免费池拥塞），不推断为 harness 缺陷。
 - 1M：只有档位 readback 与 32K 软预算实测；1M tokens 真压不在本波，记 `NOT_EXERCISED`。
+
+### 5.6 commit 与 CI run
+
+- **推送 1 次**：主体 `dc3fb14`（W34 全部改动，22 文件：7 文档 + 3 制品 + 14 件证据；改了 `evidence/**` ⇒ Build 五 job + Secret scan 双触发）。tip 纯文档回填（本提交）按既定降级规则不逐波判 P0、不补 tip run 链接。
+- **CI（head_sha = `dc3fb1445556e050ffe3a17e1190e58b20e7ab6f`，四字段复核 completed / success / push / 全 40 位匹配）**：
+  - **Build** run `44559513390`：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44559513390>（五 job：Assemble Debug ✅ / Lint ✅ / Arch guard ✅ / Unit tests ✅ / Secret scan ✅）
+  - **Secret scan** run `44559513521`：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44559513521>（gitleaks ✅ + trufflehog ✅）
+- 本波**首次推送即双绿**（无红→绿链）；`.gitleaks.toml` / `secret-scan.yml` / `build.yml` 三份配置零改动，未放行任何扫描步骤。
+- PAT 仅以 URL inline 一次性使用、未落盘；`origin` 保持干净 URL。轮换属用户侧动作（按先例不在仓内写未完成命令）。

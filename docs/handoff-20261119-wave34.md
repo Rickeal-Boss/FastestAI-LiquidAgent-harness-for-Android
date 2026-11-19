@@ -88,7 +88,7 @@
 | G3 selftest | ✅ 30/30 | 230s，后台跑 |
 | G4 fulltest | ✅ 818-0-0 | 14 模块 |
 
-**CI**：推送与 run 链接见 §5.6（本交接随主体提交；tip 纯文档回填按既定降级规则不逐波判 P0）。
+**CI**：推送 1 次，主体 `dc3fb14`；Build run `44559513390` 与 Secret scan run `44559513521` 均 **success**（四字段复核 completed / success / push / 全 40 位 SHA 匹配；Build 五 job 全绿）。tip 纯文档回填按既定降级规则不逐波判 P0、不补链接。
 
 ## 六、OPEN 挂账
 
