@@ -258,12 +258,14 @@
         "new": "mutated",
         "hash64": "355fab8d519d0e8c"
       },
-      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录"
+      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录",
+      "inherited_check": true,
+      "note": "target 为 W29 制品（去 W28 化后真值源），本条判据属跨波继承检查（inherited_check），非本波真机证据（W31-03 订正）"
     },
     {
       "id": "K_cred_filename",
-      "target": "docs+evidence grep openrouter.txt|nvidia.txt",
-      "invariant": "仓内 grep 凭据文件名族 0 命中",
+      "target": "docs+evidence grep 凭据文件名族（模式拼装表述，W31-01 订正：原字面量自命中）",
+      "invariant": "按白名单（排除命令行/必红输出摘录/注记引用）仓内 grep 凭据文件名族 0 命中",
       "verified": true,
       "verified_by": "rule_definition+self_audit",
       "caveat": "本波判据 3b 必红实跑真响 RED credential filename hit",
@@ -273,7 +275,8 @@
         "new": "mutated",
         "hash64": "5f51d43fce873d45"
       },
-      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录"
+      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录",
+      "inherited_check": false
     },
     {
       "id": "K_three_sync",
@@ -288,7 +291,9 @@
         "new": "mutated",
         "hash64": "adcaca71713c93ba"
       },
-      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录"
+      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录",
+      "inherited_check": false,
+      "note": "仓内三处同步检查（W27 载体）"
     },
     {
       "id": "K_iter_consistency",
@@ -303,7 +308,9 @@
         "new": "mutated",
         "hash64": "5274146f2cef6476"
       },
-      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录"
+      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录",
+      "inherited_check": true,
+      "note": "target 为 W29 制品（去 W28 化后真值源），本条判据属跨波继承检查（inherited_check），非本波真机证据（W31-03 订正）"
     },
     {
       "id": "K_self",
@@ -318,7 +325,9 @@
         "new": "mutated",
         "hash64": "2d61071cb2d13df7"
       },
-      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录"
+      "self_audit": "本波实跑输出见 docs/notes/w29-closeout-checklist.md §本波必红实跑输出摘录",
+      "inherited_check": false,
+      "note": "本制品自检（device_execution）"
     }
   ],
   "mutation_selftest": {
@@ -330,7 +339,7 @@
   },
   "privacy": {
     "result": "CLEAN",
-    "note": "端点全 8位指纹; 零凭据/序列号/本机路径/未打码账号"
+    "note": "端点全 8位指纹; 零凭据/序列号/本机路径/未打码账号（W31-01 订正：W30 原句与本波实跑 3 命中矛盾，本波已清零并复扫）"
   },
   "device_truth_modality": "NV-MISTRAL [TEXT,IMAGE]（W26/27/28 三波坐实，本波 F1 未行使故未复测）；OR-DOTS [TEXT]（用户声明双通道继续被设备 inputModalities 证伪）",
   "caveat": "本波 w30_device_executed=True（E01/F4 真机 PASS），但 E02/E03/F2 受免费节点/端点安全策略影响 ⚠️/⛔vacuous 如实标注；T0/F1/F5/F6/F7 未行使 ⛔vacuous 不冒充通过",
@@ -429,9 +438,16 @@
   },
   "runner_fingerprint_prefix16": null,
   "runner_fingerprint_note": "禁编造；指纹随交付消息给出（W30 取证设施在仓外）",
-  "positive_control_verified_by": "device_execution",
+  "positive_control_verified_by": "device_execution（E01 真机正控；K_positive_control.verified_by 为 rule_definition+self_audit 口径，两者字段语义不同、非错位——W31-03 加注消除歧义）",
   "w30_device_executed": true,
   "w30_device_blocker": null,
-  "cells_provenance": "cells[] 全部来自 _w30/evidence/*.json 本波真机实跑，无跨波复制；E01 13 字段与 W28/W29 无相同 sentinel（W30ALPHA7 vs W28ALPHA7/W30ALPHA7）",
-  "w30_p0_repair": "W30 第 0 车修复 W29 三 P0：W29 制品去 W28 化（见 w29 制品 w30_p0_repair 字段）+ W29 checklist 必红侧闭环 + W28-01/W28-03 台账行内注记 + w29-acceptance §5.6 head_sha 笔误订正"
+  "cells_provenance": "cells[] 全部来自 _w30/evidence/*.json 本波真机实跑，无跨波复制；E01 13 字段与 W28/W29 无相同 sentinel（对照基线为 W28ALPHA7 与 W29 波未行使，本波 sentinel 为 W30ALPHA7——W31-03 订正：原句自列对照笔误）；mutation_cases 4 条 target 指向 W29 制品者已标 inherited_check（跨波继承检查非复制证据）",
+  "w30_p0_repair": "W30 第 0 车修复 W29 三 P0：W29 制品去 W28 化（见 w29 制品 w30_p0_repair 字段）+ W29 checklist 必红侧闭环 + W28-01/W28-03 台账行内注记 + w29-acceptance §5.6 head_sha 笔误订正",
+  "state_glyph_mapping": {
+    "PASS": "✅",
+    "PARTIAL": "⚠️",
+    "VACUOUS": "⛔vacuous",
+    "FAIL": "⛔"
+  },
+  "state_glyph_mapping_assertion": "PARTIAL 对应 ⚠️（W31-03 补映射断言，防越出四态枚举无 glyph 对应）"
 }

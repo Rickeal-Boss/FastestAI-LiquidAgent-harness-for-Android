@@ -251,7 +251,7 @@
     "F6",
     "F7"
   ],
-  "coverage_note": "本轮 11 格: PASS 6(E01/E02/E03/T0/F2/T1) + VACUOUS 5(F4/F7/F6/F1/F5). 真机面断言 K_positive_control 1条(E01); 其余4条为制品规则自证(已在 note 分组标注, P0-2 修复 W27『5条全元断言、真机覆盖6→0』退化). F1/F5 本轮未完成取证如实 ⛔vacuous.",
+  "coverage_note": "本轮 11 格全部 VACUOUS（W30 去 W28 化订正后口径；W29 真机全程受阻未行使）。W28 基线事实独立留存于 w28_baseline_facts、不计本波四态。",
   "truncated_fields": [],
   "truncated_fields_note": "无截断; 长文本已按需精简 | runner_fingerprint_prefix16=null: W29 生成器在仓外取证设施, 不复制 W27 的 e147... 冒充本波指纹; 真实指纹随交付消息给出, 制品不编造 (审查席规格).",
   "attempt_states_note": "顶层 dict 按 cell_id 映射 11/11 (cells[].attempt_states 覆盖 0/11, 按顶层口径)",
@@ -391,12 +391,12 @@
     "total": 5,
     "rejected": 5,
     "all_verified": true,
-    "note": "4 条为制品规则自证(rule_definition+self_audit) + 1 条真机正控(K_positive_control, verified_by=device_execution); 规则自证≠真机重放, 真机判据在验收物 §3/§4.",
+    "note": "5 条均为仓内规则自证或继承 W28 基线（K_positive_control verified_by=inherited_w28_baseline）；无本波真机 device_execution 声明（W31-03 同步订正，与 state_counts 全 VACUOUS 一致）。",
     "invariant_all_verified": true
   },
   "privacy": {
     "result": "CLEAN",
-    "note": "端点全 8位指纹; 零凭据/序列号/本机路径/未打码账号; 正控 10/10 先响后扫"
+    "note": "端点全 8位指纹; 零凭据/序列号/本机路径/未打码账号（W31-03 订正：原「正控 10/10 先响后扫」为 W29 未执行的陈旧声明，删除）"
   },
   "device_truth_modality": {
     "01e476bd": "[TEXT]",
@@ -481,7 +481,7 @@
   "positive_control_verified_by": "inherited_w28_baseline",
   "w29_device_executed": false,
   "w29_device_blocker": "adb unauthorized (RSA) on serial; input/screencap/shell rejected; screencap 0 bytes; need physical USB debug authorization",
-  "cells_provenance": "cells[]/state_counts are inherited W28 device facts (baseline f099758); W29 did NOT re-run device matrix. All W29 functional faces marked VACUOUS in acceptance §3 (criteria not exercised). Do NOT read cells[] PASS as W29 pass.",
+  "cells_provenance": "cells[]/state_counts 为 W28 基线事实的去 W28 化承载（移入 w28_baseline_facts 独立字段）；本波 11 格全 VACUOUS、真机未行使，勿把基线事实读成本波通过（W31-03 同步订正）。",
   "w28_baseline_facts": {
     "note": "inherited W28 device facts (W29 device unauthorized, NOT re-run); kept for provenance only, does NOT count toward W29 state_counts",
     "cells": [

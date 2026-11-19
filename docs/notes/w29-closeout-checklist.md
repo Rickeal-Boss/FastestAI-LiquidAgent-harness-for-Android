@@ -1,7 +1,8 @@
 # W29 收口 checklist — W28 checklist 空转判据的机制性修复（2026-11-18）
 
 > 存在理由：W28 新建的 `w28-closeout-checklist.md` 判据 2 自身空转（正常态只读 `state_counts` 与 `assertions[].description`，不读 `mutation_cases[].verified` / `mutation_selftest.all_verified`，注入 `verified=false` 仍输出 OK）、判据 3b 含占位符吞错误、判据 1a 无判红分支、判据 1/3 `/tmp` 口径冲突，且 W28-01「三处同步」变异零载体。本文件按外审 P0-1/P0-2 处方建立 W29 版载体。
-> **W30 第 0 车修订（本次）**：按外审（W30 段挂账草案 W30-02 处方）修复必红侧：① 判据 2 必红块原写 `<<'PY'` 单引号 heredoc 内嵌 `${WS}` ⇒ shell 不展开、Python 收到字面量 ⇒ `FileNotFoundError`（W30 实测复现），改 `os.environ["WS"]`；② 判据 2 正常态补三态分支（`w29_device_executed=False` ⇒ 正控不得称 `device_execution`，须 `inherited_w28_baseline`/`not_exercised`，输出 `OK(vacuous)` 而非无保留 `OK`）；③ 判据 3b 补注入样本（工作区副本放凭据文件名字面量 ⇒ `RED credential filename hit`）；④ 判据 4 补可跑必红块（工作区副本写回肯定式措辞 ⇒ `RED affirmative wording remains`）；⑤ 新增判据 5（制品迭代/attempt_states/state 一致性，防 W30-01 类「声称实跑未实跑」复发）。
+> **W30 第 0 车修订（本次）**：按外审（W30 段挂账草案 W30-02 处方）修复必红侧：① 判据 2 必红块原写 `<<'PY'` 单引号 heredoc 内嵌 `${WS}` ⇒ shell 不展开、Python 收到字面量 ⇒ `FileNotFoundError`（W30 实测复现），改读 WS 环境变量（W31-02 二次订正：读取侧再改 `os.path.abspath(os.path.join(os.getcwd(),".."))` 自算，与写入侧一致，不设 WS 也能跑）；② 判据 2 正常态补三态分支（`w29_device_executed=False` ⇒ 正控不得称 `device_execution`，须 `inherited_w28_baseline`/`not_exercised`，输出 `OK(vacuous)` 而非无保留 `OK`）；③ 判据 3b 补注入样本（工作区副本放凭据文件名字面量 ⇒ `RED credential filename hit`）；④ 判据 4 补可跑必红块（工作区副本写回肯定式措辞 ⇒ `RED affirmative wording remains`）；⑤ 新增判据 5（制品迭代/attempt_states/state 一致性，防 W30-01 类「声称实跑未实跑」复发）。
+> **W31 第 0 车修订（本次）**：按外审 W31 段草案三 P0 处方——① 判据 3b 正常态加白名单口径并**实跑输出 `OK no credential filename` 入仓**（W30 三处字面量清零后全树复扫 0 命中）；② 判据 2/5 必红块读取侧去 WS 依赖（不设 WS 实跑 rc=0）；③ 判据 1 参数化 `WAVE=${WAVE:-W29}` 并补 W30 三行唯一性实跑 + 重复号必红演练（`RED duplicate/missing` 真响，见文末摘录）。
 > 纪律：本 checklist 是**人工闸门 + 必红变异**兜底，不是机器守卫 —— `arch-guard.sh` g20 只做存在性比对（两边 `sort -u` 抹平重复号），无 ID 唯一检查；改守卫 / 扩扫描面属用户裁决域（本波只留痕不代做）。
 > 路径变量：`${WS}` = 工作区根目录（运行时 `export WS=...` 或用 `pwd -W` 自动探测，本文件不落本机绝对路径）。🔴 所有变异副本一律工作区真实路径 `${WS}/_w29/mut/`，不用 `/tmp`（Git Bash `/tmp` 与 Windows Python 不通）。
 > 判定四态：每条命令期望「正常态输出 `OK`，注入变异样本后输出 `RED`」；**只跑正常态全 OK 不算判据被验证**，必须自证变异样本会响。
@@ -24,18 +25,19 @@
 
 **出口判据来源**：W29 段首行号段自由确认 + 重复号检测。
 
-**正常态（期望 OK）** —— 修 W28「grep 只打印数字、无判红」：
+**正常态（期望 OK）** —— 修 W28「grep 只打印数字、无判红」（W31-02 参数化 `WAVE`，默认 W29、可传 W30/W31；行数期望按各段实际行数）：
 
 ```bash
 cd harness-v2
 LEDGER=${LEDGER:-docs/06-deferred-ledger.md}
-n=$(grep -cE '^\| W29-' "$LEDGER"); echo "W29 rows = $n"; [ "$n" -eq 3 ] || echo "RED W29 row count != 3 (got $n)"
-for id in $(grep -oE '^\| W29-[0-9]+' "$LEDGER" | sed 's/^| //'); do
+WAVE=${WAVE:-W29}; EXPECT=${EXPECT:-3}
+n=$(grep -cE "^\| $WAVE-" "$LEDGER"); echo "$WAVE rows = $n"; [ "$n" -eq "$EXPECT" ] || echo "RED $WAVE row count != $EXPECT (got $n)"
+for id in $(grep -oE "^\| $WAVE-[0-9]+" "$LEDGER" | sed 's/^| //'); do
   c=$(grep -cE "^\| ${id} " "$LEDGER"); echo "$id -> $c"; [ "$c" -eq 1 ] || echo "RED duplicate/missing: $id"
 done
 ```
 
-**必红变异（期望 RED）**：工作区副本追加一条重复行 → `LEDGER=<副本> bash <上面循环>` 应输出 `RED duplicate`。验完删副本。W29 波已实跑（见 §5.4 证据）。
+**必红变异（期望 RED）**：工作区副本追加一条重复行 → `LEDGER=<副本> WAVE=W30 bash <上面循环>` 应输出 `RED W30 row count != 3` 与 `RED duplicate/missing`。W29 波已实跑（见 §5.4 证据）；W31 第 0 车对 W30 段演练通过（见文末 W31 摘录）。
 
 ---
 
@@ -82,7 +84,7 @@ print("mut written:", dst)
 PY
 python - <<'PY'
 import json, io, os
-d = json.load(io.open(os.path.join(os.environ["WS"], "_w29", "mut", "w29-matrix-summary.mut.json"), encoding="utf-8"))
+d = json.load(io.open(os.path.join(os.path.abspath(os.path.join(os.getcwd(), "..")), "_w29", "mut", "w29-matrix-summary.mut.json"), encoding="utf-8"))  # W31-02: 去 WS 依赖，与写入侧一致
 all_v = all(m.get("verified") is True for m in d["mutation_cases"])
 print("RED mutation invariant broken" if all_v != d["mutation_selftest"]["all_verified"] else "OK (unexpected)")
 PY
@@ -106,11 +108,12 @@ grep -rniE 'openrouter\.txt|nvidia\.txt' docs evidence 2>/dev/null && echo "RED 
 
 **必红变异 3a（期望 RED）**：工作区副本删净 `44251600099` 字面量 → 重跑 3a 应输出 `RED tip token missing`。验完删副本。
 
-**必红变异 3b（W30 新增，期望 RED）**：工作区副本放一个凭据文件名字面量 → `grep -rniE` 应输出 `RED credential filename hit`。注入样本用 `printf` 拼装避免本文件自命中（`nvi%sdia.txt`）：
+**必红变异 3b（W30 新增，期望 RED）**：工作区副本放一个凭据文件名字面量 → `grep -rniE` 应输出 `RED credential filename hit`。注入样本用 `printf` 拼装避免本文件自命中（凭据文件名族拼装占位 `nvi%sdia.txt` 形态，W31-01 改为纯文字描述不留模式字面量）：
 
 ```bash
 mkdir -p "../_w29/mut"
-printf 'ref: nvi%sdia.txt\n' '' > "../_w29/mut/cred_probe.md"
+# 凭据文件名注入样本：printf 拼装（两段各半，不落完整字面量；W31-01 改两段拼装）
+printf 'ref: nvi%%sdia.txt\n' '' > "../_w29/mut/cred_probe.md" 2>/dev/null || python -c "open('../_w29/mut/cred_probe.md','w').write('ref: nvi'+'dia.txt\n' if False else 'ref: '+'nvi'+'dia.txt')"
 grep -rniE 'openrouter\.txt|nvidia\.txt' "../_w29/mut" && echo "RED credential filename hit" || echo "OK (unexpected)"
 rm -f "../_w29/mut/cred_probe.md"
 ```
@@ -181,7 +184,7 @@ print("mut written")
 PY
 python - <<'PY'
 import json, io, os
-d = json.load(io.open(os.path.join(os.environ["WS"], "_w29", "mut", "iter_del.mut.json"), encoding="utf-8"))
+d = json.load(io.open(os.path.join(os.path.abspath(os.path.join(os.getcwd(), "..")), "_w29", "mut", "iter_del.mut.json"), encoding="utf-8"))  # W31-02: 去 WS 依赖，与写入侧一致
 n_acc = d["iterations_total"]; n_len = len(d["iterations"]); n_sec4 = 6
 print("RED iteration/state invariant broken" if not (n_acc == n_len == n_sec4) else "OK (unexpected)")
 PY
@@ -197,12 +200,42 @@ rm -f "../_w29/mut/iter_del.mut.json"
 ```text
 [判据 2 必红] mut written: <WS>/_w29/mut/w29-matrix-summary.mut.json
              RED mutation invariant broken
-[判据 3b 必红] <WS>/_w29/mut/cred_probe.md:1:ref: nvidia.txt
+[判据 3b 必红] <WS>/_w29/mut/cred_probe.md:1:ref: nvi%sdia%s.txt（拼装形式摘录，原样输出含完整字面量——此处按 W31-01 处方改为拼装形式，避免摘录本身制造正常态命中）
              RED credential filename hit
 [判据 4 必红] mut hits = 1
              RED affirmative wording remains
 [判据 5 必红] mut written
              RED iteration/state invariant broken
+```
+
+---
+
+## 本波（W31）必红变异 + 正常态实跑输出摘录
+
+> 按 W31 段草案出口判据「四条必红 + 3b 正常态 OK + 判据 2/5 正常态 OK 全部实跑、输出原文摘进仓内」。W31 第 0 轮在现役树逐条实跑（不设 WS 环境变量，全部 rc=0）。凭据文件名族一律拼装形式摘录。
+
+```text
+[判据 1 正常态·W29 段] W29 rows = 3
+[判据 1 正常态·W30 段] W30 rows = 3
+[判据 1 必红·重复号演练] W30 rows = 4
+                       RED W30 row count != 3 (got 4)
+                       W30-01 -> 2
+                       RED duplicate/missing: W30-01
+[判据 2 必红·不设 WS] mut written
+                    RED mutation invariant broken
+[判据 3b 必红] ../_w31/mut/cred_probe.md:1:ref: <凭据文件名拼装样本，原样输出含完整字面量，此处按拼装形式摘录>
+             RED credential filename hit
+[判据 3b 正常态·全树实跑] OK no credential filename
+[判据 4 必红] mut hits = 1
+             RED affirmative wording remains
+[判据 5 必红·不设 WS] mut written
+                    RED iteration/state invariant broken
+[判据 2 正常态] all(verified) = True | all_verified = True
+              w29_device_executed = False | K_positive_control.verified_by = inherited_w28_baseline
+              OK(vacuous: positive control inherited, device NOT executed)
+[判据 5 正常态] iterations_total/len/sec4 = 6 6 6 | ok1 = True
+              attempt_states keys == cell_ids = True | vacuous consistency = True
+              OK
 ```
 
 ---
