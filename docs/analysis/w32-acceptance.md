@@ -170,7 +170,12 @@
 - 本波全零 `.kt`，未触碰行数闸门/模块边界/守卫脚本 ⇒ tap 口径与 selftest 基线不变。
 
 ### 5.6 commit 与 CI run
-（推送后回填 commit sha 与 CI run 链接；CI 绿须附 run 链接。）
+- **W32 主体 commit**：`9eec391`（含 docs + evidence + 制品，一次推送）。
+- **CI（head_sha = `9eec391`，四字段复核 completed / success / push / `9eec391`）**：
+  - **Build** run `44499935283`：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44499935283>
+  - **Secret scan** run `44499935313`：completed / **success** — <https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44499935313>
+- CI 红 0；PAT inline 用后 `git remote set-url` 清干净（已闭环动作；轮换属用户侧动作，不在仓内写未完成命令）。工作树仅剩 2 份历史未跟踪审查笔记（沿用既定口径不入库）。
+- **tip（本提交，纯文档回填）**：本提交回填 §5.6 主体 commit 与两条 CI run 链接；按既定降级规则 tip run 只留痕、不逐波判 P0、不在仓内补链接，tip SHA 与 Secret scan run 号随交付消息给出（不第三次推送以避免自指回填循环，沿用 W29/W30/W31 惯例）。
 
 ### 5.7 交给外部审查团队的制品清单
 - `docs/analysis/w32-acceptance.md`（本验收物）
