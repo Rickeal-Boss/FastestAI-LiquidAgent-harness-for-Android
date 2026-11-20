@@ -249,7 +249,7 @@
   "zero_kotlin": false,
   "cells_provenance": "真机 UI 截图 + 设备侧 run-as 读取（workspace 文件 / agent-0.log）",
   "matrix_vs_gate_order": "先跑判据 6 正常态与必红，再落验收物引用",
-  "coverage_note": "13 格固定（v1）；mcp none_by_design；端点切换受阻导致 E02/E03/E04/F1 未行使，如实记 PARTIAL。",
+  "coverage_note": "本波 13 格，格数由 cells_total 自证（W38 P0-1 去硬编码，兼容任意波次格数）；mcp none_by_design；端点切换受阻导致 E02/E03/E04/F1 未行使，如实记 PARTIAL。",
   "full_context_1M_stress": "NOT_EXERCISED（adb input ~333 字符 + file_read 16k/次 双通道硬限）",
   "environment_incidents": [
     "INC-w37-settings-tap：设置页卡片点击无响应（底部 tab 正常），DataStore 手工切换 active_endpoint_id 被拒；未判定为 harness 回归（本波未改 UI 代码），登记待查。",
@@ -317,12 +317,12 @@
     },
     {
       "id": "K_coverage_13",
-      "description": "cells 恰 13 格（v1 定版）",
+      "description": "cells 格数由 cells_total 自证（W38 P0-1 去硬编码，兼容任意波次）",
       "verified": true,
       "kind": "k6_check",
       "injected_sample": {
         "mutation": "pop one cell",
-        "expected": "RED coverage cells != 13"
+        "expected": "RED coverage cells != cells_total"
       }
     }
   ],
@@ -370,7 +370,7 @@
     {
       "id": "K_coverage_13",
       "target": "w37 cells",
-      "invariant": "exactly 13",
+      "invariant": "cells_total == len(cells) and > 0",
       "verified": true,
       "verified_by": "k6_check.py",
       "injected_sample": "pop one cell"

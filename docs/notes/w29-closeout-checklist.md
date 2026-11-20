@@ -30,7 +30,7 @@
 >
 > **唯一允许的三类动作**（都属于「让既有判据真会响」，不是新增判据）：
 > ① 给既有断言补可跑必红注入块（删 `mutation_cases` / 数量不等 / selftest 无仓内指针）；
-> ② 把已声明但无检查逻辑的断言（`K_privacy_no_key` / `K_coverage_13`）补进 `k6_check.py`；
+> ② 把已声明但无检查逻辑的断言（`K_privacy_no_key` / `K_coverage`）补进 `k6_check.py`）；
 > ③ 判据 7 默认值从「当波新 `CLOSED` 行」自动推导（消除 `CUR_WAVE=W34` 历史锚定）。
 >
 > **禁止**：新增判据编号 / 新建 checklist 或矩阵制品 / 新增 CI job / 改四态枚举 / 重出历史制品 /
@@ -39,6 +39,7 @@
 > **定版契约（v1，只增不改语义）**：
 > - 数据层 `cells[].state ∈ {PASS, PARTIAL, VACUOUS, FAIL}`（大写四值域；`state_counts` **只列非零出现值**，`sum == len(cells)`）；
 > - 显示层固定 `PASS→✅ / PARTIAL→⚠️ / VACUOUS→⛔vacuous / FAIL→⛔`；`FAIL` 是合法预留态，出现必须带必红用例、不得静默；
+> - `declared_feature_faces` 值域（v1 定版，W38 补钉，防止 W36 8 面→W37 7 面静默换名）：`{endpoint_axis, context_tier, vision, workspace, skill, mcp, compression}`（7 值）；换名/增删须用户显式批准 + 台账单人落笔注记，不得静默漂移；
 > - 「未触发」≠「已验证通过」；`VACUOUS` 必须有 `unexercised_reason`，`PARTIAL` 必须写清缺哪一半；
 > - 既有 12 条口径固化：正控先行 strict sentinel；写 X 未发生前先自证判据会响（先 RED 再落笔）；
 >   `evidence_ref` 100% 仓内存在；制品三字段齐 + 数量相等 + selftest 仓内指针；`CLOSED` 行须带本波复核指路；
@@ -59,6 +60,9 @@ n=$(grep -cE "^\| $WAVE-" "$LEDGER"); echo "$WAVE rows = $n"; [ "$n" -eq "$EXPEC
 for id in $(grep -oE "^\| $WAVE-[0-9]+" "$LEDGER" | sed 's/^| //'); do
   c=$(grep -cE "^\| ${id} " "$LEDGER"); echo "$id -> $c"; [ "$c" -eq 1 ] || echo "RED duplicate/missing: $id"
 done
+# 守恒式两数回显（W38 P1-3：防人工漏写「本波新开/销账」声明时判据 7 静默空过；只回显、不新增判据编号）
+seg=$(grep -A3 "^### $WAVE 段" "$LEDGER" | grep "本波新开挂账" | head -1)
+echo "守恒式两数回显（$WAVE）：${seg:-RED 缺本波新开/销账声明（判据7将空过 declared=0）}"
 ```
 
 **必红变异（期望 RED）**：工作区副本追加一条重复行 → `LEDGER=<副本> WAVE=W30 bash <上面循环>` 应输出 `RED W30 row count != 3` 与 `RED duplicate/missing`。W29 波已实跑（见 §5.4 证据）；W31 第 0 车对 W30 段演练通过（见文末 W31 摘录）。
@@ -337,8 +341,9 @@ if set(d["attempt_states"])!={c["cell_id"] for c in cells}: errs.append("attempt
 import re as _re
 _raw=json.dumps(d,ensure_ascii=False)
 if _re.search(r"sk-[A-Za-z0-9]{16,}|github_pat_[A-Za-z0-9_]{20,}|nvapi-[A-Za-z0-9_-]{20,}",_raw): errs.append("privacy: key-like token")
-# K_coverage_13（W37 补齐）：v1 定版矩阵格数 = 13
-if len(cells)!=13: errs.append("coverage cells != 13")
+# K_coverage（W38 P0-1 订正）：格数由 cells_total 自证，不钉死 13（兼容 w32=14 / w37=13）
+if not isinstance(d.get("cells_total"),int) or d["cells_total"]<=0 or d["cells_total"]!=len(cells):
+    errs.append("coverage cells != cells_total")
 for c in cells:
     if not os.path.exists(c["evidence_ref"]): errs.append("missing ref "+c["evidence_ref"])
 print("OK feature/evidence invariants" if not errs else "RED "+"; ".join(errs))
@@ -593,7 +598,7 @@ k6_nomut   => RED mutation_cases missing
 k6_count   => RED assertion/mutation count mismatch
 k6_noptr   => RED selftest note lacks in-repo pointer
 k6_privkey => RED privacy: key-like token
-k6_cov12   => RED state sum; attempt keys; coverage cells != 13
+k6_covpop  => RED state sum; attempt keys; coverage cells != cells_total
 k6_fail    => RED zero-value keys: ['FAIL']; state domain
 k6_nomcp   => RED mcp field missing
 k6_nocell  => RED mcp claims cell F4_mcp but cells[] lacks it

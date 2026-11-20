@@ -86,9 +86,9 @@ v1 定版契约：数据层四值域 / 显示层 glyph 固定 / 34 顶层键最�
 | 2 | `SettledCompressPolicy.kt` | `shouldApply` KDoc 补诊断码分工（净 +3 行，逻辑零变） | 编译 + 既有 6 条纯函数用例 |
 | 3 | `AppContainer.kt` | `promptContext()` 三处 `runCatching` → `try/catch` 显式重抛 `CancellationException`；抽 `degradeTo` 泛型辅助 | 模式自证用例（见下「限定」）+ 编译 |
 | 4 | `EventReducer.kt` | `buildUsageLabel` 改为消费 `promptCacheStatus` 四态（HIT/MISS/CACHE_FIELDS_NOT_REPORTED/USAGE_NOT_OBSERVED），输出文字向后兼容 | 既有 `EventReducerTest` 全绿；真机 `(0 cached, 0.0%)` 与旧版一致 |
-| 5 | `PromptContextAssembler.kt`（新文件） | G10 拆分：`promptContext()` 实现 + `degradeTo` + 顶层 `PromptContext` 迁出（`AppContainer.kt` 417→374 行） | `arch-guard` G10 OK（`VIOLATION=0`） |
+| 5 | `PromptContextAssembler.kt`（新文件） | G10 拆分：`promptContext()` 实现 + `degradeTo` + 顶层 `PromptContext` 迁出（`AppContainer.kt` 401→374 行） | `arch-guard` G10 OK（`VIOLATION=0`） |
 
-**行数闸门（G10）**：`feature-chat` 3996→3992（余 8）、`core-data` 2489→2515（余 1985）、`core-context` 1646→1649（余 1）；`TOTAL_LINE_CAP=42500` 未动，`LINE_CAPS` 未调。
+**行数闸门（G10）**：`feature-chat` 3996 未变（余 4）、`core-data` 2506（拆分后净 −9，未触顶）、`core-context` 1646→1649（余 1）；`TOTAL_LINE_CAP=42500` 未动，`LINE_CAPS` 未调。
 
 **@Test**：818 → **822**（+4，`AutoCompactDiagnosticsTest`），`build.yml EXPECTED_TESTS='822'` 同提交改。
 
@@ -116,7 +116,7 @@ v1 定版契约：数据层四值域 / 显示层 glyph 固定 / 34 顶层键最�
 
 ### 5.1 本波最强的两条证据
 
-1. **F6 三态序列**（同设备同日志文件）：`net=-256`（缺陷）→ `nothing_to_drop`（修复生效）→ `below_trigger`（语义精度修正生效）。这是「改 → 编译 → 真机 → 再看」链内循环的直接产物。
+1. **F6 三态序列**（同设备同日志文件）：`net=-256`（缺陷）→ `nothing_to_drop`（修复生效）→ `below_trigger`（**跨会话/跨包取证拼接**：`nothing_to_drop` 之后同会话 `committedChars` 只增不减，出现 `below_trigger` 必然换了会话或清了历史，不作为「修正版」直接证据）。`nothing_to_drop` 前置判生效是「改 → 编译 → 真机 → 再看」链内循环的可核产物。
 2. **F3 从 PARTIAL 转 PASS**：W35/W36 连续两波「模型声称加载但无工具卡」，本波拿到 `skill_list` + `skill_load` 两张真卡与参数，证明工具链与判据口径一致。
 
 ### 5.2 环境事件（不归因 harness）
@@ -134,7 +134,7 @@ v1 定版契约：数据层四值域 / 显示层 glyph 固定 / 34 顶层键最�
 | 分支 | `main`（在 `build.yml` / `secret-scan.yml` 的 `on.push.branches` 白名单内，0-run 风险已排除） |
 | commit | `6dcfe7252297676d9c2176016da1b1b5ece29904`（`feat(w37): 判据冻结落地 + 守恒式 0/3 + 压缩诊断码/CE 重抛/四态读者 + 13 格真机矩阵`） |
 | 提交身份 | `Rickeal-Boss <263587600+Rickeal-Boss@users.noreply.github.com>` |
-| 变更规模 | 30 文件：+1209 / −87（`.kt` 7 个含新测试与拆分文件；文档 5；证据 14；CI 1；台账/checklist 2） |
+| 变更规模 | 30 文件：+1209 / −87（`.kt` 6 个含新测试与拆分文件；文档 5；证据 18；CI 1；台账/checklist 2） |
 | 推送判据 | `git push --dry-run` 先行 `8ed8304..6dcfe72`（RC=0）；实推同结果。PAT 仅 URL inline 一次性使用、未落盘、remote 仍为干净 URL；不登记 PAT 元信息 |
 
 | 工作流 | run ID | status | conclusion | event | head_sha | 四字段匹配 | 链接 |
@@ -151,7 +151,7 @@ v1 定版契约：数据层四值域 / 显示层 glyph 固定 / 34 顶层键最�
 
 | 挂账号 | 状态 | 本波处置 |
 |---|---|---|
-| `W20-02` 拆分三方 | `OPEN` | 只做 G10 必要的 `AppContainer` 单文件拆分（417→374）；feature-settings 四屏抽公共表单与 core-context 下沉未做（本波功能改动不涉及 settings；core-context 靠净零改动静止在 1649/1650） |
+| `W20-02` 拆分三方 | `OPEN` | 只做 G10 必要的 `AppContainer` 单文件拆分（401→374）；feature-settings 四屏抽公共表单与 core-context 下沉未做（本波功能改动不涉及 settings；core-context 靠净零改动静止在 1649/1650） |
 | `W9-01` 压缩主线 | `OPEN` | 命题①（`nothing_to_drop` 诊断码 + `outcome.applied` 前置判）**本波已落地并真机验证**；命题②（`:407` 时机）仍为第二优先级未动；B1 其余三条未行使。整行不销（未整体关闭） |
 | `W17-02` 吞 CE | `OPEN` | 三处已改显式重抛；缺「取消透传」直接用例（无 Robolectric，无法构造 AppContainer 依赖），只有模式自证用例 ⇒ 不销 |
 | `W12-02` 四态读者 | `OPEN` | `buildUsageLabel` 已成为生产读者；但 `ContextBudget.cachedLabel` 仍只到日志层，四态读者未覆盖第二处 ⇒ 不销 |
@@ -171,7 +171,7 @@ v1 定版契约：数据层四值域 / 显示层 glyph 固定 / 34 顶层键最�
 - `docs/analysis/w37-acceptance.md`（本验收物）
 - `docs/handoff-20261120-wave37.md`（本波交接）
 - `evidence/w37-matrix-summary.json`（13 格矩阵，v1 定版 schema）
-- `evidence/raw/w37/`（13 件脱敏证据：4 PNG + 8 JSON + 1 deviceLogTail）
+- `evidence/raw/w37/`（17 件脱敏证据：4 PNG + 12 JSON + 1 deviceLogTail）
 - `docs/06-deferred-ledger.md`（W37 段：`本波新开 0 / 本波销账 3` + 三行 CLOSED + W36-01 豁免句）
 - `docs/notes/w29-closeout-checklist.md`（判据冻结声明 + 十一类必红 + 判据 7 自动推导 + W37 实跑摘录）
 - `docs/analysis/w36-acceptance.md`（三处内容订正）
