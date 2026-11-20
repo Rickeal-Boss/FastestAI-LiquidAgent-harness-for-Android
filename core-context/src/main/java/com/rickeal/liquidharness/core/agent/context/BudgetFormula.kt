@@ -5,6 +5,9 @@ import com.rickeal.liquidharness.core.model.RemoteEndpoint
 
 // W6 从 ContextCompressor.kt 拆出（该文件已触 G10 单文件上限 400 的边）：拆的是「预算算式」
 // 这一件事，它与压缩算法是两件事。**没有调大上限**，触顶的处理永远是拆分。
+// W39：`contextLimitOf` 从 feature-chat 的 `ChatContextWindow.kt` 并入本文件 —— 它是
+// `hardContextBudgetTokens` 的纯消费者（状态条分母），与其余预算算式同一层。读档位的那一半
+// （`contextWindowCap`）留在 :core-data（那里持有 AppContainer / SettingsRepository）。
 
 /**
  * 硬预算（token，估算量纲）：`windowEffective − maxOutputTokens`。**不乘水位线。**
@@ -85,3 +88,29 @@ fun effectiveCharsPerToken(policy: AgentPolicy, measured: Float): Float {
     val ceiling = policy.maxCalibratedCharsPerToken.coerceAtLeast(policy.hardCharsPerToken)
     return measured.coerceIn(policy.hardCharsPerToken, ceiling)
 }
+
+/**
+ * 状态条（`ChatContextMeter`）的**分母**：生效硬预算（token），不是端点声明窗口。
+ *
+ * ## 为什么必须是硬预算（W6 修的真实缺陷）
+ *
+ * 修前用 `endpoint.contextLength`（声明值）：端点 1M + 档位 32K 时占用率永远到不了 4%
+ * ⇒ **状态条永不报警**，而内核其实已在 20 928 token 处压缩。这与 `ChatContextMeter`
+ * 类头「一变色就精确对应压缩已经开始」正面矛盾；根因是档位在 settings、窗口在 endpoint。
+ *
+ * ## 为什么换成硬预算在数学上恰好对
+ *
+ * [contextBudgetTokens] `= hard × compressThreshold`，meter 的阈值也是 `compressThreshold`
+ * ⇒ `used / hard >= 0.75` ⟺ `used >= softBudget` = **压缩触发点本身**。换别的分母只是巧合对齐。
+ * 白拿的副作用：[hardContextBudgetTokens] 内部已是 `verifiedContextLength ?: contextLength`，
+ * 400 学到的真实窗口写回后分母自动跟着变，不需要刷新代码。
+ *
+ * @param maxContextTokens 档位（由 `:core-data` 的 `contextWindowCap` 从设置读出）。
+ *   端点未配置时返回 0（meter 不渲染；0 是「还不知道」，不是「已满」）。
+ */
+fun contextLimitOf(endpoint: RemoteEndpoint?, maxContextTokens: Int): Int =
+    if (endpoint == null) {
+        0
+    } else {
+        hardContextBudgetTokens(endpoint, AgentPolicy(maxContextTokens = maxContextTokens))
+    }

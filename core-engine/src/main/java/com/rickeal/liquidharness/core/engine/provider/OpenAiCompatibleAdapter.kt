@@ -197,6 +197,15 @@ class OpenAiCompatibleAdapter : ProviderAdapter {
     override fun isTerminal(event: SseEvent): Boolean = event.data.trim() == DONE_MARKER
 
     /**
+     * 流内错误帧（W24-02）：`event: error` 或 JSON 顶层 `error` 键。
+     *
+     * 映射表与理由在 [decodeOpenAiErrorFrame]（单独成文件：本文件已 456/500 行）。
+     * 返回非 null ⇒ 引擎命中即终止本次尝试，**不经过 [finish]**（否则双终态）。
+     */
+    override fun decodeFailure(event: SseEvent): GenerationEvent.Failed? =
+        decodeOpenAiErrorFrame(event) { payload -> contextLimitHint(payload) }
+
+    /**
      * 从 400 错误体里解析真实窗口（W5-02）。
      *
      * 文案出处：`docs/notes/w5-provider-matrix.md:89-93`，9 次观测字符串完全一致 ——

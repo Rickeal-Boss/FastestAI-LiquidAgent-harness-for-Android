@@ -19,7 +19,7 @@ internal object ChatSkillInput {
 
     /**
      * 加载可被 `@`/`/` 引用的 skill 名。`SkillCatalog.list()` 是 suspend（磁盘读取）：
-     * 必须先捕 `CancellationException` 原样重抛（照 `ChatContextWindow` 正例），再兜其他异常
+     * 必须先捕 `CancellationException` 原样重抛（照 `:core-data` 的 `contextWindowCap` 正例），再兜其他异常
      * —— 吞掉 CE 会让 Job 从 cancelled 变 completed。
      */
     suspend fun loadSkillNames(container: AppContainer): List<String> =

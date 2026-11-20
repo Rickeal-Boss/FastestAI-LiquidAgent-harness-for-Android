@@ -2,12 +2,16 @@ package com.rickeal.liquidharness.feature.chat
 
 import com.rickeal.liquidharness.core.agent.context.COMPACT_TRIGGER_CHARS
 import com.rickeal.liquidharness.core.agent.context.contextBudgetTokens
+import com.rickeal.liquidharness.core.agent.context.contextLimitOf
 import com.rickeal.liquidharness.core.agent.context.shouldApply
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
 import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.data.AppContainer
+import com.rickeal.liquidharness.core.data.AttachmentImporter
 import com.rickeal.liquidharness.core.data.ContextLimitWriteback
+import com.rickeal.liquidharness.core.data.contextWindowCap
 import com.rickeal.liquidharness.core.model.ChatMessage
+import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,20 +28,27 @@ import kotlinx.coroutines.launch
  */
 private const val AUTO_COMPACT_COST_CHARS = 256
 
+/** 单条消息最多 4 张图：再多会让单次请求的图片 token 吃掉正文预算。 */
+private const val MAX_ATTACHMENTS = 4
+
 /**
- * 「整段会话级」的两个动作：**手动压缩**与**会话导入**。
+ * 「会话级」的写入动作：**手动压缩** / **会话导入** / **端点重读** / **输入与附件**。
  *
  * ## 为什么从 `ChatViewModel` 里搬出来（这是 G10 的处置，不是分层）
  *
  * `ChatViewModel` 单文件撞到 500 行闸门（`scripts/arch-guard.sh` 的 LINE_CAPS），
  * 本仓的纪律是**拆文件**、不是调上限（`01-architecture.md` §二）。搬出来的判据很简单：
- * 这两个动作与「跑 run / 流式节流 / 审批句柄」那套时序逻辑零耦合 —— 它们只读一次
+ * 这些动作与「跑 run / 流式节流 / 审批句柄」那套时序逻辑零耦合 —— 它们只读一次
  * `state` 快照、写一次 `state`，不碰 `runGeneration` / `flushBuffer` /
  * `pendingApprovalDeferred`。放在同一个类里纯属历史原因。
  *
  * 依赖显式注入（`container` / `state` / `scope` / 重置回调）而不是持有 ViewModel：
  * 这样本类不需要 `ChatViewModel` 的任何私有成员，也就不会为了「少一行」而把私有字段
  * 提成 `internal`。
+ *
+ * W39：`refreshEndpoint` / `onInputChange` / `attachImage` / `removeAttachment` /
+ * `dismissError` 五个写入点也从 `ChatViewModel` 外提到这里（同一判据）。`ChatViewModel`
+ * 保留同名 public 方法作**一行委托** ⇒ `app` 侧的调用点与签名零改动。
  *
  * ## 线程模型
  *
@@ -66,6 +77,68 @@ internal class ConversationOps(
     fun offerContextLimit(endpointId: String?, verified: Int?) {
         scope.launch { limitWriteback.offer(endpointId, verified) }
     }
+
+    /**
+     * 重新读取活跃端点。
+     *
+     * 从设置页返回时必须调：换了端点 / 改了模型名后，顶栏、上下文窗口与 `canSend`
+     * 都依赖它，不重读就会出现「顶栏显示旧模型、请求已经打到新端点」的错觉。
+     *
+     * 状态条的**分母**取生效硬预算而不是端点声明窗口（理由与算式见 [contextLimitOf]）：
+     * 声明 1M + 档位 32K 时用声明值当分母会让状态条永不报警，而压缩早在 20 928 就发生了。
+     */
+    suspend fun refreshEndpoint() {
+        val endpoint = container.activeEndpoint()
+        val windowCap = contextWindowCap(container)
+        state.update {
+            it.copy(
+                endpointLabel = endpoint?.let(::labelOf),
+                contextLimit = contextLimitOf(endpoint, windowCap),
+            )
+        }
+    }
+
+    fun onInputChange(text: String) {
+        state.update { it.copy(input = text) }
+    }
+
+    /**
+     * 导入一张图片到待发送附件。
+     *
+     * 三条失败路径都**不静默**：解码失败 / 超过 1.5 MiB / 系统没装解码器，
+     * 全部走 `errorMessage`（用户在输入框上方能看到具体原因）。
+     *
+     * 为什么不在 Composable 里做：解码是阻塞 IO（可能要读 10 MB 原图），
+     * Composable 里做会卡主线程；`AttachmentImporter` 内部已切 IO 线程。
+     */
+    fun attachImage(uri: String, name: String) {
+        scope.launch {
+            when (val result = container.attachments.importImage(uri, name)) {
+                is AttachmentImporter.Result.Ok -> state.update {
+                    // 上限 4 张：再多会让单次请求的图片 token 超过正文预算。
+                    if (it.attachments.size >= MAX_ATTACHMENTS) it else {
+                        it.copy(attachments = it.attachments + result.attachment)
+                    }
+                }
+
+                is AttachmentImporter.Result.Failed -> state.update {
+                    it.copy(errorMessage = "attachment failed: " + result.reason)
+                }
+            }
+        }
+    }
+
+    /** 移除一张待发送附件。 */
+    fun removeAttachment(id: String) {
+        state.update { snapshot -> snapshot.copy(attachments = snapshot.attachments.filterNot { it.id == id }) }
+    }
+
+    fun dismissError() {
+        state.update { it.copy(errorMessage = null) }
+    }
+
+    private fun labelOf(endpoint: RemoteEndpoint): String =
+        if (endpoint.modelId.isBlank()) endpoint.name else endpoint.name + " · " + endpoint.modelId
 
     /**
      * 会话级自动压缩（W7，用户裁决 (a)：正常结束只是**评估时点**，真压由体积 + 收益阈值定）。

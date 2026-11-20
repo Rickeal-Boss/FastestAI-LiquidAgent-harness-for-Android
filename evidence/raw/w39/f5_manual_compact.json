@@ -1,0 +1,10 @@
+{
+ "cell": "F5_manual_compact",
+ "state": "PARTIAL",
+ "steps": [
+  "上下文堆到 62.2K（> COMPACT_TRIGGER_CHARS=50227）",
+  "更多操作 → 压缩上下文 → 确认「压缩」",
+  "toast：没有可压缩的内容：历史本来就装得下，或找不到安全的截断点。"
+ ],
+ "judge": "UI 路径与确认框完整；无 dropped/kept 产物 ⇒ 未真压。缺的是「可安全截断的中段」（本会话仅 6 轮），不是功能缺失"
+}

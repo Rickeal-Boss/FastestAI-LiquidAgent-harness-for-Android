@@ -36,6 +36,19 @@ import kotlinx.coroutines.launch
  *    （`01-architecture.md` §六.1「超时（首字节后）不重试」的同一理由）；
  * 3. 重试次数未超 [maxRetries]。
  *
+ * ## W24-02 的唯一例外：首字节后**截断**（`Failed.truncatedStream == true`）
+ *
+ * 第 2 条的真实目的是「不许**叠加**文本」，不是「不许恢复」。流被掐断时已吐出的那段
+ * 是**残缺前缀**，丢掉它再重试不会让用户看到两段拼接。所以对 `truncatedStream`
+ * 走「整段回滚 + 重试一次」：`RunState.truncateText(textBefore)` →
+ * `AgentEvent.StreamReset`（UI 清缓冲）→ `AgentEvent.Retrying` → 退避。
+ * 依据（用户裁决 W24-02 方案 B）：答案完整性优先于「一次成功」的假象；
+ * 回滚权只在内核 —— 引擎没有跨 attempt 的文本缓冲，它只报事实。
+ *
+ * 两条边界不许越：① **预算判断在前**，放弃路径（次数用尽）**绝不回滚** ——
+ * 用户至少还能看到已收到的半截回答 + 一条失败；② `truncatedStream == false` 时
+ * 旧闸门原样生效（A3 用例钉住：已吐正文 + 普通可重试错误仍然不重试）。
+ *
  * 另外「空输出」也走重试：模型既不调工具也不吐字，通常是一次抖动（旧仓实测：
  * 端侧偶发空流，重试一次就好）。两次都空 ⇒ 判失败，不许静默当成正常结束。
  *
@@ -85,7 +98,7 @@ class GenerationRound(
             }
 
             is Attempt.Retryable ->
-                if (prepareRetry(ctx, attempt, textBefore, reasoningBefore, result.message)) null
+                if (prepareRetry(ctx, attempt, textBefore, reasoningBefore, result.message, result.truncatedStream)) null
                 else RoundOutcome.Terminated
 
             is Attempt.Fatal -> {
@@ -261,7 +274,7 @@ class GenerationRound(
         }
 
         failure?.let { failed ->
-            return if (failed.retryable) Attempt.Retryable(failed.message)
+            return if (failed.retryable) Attempt.Retryable(failed.message, failed.truncatedStream)
             else Attempt.Fatal(failed.message, null)
         }
 
@@ -270,41 +283,6 @@ class GenerationRound(
         return Attempt.Completed(reason, produced)
     }
 
-    /**
-     * provider 未回报 usage 时的估算兜底。**在 [attemptOnce] 的 `finally` 里调用**，
-     * 条件是「本次尝试确实把请求发出去了」—— 流正常结束、中途抛 IOException、被取消、
-     * 首字节看门狗到点四条路径都会记账（取消与超时时请求已经发出去了，token 已经花了，
-     * 不记就是漏账）。
-     *
-     * 只在「本轮**确实发了请求**（`promptTokens` 没有增长）」时记一次：
-     * [RunState.recordEstimatedPrompt] 是**累加**，每轮都记会把同一条历史重复计进账本，
-     * `maxRunPromptTokens` 门控会提前误触发 —— 那是「钱没花完但 run 被停」的假熔断。
-     *
-     * 每次尝试（含重试）各记一次是对的：每一次尝试都是一次真实请求。
-     *
-     * **残余不精确（如实记录，别当 bug 修）**：引擎先 emit 了 `Failed` 再抛异常 / 再断流的
-     * 路径，旧代码一次都不记，现在会多记一次。方向是**宁可多记** —— budget 闸是 fail-safe
-     * 设计（多记 ⇒ 提前熔断；少记 ⇒ 账单失控），这个偏差站在安全侧。
-     *
-     * @param attempt **内核**重试序号（[prepareRetry] 那条链，≤ [maxRetries]+1），写进日志只为
-     *   让「内核侧重试链」可 grep。它**不是 HTTP 请求数**：`RemoteLlmEngine` 内部还有一层重试，
-     *   一次内核 attempt 可能打出多次 HTTP（引擎侧每 attempt 一行日志由 `AttemptObserver`
-     *   端口补，见 W3 账 2）。别拿本日志的条数反推请求数。
-     */
-    private fun recordEstimatedUsage(
-        ctx: TurnContext,
-        messages: List<ChatMessage>,
-        promptBefore: Int,
-        attempt: Int,
-    ) {
-        if (ctx.state.promptTokens != promptBefore) return
-        val estimated = TokenEstimator.estimateMessages(messages)
-        ctx.state.recordEstimatedPrompt(estimated)
-        AgentLogStore.warn(
-            "provider reported no usage; estimated prompt tokens: " + estimated +
-                " (attempt=" + attempt + ")"
-        )
-    }
 
     /**
      * 首字节超时的失败文案。**纯 ASCII**：`core-agent` 的 main 源集不许有中文字面量
@@ -330,9 +308,12 @@ class GenerationRound(
     }
 
     /**
-     * 决定「重试还是放弃」。返回 true = 已 emit `Retrying` 并退避，调用方可以再试一次。
+     * 决定「重试还是放弃」。返回 true = 已 emit 重试提示并退避，调用方可以再试一次。
      *
      * 放弃的三条路径都会 emit `Failed`（**不许静默**）：次数用尽 / 已吐过正文 / 非可重试错误。
+     *
+     * @param truncatedStream 本次失败是「首字节后流被掐断」（W24-02）。true 时允许越过
+     *   「已吐正文」闸门，但**先整段回滚**再重试；false 时旧闸门原样生效。
      */
     private suspend fun prepareRetry(
         ctx: TurnContext,
@@ -340,16 +321,27 @@ class GenerationRound(
         textBefore: Int,
         reasoningBefore: Int,
         reason: String,
+        truncatedStream: Boolean = false,
     ): Boolean {
+        // ① 预算判断在前：放弃路径**绝不回滚** —— 次数用尽时用户至少要看到已收到的半截回答。
         if (attempt >= maxRetries) {
             termination.emitFailed(ctx, "giving up after " + attempt + " retries: " + reason)
             return false
         }
-        // 已吐过正文**或思考**都不许重试：重发会让模型从头再答一遍，
+        // ② 已吐过正文**或思考**都不许叠加：重发会让模型从头再答一遍，
         // 用户看到两段思考 / 两段正文拼接（旧仓 P1 级缺陷的同一形态）。
-        if (ctx.state.textLength() != textBefore || ctx.state.reasoningLength() != reasoningBefore) {
+        // 截断是唯一例外：残缺前缀先被丢掉，不存在叠加。
+        val wroteOutput = ctx.state.textLength() != textBefore ||
+            ctx.state.reasoningLength() != reasoningBefore
+        if (wroteOutput && !truncatedStream) {
             termination.emitFailed(ctx, "cannot retry after partial output: " + reason)
             return false
+        }
+        // ③ 截断的整段回滚：先改真值源（RunState 文本缓冲），再通知 UI 清流式缓冲。
+        // 顺序不能反 —— 反了会出现「UI 已清空、Finished(text) 又带上旧前缀」的撕裂窗口。
+        if (truncatedStream && wroteOutput) {
+            ctx.state.truncateText(textBefore)
+            ctx.emit(AgentEvent.StreamReset(reason))
         }
         ctx.emit(AgentEvent.Retrying(reason))
         backoff(attempt + 1)
@@ -360,8 +352,8 @@ class GenerationRound(
         /** 流正常结束（含「无 finish_reason 但有内容」的截断兜底）。 */
         data class Completed(val finishReason: FinishReason?, val calls: List<ToolCall>) : Attempt
 
-        /** 可重试失败（由 adapter 判定 retryable）。 */
-        data class Retryable(val message: String) : Attempt
+        /** 可重试失败（由 adapter 判定 retryable）。[truncatedStream] = 首字节后被掐断。 */
+        data class Retryable(val message: String, val truncatedStream: Boolean = false) : Attempt
 
         /** 不可重试失败 / 本地异常。 */
         data class Fatal(val message: String, val cause: Throwable?) : Attempt

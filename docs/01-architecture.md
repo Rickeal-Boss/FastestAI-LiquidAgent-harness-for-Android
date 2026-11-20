@@ -525,7 +525,7 @@ class AgentGraph(
 |---|---|---|---|
 | 传输 | 连接失败/超时（首字节前） | 重试 ≤ 2，指数退避 | 「网络连接失败，正在重试（2/3）」→ 最终「无法连接到 <端点名>，请检查网络或端点地址」 |
 | 传输 | 首字节超时（看门狗，`generationTimeoutMillis`） | **不重试**，`Attempt.Fatal` + `EngineErrorKind.TIMEOUT` | 「模型 120 秒没有响应，请检查网络后重试」 |
-| 传输 | 超时（首字节后） | **不重试**（会重复输出） | 「响应中断，已保留已收到的内容」 |
+| 传输 | 超时 / 流被掐断（首字节后，W24-02） | **不静默 Completed**：引擎报 `Failed(retryable=true, truncatedStream=true)`，内核**整段回滚**（`RunState.truncateText` + `AgentEvent.StreamReset`）后**重试一次**，不叠加文本；两次都断 ⇒ 一个 `Failed`，不回滚 | 「连接中断，正在重试…」→ 仍失败则「响应中断，已保留已收到的内容」 |
 | 协议 | 401/403 | 不重试，标记端点 `authFailed` | 「API Key 无效或已过期，请到设置里更新」 |
 | 协议 | 429 | 重试，遵守 `Retry-After`（上限 60s） | 「请求过于频繁，<n> 秒后重试」 |
 | 协议 | 400 + 窗口超限 | 强制压缩一次后重发（仅一次） | 无（静默，成功后记 info 日志） |
@@ -690,7 +690,7 @@ Mcp-Session-Id（仅 legacy era）→ 只存内存，进程死即丢
 
 #### ⚠️ 缺失（新仓必须补）
 
-1. **零重试**。整个文件没有任何退避逻辑。新仓 `RetryPolicy`（`02-roadmap.md` W1）必须补，且遵守「首字节前才可重试」。
+1. **零重试**。整个文件没有任何退避逻辑。新仓 `RetryPolicy`（`02-roadmap.md` W1）必须补，且遵守「首字节前才可重试」。（W24-02 修订：首字节后**一律不静默 Completed** —— 截断走整段回滚后重试一次，见 §6.1 的那一行；本条「首字节前才可重试」指的是**引擎内**不重发。）
 2. **只有 OpenAI 兼容一族**。Anthropic（`event:` 行 + `content_block_*` + 顶层 `system`）与 Gemini（`functionCall` 整体到达 + `usageMetadata`）各需一份 adapter（`01-architecture.md` §3.2 表）。
 3. **SSE 解析用 `charStream().buffered().readLine()`**，不是字节级分帧。见 11.4 —— 这条对 OpenAI 够用，但对 Anthropic 不够。
 4. **无 SSRF 校验**。`url(remote.chatCompletionsUrl())` 直接吃用户填的 `baseUrl` ⇒ R7 的风险现场。

@@ -228,6 +228,7 @@ private fun StatusLine(status: ChatStatus) {
             ChatStatus.RETRYING -> stringResource(R.string.chat_status_retrying)
             ChatStatus.WAITING_FIRST_BYTE -> waitingStatusText()
             ChatStatus.CANCELLED_EMPTY -> stringResource(R.string.chat_status_cancelled)
+            ChatStatus.TRUNCATED -> stringResource(R.string.chat_status_truncated)
         },
         style = MaterialTheme.typography.labelSmall,
         color = LocalGlassColors.current.onGlassSubtle,

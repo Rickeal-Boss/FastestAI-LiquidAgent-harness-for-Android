@@ -1,12 +1,9 @@
-package com.rickeal.liquidharness.feature.settings
+package com.rickeal.liquidharness.core.agent.context
 
-import com.rickeal.liquidharness.core.agent.context.SwitchState
-import com.rickeal.liquidharness.core.agent.context.SwitchVerdict
-import com.rickeal.liquidharness.core.agent.context.evaluateSwitch
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
 
 /**
- * 切换守卫在 UI 侧的**纯函数判定层**（W7）。
+ * 切换守卫的**纯函数判定层**（W7）。
  *
  * `SettingsViewModel` 三处写入点统一写 `val verdict = evaluateSwitch(...)` 的赋值形态
  * （CI 席 G22 扫这个形状），再把 verdict 交给 [decideSwitch] 决定「拦下 / 二次确认」。
@@ -16,13 +13,24 @@ import com.rickeal.liquidharness.core.model.RemoteEndpoint
  * ⚠️ **明文 API Key 绝不进 `SettingsUiState`**（`SettingsViewModel` 类头 :62-64）。
  * 所以 [PendingSwitch] 只承载 `SAVE_ENDPOINT` 之外的两种动作；编辑页保存的二次确认
  * 放在 `EndpointEditScreen` 的 Composable 局部 `remember` 状态里，密钥全程不进 state。
+ *
+ * ## W39 拆分：为什么从 `feature-settings` 搬到 `:core-agent`
+ *
+ * 本文件是 [evaluateSwitch] / [SwitchVerdict] 的纯消费者，零 Compose / 零 ViewModel /
+ * 零 IO。W39 把 `SwitchGuard.kt` 下沉到 `:core-agent` 之后，「判定式 + 判定层」被拆到两个
+ * 模块里，判据分开写反而更难审；合并到同一包 `com.rickeal.liquidharness.core.agent.context`
+ * 后，改判据只需看一处。G22 仍扫 `feature-settings/src/main` 的**赋值形态** —— 它是
+ * 调用点判据，不因本文件搬家而失效（`SettingsViewModel` 三处写入点原地未动）。
+ *
+ * `internal` → public：跨模块不可见，故六个内部声明放宽（行为零改动）；`feature-settings`
+ * 侧三个消费文件各补 import，符号名与大写形态不变。
  */
 /** 三处写入点的动作种类。public：`SettingsUiState`（public 类）的字段要引用它。 */
 enum class SwitchKind { SAVE_ENDPOINT, SET_ACTIVE, SET_WINDOW }
 
-internal enum class SwitchAction { BLOCK, CONFIRM }
+enum class SwitchAction { BLOCK, CONFIRM }
 
-internal data class SwitchDecision(val action: SwitchAction, val verdict: SwitchVerdict)
+data class SwitchDecision(val action: SwitchAction, val verdict: SwitchVerdict)
 
 /** BLOCKED 上屏内容。`capChars` 解析不出来时为 null，UI 只给诊断串，不编数字。 */
 data class SwitchNotice(
@@ -44,17 +52,17 @@ data class PendingSwitch(
 )
 
 /** 纯函数：BLOCKED 一律拦下；其余（含 VACUOUS）都走显式二次确认，不硬绿。 */
-internal fun decideSwitch(verdict: SwitchVerdict): SwitchDecision =
+fun decideSwitch(verdict: SwitchVerdict): SwitchDecision =
     SwitchDecision(
         action = if (verdict.state == SwitchState.BLOCKED) SwitchAction.BLOCK else SwitchAction.CONFIRM,
         verdict = verdict,
     )
 
 /** 从 ASCII 诊断串 `blocked: committed=N cap=M <tier>` 取 M，用于上屏「N 字符 > M 字符」。 */
-internal fun parseCapChars(reason: String): Int? =
+fun parseCapChars(reason: String): Int? =
     Regex("cap=(\\d+)").find(reason)?.groupValues?.get(1)?.toIntOrNull()
 
-internal fun noticeOf(
+fun noticeOf(
     verdict: SwitchVerdict,
     kind: SwitchKind,
     targetId: String?,
@@ -76,7 +84,7 @@ internal fun noticeOf(
  * 标定真值 ⇒ 走 floor 1.8 保守档（reason 带 `char_floor_unmeasured`），不许伪造真值。
  * 空会话会得 VACUOUS（不是 BLOCKED）⇒ 不会被置灰，但放行时仍要二次确认。
  */
-internal fun blockedEndpointIds(
+fun blockedEndpointIds(
     endpoints: List<RemoteEndpoint>,
     committedChars: Int,
     maxContextTokens: Int,

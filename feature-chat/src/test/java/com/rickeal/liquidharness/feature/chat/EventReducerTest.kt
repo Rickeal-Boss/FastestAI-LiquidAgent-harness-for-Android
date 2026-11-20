@@ -1,6 +1,8 @@
 package com.rickeal.liquidharness.feature.chat
 
+import com.rickeal.liquidharness.core.agent.loop.TRUNCATED_KIND
 import com.rickeal.liquidharness.core.model.AgentEvent
+import com.rickeal.liquidharness.core.model.BottleneckReport
 import com.rickeal.liquidharness.core.model.Role
 import com.rickeal.liquidharness.core.model.TerminationReason
 import com.rickeal.liquidharness.core.model.ToolCall
@@ -454,6 +456,56 @@ class EventReducerTest {
         assertEquals(1, waitingSeconds(1_000L))
         assertEquals(3, waitingSeconds(3_400L))
         assertEquals(0, waitingSeconds(-1L))
+    }
+
+    /**
+     * W24-02：`Finished` 带**截断诊断卡** ⇒ 状态行提示「回答可能不完整」，气泡照常定稿。
+     *
+     * 判据只认 `report.kind == TRUNCATED_KIND`（与内核共用同一个常量，不拼字面量）：
+     * 截断**不是**新的终止原因（`terminatedBy` 仍是 ModelStopped），否则
+     * `SettledCompressPolicy.shouldEvaluate` 会在截断轮次静默不压缩。
+     */
+    @Test
+    fun finishedWithTruncationReportSurfacesTruncatedStatus() {
+        var state = ChatUiState()
+        state = EventReducer.reduce(state, AgentEvent.RoundStarted(round = 1, maxRounds = 8))
+        state = EventReducer.reduce(state, AgentEvent.TextDelta("Hel"))
+        state = EventReducer.reduce(
+            state,
+            AgentEvent.Finished(
+                text = "Hel",
+                rounds = 1,
+                terminatedBy = TerminationReason.ModelStopped,
+                report = BottleneckReport(
+                    kind = TRUNCATED_KIND,
+                    detail = "finish reason LENGTH: output may be truncated",
+                    round = 1,
+                ),
+            ),
+        )
+
+        assertTrue("截断必须可见（不许静默落库）", state.status == ChatStatus.TRUNCATED)
+        assertEquals("已收到的内容不丢", "Hel", state.bubbles.single().text)
+        assertFalse(state.isStreaming)
+        assertTrue("截断不是新的终止原因", state.terminatedBy == TerminationReason.ModelStopped)
+    }
+
+    /** W24-02 反向：正常结束必须把状态行**回落 null**，否则「可能不完整」会永久挂着。 */
+    @Test
+    fun normalFinishClearsPreviouslyTruncatedStatus() {
+        var state = ChatUiState()
+        state = EventReducer.reduce(
+            state,
+            AgentEvent.Finished(
+                text = "a",
+                rounds = 1,
+                report = BottleneckReport(kind = TRUNCATED_KIND),
+            ),
+        )
+        assertTrue(state.status == ChatStatus.TRUNCATED)
+
+        state = EventReducer.reduce(state, AgentEvent.Finished(text = "b", rounds = 2))
+        assertNull("正常结束必须清掉截断提示", state.status)
     }
 
     private fun readCall(): ToolCall =

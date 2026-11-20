@@ -1,0 +1,289 @@
+package com.rickeal.liquidharness.core.engine
+
+import com.rickeal.liquidharness.core.engine.provider.OpenAiCompatibleAdapter
+import com.rickeal.liquidharness.core.model.ChatMessage
+import com.rickeal.liquidharness.core.model.EngineErrorKind
+import com.rickeal.liquidharness.core.model.FinishReason
+import com.rickeal.liquidharness.core.model.GenerationEvent
+import com.rickeal.liquidharness.core.model.GenerationRequest
+import com.rickeal.liquidharness.core.model.RemoteEndpoint
+import com.rickeal.liquidharness.core.model.Role
+import com.rickeal.liquidharness.core.net.HttpTransport
+import com.sun.net.httpserver.HttpExchange
+import com.sun.net.httpserver.HttpServer
+import java.net.InetSocketAddress
+import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+/**
+ * 流失败形态的端到端判据（W24-02）。
+ *
+ * ## 这一组钉的是什么
+ *
+ * 「首字节之后」的三条通路以前都落成 `Completed` + 补一个 `Finished(LENGTH)`：
+ * 干净 EOF、`IOException`（Content-Length 提前断 / RST）、以及供应商在流里塞的**错误帧**
+ * （`event: error` / 顶层 `error` 键）。前者让「半截回答」与「模型正常收尾」在事件序列上
+ * 同形；后者更糟 —— 错误帧被 `decodeEvent` 丢掉，于是**一次失败的请求看起来像正常完成**。
+ *
+ * W24-02 的裁决（方案 B：内核层整段回滚后重试一次）要求引擎只报**事实**：
+ * - 有产出的截断 ⇒ `Failed(retryable=true, truncatedStream=true)`，**不补 `Finished`**；
+ * - 零事件（HTTP 200 但一帧 SSE 都没解析出来）⇒ `Fatal(PROTOCOL)`，**不可重试**
+ *   （否则「端点不是 SSE」会变成 3 次请求 + 两次退避）；
+ * - 供应商显式 `finish_reason=length` / `[DONE]` ⇒ 仍然是 `Completed`（这不是截断，
+ *   是模型自己撞到输出上限或明确宣告结束）。
+ *
+ * ## 为什么用真 HTTP（JDK `HttpServer`）而不是假 adapter
+ *
+ * 判据落在 `runAttempt` 的**分支选择**上（哪条 catch、有没有 emit `Finished`），
+ * 而不是 adapter 的解析结果。假 adapter 会把「引擎有没有在正确的位置 break / return」
+ * 整段跳过去。JDK `HttpServer` 零依赖（本模块测试依赖只有 junit + kotlin.test），
+ * 与 `RemoteLlmEngineContextLimitTest` 同一套路。
+ *
+ * ⚠️ **不引 MockWebServer**：`core-engine/build.gradle.kts` 没有该依赖，加依赖破 G1
+ * 与「测试面与生产面同构」纪律。派单卡里的「MockWebServer」是「真 HTTP 服务器」的代称，
+ * 判据是「200 + delta 后关流 ⇒ 请求数 / 终态事件唯一」，机制替换不算注水。
+ */
+class RemoteLlmEngineStreamFailureTest {
+
+    private val deltaFrame = """data: {"choices":[{"delta":{"content":"Hel"}}]}""" + "\n\n"
+
+    // ------------------------------------------------------------------ E1
+
+    /**
+     * E1（先红后绿的那一条）：200 + 一个 delta + 干净 EOF（无 `[DONE]` / 无 finish_reason）。
+     *
+     * 修复前：`Completed` + 补 `Finished(LENGTH)` —— 用户看到「答到一半突然停了」而事件序列
+     * 说这是正常结束。修复后：`Failed(retryable=true, truncatedStream=true)` 且**零 `Finished`**，
+     * 引擎自己**不重发**（`hits == 1`）—— 回滚重试只在核心里做。
+     */
+    @Test
+    fun truncatedStreamAfterContentIsRetryableAndCarriesNoFinished() {
+        withSseServer(chunks = listOf(deltaFrame), contentType = "text/event-stream") { port, hits ->
+            val events = runEngine(port)
+
+            assertEquals(1, hits.get(), "引擎不许自己重发已吐过内容的流（回滚权在内核）")
+            assertEquals(
+                listOf("Hel"),
+                events.filterIsInstance<GenerationEvent.TextDelta>().map { it.text },
+                "已收到的增量必须保留（内核回滚前用户还能看到它）：events=" + events,
+            )
+            val failures = events.filterIsInstance<GenerationEvent.Failed>()
+            assertEquals(1, failures.size, "必须恰好一个 Failed（事件序列：$events）")
+            val failed = failures.single()
+            assertEquals(EngineErrorKind.NETWORK, failed.kind, "failed=$failed")
+            assertTrue(failed.retryable, "截断必须报可重试：failed=$failed")
+            assertTrue(failed.truncatedStream, "首字节后截断必须置 truncatedStream：failed=$failed")
+            assertTrue(
+                events.none { it is GenerationEvent.Finished },
+                "截断不许补 Finished（否则半截回答被当完整回答落库）：events=" + events,
+            )
+        }
+    }
+
+    // ------------------------------------------------------------------ E2
+
+    /** E2：`[DONE]` 但没有 finish_reason ⇒ 仍是 STOP + `Completed`（服务端显式宣告结束）。 */
+    @Test
+    fun doneMarkerWithoutFinishReasonStillCompletesAsStop() {
+        val body = deltaFrame + "data: [DONE]\n\n"
+        withSseServer(chunks = listOf(body), contentType = "text/event-stream") { port, _ ->
+            val events = runEngine(port)
+
+            assertTrue(events.none { it is GenerationEvent.Failed }, "events=$events")
+            val finished = events.filterIsInstance<GenerationEvent.Finished>().single()
+            assertEquals(FinishReason.STOP, finished.reason)
+        }
+    }
+
+    // ------------------------------------------------------------------ E3
+
+    /**
+     * E3：**脏断**（`IOException` 分支）—— 声明 `Content-Length: 9999`，只发 34 字节就关连接。
+     *
+     * 与 E1 是两条独立通路（干净 EOF vs 读异常）。只修前者的实现会在 FIN/RST 形态上
+     * 退回旧行为，红态用例会随网络形态漂移成 flaky —— 所以两条必须各有一条判据。
+     */
+    @Test
+    fun dirtyCloseAfterContentIsAlsoTruncatedStream() {
+        withSseServer(
+            chunks = listOf(deltaFrame),
+            contentType = "text/event-stream",
+            declaredLength = 9_999L,
+        ) { port, hits ->
+            val events = runEngine(port)
+
+            assertEquals(1, hits.get(), "脏断同样不许引擎内重发")
+            val failed = events.filterIsInstance<GenerationEvent.Failed>().singleOrNull()
+            assertTrue(failed != null, "脏断必须报失败，events=$events")
+            assertTrue(failed!!.truncatedStream, "脏断也是截断：failed=$failed")
+            assertEquals(EngineErrorKind.NETWORK, failed.kind)
+            assertTrue(failed.retryable)
+            assertTrue(events.none { it is GenerationEvent.Finished }, "events=$events")
+        }
+    }
+
+    // ------------------------------------------------------------------ E4
+
+    /** E4：供应商**显式** `finish_reason=length` ⇒ 不是流被掐断，仍是 `Completed(LENGTH)`。 */
+    @Test
+    fun providerReportedLengthStaysCompleted() {
+        val body = deltaFrame + """data: {"choices":[{"delta":{},"finish_reason":"length"}]}""" + "\n\n"
+        withSseServer(chunks = listOf(body), contentType = "text/event-stream") { port, _ ->
+            val events = runEngine(port)
+
+            assertTrue(events.none { it is GenerationEvent.Failed }, "events=$events")
+            val finished = events.filterIsInstance<GenerationEvent.Finished>().single()
+            assertEquals(FinishReason.LENGTH, finished.reason)
+        }
+    }
+
+    // ------------------------------------------------------------------ E5
+
+    /** E5：流内 `error` 帧（限流）⇒ `Failed(RATE_LIMIT, retryable)`，**不补 `Finished`**。 */
+    @Test
+    fun rateLimitErrorFrameIsRetryableWithoutFinished() {
+        val error = """data: {"error":{"type":"rate_limit_exceeded","message":"slow down"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val events = runEngine(port)
+
+            val failed = events.filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.RATE_LIMIT, failed.kind, "failed=$failed")
+            assertTrue(failed.retryable)
+            assertFalse(failed.truncatedStream, "限流不是截断：$failed")
+            assertTrue(
+                events.none { it is GenerationEvent.Finished },
+                "错误帧命中后不许再补 Finished（双终态）：events=" + events,
+            )
+        }
+    }
+
+    // ------------------------------------------------------------------ E6
+
+    /** E6：流内 `error` 帧（超窗）⇒ `CONTEXT_OVERFLOW` + 真实窗口，且**不可重试**。 */
+    @Test
+    fun contextOverflowErrorFrameIsNotRetryable() {
+        val error = """data: {"error":{"type":"invalid_request_error","message":""" +
+            """"This model's maximum context length is 1000000 tokens"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val events = runEngine(port)
+
+            val failed = events.filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.CONTEXT_OVERFLOW, failed.kind, "failed=$failed")
+            assertFalse(failed.retryable, "超窗重发同长度必然再溢出 ⇒ 不许在引擎/传输层重试")
+            assertEquals(1_000_000, failed.contextLimitHint, "真实窗口必须带出去（学习式写回通道）")
+        }
+    }
+
+    // ------------------------------------------------------------------ E7
+
+    /** E7：已见到 `finish_reason` 之后追打的错误帧 ⇒ **忽略**，结论不变（`Completed(STOP)`）。 */
+    @Test
+    fun errorFrameAfterFinishReasonIsIgnored() {
+        val body = deltaFrame +
+            """data: {"choices":[{"delta":{},"finish_reason":"stop"}]}""" + "\n\n" +
+            """data: {"error":{"type":"server_error","message":"late failure"}}""" + "\n\n"
+        withSseServer(chunks = listOf(body), contentType = "text/event-stream") { port, _ ->
+            val events = runEngine(port)
+
+            assertTrue(
+                events.none { it is GenerationEvent.Failed },
+                "正常收尾后追打的错误帧不得改判：events=" + events,
+            )
+            val finished = events.filterIsInstance<GenerationEvent.Finished>().single()
+            assertEquals(FinishReason.STOP, finished.reason)
+        }
+    }
+
+    // ------------------------------------------------------------------ E8
+
+    /**
+     * E8：HTTP 200 + `text/html`（零 SSE 事件）⇒ **`PROTOCOL` 且不可重试**。
+     *
+     * 这条同时是 `EndpointProbeTest.htmlPageReturnedWith200FailsTheProbe` 的护栏：
+     * 若把「零事件」改判成 retryable，探针会打 3 次请求 + 两次退避，而 detail 里的
+     * `PROTOCOL` 也会消失（探针靠 `kind.name` 判红）。
+     */
+    @Test
+    fun html200WithNoEventsStaysProtocolFatal() {
+        val html = "<html><body>gateway error</body></html>"
+        withSseServer(chunks = listOf(html), contentType = "text/html; charset=utf-8") { port, hits ->
+            val events = runEngine(port)
+
+            assertEquals(1, hits.get(), "零事件不许重试（端点不是 SSE，重发还是 HTML）")
+            assertTrue(events.none { it is GenerationEvent.Finished }, "events=$events")
+            val failed = events.filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.PROTOCOL, failed.kind)
+            assertFalse(failed.retryable)
+            assertFalse(failed.truncatedStream)
+        }
+    }
+
+    // ------------------------------------------------------------------ 夹具
+
+    private fun endpointFor(port: Int): RemoteEndpoint = RemoteEndpoint(
+        id = "ep-stream",
+        name = "stream",
+        baseUrl = "http://127.0.0.1:$port/v1",
+        modelId = "test-model",
+        contextLength = 1_048_576,
+        maxOutputTokens = 4_096,
+        allowPrivateNetwork = true,
+    )
+
+    private fun runEngine(port: Int): List<GenerationEvent> {
+        val endpoint = endpointFor(port)
+        val engine = RemoteLlmEngine(
+            endpoint = endpoint,
+            adapter = OpenAiCompatibleAdapter(),
+            transport = HttpTransport(),
+            // 刻意用默认 RetryPolicy（maxAttempts=3）：断言「引擎不自己重发已吐内容的流」
+            // 才有意义 —— 若实现回退到「可重试」，这里会出现退避（500ms）× 多一次请求。
+        )
+        return runBlocking {
+            engine.generate(
+                GenerationRequest(
+                    messages = listOf(ChatMessage(role = Role.USER, text = "hi")),
+                    endpoint = endpoint,
+                )
+            ).toList()
+        }
+    }
+
+    /**
+     * 起一个只回一次响应的 SSE 服务器。
+     *
+     * @param declaredLength `> 0` ⇒ 声明固定长度但只写 [chunks] 的字节就关连接（**脏断**，
+     *   客户端读 `IOException`）；`0` ⇒ chunked，正常收尾（**干净 EOF**）。
+     */
+    private fun <T> withSseServer(
+        chunks: List<String>,
+        contentType: String,
+        declaredLength: Long = 0L,
+        block: (port: Int, hits: AtomicInteger) -> T,
+    ): T {
+        val hits = AtomicInteger(0)
+        val payload = chunks.joinToString("").toByteArray(Charsets.UTF_8)
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        server.createContext("/") { exchange: HttpExchange ->
+            hits.incrementAndGet()
+            exchange.responseHeaders.add("Content-Type", contentType)
+            exchange.sendResponseHeaders(200, if (declaredLength > 0) declaredLength else 0)
+            exchange.responseBody.use { out ->
+                out.write(payload)
+                out.flush()
+            }
+            exchange.close()
+        }
+        server.start()
+        return try {
+            block(server.address.port, hits)
+        } finally {
+            server.stop(0)
+        }
+    }
+}

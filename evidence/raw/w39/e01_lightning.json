@@ -1,0 +1,11 @@
+{
+ "cell": "E01_lightning",
+ "state": "PASS",
+ "endpoint": "NV Lightning 30B（公开模型名 nvidia/nemotron-3.5-lightning-30b-a3b）",
+ "prompt": "Reply with exactly OK",
+ "answer_text": "OK",
+ "judge": "strict 逐字：回答体仅 OK，与题面要求一致 ⇒ 正控成立",
+ "readout": "1.8k in / 48 out (0 cached, 0.0%)；上下文 1.9K / 127K",
+ "apk_note": "矩阵 APK（debug）；同一 tree 的两次打包 sha 不同，见 matrix.runner_fingerprint 与 acceptance 限定",
+ "screenshot": "_w39/shots/e1_ok.png（未入库，仅本地留痕）"
+}

@@ -1,0 +1,6 @@
+{
+ "cell": "T03_1m",
+ "state": "PARTIAL",
+ "observed": "SuperVL 读数 995.9K；实际请求成功（Reply with O → 回答 O）",
+ "judge": "1M 档读数与端点连通 ✅，1M 满窗真压 NOT_EXERCISED（PreStepBudget 档位闸 + RoundHeadGate 未解）"
+}

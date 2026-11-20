@@ -133,8 +133,17 @@ class RunTermination {
 
     private companion object {
         /** 诊断卡 kind 常量。UI 按它选文案，所以必须是稳定字符串（不是类名反射）。 */
-        const val TRUNCATED_KIND = "Truncated"
         const val MAX_ROUNDS_KIND = "MaxRounds"
         const val BREAKER_KIND = "BreakerTripped"
     }
 }
+
+/**
+ * 截断诊断卡的 `kind` 常量（`BottleneckReport.kind`）。
+ *
+ * W24-02 起**生产端与消费端共用这一个常量**：`RunTermination.emitFinished` 写它，
+ * `feature-chat/EventReducer`（读 `Finished.report?.kind`）按它置 `ChatStatus.TRUNCATED`。
+ * 原先它是 `RunTermination` 的 private 常量 —— 消费端只能自己拼字面量，两处必然漂移。
+ * 公开成**顶层常量**而不是公开整个 companion：只暴露这一个契约面。
+ */
+const val TRUNCATED_KIND = "Truncated"

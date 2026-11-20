@@ -88,7 +88,7 @@ v1 定版契约：数据层四值域 / 显示层 glyph 固定 / 34 顶层键最�
 | 4 | `EventReducer.kt` | `buildUsageLabel` 改为消费 `promptCacheStatus` 四态（HIT/MISS/CACHE_FIELDS_NOT_REPORTED/USAGE_NOT_OBSERVED），输出文字向后兼容 | 既有 `EventReducerTest` 全绿；真机 `(0 cached, 0.0%)` 与旧版一致 |
 | 5 | `PromptContextAssembler.kt`（新文件） | G10 拆分：`promptContext()` 实现 + `degradeTo` + 顶层 `PromptContext` 迁出（`AppContainer.kt` 401→374 行） | `arch-guard` G10 OK（`VIOLATION=0`） |
 
-**行数闸门（G10）**：`feature-chat` 3996 未变（余 4）、`core-data` 2506（拆分后净 −9，未触顶）、`core-context` 1646→1649（余 1）；`TOTAL_LINE_CAP=42500` 未动，`LINE_CAPS` 未调。
+**行数闸门（G10）**：`feature-chat` 3996 未变（余 4）、`core-data` 2506（W36→W37 实测 **2489→2506 = 净 +17**，未触顶；原文把方向写成「拆分后净减 9」是错数——实际拆分后总量上升，W39 第 0 车按 `git ls-tree` 逐文件 `wc -l` 复算订正）、`core-context` 1646→1649（余 1）；`TOTAL_LINE_CAP=42500` 未动，`LINE_CAPS` 未调。
 
 **@Test**：818 → **822**（+4，`AutoCompactDiagnosticsTest`），`build.yml EXPECTED_TESTS='822'` 同提交改。
 

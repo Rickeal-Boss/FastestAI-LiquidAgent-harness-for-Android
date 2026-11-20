@@ -1,0 +1,13 @@
+{
+ "cell": "E02_dots3",
+ "state": "PASS",
+ "endpoint": "OR Dots3 Note Free（dots-3-note-preview:free，ctx 524288）",
+ "steps": [
+  "首轮：Write a 40 word paragraph about the sea. → 1.6k in / 1.3k out (0 cached)",
+  "次轮：Read w33_big2.txt → 13.4k in (1536 cached, 11.4%)",
+  "三轮：再读同一文件 → 25088 cached, 67.9%",
+  "视觉轮：What shapes and colors… → 1536 cached, 85.0%"
+ ],
+ "judge": "前缀缓存命中随轮次上升（0% → 11.4% → 67.9% → 85.0%）⇒ 端点轴与缓存读数均行使",
+ "readout": "上下文 1.8K–62.2K / 520.2K"
+}

@@ -1,5 +1,6 @@
 package com.rickeal.liquidharness.feature.chat
 
+import com.rickeal.liquidharness.core.agent.loop.TRUNCATED_KIND
 import com.rickeal.liquidharness.core.model.AgentEvent
 import com.rickeal.liquidharness.core.model.PromptCacheStatus
 import com.rickeal.liquidharness.core.model.Role
@@ -68,7 +69,7 @@ object EventReducer {
                 event.cacheWrite,
             ),
         )
-        is AgentEvent.Finished -> finish(state, event.text, event.terminatedBy)
+        is AgentEvent.Finished -> finish(state, event.text, event.terminatedBy, event.report?.kind)
         is AgentEvent.Failed -> fail(state, event.message, event.terminatedBy)
         is AgentEvent.Cancelled -> finish(state, event.partialText, null)
         // 重发请求 ⇒ 服务端会从头再发一遍，旧文本必须丢弃，否则同一句话出现两遍。
@@ -209,6 +210,7 @@ object EventReducer {
         state: ChatUiState,
         finalText: String,
         terminatedBy: TerminationReason?,
+        reportKind: String? = null,
     ): ChatUiState {
         val text = finalText.ifEmpty { state.streaming.text }
         val reasoning = state.streaming.reasoning
@@ -230,10 +232,12 @@ object EventReducer {
             toolTraces = emptyList(),
             // 一个字都没产出就被停止 ⇒ 明确告诉用户「已停止」，而不是留一个空落点。
             // 有内容时不提示：气泡本身就是落点。
-            status = if (text.isBlank() && reasoning.isBlank() && traces.isEmpty()) {
-                ChatStatus.CANCELLED_EMPTY
-            } else {
-                null
+            // W24-02：截断诊断卡 ⇒ 状态行提示「回答可能不完整」（气泡照常生成，内容不丢）。
+            // 正常结束必须**回落 null**，否则提示会永久挂着。
+            status = when {
+                text.isBlank() && reasoning.isBlank() && traces.isEmpty() -> ChatStatus.CANCELLED_EMPTY
+                reportKind == TRUNCATED_KIND -> ChatStatus.TRUNCATED
+                else -> null
             },
             isStreaming = false,
             pendingApproval = null,

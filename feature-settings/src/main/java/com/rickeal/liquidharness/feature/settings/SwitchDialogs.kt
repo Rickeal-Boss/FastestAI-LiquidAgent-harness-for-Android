@@ -5,6 +5,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import com.rickeal.liquidharness.core.agent.context.PendingSwitch
+import com.rickeal.liquidharness.core.agent.context.SwitchNotice
 
 /**
  * 切换守卫的两个上屏出口（W7）。

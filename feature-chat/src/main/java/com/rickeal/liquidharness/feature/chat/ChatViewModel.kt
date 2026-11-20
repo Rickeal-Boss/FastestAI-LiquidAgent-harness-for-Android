@@ -10,12 +10,10 @@ import com.rickeal.liquidharness.core.agent.approval.ToolApprovalDecision
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
 import com.rickeal.liquidharness.core.agent.context.shouldEvaluate
 import com.rickeal.liquidharness.core.data.AppContainer
-import com.rickeal.liquidharness.core.data.AttachmentImporter
 import com.rickeal.liquidharness.core.data.degradeTo
 import com.rickeal.liquidharness.core.data.runIgnoringCancellation
 import com.rickeal.liquidharness.core.model.AgentEvent
 import com.rickeal.liquidharness.core.model.ChatMessage
-import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.model.Role
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
@@ -108,7 +106,7 @@ class ChatViewModel(
     private val approvalCache = ToolApprovalCache()
 
     /**
-     * 会话级动作（手动压缩 / 会话导入）的实现。
+     * 会话级动作（手动压缩 / 会话导入 / 端点重读 / 输入与附件）的实现。
      *
      * 单独成类只为守 G10 单文件 500 行闸门（理由与依赖注入方式见 [ConversationOps] 的类头）。
      * 它只读一次 [ChatUiState] 快照、写一次，不碰本类的 `runGeneration` / `flushBuffer` /
@@ -140,63 +138,18 @@ class ChatViewModel(
     }
 
     /**
-     * 重新读取活跃端点。
-     *
-     * 从设置页返回时必须调：换了端点 / 改了模型名后，顶栏、上下文窗口与 `canSend`
-     * 都依赖它，不重读就会出现「顶栏显示旧模型、请求已经打到新端点」的错觉。
-     *
-     * 状态条的**分母**取生效硬预算而不是端点声明窗口（理由与算式见 [contextLimitOf]）：
-     * 声明 1M + 档位 32K 时用声明值当分母会让状态条永不报警，而压缩早在 20 928 就发生了。
+     * 端点 / 输入 / 附件 / 错误条的写入点（W39 外提到 [ConversationOps]）：
+     * 本类只留一行委托，`app` 侧的调用点与签名零改动。
      */
-    suspend fun refreshEndpoint() {
-        val endpoint = container.activeEndpoint()
-        val windowCap = contextWindowCap(container)
-        _state.update {
-            it.copy(
-                endpointLabel = endpoint?.let(::labelOf),
-                contextLimit = contextLimitOf(endpoint, windowCap),
-            )
-        }
-    }
+    suspend fun refreshEndpoint() = ops.refreshEndpoint()
 
-    fun onInputChange(text: String) {
-        _state.update { it.copy(input = text) }
-    }
+    fun onInputChange(text: String) = ops.onInputChange(text)
 
-    /**
-     * 导入一张图片到待发送附件。
-     *
-     * 三条失败路径都**不静默**：解码失败 / 超过 1.5 MiB / 系统没装解码器，
-     * 全部走 `errorMessage`（用户在输入框上方能看到具体原因）。
-     *
-     * 为什么在 ViewModel 里做而不是在 Composable 里：解码是阻塞 IO（可能要读 10 MB 原图），
-     * Composable 里做会卡主线程；`AttachmentImporter` 内部已切 IO 线程。
-     */
-    fun attachImage(uri: String, name: String) {
-        viewModelScope.launch {
-            when (val result = container.attachments.importImage(uri, name)) {
-                is AttachmentImporter.Result.Ok -> _state.update {
-                    // 上限 4 张：再多会让单次请求的图片 token 超过正文预算。
-                    if (it.attachments.size >= MAX_ATTACHMENTS) it else {
-                        it.copy(attachments = it.attachments + result.attachment)
-                    }
-                }
+    fun attachImage(uri: String, name: String) = ops.attachImage(uri, name)
 
-                is AttachmentImporter.Result.Failed -> _state.update {
-                    it.copy(errorMessage = "attachment failed: " + result.reason)
-                }
-            }
-        }
-    }
+    fun removeAttachment(id: String) = ops.removeAttachment(id)
 
-    /** 移除一张待发送附件。 */
-    fun removeAttachment(id: String) {
-        _state.update { state -> state.copy(attachments = state.attachments.filterNot { it.id == id }) }
-    }
-
-    fun dismissError() {
-        _state.update { it.copy(errorMessage = null) }
-    }
+    fun dismissError() = ops.dismissError()
 
     /**
      * 把用户在审批卡上的选择送回内核。
@@ -481,9 +434,6 @@ class ChatViewModel(
         return true
     }
 
-    private fun labelOf(endpoint: RemoteEndpoint): String =
-        if (endpoint.modelId.isBlank()) endpoint.name else endpoint.name + " · " + endpoint.modelId
-
     /** 手动构造工厂：本项目禁 Hilt / Koin，DI 只走 `AppContainer`。 */
     class Factory(private val container: AppContainer) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -493,8 +443,5 @@ class ChatViewModel(
 
     private companion object {
         const val FLUSH_INTERVAL_MS = 120L
-
-        /** 单条消息最多 4 张图：再多会让单次请求的图片 token 吃掉正文预算。 */
-        const val MAX_ATTACHMENTS = 4
     }
 }

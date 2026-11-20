@@ -30,11 +30,15 @@
 >
 > **唯一允许的三类动作**（都属于「让既有判据真会响」，不是新增判据）：
 > ① 给既有断言补可跑必红注入块（删 `mutation_cases` / 数量不等 / selftest 无仓内指针）；
-> ② 把已声明但无检查逻辑的断言（`K_privacy_no_key` / `K_coverage`）补进 `k6_check.py`）；
+> ② 把已声明但无检查逻辑的断言（`K_privacy_no_key` / `K_coverage`）补进 `k6_check.py`；
 > ③ 判据 7 默认值从「当波新 `CLOSED` 行」自动推导（消除 `CUR_WAVE=W34` 历史锚定）。
 >
 > **禁止**：新增判据编号 / 新建 checklist 或矩阵制品 / 新增 CI job / 改四态枚举 / 重出历史制品 /
 > 因新发现升级判据再重新取证。缺陷一律「内容订正 + 老号行内注记 + 销账」。
+>
+> **「内容订正」与「重出历史制品」的边界**（W39 第 0 车补钉，防止把两者混为一谈）：
+> **局部内容订正（错数 / 措辞 / 命名 / note 指向）≠ 重出历史制品**；**重出 = 改 `state_counts` /
+> `cells` / `assertions` 结论或新增格**。前者照做且必须留 diff，后者一律禁止。
 >
 > **定版契约（v1，只增不改语义）**：
 > - 数据层 `cells[].state ∈ {PASS, PARTIAL, VACUOUS, FAIL}`（大写四值域；`state_counts` **只列非零出现值**，`sum == len(cells)`）；
@@ -50,22 +54,31 @@
 
 **出口判据来源**：W29 段首行号段自由确认 + 重复号检测。
 
-**正常态（期望 OK）** —— 修 W28「grep 只打印数字、无判红」（W31-02 参数化 `WAVE`，默认 W29、可传 W30/W31；行数期望按各段实际行数）：
+**正常态（期望 OK）** —— 修 W28「grep 只打印数字、无判红」（W31-02 参数化 `WAVE`，默认 W29、可传 W30/W31；行数期望按各段实际行数）。**W39 第 0 车自洽修订（原版在仓根必失败且锚历史波）**：① `cd harness-v2` 去掉，改 `REPO_ROOT` 兜底（同判据 7 第 396 行写法）——原版在仓根实跑 stderr `bash: cd: harness-v2: No such file or directory` 后仍继续、静默用 `W29`；② 默认 `WAVE` = 台账**最大段号**（`### W<n> 段`），无参数实跑即当波；③ 默认 `EXPECT` = 该段声明的 `本波新开挂账 N`（**与守恒式同源**），解析不到只回显 `RED 缺…声明`，**不回落 3**——原版 `EXPECT=3` 对 W38 段（0 行新开）恒误判 `RED W38 row count != 3`。
 
 ```bash
-cd harness-v2
+REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+cd "$REPO_ROOT" || exit 1
 LEDGER=${LEDGER:-docs/06-deferred-ledger.md}
-WAVE=${WAVE:-W29}; EXPECT=${EXPECT:-3}
-n=$(grep -cE "^\| $WAVE-" "$LEDGER"); echo "$WAVE rows = $n"; [ "$n" -eq "$EXPECT" ] || echo "RED $WAVE row count != $EXPECT (got $n)"
+# W39 第 0 车：默认 WAVE = 台账最大段号（无参数实跑即当波，不再锚 W29）
+WAVE=${WAVE:-$(grep -oE "^### W[0-9]+ 段" "$LEDGER" | grep -oE "W[0-9]+" | sort -t W -k2 -n | tail -1)}
+[ -n "$WAVE" ] || echo "RED 缺 WAVE（台账无 ### W<n> 段）"
+# W39 第 0 车：默认 EXPECT = 该段声明的「本波新开挂账 N」（守恒式同源）；解析不到 ⇒ 判红，不回落 3
+EXPECT=${EXPECT:-$(awk -v h="### $WAVE 段" '/^### /{f=(substr($0,1,length(h))==h)} f && /本波新开挂账/ {if(match($0,/本波新开挂账[ \t]*[0-9]+/)){s=substr($0,RSTART,RLENGTH);gsub(/[^0-9]/,"",s);print s;exit}}' "$LEDGER")}
+[ -n "$EXPECT" ] || echo "RED 缺 $WAVE 段「本波新开挂账 N」声明（不回落默认值）"
+n=$(grep -cE "^\| $WAVE-" "$LEDGER"); echo "$WAVE rows = $n"
+[ -z "$EXPECT" ] || [ "$n" -eq "$EXPECT" ] || echo "RED $WAVE row count != $EXPECT (got $n)"
 for id in $(grep -oE "^\| $WAVE-[0-9]+" "$LEDGER" | sed 's/^| //'); do
   c=$(grep -cE "^\| ${id} " "$LEDGER"); echo "$id -> $c"; [ "$c" -eq 1 ] || echo "RED duplicate/missing: $id"
 done
-# 守恒式两数回显（W38 P1-3：防人工漏写「本波新开/销账」声明时判据 7 静默空过；只回显、不新增判据编号）
+# 守恒式两数回显（W38 P1-3 起；W39 第 0 车与 EXPECT 同源）：只回显、不新增判据编号
 seg=$(grep -A3 "^### $WAVE 段" "$LEDGER" | grep "本波新开挂账" | head -1)
 echo "守恒式两数回显（$WAVE）：${seg:-RED 缺本波新开/销账声明（判据7将空过 declared=0）}"
 ```
 
-**必红变异（期望 RED）**：工作区副本追加一条重复行 → `LEDGER=<副本> WAVE=W30 bash <上面循环>` 应输出 `RED W30 row count != 3` 与 `RED duplicate/missing`。W29 波已实跑（见 §5.4 证据）；W31 第 0 车对 W30 段演练通过（见文末 W31 摘录）。
+**必红变异（期望 RED）**：工作区副本追加一条重复行 → `LEDGER=<副本> WAVE=W30 EXPECT=3 bash <上面循环>` 应输出 `RED W30 row count != 3` 与 `RED duplicate/missing`。
+
+> W39 第 0 车注：`EXPECT` 现在默认由段头「本波新开挂账 N」推导，而 **W29/W30 历史段头无该声明** ⇒ 对历史段必须显式传 `EXPECT=3`。**这本身就是负控**：不传 `EXPECT` 跑 `WAVE=W30` 只输出 `RED 缺 W30 段「本波新开挂账 N」声明（不回落默认值）`、不打印行数判红、更不会回落成 3 —— 证明「不回落 3」生效。W29 波已实跑（见 §5.4 证据）；W31 第 0 车对 W30 段演练通过（见文末 W31 摘录）。
 
 ---
 
@@ -352,7 +365,7 @@ ARTIFACT="${ARTIFACT:-evidence/w32-matrix-summary.json}"
 python _w34/k6_check.py "$ARTIFACT"
 ```
 
-**必红变异（期望 RED，十一类；W37 补齐三类断言可执行性必红 + `K_privacy_no_key`/`K_coverage_13` 自证必红，属冻结声明允许的动作①②）**：工作区副本注入后逐条重跑 `_w34/k6_check.py`（`K_evidence_ref` 必红 = 把某格 `evidence_ref` 指向不存在文件；`K_assertion_presence` 必红 = 删顶层 `assertions` 字段）：
+**必红变异（期望 RED，十一类；W37 补齐三类断言可执行性必红 + `K_privacy_no_key`/`K_coverage` 自证必红，属冻结声明允许的动作①②）**：工作区副本注入后逐条重跑 `_w34/k6_check.py`（`K_evidence_ref` 必红 = 把某格 `evidence_ref` 指向不存在文件；`K_assertion_presence` 必红 = 删顶层 `assertions` 字段）。**W39 第 0 车命名归一**：注入键 `k6_cov12` 改 `k6_covpop`（原键名带 W37 那版 w36 的 12 格数字，与摘录行 `k6_covpop` 不一致 ⇒ 同一变异两个名字；覆盖断言已随 W38 P0-1 去硬编码归一为 `K_coverage`，键名不再带格数后缀）：
 
 ```bash
 REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
@@ -374,7 +387,7 @@ muts={"k6_fail":lambda x:x["state_counts"].__setitem__("FAIL",0),
       "k6_noptr":lambda x:x["mutation_selftest"].__setitem__("note","自报：无仓内指针"),
       # W37 两条新断言自证必红（冻结动作②）
       "k6_privkey":lambda x:x.__setitem__("privacy","sk-"+("A"*24)),
-      "k6_cov12":lambda x:x["cells"].pop()}
+      "k6_covpop":lambda x:x["cells"].pop()}
 for name,fn in muts.items():
     x=json.load(io.open(src,encoding="utf-8")); fn(x)
     io.open("_w34/mut/"+os.path.basename(src)+"."+name+".json","w",encoding="utf-8").write(json.dumps(x,ensure_ascii=False))
@@ -413,7 +426,8 @@ for l in closed:
     if not pat.search(c[-1]): bad.append(c[0])
 print("OK closed rows carry runnable pointers (W30+)" if not bad else "RED closed without runnable pointer: "+", ".join(bad))
 # W37（判据冻结动作③）：默认从台账段头「本波销账」声明自动推导，不再锚历史波号——
-# CUR_WAVE 默认 = 台账最大波号；CUR_IDS 默认 = 最新段「本波销账：…」里列出的 ID。
+# CUR_WAVE 默认 = 台账最大波号；CUR_IDS 默认 = 最新段「本波销账[:：]…」里列出的 ID
+# （W39 第 0 车：冒号可省 + 只在最后一个 `### W<n> 段` 块内取声明，见下方 if not cur_ids）。
 # 空命中语义：无该声明 ⇒ 输出 ids=0（合法：本波未销账），不静默冒充「全部通过」。
 cur_wave=os.environ.get("CUR_WAVE","")
 cur_ids=[x for x in os.environ.get("CUR_IDS","").split(",") if x]
@@ -425,7 +439,14 @@ if not cur_wave:
     _all=_secs+_ids
     cur_wave="W%d"%max(_all) if _all else "W0"
 if not cur_ids:
-    _decls=re.findall(r"本波销账[:：]\s*([^\n]+)",txt)
+    # W39 第 0 车两条容错（原版 `r"本波销账[:：]\s*([^\n]+)"` + 全文 `[-1]` 的双重缺陷）：
+    #   ① 冒号可省 —— W38 段头实际写 `**本波新开挂账 0 / 本波销账 1（W17-02）**`（空格无冒号），
+    #      原版不匹配 ⇒ `_decls[-1]` 退回 W37 段尾的 W36 三行 ⇒ 输出
+    #      `RED closed without current-wave pointer: W36-01, W36-02, W36-03`（本波真销的 W17-02 零覆盖）。
+    #   ② 只取最后一个 `### W<n> 段` 块内的声明 —— 防文件尾部无关文本让 `[-1]` 取错。
+    _blocks=re.split(r"^### W\d+ 段",txt,flags=re.M)
+    _last=_blocks[-1] if len(_blocks)>1 else txt
+    _decls=re.findall(r"本波销账\s*[:：]?\s*([^\n]+)",_last)
     if _decls:
         cur_ids=re.findall(r"W\d+-\d+",_decls[-1])
 cmap={cells(l)[0]:cells(l) for l in closed}
@@ -442,7 +463,7 @@ python _w34/k7_check.py
 
 **必红变异 A（W33 原版，期望 RED）**：台账副本把 `W31-03` 证据列置空 → 重跑应输出 `RED closed without runnable pointer: W31-03`。
 
-**必红变异 B（W35-03 新增，期望 RED）**：台账副本把某 CLOSED 行（示例 `W30-01`）证据列的本波复核指路删空 → 重跑第一条 `OK closed rows carry runnable pointers (W30+)` 仍 OK（历史自带指针还在），第二条必须输出 `RED closed without current-wave pointer: W30-01`。两条同时成立才证明新检查不是旧正则的复述：
+**必红变异 B（W35-03 新增，期望 RED；W39 第 0 车改为「按当前段声明自动取目标行」）**：台账副本把**本波销账声明里的 CLOSED 行**证据列的本波复核指路删空 → 重跑第一条 `OK closed rows carry runnable pointers (W30+)` 仍 OK（历史自带指针还在），第二条必须输出 `RED closed without current-wave pointer: <该行 ID>`。两条同时成立才证明新检查不是旧正则的复述（W39 实测目标 = `W17-02`；该行 `W17 < MIN_WAVE` ⇒ 第一条**结构上**不覆盖它，只有本波指路分支能响）：
 
 ```bash
 REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
@@ -451,21 +472,25 @@ mkdir -p _w34/mut
 python - <<'PY'
 import io,re
 txt=io.open("docs/06-deferred-ledger.md",encoding="utf-8").read()
+# 目标行 = 最后一个 `### W<n> 段` 的「本波销账」声明里的 ID（与 k7_check.py 同源，不硬编码波号）
+blocks=re.split(r"^### W\d+ 段",txt,flags=re.M)
+decls=re.findall(r"本波销账\s*[:：]?\s*([^\n]+)",blocks[-1])
+ids=re.findall(r"W\d+-\d+",decls[-1]) if decls else []
 out=[];hit=0
 for l in txt.splitlines():
-    if re.match(r"\|\s*W30-01\s*\|",l):
+    if any(re.match(r"\|\s*"+i+r"\s*\|",l) for i in ids):
         p=l.split("|")
-        p[-2]=re.sub(r"\*\*W35 本波复核指路\*\*：.*$","（本波复核指路已删空）",p[-2])
+        p[-2]=re.sub(r"\*\*W\d+ 本波复核指路\*\*：.*$","（锚点已删空）",p[-2])
         l="|".join(p); hit+=1
     out.append(l)
 io.open("_w34/mut/ledger.k7_nopointer.md","w",encoding="utf-8").write("\n".join(out)+"\n")
-print("mut written; rows mutated =",hit)
+print("mut written; rows mutated =",hit,"; targets =",",".join(ids))
 PY
 LEDGER=_w34/mut/ledger.k7_nopointer.md python _w34/k7_check.py
 rm -f _w34/mut/ledger.k7_nopointer.md
 ```
 
-> 变异有效性：删后该行仍是 6 列、`CLOSED` 态（否则会被 `closed` 过滤掉造成假绿）；换 `W33-03` 同样注入 ⇒ `RED closed without current-wave pointer: W33-03`，证明非硬编码单行。两条判据正常态/必红原文见文末 W35 摘录。
+> 变异有效性：删后该行仍是 6 列、`CLOSED` 态（否则会被 `closed` 过滤掉造成假绿）；W35 波换 `W33-03` 同样注入 ⇒ `RED closed without current-wave pointer: W33-03`，证明非硬编码单行。**占位串不得含 `本波复核指路`**（W39 实测：原占位 `（本波复核指路已删空）` 自带搜索 token「本波复核指路」⇒ 注入后仍命中、判据不响，是**假变异**；已改 `（锚点已删空）` 才真响）。**范围负控（W39 补）**：把同样注入打在**不在 cur_ids 的**历史 CLOSED 行（如 `W30-01`）⇒ 第二条不判红 —— 这是正确语义（「本来就没销」不等于「被删空」），不是漏检。两条判据正常态/必红原文见文末 W35 与 W38 摘录。
 
 ---
 
@@ -586,7 +611,7 @@ grep -rniE "$S1|$P1|$P2|$M1" docs evidence 2>/dev/null && echo "RED sensitive le
 
 ## W37 判据冻结补齐实跑输出摘录（2026-11-20）
 
-> 依据：判据冻结声明「唯一允许三类动作」——① 三类断言必红可跑注入块；② `K_privacy_no_key`/`K_coverage_13` 进 `k6_check.py`；③ 判据 7 默认从台账自动推导。
+> 依据：判据冻结声明「唯一允许三类动作」——① 三类断言必红可跑注入块；② `K_privacy_no_key`/`K_coverage` 进 `k6_check.py`（W39 第 0 车命名归一：本条原写带格数后缀的旧名，与冻结声明第 33 行及 W38 P0-1 去硬编码后的断言名不一致，属措辞订正）；③ 判据 7 默认从台账自动推导。
 > 脚本自本文件代码块提取后执行，命令均在仓库根；`ARTIFACT=evidence/w36-matrix-summary.json`；输出原文摘录，不含敏感字面量。
 
 **判据 6 正常态**：`OK feature/evidence invariants`
@@ -622,3 +647,146 @@ RED closed without current-wave pointer: W36-01, W36-03
 ```
 
 > 空命中语义：无「本波销账：…」声明时输出 `declared=0` 且不判红（合法：本波未销账），不静默冒充「全部通过」。
+
+## W38 判据内容订正实跑输出摘录（2026-11-20，W39 第 0 车；零 `.kt`）
+
+> 依据：W38 外审 P0——① 判据 7 正则**硬要求冒号**且全文 `_decls[-1]`；② 判据 1 `cd harness-v2` 在仓根必失败、`WAVE` 默认锚 `W29`、`EXPECT` 默认 `3`。
+> 全部在现役树**仓根**实跑（本车不跑 gradle、不跑 `scripts/arch-guard.sh`——另一席正在搬 `.kt`，守卫会读到中间态），下文为输出原文。
+> 顺序：**先复现缺陷（改前）→ 再改脚本 → 再双态复跑（改后）**，不做事后编造。
+
+### A. 缺陷复现（改前；台账取 `git show HEAD:docs/06-deferred-ledger.md`，即 W38 收尾提交原状）
+
+```text
+[旧判据 7 · HEAD 台账]
+OK closed rows carry runnable pointers (W30+)
+RED closed without current-wave pointer: W36-01, W36-02, W36-03
+  ← 本波真销的 W17-02 零覆盖；报的是 W37 段尾那三行。默认「正常态」被误判成红。
+
+[旧判据 7 · 现役树把「本波销账：W17-02」的冒号去掉]
+OK closed rows carry runnable pointers (W30+)
+RED closed without current-wave pointer: W36-01, W36-02, W36-03
+  ← 冒号硬要求实证：无冒号 ⇒ 不匹配 ⇒ `_decls[-1]` 跨波退回 W37 段尾声明。
+
+[旧判据 1 · 原样无参数（在仓根执行）]
+bash: line 1: cd: harness-v2: No such file or directory
+W29 rows = 3
+W29-01 -> 1
+W29-02 -> 1
+W29-03 -> 1
+守恒式两数回显（W29）：RED 缺本波新开/销账声明（判据7将空过 declared=0）
+  ← `cd` 失败不中断，静默锚到 W29；本波（W38）完全没被检查。
+
+[旧判据 1 · 只把 WAVE 改 W38，EXPECT 仍默认 3]
+W38 rows = 0
+RED W38 row count != 3 (got 0)
+  ← 段头声明「本波新开挂账 0」，`EXPECT` 回落 3 ⇒ 恒误判红。
+```
+
+四态：⛔ 三条缺陷全部现场复现（判据 7 误报红 / 判据 1 stderr + 错波锚定 + EXPECT 回落）。
+
+### B. 改后 — 判据 1（✅ 正常态无 RED + 负控不回落 + 当前波必红真响）
+
+```text
+[正常态·无参数·仓根]
+W38 rows = 0
+守恒式两数回显（W38）：### W38 段（2026-11-20，0 行新开：**本波新开挂账 0 / 本波销账 1（W17-02）**；全面推进 + 判据内容订正 + 真机多模型矩阵）
+  ← 无 `RED`、无 `can't cd`；`WAVE` 自动推导为 W38、`EXPECT` 自动取段头 0。
+
+[负控·WAVE=W30 不传 EXPECT（W30 段头无「本波新开挂账」声明）]
+RED 缺 W30 段「本波新开挂账 N」声明（不回落默认值）
+W30 rows = 3
+W30-01 -> 1
+W30-02 -> 1
+W30-03 -> 1
+守恒式两数回显（W30）：RED 缺本波新开/销账声明（判据7将空过 declared=0）
+  ← 只报「缺声明」，**没有** `row count != 3` ⇒ 证明未回落 3。
+
+[必红·工作区副本给 W38 加一行假新开 W38-01]
+W38 rows = 1
+RED W38 row count != 0 (got 1)
+W38-01 -> 1
+```
+
+### C. 改后 — 判据 7（✅ 正常态双 OK；注入 A 第二条真 RED）
+
+```text
+[正常态·现役树·无参数]
+OK closed rows carry runnable pointers (W30+)
+OK closed rows carry current-wave pointers (W38, declared=1)
+
+[注入 A：删 W17-02 的「W38 本波复核指路」段]
+mut written; rows mutated = 1 ; targets = W17-02
+OK closed rows carry runnable pointers (W30+)
+RED closed without current-wave pointer: W17-02
+  ← 第一条仍 OK：W17-02 的 `W17 < MIN_WAVE` 结构上不被旧分支覆盖 ⇒ 新检查不是旧正则复述。
+  ← 该行删后仍 6 列、状态 `CLOSED`（cols = 6 / status = `CLOSED`），不会被 `closed` 过滤造成假绿。
+
+[注入 B1：只删「> **本波销账：W17-02**」声明行，段头无冒号的「本波销账 1（W17-02）」仍在]
+W38 块内剩余「本波销账」出现次数 = 1
+OK closed rows carry runnable pointers (W30+)
+OK closed rows carry current-wave pointers (W38, declared=1)
+  ← 冒号容错实证：段头那个「本波销账 1（W17-02）」（空格、无冒号）被识别，不退回 W36 三行。
+
+[注入 B2：段头与声明行两处同删（真删）]
+OK closed rows carry runnable pointers (W30+)
+OK closed rows carry current-wave pointers (W38, declared=0)
+  ← `declared=0` 可见且不判红（合法：本波未销账），不静默冒充「全部通过」。
+
+[恢复后复跑]
+OK closed rows carry runnable pointers (W30+)
+OK closed rows carry current-wave pointers (W38, declared=1)
+```
+
+> 变异有效性旁证（本车新发现，已写进判据 7 必红块注记）：**占位串不能含搜索 token**。首版注入把锚点替换成 `（本波复核指路已删空）` —— 占位串自带「本波复核指路」⇒ 判据仍命中、输出双 `OK`，是假变异；改 `（锚点已删空）` 才真响。留痕以防下波照抄。
+
+### D. 改后 — 判据 6（✅ w38 正常态 OK + 十一类必红全 RED；命名归一后无一处弱化）
+
+```text
+[正常态]
+w38 => OK feature/evidence invariants
+w37 => OK feature/evidence invariants
+w32 => OK feature/evidence invariants
+  ← w37/w32 是历史制品，本车未动（`evidence_ref` 全命中、`state_counts` 未改）。
+
+[十一类必红 · w38 工作区副本 · 注入键已归一 k6_cov12 → k6_covpop]
+count       => RED assertion/mutation count mismatch
+covpop      => RED state sum; attempt keys; coverage cells != cells_total
+fail        => RED zero-value keys: ['FAIL']; state domain
+iter        => RED iterations_total != len
+noassert    => RED assertions missing
+nocell      => RED mcp claims cell F4_mcp but cells[] lacks it; no mcp cell without declaration; state domain; state sum; attempt keys; coverage cells != cells_total
+nomcp       => RED mcp field missing
+nomut       => RED mutation_cases missing
+noptr       => RED selftest note lacks in-repo pointer
+privkey     => RED privacy: key-like token
+ref         => RED missing ref evidence/raw/__missing__.json
+```
+
+> 改前基线（同一台机器、同一批副本、改名之前）逐条输出与上表逐字一致 ⇒ 命名归一（`assertions[].id` / `mutation_cases[].id` 去 `_13` 后缀）+ 三处 note 订正**零弱化**。`k6_check.py` 的六条判定不依赖断言 id 字面量（无键名依赖），故无需同处改动代码。
+
+### E. W38 旧错数 / 旧名 0 命中自证
+
+```text
+[行数错数] pat="净 ""−9"; grep -rn "$pat" docs/   → rc=1（0 命中）
+  （`core-data` 实测：W36 头 2489 → W37 头 2506 = 净 +17；W37→W38 = 2506 → 2541 = 净 +35。两组别混。）
+
+[旧断言名] pat="K_cov""erage_13"; grep -rn "$pat" docs/ evidence/ scripts/ → 历史语境 10 处（下表逐条登记）+ 本摘录注记自身 1 处 = 11 处，均为「显式保留」
+```
+
+| 位置 | 处数 | 保留理由（显式） |
+|---|---|---|
+| `evidence/w36-matrix-summary.json` | 2 | **冻结历史制品**：W36 当时断言确名带 `_13`；改名 = 改历史制品结论载体，冻结声明禁止「重出历史制品」 |
+| `evidence/w37-matrix-summary.json` | 2 | 同上（W37 制品） |
+| `docs/analysis/w37-acceptance.md:11/:50` | 2 | W37 **时序记录**（当时按旧名落的判定）；非本波制品，改成新名会把历史写成从未发生的样子 |
+| `docs/06-deferred-ledger.md:683/:702` | 2 | 台账**主理人单人落笔域**，本车不动（已在回传里报备，由主理人裁决是否订正） |
+| `docs/handoff-20261120-wave38.md:13/:23` | 2 | 交接件**主理人落笔域**，本车不动（同上） |
+
+> 已归一（本车实改、可 diff 复核）：`evidence/w38-matrix-summary.json` 的 `assertions[].id` 与 `mutation_cases[].id`（各 1 处）、checklist 判据 6 必红注入键（`k6_cov12` → `k6_covpop`，与摘录行同名）、checklist 判据 6 必红块标题与 W37 摘录抬头两处措辞、`docs/analysis/w38-acceptance.md` 裁决表第 3 行。
+
+> **冻结边界裁决（用户/主理人 2026-11-20，W39 第 0 车落笔）**：历史制品 / 历史行内表述保留旧名 `K_coverage_13`，属**时点记录，不回改**（改历史行 = 重出历史制品）；上表 10 处一律维持原样。
+
+### F. 本车未做（边界，不冒充）
+
+- 未跑 `scripts/arch-guard.sh`、未跑 gradle、未改任何 `.kt`（另一席在搬文件，守卫会读中间态）。
+- 未改台账 `docs/06-deferred-ledger.md`、未改 `docs/handoff-*`（主理人落笔域）。
+- 未新增判据编号、未新建 checklist / 矩阵制品、未改四态枚举、未加 CI job、未动 `.github/workflows`。

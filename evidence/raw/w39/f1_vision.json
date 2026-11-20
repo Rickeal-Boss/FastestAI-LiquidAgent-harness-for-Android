@@ -1,0 +1,9 @@
+{
+ "cell": "F1_vision",
+ "state": "PASS",
+ "endpoint": "OR Dots3（本轮在端点高级配置开启「图片输入」）",
+ "asset": "w36_vision.png（ground truth：左红方块 + 右绿圆，浅灰白底）",
+ "answer_text": "…two shapes with their respective colors: * A red square on the left. * A green circle on the right, set against a light grey/off-white background.",
+ "judge": "逐字回读与 ground truth 完全一致（形状×2 + 颜色×2 + 位置）⇒ 真 PASS；未用 1×1 像素图",
+ "readout": "1.8k in / 161 out (1536 cached, 85.0%)"
+}

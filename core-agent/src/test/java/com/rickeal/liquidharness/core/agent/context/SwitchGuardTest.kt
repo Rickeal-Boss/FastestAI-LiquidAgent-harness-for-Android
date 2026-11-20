@@ -8,9 +8,10 @@ import kotlin.test.assertTrue
 /**
  * `SwitchGuard` 的口径出处、被调用判据与四条反例锚。
  *
- * 详细 KDoc 在此归档，与源码 KDoc 互为补充。G10 按 `core-context/src/main` 全量 `.kt`
- * 求和；W7 一次性裁决把该模块上限 1450→1650（详见
- * `docs/notes/w7-line-budget-ruling.md`，不构成先例），现 8 文件 1584 行 < 1650。
+ * 详细 KDoc 在此归档，与源码 KDoc 互为补充。W39 拆分：本类与被测源码一起从
+ * `:core-context` 迁到 `:core-agent`（G10 预算：`core-agent` 上限 6500，`core-context`
+ * 让出 201 行余量），包名保持 `com.rickeal.liquidharness.core.agent.context` 不变 ⇒
+ * 用例断言零改动（纯机械搬迁）。
  * ⚠️ 本波检测到两个源码文件被并行写入反复覆盖（20:23 / 20:28 各一次），故本类
  * **只钉行为（state / allowed / 数值边界），不钉 reason 串的格式** ——
  * 依 AGENTS.md §七「只钉结构不钉措辞」：reason 是给 UI 落日志的诊断串，格式变化

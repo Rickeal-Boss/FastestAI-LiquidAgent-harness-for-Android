@@ -152,6 +152,20 @@ interface ProviderAdapter {
     /** 一帧 SSE → 0..n 个事件。**这是唯一需要为每族单独写死的部分。** */
     fun decodeEvent(event: SseEvent): List<GenerationEvent>
 
+    /**
+     * 一帧 SSE 是否是**错误帧**（W24-02）。
+     *
+     * 为什么必须与 [decodeEvent] 分开：`decodeEvent` 的契约是「把能读的都读出来」，
+     * 让它在错误帧上返回 `Failed` 会让引擎在循环后**再补一个 `Finished`** ⇒ 双终态
+     * （两个终态事件 = UI 收尾两次、journal 落两行）。所以错误帧由引擎单独查，
+     * 命中即 `break` 并直接返回 `AttemptOutcome`，**不经过 [finish]**。
+     *
+     * 默认 `null`：另外两族（Anthropic / Gemini）的错误帧形态不同，将来各自 override；
+     * 默认值让既有实现与单测零改动就编译（与 [contextLimitHint] 同一处置）。
+     * 引擎只在**尚未见到 finish_reason** 时调用它 —— 正常收尾后追打的错误帧不得改判结论。
+     */
+    fun decodeFailure(event: SseEvent): GenerationEvent.Failed? = null
+
     /** 该帧是否为本族的结束标记。引擎据此停止读流（不必等 TCP FIN）。 */
     fun isTerminal(event: SseEvent): Boolean
 

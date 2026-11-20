@@ -1,0 +1,6 @@
+{
+ "cell": "F3_skill",
+ "state": "VACUOUS",
+ "observed": "设备侧 files/harness/skills 为空；技能页无已安装 SKILL.md",
+ "judge": "0 个已安装技能 ⇒ @ 引用路径无载体，判 vacuous（none_by_design），不冒充通过"
+}

@@ -1,5 +1,6 @@
 package com.rickeal.liquidharness.feature.chat
 
+import com.rickeal.liquidharness.core.agent.context.contextLimitOf
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

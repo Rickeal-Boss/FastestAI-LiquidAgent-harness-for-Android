@@ -1,0 +1,6 @@
+{
+ "cell": "F4_mcp",
+ "state": "VACUOUS",
+ "observed": "MCP 服务器页：还没有 MCP 服务器（0 server）",
+ "judge": "none_by_design；外部 https server 仍挂 W5-03/05/06"
+}

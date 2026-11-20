@@ -1,0 +1,9 @@
+{
+ "cell": "F6_auto_compact",
+ "state": "PARTIAL",
+ "observed": [
+  "2026-11-20T16:28:24.660373Z INFO auto_compact=noop reason=nothing_to_drop",
+  "此前多次 below_trigger（16:16–16:28）"
+ ],
+ "judge": "本波达到 62.2K 触发线后进入 nothing_to_drop 分支（W38 只到 below_trigger，未触及该分支）⇒ 分支覆盖前进一格；仍无 applied"
+}

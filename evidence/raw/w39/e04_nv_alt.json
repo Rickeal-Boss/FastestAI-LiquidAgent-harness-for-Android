@@ -1,0 +1,9 @@
+{
+ "cell": "E04_nv_alt",
+ "state": "PASS",
+ "endpoint": "NV Nano Omni 30B（nvidia/nemotron-3-nano-omni-30b-a3b-reasoning）",
+ "prompt": "Reply with exactly OK",
+ "answer_text": "OK",
+ "readout": "1.8k in / 41 out (0 cached)；上下文 1.9K / 127K",
+ "judge": "strict 逐字 OK"
+}

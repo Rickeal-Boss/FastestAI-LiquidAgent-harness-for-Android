@@ -146,7 +146,7 @@
       "state": "PASS",
       "glyph": "✅",
       "evidence_ref": "evidence/raw/w38/f6_auto_compact.json",
-      "note": "新包自动压缩判据持续工作（below_trigger）；deviceLogTail 本波段。"
+      "note": "本波仅 `below_trigger`，`nothing_to_drop` 未再触发（不据此主张该分支未回退）；新包自动压缩判据持续工作，deviceLogTail 本波段。"
     }
   ],
   "cells_total": 13,
@@ -249,7 +249,7 @@
   "zero_kotlin": false,
   "cells_provenance": "真机 UI 截图 + 设备侧 run-as 读取（workspace 文件 / agent-0.log）",
   "matrix_vs_gate_order": "先跑判据 6 正常态与必红，再落验收物引用",
-  "coverage_note": "本波 13 格，格数由 cells_total 自证（W38 P0-1 去硬编码）；本波实测 7 格（E02/T02/F1/F2/F5/F6/INC 定位），其余 6 格沿用 W37 基线证据并在 note 标注「本波未复测」，不冒充本波。",
+  "coverage_note": "本波 13 格，格数由 cells_total 自证（W38 P0-1 去硬编码）；PASS 6 格构成 = 本波取证 PASS 4（E02_dots3 / T02_512k / F2_workspace / F6_auto_compact）+ 沿用 W37 基线 PASS 2（E01_lightning / F3_skill）；本波实测 7 格（E02/T02/F1/F2/F5/F6/INC 定位），其余 6 格沿用 W37 基线证据并在 note 标注「本波未复测」，不冒充本波。",
   "full_context_1M_stress": "NOT_EXERCISED（T03 1M 满窗仍需双通道硬限解除；本波最高实测 520.2K 档）",
   "environment_incidents": [
     "INC-w37-settings-tap 本波根因定位：目标「设为当前」按钮在滚动区外（bounds [0,0][0,0]）+ 确认框二次点击；滚动后点击并确认即成功切换。非 harness 回归，非设备缺陷——操作路径问题。新包设置页完全正常。",
@@ -315,7 +315,7 @@
       }
     },
     {
-      "id": "K_coverage_13",
+      "id": "K_coverage",
       "description": "cells 格数由 cells_total 自证（W38 P0-1 去硬编码，兼容任意波次）",
       "verified": true,
       "kind": "k6_check",
@@ -367,7 +367,7 @@
       "injected_sample": "inject sk- token"
     },
     {
-      "id": "K_coverage_13",
+      "id": "K_coverage",
       "target": "w37 cells",
       "invariant": "cells_total == len(cells) and > 0",
       "verified": true,
@@ -379,6 +379,6 @@
     "total": 6,
     "rejected": 6,
     "all_verified": true,
-    "note": "v1 六条断言各一注入，全部 RED；实跑输出见 docs/notes/w29-closeout-checklist.md「W37 判据冻结补齐实跑输出摘录」（W37 新增十一类必红含本六类）。"
+    "note": "v1 六条断言各一注入，全部 RED；实跑输出见 docs/notes/w29-closeout-checklist.md「W38 判据内容订正实跑输出摘录」（W38 段：判据 6 对 w38 正常态 OK + 十一类必红 RED，判据 1/7 正常态与注入双态）。"
   }
 }

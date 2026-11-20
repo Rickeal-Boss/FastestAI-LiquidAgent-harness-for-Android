@@ -10,9 +10,9 @@ import kotlin.test.assertTrue
 /**
  * `SettledCompressPolicy` 的阈值出处、路径矩阵、被调用判据与反例锚。
  *
- * 详细 KDoc 在此归档，理由同 `SwitchGuardTest`。G10 按 `core-context/src/main` 全量求和；
- * W7 一次性裁决把上限 1450→1650（见 `docs/notes/w7-line-budget-ruling.md`），
- * 现 1584 行 < 1650；单文件 400 上限未动。
+ * 详细 KDoc 在此归档，理由同 `SwitchGuardTest`。W39 拆分：本类与被测源码一起从
+ * `:core-context` 迁到 `:core-agent`（包名不变 ⇒ 断言零改动）；本文件与源码均 < 单文件
+ * 上限 400，模块上限 `core-agent` 6500。
  * ⚠️ 两个源码文件被并行写入反复覆盖，故本类只钉**行为**（applied / 触发布尔 /
  * 数值边界用常量引用），不钉 reason 串格式 —— 依 AGENTS.md §七「只钉结构不钉措辞」。
  * 唯一例外 `already_compressed`：主理人点名「不静默」，必须留住这个语义。

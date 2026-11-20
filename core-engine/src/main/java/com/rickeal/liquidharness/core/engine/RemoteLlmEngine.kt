@@ -2,6 +2,7 @@ package com.rickeal.liquidharness.core.engine
 
 import com.rickeal.liquidharness.core.engine.provider.AdapterStreamState
 import com.rickeal.liquidharness.core.engine.provider.ProviderAdapter
+import com.rickeal.liquidharness.core.engine.provider.looksLikeContextOverflowMessage
 import com.rickeal.liquidharness.core.model.AgentJson
 import com.rickeal.liquidharness.core.model.EngineCapabilities
 import com.rickeal.liquidharness.core.model.EngineErrorKind
@@ -57,9 +58,13 @@ import java.io.IOException
  *    保证取消后不再 emit 任何 `ToolCallDelta`；
  * 4. 取消幂等：对已结束的流再 `stop()` 是 no-op（`SseStream.close()` 用 CAS 挡重复）。
  *
- * ## 重试的三条边界
+ * ## 重试的边界（W24-02 修订，取代「首字节后一律不重试」）
  *
- * - 只在**尚未 emit 任何内容**时重试（否则用户会看到两段拼接的回答）；
+ * - **引擎内**只在尚未 emit 任何内容时重试（否则用户会看到两段拼接的回答）；
+ * - **首字节后截断**不再落成「带 LENGTH 的完整回答」：转成
+ *   `Failed(retryable=true, truncatedStream=true)`，由**内核**整段回滚
+ *   （`RunState.truncateText` + `AgentEvent.StreamReset`）后重试一次 —— 回滚权只在内核手里
+ *   （只有它持有跨 attempt 的文本缓冲），引擎不做第二套拼接 / 回滚；
  * - `Retry-After` 优先于本地退避，上限 60s；
  * - `CONTEXT_OVERFLOW` 不在这里重试 —— 正确动作是内核压缩后重发，引擎重发同样长度必然再溢出。
  */
@@ -221,6 +226,20 @@ class RemoteLlmEngine(
                         state.sawTerminalMarker = true
                         break
                     }
+                    // W24-02：错误帧先于 decodeEvent 判定。命中即收尾，**不经过 adapter.finish**
+                    // （它会在下面再补一个 Finished ⇒ 双终态）。`finishReason != null` 时忽略：
+                    // 供应商在正常收尾后追打的错误帧不得改判已定的结论（E6）。
+                    if (state.finishReason == null) {
+                        val failure = adapter.decodeFailure(event)
+                        if (failure != null) {
+                            emitFlushed(state)
+                            return if (failure.retryable) {
+                                AttemptOutcome.Retryable(state, failure, null)
+                            } else {
+                                AttemptOutcome.Fatal(state, failure)
+                            }
+                        }
+                    }
                     for (generationEvent in adapter.decodeEvent(event)) {
                         // 先归一化再 emit：累积式 provider 的重复帧在这里被吸收，
                         // 下游（内核 / UI）只会看到真实增量（R19 的接线点）。
@@ -235,9 +254,38 @@ class RemoteLlmEngine(
             // 位置在 adapter.finish() **之前** —— 终帧裁决要用补发后的 textChars。
             emitFlushed(state)
 
+            // ① 零事件（HTTP 200 但一帧 SSE 都没解析出来）= 端点不是 SSE（HTML 错误页 /
+            //    网关改写的 JSON）。保持 PROTOCOL 且**不可重试**：重发只会再拿一份 HTML，
+            //    而探针（`EndpointProbeTest.htmlPageReturnedWith200FailsTheProbe`）靠这条判红。
+            if (state.eventCount == 0 && !state.hasEmittedAny) {
+                return AttemptOutcome.Fatal(
+                    state,
+                    GenerationEvent.Failed(
+                        EngineErrorKind.PROTOCOL,
+                        "stream ended without any event (endpoint is not SSE?)",
+                        retryable = false,
+                    ),
+                )
+            }
+
             // 供应商没给 finish_reason ⇒ 补终帧。这条 if 是「半截回答不被当完整回答落库」
             // 的唯一防线（AGENTS.md §五.6）。
             if (state.finishReason == null) {
+                // ② 有产出、却既没 finish_reason 也没结束标记 ⇒ 连接被掐断（W24-02）：
+                //    **不补 Finished(LENGTH)**，改成可重试的截断失败，交内核整段回滚后重试一次。
+                //    判据用 hasEmittedAny（含工具碎片）：只吐 tool_calls 的流同样不许叠加。
+                if (state.hasEmittedAny && !state.sawTerminalMarker) {
+                    return AttemptOutcome.Retryable(
+                        state = state,
+                        failure = GenerationEvent.Failed(
+                            kind = EngineErrorKind.NETWORK,
+                            message = "stream truncated before completion",
+                            retryable = true,
+                            truncatedStream = true,
+                        ),
+                        retryAfterMillis = null,
+                    )
+                }
                 val terminal = adapter.finish(state)
                 state.finishReason = terminal.reason
                 emit(terminal)
@@ -253,12 +301,24 @@ class RemoteLlmEngine(
                 if (state.finishReason == null) emit(GenerationEvent.Finished(FinishReason.CANCELLED))
                 return AttemptOutcome.Completed(state)
             }
+            // 先补出待决帧再判「有没有产出」：两击确认会把第二帧暂存，
+            // 只收一帧就被掐断时 `hasEmittedAny` 仍为 true（首帧已 emit），但
+            // 「只收到一帧 + 砍在第二帧」的形态必须先把待决帧补出来，否则它永久丢失。
+            emitFlushed(state)
             if (state.hasEmittedAny) {
-                // 首字节后中断：**不重试**（重发会重复输出），保留已收到内容并标记截断。
-                // 判据含工具碎片：只有 tool_calls 碎片、没有正文的流同样不许重发。
-                emitFlushed(state)
-                if (state.finishReason == null) emit(adapter.finish(state))
-                return AttemptOutcome.Completed(state)
+                // 首字节后中断（Content-Length 提前断 / RST）：**引擎不重发**（会重复输出），
+                // 但也不许当完整回答（W24-02）：报 truncatedStream，由内核整段回滚后重试一次。
+                // 判据含工具碎片：只有 tool_calls 碎片、没有正文的流同样不许叠加。
+                return AttemptOutcome.Retryable(
+                    state = state,
+                    failure = GenerationEvent.Failed(
+                        kind = EngineErrorKind.NETWORK,
+                        message = "network error after partial output: " + io.javaClass.simpleName,
+                        retryable = true,
+                        truncatedStream = true,
+                    ),
+                    retryAfterMillis = null,
+                )
             }
             return AttemptOutcome.Retryable(
                 state = state,
@@ -362,13 +422,8 @@ class RemoteLlmEngine(
      */
     private fun looksLikeContextOverflow(bodyText: String): Boolean {
         if (bodyText.isEmpty()) return false
-        val lower = bodyText.lowercase()
-        val mentionsWindow = lower.contains("context") || lower.contains("token")
-        val mentionsOverflow = lower.contains("too long") ||
-            lower.contains("maximum") ||
-            lower.contains("exceed") ||
-            lower.contains("limit") ||
-            lower.contains("length")
-        return mentionsWindow && mentionsOverflow
+        // 词表只定义一处（`provider/OpenAiErrorFrame.kt`）：HTTP 400 与「流内错误帧」是同一族
+        // 文案的两条入口，各写一份必然漂移（W24-02）。
+        return looksLikeContextOverflowMessage(bodyText.lowercase())
     }
 }

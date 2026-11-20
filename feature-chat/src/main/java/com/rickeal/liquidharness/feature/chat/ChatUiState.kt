@@ -77,6 +77,19 @@ enum class ChatStatus {
     /** 用户主动停止且本轮没有任何正文产出 —— 需要一个「已停止」的落点，
      *  否则提问气泡下面空着，看起来像回答丢失。 */
     CANCELLED_EMPTY,
+
+    /**
+     * 本轮回答**可能不完整**（`Finished` 带截断诊断卡，W24-02）。
+     *
+     * 触发判据只有一条：`Finished.report?.kind == TRUNCATED_KIND`（内核 `RunTermination`
+     * 在 `finishReason == LENGTH` 时落的诊断卡）。此时气泡仍然生成（已收到的内容不丢），
+     * 状态行额外提示「回答可能不完整」。
+     *
+     * ⚠️ 刻意**不**动 `terminatedBy`：自动压缩的闸门是 `terminatedBy == ModelStopped`
+     * （`SettledCompressPolicy.shouldEvaluate`），把截断改判成别的终止原因会**静默关掉**
+     * 正常结束后的自动压缩。截断只是「回答质量」的提示，不是新的终止原因。
+     */
+    TRUNCATED,
 }
 
 /**

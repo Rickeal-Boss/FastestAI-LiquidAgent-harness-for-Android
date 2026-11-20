@@ -1,0 +1,9 @@
+{
+ "cell": "E03_north",
+ "state": "FAIL",
+ "endpoint": "OR North Mini Code Free（north-mini-code:free）",
+ "attempts": 2,
+ "observed": "本次请求失败：request rejected (HTTP 404)",
+ "judge": "两次同结论，错误在 UI 可见（非静默）；404 属端点/模型侧不可用，不是 harness 回归",
+ "readout": "未产生 usage（请求被拒）"
+}

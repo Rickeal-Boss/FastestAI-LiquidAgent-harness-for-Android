@@ -1,0 +1,11 @@
+{
+ "cell": "F2_workspace",
+ "state": "PASS",
+ "steps": [
+  "prompt: Write the file w39f2.txt with content OK39 in the workspace.",
+  "工具请求授权卡出现 → 点「允许一次」",
+  "工具执行：wrote 4 chars to w39f2.txt",
+  "设备侧 run-as 回读：4 字节，hex 4f4b3339 = OK39，mtime 2026-11-21 00:16"
+ ],
+ "judge": "审批链完整 + 落盘内容逐字节核对"
+}

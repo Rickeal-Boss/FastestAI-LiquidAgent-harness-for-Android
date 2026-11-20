@@ -60,12 +60,21 @@ sealed interface GenerationEvent {
      * 里的 N）。`null` = 本次失败没有携带这个信息（非 400 / 文案不匹配 / 非本族格式）。
      * 它与 [EngineErrorKind.CONTEXT_OVERFLOW] 是两个判据：那个说「为什么失败」，
      * 这个说「真实上限是多少」。默认 `null` ⇒ 既有构造点无需改动。
+     *
+     * [truncatedStream]（W24-02）：本次失败是**首字节之后**的流被掐断（干净 EOF 无终帧 /
+     * 脏断 IOException），且已经 emit 过内容。它把「已吐正文 ⇒ 永不重试」的旧闸门
+     * 收窄成「已吐正文 ⇒ 不许**叠加**重试」：内核收到 true 时先整段回滚
+     * （`RunState.truncateText` + `AgentEvent.StreamReset`）再重试一次，用户不会看到两段拼接。
+     * 默认 `false` ⇒ 既有构造点与既有引擎行为零改动（先例 `contextLimitHint`）。
+     * **不是** `@Serializable` 字段，不进线格式；引擎不得把它当「引擎内重试」的许可 ——
+     * 引擎侧仍按「已 emit 内容不重发」执行，回滚重试只发生在内核层。
      */
     data class Failed(
         val kind: EngineErrorKind,
         val message: String,
         val retryable: Boolean,
         val contextLimitHint: Int? = null,
+        val truncatedStream: Boolean = false,
     ) : GenerationEvent
 }
 
