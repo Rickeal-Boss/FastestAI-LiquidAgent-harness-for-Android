@@ -129,7 +129,21 @@ v1 定版契约：数据层四值域 / 显示层 glyph 固定 / 34 顶层键最�
 
 ## §5.6 提交与 CI
 
-（提交后回填四字段与推送序列）
+| 项 | 值 |
+|---|---|
+| 分支 | `main`（在 `build.yml` / `secret-scan.yml` 的 `on.push.branches` 白名单内，0-run 风险已排除） |
+| commit | `6dcfe7252297676d9c2176016da1b1b5ece29904`（`feat(w37): 判据冻结落地 + 守恒式 0/3 + 压缩诊断码/CE 重抛/四态读者 + 13 格真机矩阵`） |
+| 提交身份 | `Rickeal-Boss <263587600+Rickeal-Boss@users.noreply.github.com>` |
+| 变更规模 | 30 文件：+1209 / −87（`.kt` 7 个含新测试与拆分文件；文档 5；证据 14；CI 1；台账/checklist 2） |
+| 推送判据 | `git push --dry-run` 先行 `8ed8304..6dcfe72`（RC=0）；实推同结果。PAT 仅 URL inline 一次性使用、未落盘、remote 仍为干净 URL；不登记 PAT 元信息 |
+
+| 工作流 | run ID | status | conclusion | event | head_sha | 四字段匹配 | 链接 |
+|---|---|---|---|---|---|---|---|
+| Build | `44738019517` | `completed` | `success` | `push` | `6dcfe725…`（12 位匹配） | ✅ | https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44738019517 |
+| Secret scan | `44738019499` | `completed` | `success` | `push` | `6dcfe725…`（12 位匹配） | ✅ | https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44738019499 |
+
+- **Build 五 job**：Unit tests（822）/ Arch guard / Assemble Debug (JDK 21) / Secret scan (gitleaks + trufflehog) / Lint（baseline gate），run 级 success；逐 job 未展开（API 权限面限制）。
+- **推送次数序列**：主体 `6dcfe72` **第 1 次推送**触发上表两条 run；本 §5.6 回填构成纯文档 tip **第 2 次推送**——按 `paths-ignore` 降级规则 Build 0 run，**不写成「构建通过」**。
 
 ---
 

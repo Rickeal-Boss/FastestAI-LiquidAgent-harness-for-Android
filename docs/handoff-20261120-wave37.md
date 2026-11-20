@@ -84,7 +84,10 @@
 | G3 selftest | ⚠️ 未重跑（本波未改守卫脚本，只改 checklist 内嵌检查器；30 用例数十分钟） |
 | G4 fulltest | ✅ `tests=822 failures=0 errors=0 skipped=0`（14 模块） |
 
-**CI**：（提交后回填四字段与推送序列）
+**CI**：主体 `6dcfe72` 第 1 次推送触发两条 run，四字段全绿——
+Build `44738019517`（completed/success/push/head_sha `6dcfe725…`）、
+Secret scan `44738019499`（同上）。本交接回填构成纯文档 tip 第 2 次推送，Build 0 run 按降级规则不写成构建通过。
+链接：https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44738019517
 
 ---
 
