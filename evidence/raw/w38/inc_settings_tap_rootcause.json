@@ -1,0 +1,7 @@
+{
+  "incident": "INC-w37-settings-tap",
+  "verdict": "ROOT_CAUSED_NOT_REGRESSION",
+  "root_cause": "目标按钮在滚动区外(bounds [0,0][0,0]) + 设为当前有确认框需二次点击",
+  "resolution": "滚动列表后坐标进入视口 -> 点击设为当前 -> 确认切换 -> 当前端点读数改变",
+  "note": "新包设置页完全正常; 不写成 harness 回归也不写成设备缺陷; 走内容订正不新开挂账行"
+}

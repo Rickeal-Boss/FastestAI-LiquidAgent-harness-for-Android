@@ -1,0 +1,10 @@
+{
+  "cell_id": "E02_dots3",
+  "verdict": "PASS",
+  "model_public_name": "dots-3-note-preview:free",
+  "endpoint_switch": "settings -> endpoint manager -> scroll -> set-current -> confirm dialog -> confirmed",
+  "current_endpoint_readback": "OR Dots3 Note Free",
+  "chat_response": "plain English reply + usage label (0 cached 0.0% first, 1536 cached 72.4% on 2nd turn)",
+  "context_tier_readback": "520.2K",
+  "note": "端点切换真行使; tool-call sentinel 该模型不服从(语义层,非app bug); 隐私:无key/账号/序列号"
+}

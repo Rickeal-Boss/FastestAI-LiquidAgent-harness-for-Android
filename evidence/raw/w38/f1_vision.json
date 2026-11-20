@@ -1,0 +1,10 @@
+{
+  "cell_id": "F1_vision",
+  "verdict": "PARTIAL",
+  "input_button_desc_before": "当前端点未开启图片输入(Lightning)",
+  "input_button_desc_after": "添加图片(Dots3)",
+  "image_picker": "DocumentsUI -> w36_vision.png attached",
+  "model_answer": "a red square and a green circle",
+  "expected": "a red square and a blue circle",
+  "note": "多模态输入链路端到端走通(附加->模型收到->视觉描述输出); 语义部分正确(红方块对/蓝圈答绿), 按逐字回读判 PARTIAL, 不冒充PASS; 未用1x1像素"
+}

@@ -11,6 +11,8 @@ import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
 import com.rickeal.liquidharness.core.agent.context.shouldEvaluate
 import com.rickeal.liquidharness.core.data.AppContainer
 import com.rickeal.liquidharness.core.data.AttachmentImporter
+import com.rickeal.liquidharness.core.data.degradeTo
+import com.rickeal.liquidharness.core.data.runIgnoringCancellation
 import com.rickeal.liquidharness.core.model.AgentEvent
 import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
@@ -133,10 +135,8 @@ class ChatViewModel(
      */
     private suspend fun syncMcpTools() {
         val registry = container.toolRegistry()
-        val servers = runCatching { container.mcpServers.list() }.getOrDefault(emptyList())
-        for (server in servers.filter { it.enabled }) {
-            runCatching { container.mcpTools.refresh(server, registry) }
-        }
+        val servers = degradeTo(emptyList()) { container.mcpServers.list() }
+        for (server in servers.filter { it.enabled }) runIgnoringCancellation { container.mcpTools.refresh(server, registry) }
     }
 
     /**

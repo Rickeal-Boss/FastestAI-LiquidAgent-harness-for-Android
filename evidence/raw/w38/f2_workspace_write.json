@@ -1,0 +1,14 @@
+{
+  "cell_id": "F2_workspace",
+  "verdict": "PASS",
+  "tool": "file_write",
+  "approval_flow": ["tool_card_shown", "approval_requested", "allowed_once", "executed"],
+  "file": "w38probe.txt",
+  "bytes_written": 2,
+  "content_hex": "4f 4b",
+  "content_echo": "OK",
+  "mtime_device_local": "2026-11-20 22:17",
+  "device_path": "files/harness/workspace/w38probe.txt",
+  "evidence_method": "run-as cat + od -An -tx1",
+  "note": "exact args + device-side byte readback; no endpoint id or credential in this artifact"
+}

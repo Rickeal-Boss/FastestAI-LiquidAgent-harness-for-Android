@@ -1,0 +1,7 @@
+{
+  "cell_id": "F5_manual_compact",
+  "verdict": "PARTIAL",
+  "ui_path": "more menu -> 压缩上下文 -> confirm dialog -> 压缩",
+  "ui_feedback": "没有可压缩的内容：历史本来就装得下，或找不到安全的截断点。",
+  "note": "手动压缩 UI 路径 + 正确 noop 语义验证(字符维未越线=>不该压); 本波短对话未构造越线快照, 无真实 dropped/kept 回读, 不冒充"
+}

@@ -1,0 +1,6 @@
+{
+  "cell_id": "T02_512k",
+  "verdict": "PASS",
+  "tier_readback": "上下文 2.6K / 520.2K",
+  "note": "Dots3 端点 contextLength 512k 在 UI 读数生效; 满窗真压 NOT_EXERCISED(字符维未越线), 判据为档位读数非1M真压"
+}

@@ -1,0 +1,4 @@
+2026-11-20T14:10:47.058365Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T14:12:40.104054Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T14:16:09.185830Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T14:17:40.174896Z INFO auto_compact=noop reason=below_trigger

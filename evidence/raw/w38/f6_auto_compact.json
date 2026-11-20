@@ -1,0 +1,7 @@
+{
+  "cell_id": "F6_auto_compact",
+  "verdict": "PASS",
+  "log_ref": "evidence/raw/w38/deviceLogTail.txt",
+  "observed": "2026-11-20T14:xxZ 自动压缩评估持续落账 reason=below_trigger（W37 新包 nothing_to_drop 前置判未回退）",
+  "note": "新包(吞CE清零)上 F6 判据仍工作; below_trigger 为字符维未越线的正确行为"
+}
