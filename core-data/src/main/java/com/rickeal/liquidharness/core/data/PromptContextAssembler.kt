@@ -27,13 +27,48 @@ internal suspend fun AppContainer.assemblePromptContext(): PromptContext {
     return PromptContext(memoryText = memoryText, skillsSection = skillsSection)
 }
 
-/** 普通异常 ⇒ [fallback]；取消**重抛**（§五.4：`runCatching` 会吞 `CancellationException`）。 */
-private suspend fun <T> degradeTo(fallback: T, block: suspend () -> T): T = try {
+/**
+ * 普通异常 ⇒ [fallback]；取消**重抛**（§五.4：`runCatching` 会吞 `CancellationException`）。
+ *
+ * W38 提升为 public：feature-settings 的 `ExtrasViewModel` 同源挂起点复用本辅助，
+ * 统一「吞 CE 反模式清零」（W17-02 / W36 复核报告 P0）。`internal` 按模块隔离，
+ * 跨模块复用必须 public。
+ */
+public suspend fun <T> degradeTo(fallback: T, block: suspend () -> T): T = try {
     block()
 } catch (cancelled: CancellationException) {
     throw cancelled
 } catch (_: Exception) {
     fallback
+}
+
+/**
+ * suspend 写路径：普通异常吞掉、取消重抛 —— 供 ViewModel 内 `viewModelScope.launch` 的
+ * 写操作复用（fail 时保留原状态、error 由调用方设）。与 [degradeTo] 同源，避免用普通
+ * `runCatching {}` 包 suspend 调用导致 `CancellationException` 被吞、job 从 cancelled
+ * 变 completed（AGENTS §五.4 / W17-02）。block 返回值被丢弃（写操作多为 Unit/计数）。
+ */
+public suspend fun runIgnoringCancellation(block: suspend () -> Unit) {
+    try {
+        block()
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Exception) {
+        // 写路径失败：保留原状态，error 提示由调用方设置
+    }
+}
+
+/**
+ * `runCatching` 的 suspend 安全版：普通异常 ⇒ `Result.failure`，取消**重抛**。
+ * 供需要保留 `getOrNull()` / `isSuccess` / `getOrDefault()` 返回语义的挂起点复用，
+ * 替代会吞 `CancellationException` 的 `runCatching {}`（W17-02）。
+ */
+public suspend fun <T> suspendResultOf(block: suspend () -> T): Result<T> = try {
+    Result.success(block())
+} catch (cancelled: CancellationException) {
+    throw cancelled
+} catch (e: Exception) {
+    Result.failure(e)
 }
 
 /** 提示词上下文快照。字段直接对应 `AgentRequest` 的两个入参。 */

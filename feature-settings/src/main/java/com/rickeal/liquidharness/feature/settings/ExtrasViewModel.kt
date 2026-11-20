@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.rickeal.liquidharness.core.data.AppContainer
+import com.rickeal.liquidharness.core.data.degradeTo
+import com.rickeal.liquidharness.core.data.runIgnoringCancellation
+import com.rickeal.liquidharness.core.data.suspendResultOf
 import com.rickeal.liquidharness.core.mcp.McpServerConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,20 +40,18 @@ class ExtrasViewModel(private val container: AppContainer) : ViewModel() {
     /** 技能列表。`refresh` 会清目录缓存（导入 / 删除后必须调，否则看不到变化）。 */
     suspend fun loadSkills() {
         _state.update { it.copy(skillsLoading = true) }
-        val disabled = runCatching { container.settings.disabledSkills.first() }.getOrDefault(emptySet())
-        val rows = runCatching { container.skills.list() }
-            .map { list ->
-                list.map {
-                    SkillRow(it.name, it.description, it.allowedTools, it.source, enabled = it.name !in disabled)
-                }
+        val disabled = degradeTo(emptySet()) { container.settings.disabledSkills.first() }
+        val rows = degradeTo(emptyList()) {
+            container.skills.list().map {
+                SkillRow(it.name, it.description, it.allowedTools, it.source, enabled = it.name !in disabled)
             }
-            .getOrElse { emptyList() }
+        }
         _state.update { it.copy(skills = rows, skillsLoading = false, error = null) }
     }
 
     suspend fun loadMcp() {
         _state.update { it.copy(mcpLoading = true) }
-        val servers = runCatching { container.mcpServers.list() }.getOrDefault(emptyList())
+        val servers = degradeTo(emptyList()) { container.mcpServers.list() }
         val rows = servers.map { config ->
             McpRow(
                 id = config.id,
@@ -72,15 +73,15 @@ class ExtrasViewModel(private val container: AppContainer) : ViewModel() {
 
     suspend fun loadMemory() {
         _state.update { it.copy(memoryLoading = true) }
-        val rows = runCatching { container.memory.all() }
-            .map { list -> list.map { MemoryRow(it.id, it.title, it.content, it.updatedAtMillis) } }
-            .getOrElse { emptyList() }
+        val rows = degradeTo(emptyList()) {
+            container.memory.all().map { MemoryRow(it.id, it.title, it.content, it.updatedAtMillis) }
+        }
         _state.update { it.copy(memory = rows, memoryLoading = false, error = null) }
     }
 
     /** 持久化技能的启用状态（SettingsRepository.disabledSkills），并重读列表。 */
     fun setSkillEnabled(name: String, enabled: Boolean) = viewModelScope.launch {
-        runCatching { container.settings.setSkillEnabled(name, enabled) }
+        runIgnoringCancellation { container.settings.setSkillEnabled(name, enabled) }
         loadSkills()
     }
 
@@ -95,7 +96,7 @@ class ExtrasViewModel(private val container: AppContainer) : ViewModel() {
             enabled = true,
             allowPrivateNetwork = draft.allowPrivateNetwork,
         )
-        val snapshot = runCatching { container.mcpTools.probe(config) }.getOrNull()
+        val snapshot = suspendResultOf { container.mcpTools.probe(config) }.getOrNull()
         _state.update {
             it.copy(
                 mcpTesting = false,
@@ -109,12 +110,12 @@ class ExtrasViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun refreshSkills() = viewModelScope.launch {
-        runCatching { (container.skills as? com.rickeal.liquidharness.core.skills.SkillCatalogImpl)?.refresh() }
+        runIgnoringCancellation { (container.skills as? com.rickeal.liquidharness.core.skills.SkillCatalogImpl)?.refresh() }
         loadSkills()
     }
 
     fun saveMcp(draft: McpDraft, onDone: () -> Unit) = viewModelScope.launch {
-        val existing = runCatching { container.mcpServers.get(draft.id) }.getOrNull()
+        val existing = suspendResultOf { container.mcpServers.get(draft.id) }.getOrNull()
         val config = McpServerConfig(
             id = draft.id.ifBlank { com.rickeal.liquidharness.core.model.newId() },
             alias = draft.alias.trim(),
@@ -128,10 +129,10 @@ class ExtrasViewModel(private val container: AppContainer) : ViewModel() {
             enabled = draft.enabled,
             allowPrivateNetwork = draft.allowPrivateNetwork,
         )
-        val ok = runCatching { container.mcpServers.upsert(config) }.isSuccess
+        val ok = suspendResultOf { container.mcpServers.upsert(config) }.isSuccess
         if (ok) {
             // 保存后立刻同步一次工具清单：用户点「保存」的期待是「现在就能用」。
-            runCatching { container.mcpTools.refresh(config, container.toolRegistry()) }
+            runIgnoringCancellation { container.mcpTools.refresh(config, container.toolRegistry()) }
             loadMcp()
             onDone()
         } else {
@@ -140,17 +141,16 @@ class ExtrasViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun toggleMcp(id: String, enabled: Boolean) = viewModelScope.launch {
-        val existing = runCatching { container.mcpServers.get(id) }.getOrNull() ?: return@launch
-        runCatching { container.mcpServers.upsert(existing.copy(enabled = enabled)) }
+        val existing = suspendResultOf { container.mcpServers.get(id) }.getOrNull() ?: return@launch
+        runIgnoringCancellation { container.mcpServers.upsert(existing.copy(enabled = enabled)) }
         if (!enabled) container.mcpTools.unregister(id, container.toolRegistry())
         loadMcp()
     }
 
     fun refreshMcp(id: String) = viewModelScope.launch {
-        val existing = runCatching { container.mcpServers.get(id) }.getOrNull() ?: return@launch
-        val count = runCatching { container.mcpTools.refresh(existing, container.toolRegistry()) }
-            .getOrDefault(0)
-        runCatching {
+        val existing = suspendResultOf { container.mcpServers.get(id) }.getOrNull() ?: return@launch
+        val count = degradeTo(0) { container.mcpTools.refresh(existing, container.toolRegistry()) }
+        runIgnoringCancellation {
             container.mcpServers.recordSync(id, "{\"count\":" + count + "}", System.currentTimeMillis())
         }
         loadMcp()
@@ -158,17 +158,17 @@ class ExtrasViewModel(private val container: AppContainer) : ViewModel() {
 
     fun deleteMcp(id: String) = viewModelScope.launch {
         container.mcpTools.unregister(id, container.toolRegistry())
-        runCatching { container.mcpServers.remove(id) }
+        runIgnoringCancellation { container.mcpServers.remove(id) }
         loadMcp()
     }
 
     fun deleteMemory(title: String) = viewModelScope.launch {
-        runCatching { container.memory.delete(title) }
+        runIgnoringCancellation { container.memory.delete(title) }
         loadMemory()
     }
 
     fun updateMemory(title: String, content: String) = viewModelScope.launch {
-        runCatching { container.memory.upsert(title, content) }
+        runIgnoringCancellation { container.memory.upsert(title, content) }
         loadMemory()
     }
 

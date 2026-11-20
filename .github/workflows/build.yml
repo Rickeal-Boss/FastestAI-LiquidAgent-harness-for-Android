@@ -133,8 +133,11 @@ env:
   #   （droppedBlank 判据）= 804 + 14 = 818，同提交一次改。
   # W37：`nothing_to_drop` 诊断码 + auto/manual 同快照一致 + applied 后 committedChars
   #   真降（AutoCompactDiagnosticsTest +4）= 818 + 4 = 822，同提交一次改。
+  # W38：吞 CE 反模式清零的「取消透传直接用例」（SuspendCancellationPassThroughTest
+  #   +7，测 degradeTo/runIgnoringCancellation/suspendResultOf 生产函数本身）=
+  #   822 + 7 = 829，同提交一次改。
   # ---------------------------------------------------------------------------
-  EXPECTED_TESTS: '822'
+  EXPECTED_TESTS: '829'
 
 jobs:
   # ===========================================================================
