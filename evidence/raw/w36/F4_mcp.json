@@ -1,0 +1,11 @@
+{
+  "cell": "F4_mcp",
+  "face": "mcp",
+  "attempt_n": 1,
+  "state": "VACUOUS",
+  "glyph": "⛔vacuous",
+  "note": "MCP 工具调用审批链根本未被行使；只登记状态，不判 PASS/FAIL。",
+  "evidence_files": [
+    "f4_mcp.png"
+  ]
+}

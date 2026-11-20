@@ -1,0 +1,11 @@
+{
+  "cell": "E01_lightning",
+  "face": "endpoint_axis",
+  "attempt_n": 1,
+  "state": "PASS",
+  "glyph": "✅",
+  "note": "正控先行：新对话清空残留后 strict sentinel 严格逐字 W36-E01-LIGHT-STRICT，无失败横幅；1.8k in/183 out，上下文 1.9K/27.9K。证明 sentinel 判据会响、端点连通、密钥有效。",
+  "evidence_files": [
+    "e01_lightning.png"
+  ]
+}

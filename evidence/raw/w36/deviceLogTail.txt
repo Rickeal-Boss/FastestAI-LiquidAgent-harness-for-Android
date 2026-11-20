@@ -1,0 +1,13 @@
+# W36 deviceLogTail: key hit lines only (not whole logcat); all tokens masked
+agent-0.log (device-side, run-as cat) fresh W36 lines:
+2026-11-20T09:29:17.675100Z INFO auto_compact=noop reason=below_trigger   [E01]
+2026-11-20T10:06:20.919775Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T10:19:53.853647Z INFO auto_compact=noop reason=insufficient_savings:net=-256   [F6]
+2026-11-20T10:21:11.374137Z INFO auto_compact=noop reason=insufficient_savings:net=-256
+2026-11-20T10:22:01.315257Z INFO auto_compact=noop reason=insufficient_savings:net=-256
+2026-11-20T10:22:26.275832Z INFO auto_compact=noop reason=insufficient_savings:net=-256
+historical (W35, NOT this wave): 2026-11-19T15:24:01.940224Z INFO manual_compress dropped=9 kept=11 cache_invalidated=false
+historical (W35, NOT this wave): 2026-11-19T17:42:25.476487Z INFO auto_compact dropped=4 kept=10
+device ping openrouter.ai: 4 transmitted / 3 received / 25% packet loss / avg 207ms
+UI banner (verbatim): request rejected (HTTP 404)   [E07 old+new key]
+secret mtime: or-north.bin 2026-11-19 14:59 -> 2026-11-20 17:59 (73 masked dots on entry)

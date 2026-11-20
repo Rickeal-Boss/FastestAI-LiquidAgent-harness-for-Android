@@ -1,0 +1,16 @@
+{
+  "cell": "E07_or_north",
+  "face": "endpoint_axis",
+  "attempt_n": 2,
+  "state": "PARTIAL",
+  "glyph": "⚠️",
+  "note": "旧 key 与 UI 新录 key 两次均 HTTP 404 'request rejected'（逐字横幅），无 usage。新 key 录入自证：掩码 73 点、secret mtime 2026-11-19 14:59→2026-11-20 17:59。同窗口同 base URL 同新 key 的 Dots3 成功 ⇒ 归模型路由供给侧 INC-w36-north-404，非 harness 缺陷；strict 判据未行使，不冒充 PASS。",
+  "evidence_files": [
+    "e07_north_newkey.png"
+  ],
+  "credential_entry_proof": {
+    "masked_dots": 73,
+    "secret_mtime_before": "2026-11-19 14:59",
+    "secret_mtime_after": "2026-11-20 17:59"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "cell": "E05_supervl",
+  "face": "endpoint_axis",
+  "attempt_n": 1,
+  "state": "PASS",
+  "glyph": "✅",
+  "note": "新 key 已由 W35 经 UI 录入（secret mtime 2026-11-20 01:14）；本波 strict sentinel 逐字 W36-E05-SUPERVL-NEWKEY，无 403 横幅，1.8k in/49 out。端点 1M 标识与档位独立。",
+  "evidence_files": [
+    "e05_supervl.png"
+  ]
+}

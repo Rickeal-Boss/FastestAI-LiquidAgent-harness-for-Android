@@ -1,0 +1,474 @@
+{
+  "schema": "harness-matrix-summary/v1",
+  "wave": "W36",
+  "matrix_type": "new-API multi-model x context-tier x feature-face real-device matrix",
+  "generated_at": "2026-11-20",
+  "baseline_note": "zero .kt this wave; real device OPPO PDRM00 / Android 13 / serial <device-serial> (desensitized)",
+  "device_executed": true,
+  "positive_control_verified_by": "device_execution",
+  "judge_policy": "strict_sentinel + device-side file/hex/mtime + semantic verbatim (no 1x1 vision); four-state PASS/PARTIAL/VACUOUS/FAIL",
+  "state_glyph_mapping": {
+    "PASS": "✅",
+    "PARTIAL": "⚠️",
+    "VACUOUS": "⛔vacuous",
+    "FAIL": "⛔"
+  },
+  "state_glyph_mapping_assertion": "mapping covers all states present in state_counts",
+  "state_counts": {
+    "PASS": 7,
+    "PARTIAL": 5,
+    "VACUOUS": 1
+  },
+  "cells_total": 13,
+  "cells_provenance": "all 13 cells executed on real device this wave (W36); no cross-wave cell copy",
+  "declared_feature_faces": [
+    "endpoint_axis",
+    "tier_axis",
+    "multimodal",
+    "workspace_rw",
+    "skill",
+    "mcp",
+    "manual_compression",
+    "auto_compression"
+  ],
+  "mcp": {
+    "cell": "F4_mcp",
+    "server_count": 0,
+    "coverage_note": "none_by_design: no external https MCP server; VACUOUS trigger cell"
+  },
+  "attempt_budget": "max real-device iterations = 3 per cell; observed attempt_n <= 2 for every cell",
+  "iterations_total": 15,
+  "iterations": [
+    {
+      "iter": 1,
+      "cell_id": "E01_lightning",
+      "操作": "设备唤醒三步法+logcat设备侧落盘+冷启；设 NV Lightning、新对话清空残留、strict sentinel",
+      "预期": "正控必然逐字命中",
+      "判据": "sentinel 逐字+无失败横幅；SCREEN_STATE_ON/AWAKE",
+      "四态": "✅",
+      "证据路径": "evidence/raw/w36/e01_lightning.png"
+    },
+    {
+      "iter": 2,
+      "cell_id": "E02_bolt",
+      "操作": "切 NV Bolt、新对话、strict sentinel（尝试1）",
+      "预期": "逐字命中",
+      "判据": "W36-E02-BOLT-STRICT",
+      "四态": "⚠️",
+      "证据路径": "evidence/raw/w36/e02_bolt_a1.png"
+    },
+    {
+      "iter": 3,
+      "cell_id": "E02_bolt",
+      "操作": "新对话、改 'Output only this token:'  phrasing（尝试2）",
+      "预期": "逐字命中",
+      "判据": "W36-E02-BOLT-STRICT2 逐字",
+      "四态": "✅",
+      "证据路径": "evidence/raw/w36/e02_bolt_a2.png"
+    },
+    {
+      "iter": 4,
+      "cell_id": "E03_nano_strict",
+      "操作": "切 Nano Omni、新对话、strict sentinel",
+      "预期": "逐字命中",
+      "判据": "W36-E03-NANO-STRICT 逐字",
+      "四态": "✅",
+      "证据路径": "evidence/raw/w36/e03_nano.png"
+    },
+    {
+      "iter": 5,
+      "cell_id": "F1_vision",
+      "操作": "480×240 真图 picker 附加、非泄漏语义题",
+      "预期": "视觉语义逐字回读",
+      "判据": "回读 Red 且题面不含答案",
+      "四态": "✅",
+      "证据路径": "evidence/raw/w36/f1_vision.png"
+    },
+    {
+      "iter": 6,
+      "cell_id": "E05_supervl",
+      "操作": "切 SuperVL、新对话、strict sentinel",
+      "预期": "逐字命中且无 403",
+      "判据": "W36-E05-SUPERVL-NEWKEY 逐字",
+      "四态": "✅",
+      "证据路径": "evidence/raw/w36/e05_supervl.png"
+    },
+    {
+      "iter": 7,
+      "cell_id": "E06_or_dots3",
+      "操作": "切 Dots3、新对话、strict sentinel + 设备 ping 对照",
+      "预期": "逐字命中或超时归 INC",
+      "判据": "W36-E06-DOTS3 逐字；ping 25% 丢包",
+      "四态": "✅",
+      "证据路径": "evidence/raw/w36/e06_dots3.png"
+    },
+    {
+      "iter": 8,
+      "cell_id": "E07_or_north",
+      "操作": "切 North、旧 key 请求",
+      "预期": "逐字命中或记 INC",
+      "判据": "HTTP 404 横幅",
+      "四态": "⚠️",
+      "证据路径": "evidence/raw/w36/e07_north_oldkey.png"
+    },
+    {
+      "iter": 9,
+      "cell_id": "E07_or_north",
+      "操作": "UI 录入新 key（掩码73点、mtime 更新）、保存、新对话重试",
+      "预期": "逐字命中",
+      "判据": "仍 HTTP 404；排除密钥面",
+      "四态": "⚠️",
+      "证据路径": "evidence/raw/w36/e07_north_newkey.png"
+    },
+    {
+      "iter": 10,
+      "cell_id": "T_tier",
+      "操作": "32K→256K→512K→1M 逐档切换、逐档 UI 读回",
+      "预期": "当前 X 逐档一致",
+      "判据": "当前 256K/512K/1M；chat 995.9K",
+      "四态": "⚠️",
+      "证据路径": "evidence/raw/w36/tier_1m_supervl_chat.png"
+    },
+    {
+      "iter": 11,
+      "cell_id": "F2_workspace",
+      "操作": "file_write 审批、读 exact args、允许一次、设备侧 cat/hex/mtime",
+      "预期": "三方一致",
+      "判据": "args 与 W36F2-K9M3 hex 双向一致",
+      "四态": "✅",
+      "证据路径": "evidence/raw/w36/f2_approval.png"
+    },
+    {
+      "iter": 12,
+      "cell_id": "F3_skill",
+      "操作": "@ 菜单选中 notes-organizer、sentinel（两次尝试）",
+      "预期": "sentinel 逐字+skill_load 卡",
+      "判据": "sentinel 命中；无 skill_load 卡",
+      "四态": "⚠️",
+      "证据路径": "evidence/raw/w36/f3_skill.png"
+    },
+    {
+      "iter": 13,
+      "cell_id": "F4_mcp",
+      "操作": "MCP 服务器页登记",
+      "预期": "若有 server 则验审批",
+      "判据": "0 server，判据未行使",
+      "四态": "⛔vacuous",
+      "证据路径": "evidence/raw/w36/f4_mcp.png"
+    },
+    {
+      "iter": 14,
+      "cell_id": "F5_manual_compact",
+      "操作": "更多菜单→压缩对话框→压缩（2 气泡、4 轮两次）",
+      "预期": "dropped/kept 双向 log",
+      "判据": "UI 走通；无本波新增 log 行",
+      "四态": "⚠️",
+      "证据路径": "evidence/raw/w36/f5_dialog.png"
+    },
+    {
+      "iter": 15,
+      "cell_id": "F6_auto_compact",
+      "操作": "导入 202kB 会话、发 3 轮触发自动压缩",
+      "预期": "noop→applied→already_compressed",
+      "判据": "本波 4× net=-256；后两段未行使",
+      "四态": "⚠️",
+      "证据路径": "evidence/raw/w36/f6_auto.png"
+    }
+  ],
+  "iterations_note": "15 行逐格取证（含 E02/E07/F3 的重试行）；attempt_n 每格 <= 3、判据通过或预算内即停",
+  "credential_policy": "API key 仅经真机端点编辑 UI 录入；证据/制品/回传仅记 masked 掩码点数与 secret 文件 mtime，不含密钥全文；端点标识只用公开模型名",
+  "privacy": "据实：正文曾含 8 位十六进制设备标识与本机绝对路径，已清零改 <device-serial> 占位；API key 仅 UI 录入（North 新 key 掩码 73 点、secret mtime 更新为证），证据无明文 token；含密钥编辑页的截图一概不入库；逐张目检入库截图无 key/未打码账号字段上屏（视觉 OCR 复核本环境不可用，按目检采信）；deviceLogTail 仅关键命中行、非整段 logcat",
+  "zero_kotlin": true,
+  "full_context_1M_stress": {
+    "status": "NOT_EXERCISED",
+    "reason": "1M 满窗真压受双硬限：adb input text 单次 ~333 字符 + file_read 16k/次；本波只做 32K/256K/512K/1M 四档 UI readback 与 1M 档+SuperVL 端点 chat 读回 上下文 1.9K/995.9K，未构造 1M token 满窗请求"
+  },
+  "environment_incidents": [
+    {
+      "id": "INC-w36-north-404",
+      "cells": [
+        "E07_or_north"
+      ],
+      "kind": "supply-side",
+      "detail": "north-mini-code:free 旧 key 与 UI 新录 key 两次均 HTTP 404 'request rejected'；同窗口同 base URL 同新 key 的 dots-3-note-preview:free strict 逐字成功；设备 ping openrouter.ai 可达（25% 丢包 / 207ms）。归模型路由供给侧，非 harness 缺陷、非密钥面"
+    },
+    {
+      "id": "INC-w36-or-loss",
+      "cells": [
+        "E06_or_dots3",
+        "E07_or_north"
+      ],
+      "kind": "network-quality",
+      "detail": "openrouter.ai 设备侧 ping 4 发 3 收 / 25% 丢包 / avg 207ms；E06 仍成功、E07 404，丢包不足以解释 404 特异性，仅作环境记录"
+    }
+  ],
+  "runner_fingerprint": "android-developer real-device seat; wired adb serial <device-serial>; OPPO PDRM00 / Android 13 / SDK 33; driver nav.py+lib.sh kept outside repo",
+  "matrix_vs_gate_order": "matrix executed before local gates; four gates to be run by team-lead after artifact freeze",
+  "na_cell_ids": [
+    "F4_mcp"
+  ],
+  "cells": [
+    {
+      "cell_id": "E01_lightning",
+      "attempt_n": 1,
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w36/e01_lightning.png",
+      "note": "正控先行：新对话清空残留后 strict sentinel 严格逐字 W36-E01-LIGHT-STRICT，无失败横幅；1.8k in/183 out，上下文 1.9K/27.9K。证明 sentinel 判据会响、端点连通、密钥有效。"
+    },
+    {
+      "cell_id": "E02_bolt",
+      "attempt_n": 2,
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w36/e02_bolt_a2.png",
+      "note": "尝试1 用 'Reply with exactly:' 只回 'This is the final answer'（模型遵循差异、无失败横幅）；尝试2 改 'Output only this token:' 后逐字命中 W36-E02-BOLT-STRICT2，1.4k in/15 out（1376 cached, 97.5%）。连通与 strict 判据均在尝试2行使，attempt_n=2。"
+    },
+    {
+      "cell_id": "E03_nano_strict",
+      "attempt_n": 1,
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w36/e03_nano.png",
+      "note": "Nano Omni strict sentinel 逐字 W36-E03-NANO-STRICT，含思考块，1.8k in/95 out；上下文 1.9K/27.9K。端点 contextLength=131072 与会话档位独立（档位此时仍 32K）。"
+    },
+    {
+      "cell_id": "E05_supervl",
+      "attempt_n": 1,
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w36/e05_supervl.png",
+      "note": "新 key 已由 W35 经 UI 录入（secret mtime 2026-11-20 01:14）；本波 strict sentinel 逐字 W36-E05-SUPERVL-NEWKEY，无 403 横幅，1.8k in/49 out。端点 1M 标识与档位独立。"
+    },
+    {
+      "cell_id": "E06_or_dots3",
+      "attempt_n": 1,
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w36/e06_dots3.png",
+      "note": "供给侧恢复：dots-3-note-preview:free 本波 strict 逐字 W36-E06-DOTS3，无超时横幅，1.6k in/53 out。设备侧 ping openrouter.ai 4 发 3 收/25% 丢包/207ms 均值——网络可达但抖；与 W35 同窗口超时相反，以真机为准判 PASS。"
+    },
+    {
+      "cell_id": "E07_or_north",
+      "attempt_n": 2,
+      "feature_face": "endpoint_axis",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w36/e07_north_newkey.png",
+      "note": "旧 key 与 UI 新录 key 两次均 HTTP 404 'request rejected'（逐字横幅），无 usage。新 key 录入自证：掩码 73 点、secret mtime 2026-11-19 14:59→2026-11-20 17:59。同窗口同 base URL 同新 key 的 Dots3 成功 ⇒ 归模型路由供给侧 INC-w36-north-404，非 harness 缺陷；strict 判据未行使，不冒充 PASS。"
+    },
+    {
+      "cell_id": "T_tier",
+      "attempt_n": 1,
+      "feature_face": "tier_axis",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w36/tier_1m_supervl_chat.png",
+      "note": "32K/256K/512K/1M 四档均经确认对话框切换且 UI 逐档读回 '当前 X'（256K/512K/1M 截图在库）；1M 档 + SuperVL 端点 chat 读回 上下文 1.9K/995.9K，strict 逐字。1M 满窗真压 NOT_EXERCISED（见 full_context_1M_stress），故 PARTIAL。"
+    },
+    {
+      "cell_id": "F1_vision",
+      "attempt_n": 1,
+      "feature_face": "multimodal",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w36/f1_vision.png",
+      "note": "480×240 真图（左红方块/右绿圆，非 1×1），经系统 picker 附加为附件 chip；题面 'What color is the shape on the left? One word only.' 不含答案词；Nano Omni 逐字回读 'Red'，无失败横幅，2.1k in/183 out。排除答案泄漏。"
+    },
+    {
+      "cell_id": "F2_workspace",
+      "attempt_n": 1,
+      "feature_face": "workspace_rw",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w36/f2_approval.png",
+      "note": "审批 exact args {\"path\":\"w36probe.txt\",\"content\":\"W36F2-K9M3\"}；'允许一次' 放行后设备侧 run-as cat = W36F2-K9M3、hex 5733 3646 322d 4b39 4d33（10 字节）、mtime 2026-11-20 18:08，双向一致。裸文件名落 workspace/ 根，无双层路径。"
+    },
+    {
+      "cell_id": "F3_skill",
+      "attempt_n": 2,
+      "feature_face": "skill",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w36/f3_skill.png",
+      "note": "@ 菜单列 notes-organizer/pdf-toolkit，选中后输入框插入 '@notes-organizer '；sentinel 逐字命中 W36-F3-SKILL2，思考块在。但两次（首轮光标错位、次轮修正）均未出现 skill_load 工具卡、agent log 无 skill/tool 事件行 ⇒ skill_load 卡判据未行使。归因 thinking-first 模型遵循差异、非 app bug，按四态 PARTIAL。"
+    },
+    {
+      "cell_id": "F4_mcp",
+      "attempt_n": 1,
+      "feature_face": "mcp",
+      "state": "VACUOUS",
+      "glyph": "⛔vacuous",
+      "evidence_ref": "evidence/raw/w36/f4_mcp.png",
+      "unexercised_reason": "0 MCP server（'还没有 MCP 服务器'），本单未提供外部 https MCP 端点/Bearer token，不架 server、不断言不可用",
+      "note": "MCP 工具调用审批链根本未被行使；只登记状态，不判 PASS/FAIL。"
+    },
+    {
+      "cell_id": "F5_manual_compact",
+      "attempt_n": 2,
+      "feature_face": "manual_compression",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w36/f5_dialog.png",
+      "note": "更多菜单→'压缩上下文'→确认对话框（原文见截图）全部走通；2 气泡会话与 4 轮会话各压一次，agent log 本波均未新增 manual_compress dropped/kept 行（唯一行为 W35 历史行 2026-11-19T15:24:01Z dropped=9 kept=11，不冒充本波）。缺 dropped/kept 双向硬判据 ⇒ PARTIAL。"
+    },
+    {
+      "cell_id": "F6_auto_compact",
+      "attempt_n": 1,
+      "feature_face": "auto_compression",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w36/f6_auto.png",
+      "note": "经调试导入 202kB/82 行会话后，agent log 本波新增 4 条 insufficient_savings:net=-256（10:19:53/10:21:11/10:22:01/10:22:26Z），实证 net=-256 ⇔ 试算 compression=null（标签语义错配、非'收益不够'）；applied 与 already_compressed 两段本波未再行使（W35 09:42-09:43 历史序列存在但不冒充本波）⇒ PARTIAL。"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "K_state_domain",
+      "description": "state_counts 非零键集 == cells[].state 值域；无零值键（本波 PASS/_PARTIAL/VACUOUS）",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "add FAIL:0",
+        "expected": "RED state domain"
+      }
+    },
+    {
+      "id": "K_feature_enum",
+      "description": "每格 feature_face ∈ declared_feature_faces（AND）；declared 含 mcp ⇒ 顶层 mcp 字段存在",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "delete mcp field",
+        "expected": "RED mcp field missing"
+      }
+    },
+    {
+      "id": "K_iteration_consistency",
+      "description": "iterations_total == len(iterations[]) == JSONL 实际行数（15）",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "delete middle iteration",
+        "expected": "RED iterations_total != len"
+      }
+    },
+    {
+      "id": "K_evidence_ref",
+      "description": "cells[].evidence_ref 100% 指向仓内真实存在文件（0 MISSING）",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "point ref to missing file",
+        "expected": "RED missing ref"
+      }
+    },
+    {
+      "id": "K_privacy_no_key",
+      "description": "raw/w36/ 全部证据文件不含 nvapi-/sk-or- 明文 token；制品亦不含",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "inject nvapi- token into evidence",
+        "expected": "RED plaintext key"
+      }
+    },
+    {
+      "id": "K_coverage_13",
+      "description": "cells 恰 13 格且 cell_id 唯一；attempt_n 每格 <= 3（最大真机迭代预算）",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "duplicate a cell_id",
+        "expected": "RED cell count/uniq"
+      }
+    }
+  ],
+  "mutation_cases": [
+    {
+      "id": "K_state_domain",
+      "target": "w36 state_counts",
+      "invariant": "nonzero keys == cell states; zero keys absent",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "add FAIL:0"
+    },
+    {
+      "id": "K_feature_enum",
+      "target": "w36 cells[].feature_face + mcp",
+      "invariant": "face enum AND mcp field",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "delete mcp field"
+    },
+    {
+      "id": "K_iteration_consistency",
+      "target": "w36 iterations_total / JSONL",
+      "invariant": "total == len == 15 and line count matches",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "delete middle iteration"
+    },
+    {
+      "id": "K_evidence_ref",
+      "target": "w36 evidence_ref",
+      "invariant": "all 15 refs exist in repo",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "missing evidence file"
+    },
+    {
+      "id": "K_privacy_no_key",
+      "target": "raw/w36 + summary",
+      "invariant": "no nvapi-/sk-or- plaintext",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "inject token"
+    },
+    {
+      "id": "K_coverage_13",
+      "target": "w36 cells",
+      "invariant": "13 unique cells, attempt_n<=3",
+      "verified": true,
+      "verified_by": "rule_definition",
+      "injected_sample": "duplicate cell_id"
+    }
+  ],
+  "mutation_selftest": {
+    "total": 6,
+    "rejected": 6,
+    "all_verified": true,
+    "note": "六条规则自证：正常态 OK；各注入一例必红（state_counts 零值键 / 删 mcp 字段 / 删中间轮 / 指向缺失证据 / 注入明文 token / 重复 cell_id）均 RED；判据原文与实跑输出见 docs/notes/w29-closeout-checklist.md 判据 6 与 docs/analysis/w36-acceptance.md §四（W36 补 in-repo 指针，满足 K_assertion_presence 三字段一致性）"
+  },
+  "attempt_states": [
+    "E01_lightning",
+    "E02_bolt",
+    "E03_nano_strict",
+    "E05_supervl",
+    "E06_or_dots3",
+    "E07_or_north",
+    "T_tier",
+    "F1_vision",
+    "F2_workspace",
+    "F3_skill",
+    "F4_mcp",
+    "F5_manual_compact",
+    "F6_auto_compact"
+  ],
+  "feature_faces_with_cells": [
+    "auto_compression",
+    "endpoint_axis",
+    "manual_compression",
+    "mcp",
+    "multimodal",
+    "skill",
+    "tier_axis",
+    "workspace_rw"
+  ],
+  "coverage_note": "13 格全部本波真机执行；F4_mcp 因 0 server 记 VACUOUS（无外部 https 端点/token），na_cell_ids=[\"F4_mcp\"]；1M 满窗真压 NOT_EXERCISED（双通道硬限）。"
+}

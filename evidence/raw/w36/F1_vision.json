@@ -1,0 +1,17 @@
+{
+  "cell": "F1_vision",
+  "face": "multimodal",
+  "attempt_n": 1,
+  "state": "PASS",
+  "glyph": "✅",
+  "note": "480×240 真图（左红方块/右绿圆，非 1×1），经系统 picker 附加为附件 chip；题面 'What color is the shape on the left? One word only.' 不含答案词；Nano Omni 逐字回读 'Red'，无失败横幅，2.1k in/183 out。排除答案泄漏。",
+  "evidence_files": [
+    "f1_vision.png"
+  ],
+  "image": {
+    "size": "480x240",
+    "left": "red square",
+    "right": "green circle",
+    "answer_not_in_question": true
+  }
+}

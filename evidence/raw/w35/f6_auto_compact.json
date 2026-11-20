@@ -16,10 +16,10 @@
     "17:42:59 / 17:43:24 auto_compact=noop reason=already_compressed"
   ],
   "state": "PARTIAL",
-  "note": "本波首次在同一会话捕获自动路径三段序列：试算 insufficient_savings:net=-256 → 自动 dropped=4 kept=10（applied）→ 后续 already_compressed。这实证 W9-01 的两个确定性命题（net=-256 ⇔ 试算 compression=null；noop 是正确行为、标签语义错配），且比 W34「自动 noop vs 手动 applied 分裂」更进一步——自动路径自身在条件满足后 applied。未持有当时 bubbles 快照，不判定具体 untouched 分支、不写成已修复。",
+  "note": "本波首次在同一会话捕获自动路径三段序列：试算 insufficient_savings:net=-256（17:42:14）→ 自动 dropped=4 kept=10 applied（17:42:25，同一自动路径 11 秒）→ 后续 already_compressed。实证 W9-01 命题①（日志码确定性语义：net=-256 ⇔ 试算 compression=null；noop 是正确行为、标签语义错配）。W36 订正：不再表述为「比 W34 自动 noop vs 手动 applied 分裂更进一步」——决定性变量是体积/试算能否压动（不同时刻 reconciliation auto ~50–60k vs 手动 ~124k；同一自动路径 11 秒 noop→applied），:407 取旧快照是代码事实但未证实为分裂成因，命题②降为待验证假设。未持有当时 bubbles 快照，不判定具体 untouched 分支、不写成已修复。",
   "evidence_files": [
     "f6_auto_compact_log.txt",
-    "f6_auto_compact.png",
-    "deviceLogTail.txt"
-  ]
+    "f6_auto_compact.png"
+  ],
+  "evidence_files_note": "W36 订正：移除 deviceLogTail.txt（本波该文件是 59 行设备 logcat 尾、无 auto_compact 命中，跨波同名不同义）；F6 真实日志在 f6_auto_compact_log.txt（12 行逐字含 net=-256→dropped=4 applied→already_compressed）。"
 }

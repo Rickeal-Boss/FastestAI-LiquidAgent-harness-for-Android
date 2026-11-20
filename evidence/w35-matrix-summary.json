@@ -3,7 +3,7 @@
   "wave": "W35",
   "matrix_type": "multi-model x context-tier x feature-face real-device matrix",
   "generated_at": "2026-11-20",
-  "baseline_note": "现役 main tip ab5148f（W34）；零 .kt；真机 OPPO PDRM00 / Android 13 / serial 13309cc8",
+  "baseline_note": "现役 main tip ab5148f（W34）；零 .kt；真机 OPPO PDRM00 / Android 13 / serial <device-serial>（W36 脱敏订正：8 位十六进制设备标识改占位）",
   "device_executed": true,
   "positive_control_verified_by": "device_execution",
   "judge_policy": "strict_sentinel + device-side file/hex/mtime + semantic verbatim (no 1x1 vision); four-state PASS/PARTIAL/VACUOUS/FAIL",
@@ -68,7 +68,7 @@
     {
       "iter": 1,
       "动作": "设备三步法唤醒(KEYCODE 224+screencap非全黑mean231+SCREEN_STATE_ON/AWAKE)+设备侧logcat落盘/data/local/tmp/w35.log+冷启com.rickeal.liquidharness.debug",
-      "判据": "serial 13309cc8可见;屏幕非全黑;SCREEN_STATE_ON+INTERACTIVE_STATE_AWAKE;日志增长",
+      "判据": "serial <device-serial>可见;屏幕非全黑;SCREEN_STATE_ON+INTERACTIVE_STATE_AWAKE;日志增长",
       "四态": "✅",
       "证据路径": "evidence/raw/w35/deviceLogTail.txt",
       "时间戳": "2026-11-20T00:37:00+08:00"
@@ -196,7 +196,7 @@
   ],
   "iterations_note": "16 行：iter1-13 由真机席落盘，iter14-16（F4/F5/F6）由主理人在真机席 turns 上限中断后据已落盘证据补记",
   "credential_policy": "API key 仅经真机端点编辑 UI 录入；证据/制品/回传均不含密钥全文，仅记 masked 掩码点与 secret 文件 mtime",
-  "privacy": "screenshots desensitized (no key/account fields); deviceLogTail is tail-only, no full logcat",
+  "privacy": "W36 订正：正文曾含 8 位十六进制设备标识与本机绝对路径、已清零改占位；无密钥全文/未打码账号字段；截图逐张目检无 key/PII 上屏（视觉脱敏本环境无法 OCR 复核，按交接采信）；deviceLogTail 为日志尾、非整段 logcat",
   "zero_kotlin": true,
   "full_context_1M_stress": {
     "status": "NOT_EXERCISED",

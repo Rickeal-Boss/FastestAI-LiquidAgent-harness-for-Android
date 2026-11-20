@@ -1,0 +1,11 @@
+{
+  "cell": "E02_bolt",
+  "face": "endpoint_axis",
+  "attempt_n": 2,
+  "state": "PASS",
+  "glyph": "✅",
+  "note": "尝试1 用 'Reply with exactly:' 只回 'This is the final answer'（模型遵循差异、无失败横幅）；尝试2 改 'Output only this token:' 后逐字命中 W36-E02-BOLT-STRICT2，1.4k in/15 out（1376 cached, 97.5%）。连通与 strict 判据均在尝试2行使，attempt_n=2。",
+  "evidence_files": [
+    "e02_bolt_a2.png"
+  ]
+}

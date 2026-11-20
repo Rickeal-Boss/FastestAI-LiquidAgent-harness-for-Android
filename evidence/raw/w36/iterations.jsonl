@@ -1,0 +1,15 @@
+{"iter": 1, "cell_id": "E01_lightning", "操作": "设备唤醒三步法+logcat设备侧落盘+冷启；设 NV Lightning、新对话清空残留、strict sentinel", "预期": "正控必然逐字命中", "判据": "sentinel 逐字+无失败横幅；SCREEN_STATE_ON/AWAKE", "四态": "✅", "证据路径": "evidence/raw/w36/e01_lightning.png", "attempt_n": 1}
+{"iter": 2, "cell_id": "E02_bolt", "操作": "切 NV Bolt、新对话、strict sentinel（尝试1）", "预期": "逐字命中", "判据": "W36-E02-BOLT-STRICT", "四态": "⚠️", "证据路径": "evidence/raw/w36/e02_bolt_a1.png", "attempt_n": 2}
+{"iter": 3, "cell_id": "E02_bolt", "操作": "新对话、改 'Output only this token:'  phrasing（尝试2）", "预期": "逐字命中", "判据": "W36-E02-BOLT-STRICT2 逐字", "四态": "✅", "证据路径": "evidence/raw/w36/e02_bolt_a2.png", "attempt_n": 2}
+{"iter": 4, "cell_id": "E03_nano_strict", "操作": "切 Nano Omni、新对话、strict sentinel", "预期": "逐字命中", "判据": "W36-E03-NANO-STRICT 逐字", "四态": "✅", "证据路径": "evidence/raw/w36/e03_nano.png", "attempt_n": 1}
+{"iter": 5, "cell_id": "F1_vision", "操作": "480×240 真图 picker 附加、非泄漏语义题", "预期": "视觉语义逐字回读", "判据": "回读 Red 且题面不含答案", "四态": "✅", "证据路径": "evidence/raw/w36/f1_vision.png", "attempt_n": 1}
+{"iter": 6, "cell_id": "E05_supervl", "操作": "切 SuperVL、新对话、strict sentinel", "预期": "逐字命中且无 403", "判据": "W36-E05-SUPERVL-NEWKEY 逐字", "四态": "✅", "证据路径": "evidence/raw/w36/e05_supervl.png", "attempt_n": 1}
+{"iter": 7, "cell_id": "E06_or_dots3", "操作": "切 Dots3、新对话、strict sentinel + 设备 ping 对照", "预期": "逐字命中或超时归 INC", "判据": "W36-E06-DOTS3 逐字；ping 25% 丢包", "四态": "✅", "证据路径": "evidence/raw/w36/e06_dots3.png", "attempt_n": 1}
+{"iter": 8, "cell_id": "E07_or_north", "操作": "切 North、旧 key 请求", "预期": "逐字命中或记 INC", "判据": "HTTP 404 横幅", "四态": "⚠️", "证据路径": "evidence/raw/w36/e07_north_oldkey.png", "attempt_n": 2}
+{"iter": 9, "cell_id": "E07_or_north", "操作": "UI 录入新 key（掩码73点、mtime 更新）、保存、新对话重试", "预期": "逐字命中", "判据": "仍 HTTP 404；排除密钥面", "四态": "⚠️", "证据路径": "evidence/raw/w36/e07_north_newkey.png", "attempt_n": 2}
+{"iter": 10, "cell_id": "T_tier", "操作": "32K→256K→512K→1M 逐档切换、逐档 UI 读回", "预期": "当前 X 逐档一致", "判据": "当前 256K/512K/1M；chat 995.9K", "四态": "⚠️", "证据路径": "evidence/raw/w36/tier_1m_supervl_chat.png", "attempt_n": 1}
+{"iter": 11, "cell_id": "F2_workspace", "操作": "file_write 审批、读 exact args、允许一次、设备侧 cat/hex/mtime", "预期": "三方一致", "判据": "args 与 W36F2-K9M3 hex 双向一致", "四态": "✅", "证据路径": "evidence/raw/w36/f2_approval.png", "attempt_n": 1}
+{"iter": 12, "cell_id": "F3_skill", "操作": "@ 菜单选中 notes-organizer、sentinel（两次尝试）", "预期": "sentinel 逐字+skill_load 卡", "判据": "sentinel 命中；无 skill_load 卡", "四态": "⚠️", "证据路径": "evidence/raw/w36/f3_skill.png", "attempt_n": 2}
+{"iter": 13, "cell_id": "F4_mcp", "操作": "MCP 服务器页登记", "预期": "若有 server 则验审批", "判据": "0 server，判据未行使", "四态": "⛔vacuous", "证据路径": "evidence/raw/w36/f4_mcp.png", "attempt_n": 1}
+{"iter": 14, "cell_id": "F5_manual_compact", "操作": "更多菜单→压缩对话框→压缩（2 气泡、4 轮两次）", "预期": "dropped/kept 双向 log", "判据": "UI 走通；无本波新增 log 行", "四态": "⚠️", "证据路径": "evidence/raw/w36/f5_dialog.png", "attempt_n": 2}
+{"iter": 15, "cell_id": "F6_auto_compact", "操作": "导入 202kB 会话、发 3 轮触发自动压缩", "预期": "noop→applied→already_compressed", "判据": "本波 4× net=-256；后两段未行使", "四态": "⚠️", "证据路径": "evidence/raw/w36/f6_auto.png", "attempt_n": 1}

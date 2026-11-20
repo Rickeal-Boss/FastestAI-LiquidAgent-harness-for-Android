@@ -1,0 +1,11 @@
+{
+  "cell": "E06_or_dots3",
+  "face": "endpoint_axis",
+  "attempt_n": 1,
+  "state": "PASS",
+  "glyph": "✅",
+  "note": "供给侧恢复：dots-3-note-preview:free 本波 strict 逐字 W36-E06-DOTS3，无超时横幅，1.6k in/53 out。设备侧 ping openrouter.ai 4 发 3 收/25% 丢包/207ms 均值——网络可达但抖；与 W35 同窗口超时相反，以真机为准判 PASS。",
+  "evidence_files": [
+    "e06_dots3.png"
+  ]
+}

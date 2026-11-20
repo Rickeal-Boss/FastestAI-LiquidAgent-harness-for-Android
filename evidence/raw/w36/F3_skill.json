@@ -1,0 +1,11 @@
+{
+  "cell": "F3_skill",
+  "face": "skill",
+  "attempt_n": 2,
+  "state": "PARTIAL",
+  "glyph": "⚠️",
+  "note": "@ 菜单列 notes-organizer/pdf-toolkit，选中后输入框插入 '@notes-organizer '；sentinel 逐字命中 W36-F3-SKILL2，思考块在。但两次（首轮光标错位、次轮修正）均未出现 skill_load 工具卡、agent log 无 skill/tool 事件行 ⇒ skill_load 卡判据未行使。归因 thinking-first 模型遵循差异、非 app bug，按四态 PARTIAL。",
+  "evidence_files": [
+    "f3_skill.png"
+  ]
+}

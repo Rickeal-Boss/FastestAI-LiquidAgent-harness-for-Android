@@ -1,0 +1,11 @@
+{
+  "cell": "E03_nano_strict",
+  "face": "endpoint_axis",
+  "attempt_n": 1,
+  "state": "PASS",
+  "glyph": "✅",
+  "note": "Nano Omni strict sentinel 逐字 W36-E03-NANO-STRICT，含思考块，1.8k in/95 out；上下文 1.9K/27.9K。端点 contextLength=131072 与会话档位独立（档位此时仍 32K）。",
+  "evidence_files": [
+    "e03_nano.png"
+  ]
+}

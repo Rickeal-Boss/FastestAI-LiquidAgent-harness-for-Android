@@ -11,17 +11,19 @@
 
 ### 1.1 做什么（按用户本单指令与六份外审裁决）
 
-| # | 做什么 | 落点 | 结果 |
+> **W36 时点订正**：本表九项在 W35 波内已全部完成（§三~§六/CI/交接逐节有结果），W35 收尾时误留「进行中/待跑」占位 = 收尾契约第 14 次回退；W36 第 0 车按外审 P0-3 统一回改 ✅，不重写 W35 正文事实。九项结果以 §三~§六、§5.6、handoff 的最终态为准。
+
+| # | 做什么 | 落点 | 结果（W36 订正后） |
 |---|---|---|---|
-| 1 | 读记忆 + W34 handoff + OPEN 挂账行（只读现役仓 `harness-v2/docs/`，不读旧仓） | 本文件 §二/§三 | 进行中 |
-| 2 | 六份外审报告逐条裁决、**不改方案大体方向**（转代码波维持 OPEN） | §二（分歧裁决表） | 进行中 |
-| 3 | W35 第 0 车账实收口：w34 制品补回断言三字段（案 a）+ 判据 6 `K_assertion_presence` + 判据 7 必红分支 + `§2.5a` 悬空引用 + schema 小件 | checklist / w34 制品 / w33-w34 验收物（W35-01、W35-03） | 进行中 |
-| 4 | `W9-01` 主债行补 W34 F5/F6 真机证据 + F6 确定性根因（两个命题，不写成已修复） | 台账 `W9-01` 行内注记（W35-02） | 进行中 |
-| 5 | 台账 W35 段 3 行落笔（6 列、无裸竖线、全 `OPEN`）+ 8 行销账证据列补 W34 复核指路 | `docs/06-deferred-ledger.md` | 进行中 |
-| 6 | 多模型 × 不同上下文（32K/256K/512K/1M）× 功能面（多模态/工作空间读写/skill/MCP/手动自动压缩）真机矩阵；边测边改，每迭代追加一行证据 | §三 + `evidence/raw/w35/iterations.jsonl` | 进行中 |
-| 7 | 本地闸门 G1–G4（编译/arch-guard/selftest/fulltest） | §四 | 待跑 |
-| 8 | 推送 main + CI 四字段复核（Build + Secret scan） | §5.6 | 待跑 |
-| 9 | 验收物 + handoff + 制品 + 证据入仓，止于交接、交外审 | 本文件 + `handoff-20261120-wave35.md` | 进行中 |
+| 1 | 读记忆 + W34 handoff + OPEN 挂账行（只读现役仓 `harness-v2/docs/`，不读旧仓） | 本文件 §二/§三 | ✅ |
+| 2 | 六份外审报告逐条裁决、**不改方案大体方向**（转代码波维持 OPEN） | §二（分歧裁决表） | ✅ |
+| 3 | W35 第 0 车账实收口：w34 制品补回断言三字段（案 a）+ 判据 6 `K_assertion_presence` + 判据 7 必红分支 + `§2.5a` 悬空引用 + schema 小件 | checklist / w34 制品 / w33-w34 验收物（W35-01、W35-03） | ✅ |
+| 4 | `W9-01` 主债行补 W34 F5/F6 真机证据 + F6 确定性根因（两个命题，不写成已修复；W36 命題②降级） | 台账 `W9-01` 行内注记（W35-02） | ✅ |
+| 5 | 台账 W35 段 3 行落笔（6 列、无裸竖线、全 `OPEN`）+ 8 行销账证据列补 W34 复核指路 | `docs/06-deferred-ledger.md` | ✅ |
+| 6 | 多模型 × 不同上下文（32K/256K/512K/1M）× 功能面（多模态/工作空间读写/skill/MCP/手动自动压缩）真机矩阵；边测边改，每迭代追加一行证据 | §三 + `evidence/raw/w35/iterations.jsonl` | ✅（13 格；1M 满窗 `NOT_EXERCISED`） |
+| 7 | 本地闸门 G1–G4（编译/arch-guard/selftest/fulltest） | §四 | ✅ |
+| 8 | 推送 main + CI 四字段复核（Build + Secret scan） | §5.6 | ✅（主体 1 次推送触发两条 run） |
+| 9 | 验收物 + handoff + 制品 + 证据入仓，止于交接、交外审 | 本文件 + `handoff-20261120-wave35.md` | ✅ |
 
 ### 1.2 明确不做（逐条带挂账号）
 
@@ -49,7 +51,7 @@
 
 ### 2.0 时点差证伪（先于分歧表）
 
-- **harness-master 数字不自洽，不采信**：`harness-review-master.md:4` 写「台账 210 行 ID / 67 CLOSED / 204 OPEN」，与权威 `handoff-w34.md:46` / `06-deferred-ledger.md` 的 **33 / 166 / 11** 冲突，且 67+204=271≠210、CARRIED 11 也不足补齐。按「回源权威树」口径采信 33/166/11，本报告不再引用 master 的 67/204 组合。
+- **harness-master 数字不自洽，不采信**：`harness-review-master.md:4` 写「台账 210 行 ID / 67 CLOSED / 204 OPEN」，与权威 `handoff-w34.md:46` / `06-deferred-ledger.md` 的 **33 / 166 / 11** 冲突，且 67+204=271≠210、CARRIED 11 也不足补齐。按「回源权威树」口径采信 33/166/11（**W34 时点** `ab5148f`；W36 订正：现役 W35 树已是 **33 `CLOSED` / 169 `OPEN` / 11 `CARRIED` = 213 行**），本报告不再引用 master 的 67/204 组合。
 - **报告6「F6 两把尺子」与报告2/总纲链不同解**：报告2 给可复刻三行链（`savingChars=committedChars−committedChars(null)` → 恒 0 → net=−256），报告6 另解「自动 token 估算尺 vs 手动 chars 字符闸」。三者对「F6 是真异常 / 须收窄」结论一致，但 undo 路径不同 ⇒ 按「报告矛盾则回源」取可复刻链为真值源、两把尺子作候选解释。
 - **三份外审引用计数为时点快照**：外审 32 处 / 14 文件、方案席复核 31 处 / 13 文件、主理人现役实跑 31 处 / 13 文件（`grep -ro` 出现次数口径）；W34 时点快照 26 处。以现役实跑 31/13 为真值源，其余作版本时点留痕（订正文字用拆分表述避免自指把 31 变 32）。
 
@@ -64,9 +66,9 @@
 | 5 | H4/路线建议：W34-03 出口三件套（26 处抬头 + 判据 8 + 复跑）争取 W35 关闭 | **否**（抬头不代做、判据 8 不新增） | 用户 2026-11-19 批注案 b「删除无问题」；裁决 #4 定「出生即红判据不新增」；现役计数 31/13 与外审 32/14 为时点差 | `W34-03` 残余项订正为现役计数 31/13 + 无判据覆盖留痕；不逐处加抬头 | ✅ 已由主理人订正（W34-03/W35-03） |
 | 6 | H6/`W31-W34审查`：W26-02 进销账优先队列 | **否**（编排建议，不新开行） | 报告6 §五.1 自述「半天」属建议，非用户裁决；本波按 W34 既有 8 行销账照做 | W35-03 只补 8 行本波复核指路；W26-02 维持老号 | ✅ 已正确落地 |
 | 7 | 报告9/F6 与真机 A-1：根因定位需动 .kt，转码波才能修 | **否**（不授权转码波） | 与 #1 同因；报告9 §二.2 明确「根因定位需要动 .kt 读代码」⇒ 属 A-2 授权域 | W9-01 只写可复刻命题与红态用例设计输入；不改 `.kt` | ✅ 已正确落地 |
-| 8 | 报告2 §5 判据 6 去 `git rev-parse` 硬依赖 | **是**（可执行性修补，非方向） | `w29-closeout-checklist.md:292` 在解压快照 `fatal: not a git repository` 后在错误 cwd 跑；历轮 5 次同型 | W35-03 同车：判据 6 加 `REPO_ROOT` 兜底，无 `.git` 快照 rc=0 且五类必红 RED | 进行中（审查席） |
-| 9 | 报告2 §P0-3：判据 7 只查「有指针」不查本波复核 | **是**（账实订正，非方向） | 8 行 `W34` 命中 0/8 字面不精确（HEAD 下 `W30-01` 已有「W34 销账」注记）——**准确表述是「无本波复核指路」**；判据 7 正常态靠历史 `文件:行` 蒙混 | W35-03：8 行补指路（主理人已落）；判据 7 加必红「删空某 CLOSED 行本波复核指路 ⇒ RED closed without current-wave pointer」，锚定**严格限定 8 个 W34 销账 ID**（W31-02/03 为历史 CLOSED 无 W34 指路，扫全表会假红——主理人已回传修正） | 8 行指路 ✅ 已落；判据 7 必红进行中（审查席） |
-| 10 | 报告2 §P0-1：w34 制品断言字段整包删除却虚报 5/5 | **是**（账实订正，非方向） | 现役 `w34-matrix-summary.json` 顶层 28 键、`assertions`/`mutation_cases`/`mutation_selftest` 全缺；`w33-acceptance.md:70/:81` 指向不存在的 §2.5a | W35-01 案 a：补三字段（5/5/dict）+ `K_assertion_presence` 必红 + 两处 §2.5a 改指 §2.5/§2.2 | 制品字段 ✅ 已补（31 键）；判据加固进行中（审查席） |
+| 8 | 报告2 §5 判据 6 去 `git rev-parse` 硬依赖 | **是**（可执行性修补，非方向） | `w29-closeout-checklist.md:292` 在解压快照 `fatal: not a git repository` 后在错误 cwd 跑；历轮 5 次同型 | W35-03 同车：判据 6 加 `REPO_ROOT` 兜底，无 `.git` 快照 rc=0 且六类必红 RED（W36 订正：实为六类） | ✅ W36 回改（实跑摘录在 checklist W35 加固节） |
+| 9 | 报告2 §P0-3：判据 7 只查「有指针」不查本波复核 | **是**（账实订正，非方向） | 8 行 `W34` 命中 0/8 字面不精确（HEAD 下 `W30-01` 已有「W34 销账」注记）——**准确表述是「无本波复核指路」**；判据 7 正常态靠历史 `文件:行` 蒙混 | W35-03：8 行补指路（主理人已落）；判据 7 加必红「删空某 CLOSED 行本波复核指路 ⇒ RED closed without current-wave pointer」，锚定**严格限定 8 个 W34 销账 ID**（W31-02/03 为历史 CLOSED 无 W34 指路，扫全表会假红——主理人已回传修正） | ✅ W36 回改：8 行指路 + 判据 7 必红（checklist W35 加固节双输出实跑） |
+| 10 | 报告2 §P0-1：w34 制品断言字段整包删除却虚报 5/5 | **是**（账实订正，非方向） | 现役 `w34-matrix-summary.json` 顶层 28 键、`assertions`/`mutation_cases`/`mutation_selftest` 全缺；`w33-acceptance.md:70/:81` 指向不存在的 §2.5a | W35-01 案 a：补三字段（5/5/dict）+ `K_assertion_presence` 必红 + 两处 §2.5a 改指 §2.5/§2.2 | ✅ W36 回改：制品字段 31 键 + 判据加固（checklist 六类必红实跑） |
 | 11 | 2026-11-20 本轮 F6 新证据（自动/手动同日两时刻） | **否**（不新开行） | 与 #3/#4 同因：证据是 W9-01 的红态用例设计输入，不是独立挂账对象 | W35-02 只补账不动 `.kt`；按 W28 案 B 不作 W9-01 红态入口 | ✅ 已正确落地 |
 
 ### 2.2 方案席建议（采纳为执行口径）
@@ -81,7 +83,7 @@
 ## §三 真机矩阵
 
 > 制品 `evidence/w35-matrix-summary.json`（13 格 / `state_counts={PASS:6, PARTIAL:6, VACUOUS:1}` / 31 键 / `iterations_total=16`）；证据 `evidence/raw/w35/`（34 件本波真机脱敏原始件）。
-> 设备 OPPO PDRM00 / Android 13 / serial `13309cc8`，默认端口 5037；唤醒三步法通过（screencap 非全黑 mean231 + SCREEN_STATE_ON/AWAKE）。密钥仅经真机端点编辑 UI 录入，证据/制品/本报告均不含密钥全文。
+> 设备 OPPO PDRM00 / Android 13 / serial `<device-serial>`（W36 脱敏订正：8 位十六进制设备标识改占位），默认端口 5037；唤醒三步法通过（screencap 非全黑 mean231 + SCREEN_STATE_ON/AWAKE）。密钥仅经真机端点编辑 UI 录入；本报告、证据、制品均不含密钥全文、完整设备标识与本机绝对路径。
 > **真机席跑到 turns 上限（1h08m）中断，34 件证据已全部落盘、制品汇编未完成**；主理人按写入隔离纪律接手：补 F5/F6 证据 JSON、修 F2 虚报引用、补 iter14-16、汇编制品并实跑判据 6（正常态 OK + 六类必红全 RED）。不编造未跑的格。
 
 ### 3.1 格明细（13 格，逐格四态 + 证据路径）
@@ -106,7 +108,7 @@
 
 1. **E05 证伪 W34 结论**：super-vl 403 从「模型级永久拒绝」订正为「旧 key 授权失效、新 key 生效」——用户新 API 直接解锁一格真 PASS。
 2. **E02 Bolt 回归 PASS**：模型遵循改善，strict 逐字（W34 为 PARTIAL）。
-3. **F6 自动路径首次 captured applied**：`auto_compact dropped=4 kept=10`（本波 device log 原文），比 W34「自动 noop vs 手动 applied 分裂」更进一步——自动路径自身在条件满足后 applied，坐实 W9-01 的 `savingChars≡0 ⇔ compression=null` 与 `:407` 时机命题。
+3. **F6 自动路径首次 captured applied**：`auto_compact dropped=4 kept=10`（本波 device log 原文）；同一自动路径 11 秒内 `net=-256`（17:42:14）→ `applied`（17:42:25），W36 订正：这坐实 W9-01 命题①「日志码确定性语义：`savingChars≡0 ⇔ compression=null`、`net=-256` 是标签语义错配」，但**不坐实「`:407` 时机是自动/手动分裂成因」**——`:407` 在 `onEvent` 前取旧快照是代码事实、未证实为成因，本波不同时刻 reconciliation（auto ~50–60k vs 手动 ~124k）与同一自动路径 11 秒 noop→applied 均表明**决定性变量是体积/试算能否压动**，该命题降为待验证假设（`W9-01`）。
 4. **F1 多模态拒绝假绿**：显式排除「答案泄漏题面」的第一问、只认非空语义题，98.3% cache 佐证图像 token 参与。
 
 ### 3.3 判据 6 在 w35 制品的实跑（本波不重蹈 W34 零断言虚报）
@@ -125,9 +127,9 @@
 
 ## §四 四闸门
 
-> 实跑时点：2026-11-19/20，均在仓库根 `D:/WBfil/2026-09-18-18-27-37/harness-v2` 执行。
+> 实跑时点：2026-11-19/20，均在仓库根 `<workspace-root>/harness-v2` 执行（W36 脱敏订正：本机绝对路径改占位）。
 > 四态口径见判据权威 `judgment-criteria.md` §4。日志落在**仓外工作区根**
-> `/d/WBfil/2026-09-18-18-27-37/_w35_*.log`（不入库，仅供复核），逐项如下。
+> `<workspace-root>/_w35_*.log`（不入库，仅供复核；W36 脱敏订正），逐项如下。
 
 | 闸门 | 命令 | 四态 | 关键实跑数字 | 证据路径 |
 |---|---|---|---|---|
@@ -153,8 +155,8 @@ G4 结果目录清除成功（无 Windows 句柄锁残留），故未出现「�
 | commit | `8af409071540c94a465f69458b6d63bb6ba168bb`（`feat(w35): 零 .kt 账实收口 + 多模型×上下文档位×功能面真机矩阵`） |
 | 提交身份 | `Rickeal-Boss <263587600+Rickeal-Boss@users.noreply.github.com>` |
 | 变更规模 | 45 文件 / +1236 −35：6 改（`06-deferred-ledger`、`w33`/`w34` 验收物、`w29-closeout-checklist`、`w34-matrix-summary.json` + 本验收物）+ 新增 `w35-acceptance.md`、`w35-matrix-summary.json`、`evidence/raw/w35/` 38 件 |
-| 入暂存纪律 | 全程显式 `git add <路径>`，未用 `git add -A`；25 个历史 stat/EOL 脏 M 与未跟踪 `_w34/` 未入库；`evidence/raw/w35/iterations.jsonl` 被全局 `.gitignore:42:*.jsonl` 误伤，单独 `git add -f` 纳入（内容已核验脱敏：serial 仅 8 位、key 只记 mtime 不记明文） |
-| 推送判据 | `git push --dry-run` 先行：`ab5148f..8af4090 main -> main`（RC=0）；实推同结果（RC=0）。PAT 仅 URL inline 一次性使用、未落盘、remote 仍为干净 URL。用户所给 PAT 尾部重复粘贴一段（长度 129，含重复段）失效，去掉重复段后长度 93、`/user` API 返回 200 校验通过后方推送。 |
+| 入暂存纪律 | 全程显式 `git add <路径>`，未用 `git add -A`；25 个历史 stat/EOL 脏 M 与未跟踪 `_w34/` 未入库；`evidence/raw/w35/iterations.jsonl` 被全局 `.gitignore:42:*.jsonl` 误伤，单独 `git add -f` 纳入。W36 订正：原文「serial 仅 8 位」自证句不精确（8 位即完整设备标识），该行 serial 已清零改占位；并立人工闸门——凡被忽略文件 `git add -f` 前必须先过判据 3b-ext 脱敏扫描（device-id/path/pat-meta 三类 0 命中）方可纳入，不依赖 `-f` 绕过脱敏复核 |
+| 推送判据 | `git push --dry-run` 先行：`ab5148f..8af4090 main -> main`（RC=0）；实推同结果（RC=0）。PAT 仅 URL inline 一次性使用、未落盘、remote 仍为干净 URL。PAT 长度、校验路径与轮换属用户侧动作，按 W34 先例不在仓内登记（W36 脱敏订正）。 |
 
 ### 5.6.2 CI run 四字段复核（公开 API 按 head_sha 查，不采信任何转述）
 
@@ -167,10 +169,11 @@ G4 结果目录清除成功（无 Windows 句柄锁残留），故未出现「�
   避开 `paths-ignore` 黑名单（`docs/**` 与 `**/*.md`），故 Build 五 job + 独立 Secret scan 均正常触发，非 0-run。
 - **Build 五 job 明细**（均 `completed/success`，非 vacuous 绿）：Unit tests / Arch guard (26 guards + mutation selftest) /
   Assemble Debug (JDK 21) / Secret scan (gitleaks + trufflehog) / Lint (baseline gate)。
-- **推送次数序列（不写「1 次」）**：主体推送 **1 次**（本波 commit `8af4090` 触发上表两条 run）；
-  §5.6 CI 回填本身构成第 2 次推送（纯文档 tip）——该 tip 因 `paths-ignore` 命中纯文档（仅 `docs/**` 与 `*.md`），
-  Build 为 **0 run**（按既定口径 **不写成「构建通过」**），只有独立 Secret scan 仍跑。该回填 tip 的
-  commit / run ID / 四字段在交接记录与回传消息中据实登记，不在此处循环回填。
+- **推送次数序列（W36 订正，不写「1 次」/「2 次」）**：本波提交序列 **3 次**——① 主体 `8af4090`（触发上表两条 run：
+  Build `44583693258` + Secret `44583693221`）；② §5.6 回填 tip `d1c966b`（Secret `44584106741`，Build 0 run）；
+  ③ 交接 tip `bb757a2`（Secret `44584268635`，Build 0 run）。②③ 两条 tip 因 `paths-ignore` 命中纯文档（仅
+  `docs/**` 与 `*.md`），Build **0 run**（按既定口径 **不写成「构建通过」**），只有独立 Secret scan 仍跑；
+  两条 tip run ID 为外审联网实取、仓内此前未登记（W36 据实补记）。
 
 ---
 
@@ -200,7 +203,7 @@ G4 结果目录清除成功（无 Windows 句柄锁残留），故未出现「�
 | 制品 | 用途 | 四态 |
 |---|---|---|
 | `docs/analysis/w35-acceptance.md` | 本波验收物（§一边界 / §二八项裁决 / §三真机矩阵 / §四四闸门 / §5.6 CI / §六挂账 / §七清单） | ✅ |
-| `docs/handoff-20261120-wave35.md` | W35 交接（待 CI 席推送后由主理人落笔） | 进行中 |
+| `docs/handoff-20261120-wave35.md` | W35 交接（tip `bb757a2` 已落笔；W36 订正原「进行中」占位） | ✅ |
 | `evidence/w35-matrix-summary.json` | 正式制品：13 格 / 6 PASS + 6 PARTIAL + 1 VACUOUS / 31 键 / `iterations_total=16` / 六类必红实证 | ✅ |
 | `evidence/raw/w35/` | 38 件本波真机脱敏证据（截图判据 + deviceLogTail + 逐格 JSON，无密钥/未打码账号） | ✅ |
 | `docs/06-deferred-ledger.md` | W35 段 3 行 + 8 行销账补指路 + W9-01 reconciliation 注记 + W34-03 计数订正 | ✅ |

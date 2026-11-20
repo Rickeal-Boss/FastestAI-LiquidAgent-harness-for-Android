@@ -1,0 +1,11 @@
+{
+  "cell": "T_tier",
+  "face": "tier_axis",
+  "attempt_n": 1,
+  "state": "PARTIAL",
+  "glyph": "⚠️",
+  "note": "32K/256K/512K/1M 四档均经确认对话框切换且 UI 逐档读回 '当前 X'（256K/512K/1M 截图在库）；1M 档 + SuperVL 端点 chat 读回 上下文 1.9K/995.9K，strict 逐字。1M 满窗真压 NOT_EXERCISED（见 full_context_1M_stress），故 PARTIAL。",
+  "evidence_files": [
+    "tier_1m_supervl_chat.png"
+  ]
+}

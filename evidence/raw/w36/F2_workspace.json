@@ -1,0 +1,18 @@
+{
+  "cell": "F2_workspace",
+  "face": "workspace_rw",
+  "attempt_n": 1,
+  "state": "PASS",
+  "glyph": "✅",
+  "note": "审批 exact args {\"path\":\"w36probe.txt\",\"content\":\"W36F2-K9M3\"}；'允许一次' 放行后设备侧 run-as cat = W36F2-K9M3、hex 5733 3646 322d 4b39 4d33（10 字节）、mtime 2026-11-20 18:08，双向一致。裸文件名落 workspace/ 根，无双层路径。",
+  "evidence_files": [
+    "f2_approval.png"
+  ],
+  "approval_exact_args": "{\"path\":\"w36probe.txt\",\"content\":\"W36F2-K9M3\"}",
+  "device_side": {
+    "cat": "W36F2-K9M3",
+    "hex": "5733 3646 322d 4b39 4d33",
+    "bytes": 10,
+    "mtime": "2026-11-20 18:08"
+  }
+}

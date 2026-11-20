@@ -282,7 +282,17 @@ import json,io,os,sys
 art=sys.argv[1]
 d=json.load(io.open(art,encoding="utf-8"))
 cells=d["cells"]; declared=set(d["declared_feature_faces"]); errs=[]
-if "assertions" not in d: errs.append("assertions missing")   # K_assertion_presence（W35-03 必红六类）
+# K_assertion_presence（W36-02 扩展）：三字段齐 + 数量相等 + selftest 指向仓内可跑输出
+for f in ("assertions","mutation_cases","mutation_selftest"):
+    if f not in d: errs.append(f+" missing")
+if all(isinstance(d.get(f),list) for f in ("assertions","mutation_cases")):
+    na=len(d["assertions"])
+    if na!=len(d["mutation_cases"]): errs.append("assertion/mutation count mismatch")
+    st=d.get("mutation_selftest")
+    if isinstance(st,dict):
+        if st.get("total")!=na or st.get("rejected")!=na: errs.append("selftest count mismatch")
+        note=str(st.get("note") or "")
+        if "checklist" not in note and "验收物" not in note: errs.append("selftest note lacks in-repo pointer")
 if not {c["feature_face"] for c in cells} <= declared: errs.append("face not declared")
 if "mcp" in declared and "mcp" not in d: errs.append("mcp field missing")
 mcp_cells=[c for c in cells if c["feature_face"]=="mcp"]
@@ -352,22 +362,26 @@ rows=[l for l in txt.splitlines() if l.startswith("| W")]
 cells=lambda l:[c.strip() for c in l.strip("|").split("|")]
 closed=[l for l in rows if re.search(r"\|\s*`?CLOSED`?\s*\|",l)]
 pat=re.compile(r"([\w./-]+\.(kt|md|json|yml|yaml|sh):\d+)|(evidence/)|(runs?/\d+)|\b\d{10,}\b|实跑")
-new_wave=re.compile(r"\|\s*W(30|31|32|33|34)\s*\|\s*`?CLOSED`?")
+new_wave=re.compile(r"\|\s*W(\d+)\s*\|\s*`?CLOSED`?")   # W36-02：波次无关（W30 及以后），不再枚举具体波号
+MIN_WAVE=int(os.environ.get("MIN_WAVE","30"))   # 新代数下界，可用环境变量覆盖
 bad=[]
 for l in closed:
-    if not new_wave.search(l): continue
+    m=new_wave.search(l)
+    if not m or int(m.group(1))<MIN_WAVE: continue
     c=cells(l)
     if not pat.search(c[-1]): bad.append(c[0])
 print("OK closed rows carry runnable pointers (W30+)" if not bad else "RED closed without runnable pointer: "+", ".join(bad))
 cur_wave=os.environ.get("CUR_WAVE","W34")
 cur_ids=[x for x in os.environ.get("CUR_IDS","W30-01,W30-02,W30-03,W31-01,W32-01,W33-01,W33-02,W33-03").split(",") if x]
+# W36-02：锚点段号参数化，默认 W34→§2.4+§2.5；可用 ANCHOR_SECS 覆盖（避免新波号段硬编码）
+anchor_secs=os.environ.get("ANCHOR_SECS","§2.4,§2.5").split(",")
 cmap={cells(l)[0]:cells(l) for l in closed}
 cur_bad=[]
 for rid in cur_ids:
     c=cmap.get(rid)
     if c is None: cur_bad.append(rid+"(not CLOSED)"); continue
     ev=c[-1]
-    if not ("本波复核指路" in ev and cur_wave in ev and "§2.4" in ev and "§2.5" in ev): cur_bad.append(rid)
+    if not ("本波复核指路" in ev and cur_wave in ev and all(s in ev for s in anchor_secs)): cur_bad.append(rid)
 print("OK closed rows carry current-wave pointers ("+cur_wave+")" if not cur_bad else "RED closed without current-wave pointer: "+", ".join(cur_bad))
 PY
 python _w34/k7_check.py
@@ -479,3 +493,40 @@ rm -f _w34/mut/ledger.k7_nopointer.md
 - **覆盖**：判据 1（1a 判红分支）/ 2（verified 不变量 + 三态分支 + 可跑必红块）/ 3（3a tip token + 3b 仓内 grep + 注入样本）/ 4（三处同步 + 可跑必红块）/ 5（制品迭代/attempt_states/state 一致性 + 必红块）/ 6（面定义 AND + evidence_ref 可复核 + 出厂断言存在 `K_assertion_presence`，W33 新增 / W35 加固为六类必红 + `REPO_ROOT` 兜底）/ 7（CLOSED 行实跑指路 + 本波复核指路必红，W33 新增 / W35 加固）。
 - **不覆盖**：① `arch-guard.sh` 的 ID 唯一性（用户裁决域）；② 真机重放（制品 verified 多为规则自证，真机判据在验收物 §3/§4）；③ 仓外生成器断言 M（老号 W20-14）；④ 脱敏正控工具在仓外取证设施（按截图回灌级别只回灌判据，不回灌整段日志）。
 - **四态**：正常态命令全 OK 仅说明「载体存在且当前数据自洽」，不等于挂账 `CLOSED`；改 `CLOSED` 须判据实跑输出入账 + 制品与真值源一致（W30 已按外审 W30-03 处方删除「须真机取证」错配条件，由主理人单人落笔）。
+
+---
+
+## W36 第 0 车判据加固 — 三处扫描面（零 `.kt`，先实跑后落笔）
+
+> 按外审 W36-01/02 处方：① 判据 3b 扫描面扩「设备标识 / 本机绝对路径 / PAT 长度元信息」三类（原只扫凭据文件名族，serial 与本机路径四类回退全绿）；② 判据 6 `K_assertion_presence` 扩成三字段齐 + 数量相等 + selftest 仓内指针；③ 判据 7 波次参数化（`new_wave` 改波次无关正则 `W\d+` + `MIN_WAVE` 下界、`CUR_WAVE`/`CUR_IDS`/`ANCHOR_SECS` 环境变量覆盖）消除「锚定 W34 历史集合」盲区，不再枚举具体波号（方案席 W36 裁决意见）。全部在现役树仓根实跑，输出原文如下；敏感串按 W31-01 范本拼装摘录，避免判据自身制造正常态命中。
+
+### 判据 3b-ext（正常态 OK + 必红 RED）
+
+```bash
+S1="1330""9cc8"      # 8 位十六进制设备标识，两段拼装避免本文件自命中
+P1="D:/WB""fil"      # 本机绝对路径形态 1（盘符）
+P2="/d/WB""fil"      # 本机绝对路径形态 2（Git Bash 挂载）
+M1="长度 ""129"      # PAT 长度元信息
+grep -rniE "$S1|$P1|$P2|$M1" docs evidence 2>/dev/null && echo "RED sensitive leak hit" || echo "OK no device-id/path/pat-meta"
+```
+- 正常态（现役树，六处已清零改占位）：`OK no device-id/path/pat-meta`
+- 必红（仓外副本放设备标识字面量）：`RED sensitive leak hit`（命中行含完整标识，按拼装规则摘录：`leak: <段1><段2>`）
+
+### 判据 6 扩展（正常态四制品 OK + 三类必红 RED）
+
+- 正常态：w32/w33/w34/w35 四制品均 `OK feature/evidence invariants`（4/4）。
+- 必红（对 w35 副本注入，逐条重跑 `_w34/k6_check.py`）：
+  - 删 `mutation_cases` ⇒ `RED mutation_cases missing`
+  - 数量不等（mutation_cases 删一条）⇒ `RED assertion/mutation count mismatch`
+  - selftest 无仓内指针（note 改自报）⇒ `RED selftest note lacks in-repo pointer`
+- 原六类必红（k6_fail/nomcp/nocell/iter/ref/noassert）保持 RED 不变；扩展只新增三类、不改既有语义。
+
+### 判据 7 波次参数化（正常态双 OK + 两类必红 RED）
+
+- 正常态（现役树，默认 W34 销账 8 行）：`OK closed rows carry runnable pointers (W30+)` + `OK closed rows carry current-wave pointers (W34)`。
+- 必红 B（仓外副本删 W30-01 本波复核指路，默认 W34）：第一条仍 OK + `RED closed without current-wave pointer: W30-01`（双输出区分）。
+- 必红 C（仓外副本把 W35-01/02/03 状态改 `CLOSED` 且不带本波锚点，`CUR_WAVE=W35 CUR_IDS=W35-01,W35-02,W35-03`）：`RED closed without current-wave pointer: W35-01, W35-02, W35-03`——**证明 W35 三行将来销账时受判据 7 约束，波次盲区已消除**（W35 加固前的脚本对同样注入仍输出双 OK）。
+- 无效变异排除：必红 C 首版只改了行内字样未真正翻状态列，判据输出 `not CLOSED`（判据未被正确行使）；改用按 `|` 切分精确翻第 5 列状态为 `CLOSED` 后，才得到上面的真 RED。负控：现役树 W35 三行仍 `OPEN`，同样参数化输出 `not CLOSED`（正确，非缺陷）。
+- `ANCHOR_SECS` 参数化默认 `§2.4,§2.5`，新波号段可覆盖，避免把段号硬编码成新的锚定集合。
+
+> 边界：以上判据脚本位于仓外工作区 `_w34/`（不入仓），可执行原文已内联于本 checklist 判据 6/7 代码块；`_w36/` 为仓外注入副本，均不入库。改 `CLOSED` 仍由主理人单人落笔、待外审复核，本波 W35 三行与 W36 三行维持 `OPEN`。

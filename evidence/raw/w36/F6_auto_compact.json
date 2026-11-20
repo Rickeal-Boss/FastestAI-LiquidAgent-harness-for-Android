@@ -1,0 +1,17 @@
+{
+  "cell": "F6_auto_compact",
+  "face": "auto_compression",
+  "attempt_n": 1,
+  "state": "PARTIAL",
+  "glyph": "⚠️",
+  "note": "经调试导入 202kB/82 行会话后，agent log 本波新增 4 条 insufficient_savings:net=-256（10:19:53/10:21:11/10:22:01/10:22:26Z），实证 net=-256 ⇔ 试算 compression=null（标签语义错配、非'收益不够'）；applied 与 already_compressed 两段本波未再行使（W35 09:42-09:43 历史序列存在但不冒充本波）⇒ PARTIAL。",
+  "evidence_files": [
+    "f6_auto.png"
+  ],
+  "device_log_excerpt": [
+    "2026-11-20T10:19:53.853647Z INFO auto_compact=noop reason=insufficient_savings:net=-256",
+    "2026-11-20T10:21:11.374137Z INFO auto_compact=noop reason=insufficient_savings:net=-256",
+    "2026-11-20T10:22:01.315257Z INFO auto_compact=noop reason=insufficient_savings:net=-256",
+    "2026-11-20T10:22:26.275832Z INFO auto_compact=noop reason=insufficient_savings:net=-256"
+  ]
+}

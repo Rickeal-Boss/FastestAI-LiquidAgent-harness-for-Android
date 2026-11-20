@@ -1,0 +1,11 @@
+{
+  "cell": "F5_manual_compact",
+  "face": "manual_compression",
+  "attempt_n": 2,
+  "state": "PARTIAL",
+  "glyph": "⚠️",
+  "note": "更多菜单→'压缩上下文'→确认对话框（原文见截图）全部走通；2 气泡会话与 4 轮会话各压一次，agent log 本波均未新增 manual_compress dropped/kept 行（唯一行为 W35 历史行 2026-11-19T15:24:01Z dropped=9 kept=11，不冒充本波）。缺 dropped/kept 双向硬判据 ⇒ PARTIAL。",
+  "evidence_files": [
+    "f5_dialog.png"
+  ]
+}
