@@ -117,7 +117,7 @@
 | G3 selftest | `selftest: 30/30 PASS（234s）`（含 `G23 自动压缩被调用`、`VAC-G1b`、`VAC-G21` 三条必红演练） | ✅ |
 | G4 fulltest | `通过：tests=845 failures=0 errors=0 skipped=0`（14 模块；`feature-chat:104`、`core-agent` 含迁移来的两支） | ✅ |
 | G20 | `[G20] 挂账不丢失 OK（141 个 handoff ID 全在台账内，CLOSED 行证据均非空）`；handoff 文件 38 个；主理人独立复算：台账 216 ID、38 handoff、漏登 `[]` | ✅ |
-| CI | 见 §5.6（推送后回填；Build + Secret 四字段 + run 链接） | ⏳→回填 |
+| CI | Build `44775770144` completed/**success**（5 job 全绿）+ Secret scan `44775769489` completed/**success** @ `5bdb383` | ✅ |
 
 **G4 附核**：拆分把 `SwitchGuardTest` / `SettledCompressPolicyTest` 从 `core-context` 搬到 `core-agent`，须确认两支 `TEST-*.xml` 存在且 `tests>0 failures=0`（防「测试在搬家途中丢」）。
 
@@ -153,13 +153,19 @@
 
 ## §5.6 提交与 CI
 
-- 提交序列：**单次推送**（代码 + 文档 + 证据 + 制品同车），提交与其 CI 结论见下方「回填」段。
+- 提交序列：**单次推送** `052ad9c → 5bdb383`（代码 + 文档 + 证据 + 制品同车）；后续只有一次 docs-only 回填提交（本段文字），**不重复触发 Build**（`build.yml` 的 `paths-ignore` 设计）。
 - 本地四闸门（同一 tree，实跑原文在 `_w39/g1_final_localbuild.log` / `g2_archguard_final.log` / `g3_selftest.log` / `g4_fulltest.log`）：
   - G1 `BUILD SUCCESSFUL in 1m 18s`
   - G2 `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0` / `result=PASS`
   - G3 `selftest: 30/30 PASS（234s）`
   - G4 `tests=845 failures=0 errors=0 skipped=0`
-- CI 四字段：**待回填**（推送后取 `Build` / `Secret scan` 的 status+conclusion+run id+head_sha）。
+- CI 四字段（`GET /actions/runs?head_sha=5bdb383…` 实取）：
+  | workflow | run id | status | conclusion |
+  |---|---:|---|---|
+  | Build | `44775770144` | completed | **success** |
+  | Secret scan | `44775769489` | completed | **success** |
+  - Build 逐 job：`Arch guard（26 guards + mutation selftest）` success / `Unit tests` success（含 `Reconcile EXPECTED_TESTS with real @Test count`）/ `Lint (baseline gate)` success / `Assemble Debug (JDK 21)` success / `Secret scan (gitleaks + trufflehog)` success。
+  - 链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44775770144`（Build）、`…/runs/44775769489`（Secret scan）。
 
 ---
 

@@ -107,7 +107,15 @@
 
 ## 七、四闸门 + CI
 
-见 `docs/analysis/w39-acceptance.md` §步 5 与 §5.6（CI 四字段在推送后回填）。已实跑：G1 `BUILD SUCCESSFUL`、G2 `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`（`include=14==数组==目录`）。
+| 闸 | 结果 | 四态 |
+|---|---|---|
+| G1 编译 | `BUILD SUCCESSFUL in 1m 18s` | ✅ |
+| G2 arch-guard | `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`（`include=14==数组==目录`），`G20 141 handoff ID 全在台账内` | ✅ |
+| G3 selftest | `30/30 PASS（234s）` | ✅ |
+| G4 fulltest | `tests=845 failures=0 errors=0 skipped=0`（14 模块） | ✅ |
+| CI | Build `44775770144` completed/success（5 job 全绿）+ Secret `44775769489` completed/success @ `5bdb383` | ✅ |
+
+链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44775770144`。
 
 ---
 
