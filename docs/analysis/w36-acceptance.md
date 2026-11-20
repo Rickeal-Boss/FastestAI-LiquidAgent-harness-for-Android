@@ -181,7 +181,7 @@
 | Secret scan | `44719471777` | `completed` | `success` | `push` | `e90e2f232fc9…`（12 位匹配本波 commit） | ✅ | https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44719471777 |
 
 - **Build 五 job**（均 `completed/success`）：Unit tests / Arch guard / Assemble Debug (JDK 21) / Secret scan (gitleaks + trufflehog) / Lint (baseline gate)。
-- **推送次数序列（写序列不写「1 次」）**：主体 `e90e2f2` **1 次推送**触发上表两条 run；本 §5.6 CI 回填构成纯文档 tip 第 2 次推送——按降级规则 Build 0 run、仅 Secret scan 跑，不写成「构建再次通过」、不逐波判 P0。
+- **推送次数序列（写序列不写「1 次」）**：主体 `e90e2f2` **1 次推送**触发上表两条 run；本 §5.6 CI 回填构成纯文档 tip `69d8dd6` 第 2 次推送——公开 API 实查该 tip 仅 **Secret scan `44719793648`**（completed/success/push/head_sha `69d8dd6…` 匹配）一条 run、Build **0 run**（符合 `paths-ignore` 降级规则），按既定口径**不写成「构建通过」、不逐波判 P0**，run ID 据实留痕。
 
 ---
 
