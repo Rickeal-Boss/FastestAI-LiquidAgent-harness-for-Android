@@ -79,7 +79,7 @@
 | G3 selftest | ✅ 30/30 | 255s，后台跑满（前台会 SIGTERM 截断） |
 | G4 fulltest | ✅ 818-0-0 | 14 模块 |
 
-**CI**：见 §5.6（待推送后回填 run 链接与四字段）。
+**CI**：主体 `e90e2f2` 一次推送；Build run `44719471801` + Secret scan run `44719471777` 均 **success**（四字段 completed/success/push/head_sha `e90e2f232fc9…` 匹配）。纯文档回填 tip 按降级规则 Build 0 run、不写成构建通过。
 
 ---
 

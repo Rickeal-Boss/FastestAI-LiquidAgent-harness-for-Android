@@ -18,10 +18,10 @@
 | 2 | 六份外审报告逐条裁决、**不改方案大体方向**（转代码波维持 OPEN） | §二（分歧裁决表，方案席产出） | ✅ |
 | 3 | W36 第 0 车账实收口：脱敏两类清零（serial/本机路径/PAT 元信息）+ 判据 3b/6/7 加固 + 收尾契约第 14 次补完 + F6 结论三处同步 + 数字口径时点订正 | checklist / w35 验收物 / w35 制品 / iterations.jsonl / 台账 W9-01（W36-01/02/03） | ✅ |
 | 4 | 台账 W36 段 3 行落笔（6 列、无裸竖线、全 `OPEN`） | `docs/06-deferred-ledger.md` | ✅ |
-| 5 | 新 API（nvidia2/nvidia/openrouter2/openrouter 免费端点）多模型 × 不同上下文（32K/256K/512K/1M）× 功能面（多模态/工作空间读写/skill/MCP/手动自动压缩）真机矩阵；先本地 UI + adb 调试，边测边改，每迭代追加一行证据 | §四 + `evidence/raw/w36/iterations.jsonl` | ⏳ 真机席进行中 |
-| 6 | 本地闸门 G1–G4（编译/arch-guard/selftest/fulltest） | §五 | ⏳ |
-| 7 | 推送 main + CI 四字段复核（Build + Secret scan） | §5.6 | ⏳ |
-| 8 | 验收物 + handoff + 制品 + 证据入仓，止于交接、交外审 | 本文件 + `handoff-20261120-wave36.md` | ⏳ |
+| 5 | 新 API（NV/OR 免费端点）多模型 × 不同上下文（32K/256K/512K/1M）× 功能面（多模态/工作空间读写/skill/MCP/手动自动压缩）真机矩阵；先本地 UI + adb 调试，边测边改，每迭代追加一行证据 | §四 + `evidence/raw/w36/iterations.jsonl` | ✅（13 格 7/5/1） |
+| 6 | 本地闸门 G1–G4（编译/arch-guard/selftest/fulltest） | §五 | ✅ |
+| 7 | 推送 main + CI 四字段复核（Build + Secret scan） | §5.6 | ✅（Build `44719471801` + Secret `44719471777` 全绿） |
+| 8 | 验收物 + handoff + 制品 + 证据入仓，止于交接、交外审 | 本文件 + `handoff-20261120-wave36.md` | ✅ |
 
 ### 1.2 明确不做（逐条带挂账号）
 
@@ -64,7 +64,7 @@
 | 4 | 报告1/4/5/6 P0：收尾契约第 14 次（§1.1 九项「进行中/待跑」+ 推送次数 2 而非 3） | **是**（账实订正，非方向） | `w35-acceptance.md:16-24/:67-71/:203/:170-173` 与同文件 §三~§六/handoff 全 ✅ 冲突 | W36-03：九项/三条/§七统一 ✅ + 推送 2→3 + 45 文件/5 改订正 | ✅ 已回改 |
 | 5 | 报告4/5 P0：F6 结论半迁移（W9-01 命题②仍写 `:407` 唯一差别）+ 报告1 §2.5「确定性根因」措辞收紧 | **是**（结论订正，非方向） | 台账 W9-01 两处旧断言、`W35-02` 项列、`f6_auto_compact.json:19`、验收物 §3.2 均残留旧框架 | W36-03：命题①改「日志码确定性语义」、命题②降级、「根因」留未定位 causal；三处同步 | ✅ 四处已订正 |
 | 6 | 报告2 P2：F3 skill 判据改「sentinel + 采用语义」 | **否**（不改判据口径） | 现判据要求 `skill_load` 工具卡；改判据=放宽 vacuous 风险，属用户裁决域 | 维持工具卡判据；真机侧用更强采用信号题面重试（见 §四 F3），不调判据 | ⚠️ 维持（真机侧复测） |
-| 7 | 报告5 N-B3 / 报告2 §五：1M 满窗真跑（前置已齐 super-vl 新 key 995.9K + 32K readback） | **否**（不改判据，真机尝试） | 用户本单「直至 1M」为主判据；双通道硬限仍在 | 真机席尝试 1M 满窗；做不到记 `NOT_EXERCISED` 写明硬限数字，不伪造 | ⏳ 真机席进行中 |
+| 7 | 报告5 N-B3 / 报告2 §五：1M 满窗真跑（前置已齐 super-vl 新 key 995.9K + 32K readback） | **否**（不改判据，真机尝试） | 用户本单「直至 1M」为主判据；双通道硬限仍在 | 真机席四档 readback + 1M 档 995.9K 读回成立；满窗真压记 `NOT_EXERCISED`（`adb input ~333 字符` + `file_read 16k/次` 双硬限），不伪造 | ✅ 已实跑（见 §四 T 档） |
 | 8 | 报告5 §六.4 / 报告6 §一：守卫 CI 化 / 判据 8 / SCHEMA.md / doc-hygiene CI | **否**（不新增门禁） | 用户「不新建制品」+「改守卫属用户裁决域」；W35 裁决 #4「出生即红判据不新增」 | 只参数化现有判据、不新增 CI job、不建 SCHEMA.md | ✅ 维持不新增 |
 | 9 | 报告6 P0：W34-03 死链关闭（31+6 处抬头 + 判据 8） | **否**（登记不代做） | 用户已裁案 b 维持删除；抬头属用户裁决域 | W34-03 现役计数 31/13（docs md）与 32/14（全树）留痕；不逐处抬头 | ✅ 维持登记 |
 | 10 | 报告1 P1 / 报告2 §四：E05 撤销声明检索性弱、F5/F3 两格退步未标 | **是**（表述订正，非方向） | W34 验收物三处「模型级授权」仍排在检索最前；W35 §一/§3.2 只列正向 | W36 验收物 §四标两格退步=f3/f5 判据收紧非回归；E05 撤销指针挂 W34-03 行内注记 | ✅ 已标注 |
@@ -157,6 +157,34 @@
 
 ---
 
+## §5.6 提交与 CI 回填
+
+### 5.6.1 本波提交
+
+| 项 | 值 |
+|---|---|
+| 分支 | `main`（在 `build.yml` / `secret-scan.yml` 的 `on.push.branches` 白名单内，0-run 风险已排除） |
+| commit | `e90e2f232fc9520758cc27f9bd2fbf8af321ac4a`（`feat(w36): 六报告裁决不改方向 + 零 .kt 账实收口 + 新 API 多模型真机矩阵`） |
+| 提交身份 | `Rickeal-Boss <263587600+Rickeal-Boss@users.noreply.github.com>` |
+| 变更规模 | 47 文件：8 改（`06-deferred-ledger`、`w35-acceptance`、`w29-closeout-checklist`、`w35-matrix-summary.json`、`f6_auto_compact.json`、`w35/iterations.jsonl` 等）+ 新增 `w36-acceptance.md`、`handoff-w36.md`、`w36-matrix-summary.json`、`evidence/raw/w36/` 38 件 |
+| 入暂存纪律 | 全程显式 `git add <路径>`，未用 `git add -A`；25 个历史 stat/EOL 脏 M 与未跟踪 `_w34/`、`_w36/` 未入库；两个 `iterations.jsonl` 被全局 `.gitignore:42:*.jsonl` 忽略，单独 `git add -f` 纳入，且已过判据 3b-ext 脱敏闸门（0 命中）方纳入 |
+| 推送判据 | `git push --dry-run` 先行：`bb757a2..e90e2f2 main -> main`（RC=0）；实推同结果（RC=0）。PAT 仅 URL inline 一次性使用、未落盘、remote 仍为干净 URL。PAT 长度 93（无重复段），按 W34 先例「长度/校验/轮换属用户侧动作」不在仓内登记。 |
+
+### 5.6.2 CI run 四字段复核（公开 API 按 head_sha 查，不采信任何转述）
+
+**本波非纯文档**：含仓根 `evidence/w36-matrix-summary.json`、`evidence/raw/w36/*.json/*.png` 与 `evidence/w35-matrix-summary.json`，
+避开 `paths-ignore` 黑名单（`docs/**` 与 `**/*.md`），故 Build 五 job + 独立 Secret scan 均正常触发，非 0-run。
+
+| 工作流 | run ID | status | conclusion | event | head_sha | 四字段齐备且匹配 | 链接 |
+|---|---|---|---|---|---|---|---|
+| Build | `44719471801` | `completed` | `success` | `push` | `e90e2f232fc9…`（12 位匹配本波 commit） | ✅ | https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44719471801 |
+| Secret scan | `44719471777` | `completed` | `success` | `push` | `e90e2f232fc9…`（12 位匹配本波 commit） | ✅ | https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44719471777 |
+
+- **Build 五 job**（均 `completed/success`）：Unit tests / Arch guard / Assemble Debug (JDK 21) / Secret scan (gitleaks + trufflehog) / Lint (baseline gate)。
+- **推送次数序列（写序列不写「1 次」）**：主体 `e90e2f2` **1 次推送**触发上表两条 run；本 §5.6 CI 回填构成纯文档 tip 第 2 次推送——按降级规则 Build 0 run、仅 Secret scan 跑，不写成「构建再次通过」、不逐波判 P0。
+
+---
+
 ## §六 OPEN 挂账（触发信号 + 缓解动作 + 挂账号）
 
 > 权威版 = `docs/06-deferred-ledger.md`（本波落 W36 段 3 行 + W9-01 命题②降级 + W35-02 项列订正；状态列 172 `OPEN` / 33 `CLOSED` / 11 `CARRIED`，全树 216 行）。三行全零 `.kt`，缓解动作已做、出口判据已实跑，待外部审查复核后销账。
@@ -185,10 +213,10 @@
 
 | 制品 | 用途 | 四态 |
 |---|---|---|
-| `docs/analysis/w36-acceptance.md` | 本波验收物（§一边界 / §二裁决 / §三收口 / §四真机矩阵 / §五闸门 / §5.6 CI / §六挂账 / §七清单） | ⏳ |
-| `docs/handoff-20261120-wave36.md` | W36 交接 | ⏳ |
-| `evidence/w36-matrix-summary.json` | 正式制品：多模型×档位×功能面真机矩阵 | ⏳ |
-| `evidence/raw/w36/` | 本波真机脱敏证据（截图判据 + deviceLogTail 关键行 + 逐格 JSON，无密钥/未打码账号） | ⏳ |
+| `docs/analysis/w36-acceptance.md` | 本波验收物（§一边界 / §二裁决 / §三收口 / §四真机矩阵 / §五闸门 / §5.6 CI / §六挂账 / §七清单） | ✅ |
+| `docs/handoff-20261120-wave36.md` | W36 交接 | ✅ |
+| `evidence/w36-matrix-summary.json` | 正式制品：多模型×档位×功能面真机矩阵（34 键 / 13 格 / 7-5-1） | ✅ |
+| `evidence/raw/w36/` | 38 件本波真机脱敏证据（23 PNG + 13 JSON + deviceLogTail + iterations.jsonl，无密钥/未打码账号） | ✅ |
 | `docs/06-deferred-ledger.md` | W36 段 3 行 + W9-01 命题②降级 + W35-02 项列订正 | ✅ |
 | `docs/notes/w29-closeout-checklist.md` | 判据 3b-ext / 6 三字段 / 7 波次无关加固 + 实跑输出 | ✅ |
 | `docs/analysis/w35-acceptance.md`、`evidence/w35-matrix-summary.json`、`evidence/raw/w35/iterations.jsonl`、`evidence/raw/w35/f6_auto_compact.json` | W36-01/02/03 订正（脱敏 / 收尾契约 / F6 结论） | ✅ |
