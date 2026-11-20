@@ -131,8 +131,10 @@ env:
   # ---------------------------------------------------------------------------
   # W17：SkillMention 收口批 +11（SkillMentionTest 5→16）+ SessionImportParserTest +3
   #   （droppedBlank 判据）= 804 + 14 = 818，同提交一次改。
+  # W37：`nothing_to_drop` 诊断码 + auto/manual 同快照一致 + applied 后 committedChars
+  #   真降（AutoCompactDiagnosticsTest +4）= 818 + 4 = 822，同提交一次改。
   # ---------------------------------------------------------------------------
-  EXPECTED_TESTS: '818'
+  EXPECTED_TESTS: '822'
 
 jobs:
   # ===========================================================================

@@ -1,0 +1,385 @@
+{
+  "schema": "harness-matrix-summary/v1",
+  "wave": "W37",
+  "generated_at": "2026-11-20T14:20:00Z",
+  "matrix_type": "device_endpoint_context_feature",
+  "judge_policy": "four-state PASS/PARTIAL/VACUOUS/FAIL; 未触发≠通过; PARTIAL 必须写清缺哪一半",
+  "state_glyph_mapping": {
+    "PASS": "✅",
+    "PARTIAL": "⚠️",
+    "VACUOUS": "⛔vacuous",
+    "FAIL": "⛔"
+  },
+  "state_glyph_mapping_assertion": "mapping covers all states present in cells[]",
+  "declared_feature_faces": [
+    "endpoint_axis",
+    "context_tier",
+    "vision",
+    "workspace",
+    "skill",
+    "mcp",
+    "compression"
+  ],
+  "feature_faces_with_cells": [
+    "endpoint_axis",
+    "context_tier",
+    "vision",
+    "workspace",
+    "skill",
+    "mcp",
+    "compression"
+  ],
+  "cells": [
+    {
+      "cell_id": "E01_lightning",
+      "attempt_n": 1,
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w37/e01_lightning.png",
+      "note": "正控先行：新对话清空残留后 strict 逐字 W37-E01-LIGHT；1.8k in / 52 out，上下文 1.9K / 127K；(0 cached, 0.0%) 与旧版输出兼容（四态 MISS）。"
+    },
+    {
+      "cell_id": "E02_dots3",
+      "attempt_n": 0,
+      "feature_face": "endpoint_axis",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w37/e02_dots3.json",
+      "note": "未行使：端点切换需 UI（设置页卡片点击在本包无响应，dataStore 手工切换被拒），密钥在设备但无法激活该端点。不推断端点不可用。"
+    },
+    {
+      "cell_id": "E03_north",
+      "attempt_n": 0,
+      "feature_face": "endpoint_axis",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w37/e03_north.json",
+      "note": "未行使：端点切换需 UI（设置页卡片点击在本包无响应，dataStore 手工切换被拒），密钥在设备但无法激活该端点。不推断端点不可用。"
+    },
+    {
+      "cell_id": "E04_nv_alt",
+      "attempt_n": 0,
+      "feature_face": "endpoint_axis",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w37/e04_nv_alt.json",
+      "note": "未行使：端点切换需 UI（设置页卡片点击在本包无响应，dataStore 手工切换被拒），密钥在设备但无法激活该端点。不推断端点不可用。"
+    },
+    {
+      "cell_id": "T01_32k",
+      "attempt_n": 1,
+      "feature_face": "context_tier",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w37/t01_32k.json",
+      "note": "仅 127K 档 readback；四档未逐档。"
+    },
+    {
+      "cell_id": "T02_512k",
+      "attempt_n": 0,
+      "feature_face": "context_tier",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w37/t02_512k.json",
+      "note": "未切 512K 档。"
+    },
+    {
+      "cell_id": "T03_1m",
+      "attempt_n": 0,
+      "feature_face": "context_tier",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w37/t03_1m.json",
+      "note": "1M readback 未行使；满窗 NOT_EXERCISED（双通道硬限）。"
+    },
+    {
+      "cell_id": "F1_vision",
+      "attempt_n": 0,
+      "feature_face": "vision",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w37/f1_vision.json",
+      "note": "当前端点无图片输入（UI 明示）；未用 1×1 像素替代。"
+    },
+    {
+      "cell_id": "F2_workspace",
+      "attempt_n": 1,
+      "feature_face": "workspace",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w37/f2_workspace.png",
+      "note": "审批卡 exact args {\"path\":\"w37.txt\",\"content\":\"OK\"}；设备侧 2 字节 O K、mtime 本波一致。"
+    },
+    {
+      "cell_id": "F3_skill",
+      "attempt_n": 2,
+      "feature_face": "skill",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w37/f3_skill.png",
+      "note": "skill_list(24ms) + skill_load(29ms) 真工具卡与 SKILL BODY；首轮 \"gLoad\" 拼接噪声为 adb input 分词，二轮成立。"
+    },
+    {
+      "cell_id": "F4_mcp",
+      "attempt_n": 0,
+      "feature_face": "mcp",
+      "state": "VACUOUS",
+      "glyph": "⛔vacuous",
+      "evidence_ref": "evidence/raw/w37/f4_mcp.json",
+      "note": "none_by_design（0 server）；不推断不可用。",
+      "unexercised_reason": "none_by_design：0 个外部 https MCP server（G15b 禁明文）；不推断 MCP 不可用。"
+    },
+    {
+      "cell_id": "F5_manual_compact",
+      "attempt_n": 1,
+      "feature_face": "compression",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w37/f5_manual_compact.png",
+      "note": "UI 路径走通（⋮→压缩上下文），无 dropped/kept 回读；历史行不冒充本波。"
+    },
+    {
+      "cell_id": "F6_auto_compact",
+      "attempt_n": 1,
+      "feature_face": "compression",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w37/f6_auto_compact.json",
+      "note": "同一日志跨包序列：旧包 net=-256 → 新包 nothing_to_drop → 修正版 below_trigger；自动评估每轮落账。"
+    }
+  ],
+  "cells_total": 13,
+  "state_counts": {
+    "PASS": 4,
+    "PARTIAL": 8,
+    "VACUOUS": 1
+  },
+  "iterations": [
+    {
+      "iter": 1,
+      "cell_id": "E01_lightning",
+      "state": "PASS"
+    },
+    {
+      "iter": 2,
+      "cell_id": "E02_dots3",
+      "state": "PARTIAL"
+    },
+    {
+      "iter": 3,
+      "cell_id": "E03_north",
+      "state": "PARTIAL"
+    },
+    {
+      "iter": 4,
+      "cell_id": "E04_nv_alt",
+      "state": "PARTIAL"
+    },
+    {
+      "iter": 5,
+      "cell_id": "T01_32k",
+      "state": "PARTIAL"
+    },
+    {
+      "iter": 6,
+      "cell_id": "T02_512k",
+      "state": "PARTIAL"
+    },
+    {
+      "iter": 7,
+      "cell_id": "T03_1m",
+      "state": "PARTIAL"
+    },
+    {
+      "iter": 8,
+      "cell_id": "F1_vision",
+      "state": "PARTIAL"
+    },
+    {
+      "iter": 9,
+      "cell_id": "F2_workspace",
+      "state": "PASS"
+    },
+    {
+      "iter": 10,
+      "cell_id": "F3_skill",
+      "state": "PASS"
+    },
+    {
+      "iter": 11,
+      "cell_id": "F4_mcp",
+      "state": "VACUOUS"
+    },
+    {
+      "iter": 12,
+      "cell_id": "F5_manual_compact",
+      "state": "PARTIAL"
+    },
+    {
+      "iter": 13,
+      "cell_id": "F6_auto_compact",
+      "state": "PASS"
+    }
+  ],
+  "iterations_total": 13,
+  "iterations_note": "每格一次记 iter；attempt_n>1 的格（F3）第二轮回溯见 note。",
+  "attempt_states": {
+    "E01_lightning": "PASS",
+    "E02_dots3": "PARTIAL",
+    "E03_north": "PARTIAL",
+    "E04_nv_alt": "PARTIAL",
+    "T01_32k": "PARTIAL",
+    "T02_512k": "PARTIAL",
+    "T03_1m": "PARTIAL",
+    "F1_vision": "PARTIAL",
+    "F2_workspace": "PASS",
+    "F3_skill": "PASS",
+    "F4_mcp": "VACUOUS",
+    "F5_manual_compact": "PARTIAL",
+    "F6_auto_compact": "PASS"
+  },
+  "attempt_budget": "每格 <=3 次真机尝试；本波最高 F3=2",
+  "na_cell_ids": [
+    "F4_mcp"
+  ],
+  "positive_control_verified_by": "E01_lightning（strict 逐字）",
+  "device_executed": true,
+  "runner_fingerprint": "com.rickeal.liquidharness.debug 0.1.0-debug / APK sha256 9046557af940aba6…（首版）/ 修正版增量重编",
+  "zero_kotlin": false,
+  "cells_provenance": "真机 UI 截图 + 设备侧 run-as 读取（workspace 文件 / agent-0.log）",
+  "matrix_vs_gate_order": "先跑判据 6 正常态与必红，再落验收物引用",
+  "coverage_note": "13 格固定（v1）；mcp none_by_design；端点切换受阻导致 E02/E03/E04/F1 未行使，如实记 PARTIAL。",
+  "full_context_1M_stress": "NOT_EXERCISED（adb input ~333 字符 + file_read 16k/次 双通道硬限）",
+  "environment_incidents": [
+    "INC-w37-settings-tap：设置页卡片点击无响应（底部 tab 正常），DataStore 手工切换 active_endpoint_id 被拒；未判定为 harness 回归（本波未改 UI 代码），登记待查。",
+    "INC-w37-adb-input：adb input text 含字面空格时仅注入首词；改用全 %s 分段注入。",
+    "INC-w37-uiautomator：连续 dump 触发 UiAutomationService already registered 崩溃（工具侧，非 app）。"
+  ],
+  "mcp": {
+    "cell": "F4_mcp",
+    "server_count": 0,
+    "coverage_note": "none_by_design"
+  },
+  "privacy": "证据仅含 UI 截图与设备侧日志摘录；不含 API Key / 账户字段 / 设备序列号 / 本机路径；模型名仅公开名。",
+  "credential_policy": "密钥只经真机 UI 录入，仓内与证据均无明文。",
+  "baseline_note": "对照 W36 制品（13 格 7 PASS / 5 PARTIAL / 1 VACUOUS）；本波 PASS 4 因端点轴与多模态未行使，非能力回退。",
+  "assertions": [
+    {
+      "id": "K_state_domain",
+      "description": "state_counts 非零键集 == cells[].state 值域；无零值键",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "add FAIL:0",
+        "expected": "RED state domain"
+      }
+    },
+    {
+      "id": "K_feature_enum",
+      "description": "每格 feature_face ∈ declared_feature_faces（AND）；declared 含 mcp ⇒ 顶层 mcp 字段存在",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "delete mcp field",
+        "expected": "RED mcp field missing"
+      }
+    },
+    {
+      "id": "K_iteration_consistency",
+      "description": "iterations_total == len(iterations[])",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "delete middle iteration",
+        "expected": "RED iterations_total != len"
+      }
+    },
+    {
+      "id": "K_evidence_ref",
+      "description": "cells[].evidence_ref 100% 指向仓内真实存在文件",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "point ref to missing file",
+        "expected": "RED missing ref"
+      }
+    },
+    {
+      "id": "K_privacy_no_key",
+      "description": "制品与证据不含 sk-/github_pat_/nvapi- 明文 token（排除 sha256 误伤）",
+      "verified": true,
+      "kind": "k6_check",
+      "injected_sample": {
+        "mutation": "inject sk- token",
+        "expected": "RED privacy: key-like token"
+      }
+    },
+    {
+      "id": "K_coverage_13",
+      "description": "cells 恰 13 格（v1 定版）",
+      "verified": true,
+      "kind": "k6_check",
+      "injected_sample": {
+        "mutation": "pop one cell",
+        "expected": "RED coverage cells != 13"
+      }
+    }
+  ],
+  "mutation_cases": [
+    {
+      "id": "K_state_domain",
+      "target": "w37 state_counts",
+      "invariant": "nonzero keys == cell states",
+      "verified": true,
+      "verified_by": "k6_check.py",
+      "injected_sample": "add FAIL:0"
+    },
+    {
+      "id": "K_feature_enum",
+      "target": "w37 cells + mcp",
+      "invariant": "face enum AND mcp field",
+      "verified": true,
+      "verified_by": "k6_check.py",
+      "injected_sample": "delete mcp field"
+    },
+    {
+      "id": "K_iteration_consistency",
+      "target": "w37 iterations",
+      "invariant": "total == len",
+      "verified": true,
+      "verified_by": "k6_check.py",
+      "injected_sample": "delete middle iteration"
+    },
+    {
+      "id": "K_evidence_ref",
+      "target": "w37 evidence_ref",
+      "invariant": "all refs exist",
+      "verified": true,
+      "verified_by": "k6_check.py",
+      "injected_sample": "missing file"
+    },
+    {
+      "id": "K_privacy_no_key",
+      "target": "w37 summary",
+      "invariant": "no plaintext token",
+      "verified": true,
+      "verified_by": "k6_check.py",
+      "injected_sample": "inject sk- token"
+    },
+    {
+      "id": "K_coverage_13",
+      "target": "w37 cells",
+      "invariant": "exactly 13",
+      "verified": true,
+      "verified_by": "k6_check.py",
+      "injected_sample": "pop one cell"
+    }
+  ],
+  "mutation_selftest": {
+    "total": 6,
+    "rejected": 6,
+    "all_verified": true,
+    "note": "v1 六条断言各一注入，全部 RED；实跑输出见 docs/notes/w29-closeout-checklist.md「W37 判据冻结补齐实跑输出摘录」（W37 新增十一类必红含本六类）。"
+  }
+}

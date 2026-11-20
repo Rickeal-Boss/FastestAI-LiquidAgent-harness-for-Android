@@ -1,0 +1,18 @@
+{
+  "cell": "F3_skill",
+  "state": "PASS",
+  "tool_cards": [
+    {
+      "tool": "skill_list",
+      "elapsed_ms": 24,
+      "result_excerpt": "notes-organizer / pdf-toolkit"
+    },
+    {
+      "tool": "skill_load",
+      "elapsed_ms": 29,
+      "arguments": "{\"name\":\"notes-organizer\"}",
+      "result_excerpt": "[SKILL BODY] This is operating guidance loaded from a skill file..."
+    }
+  ],
+  "note": "W35/W36 两波 PARTIAL（无 skill_load 工具卡）本波以真实工具卡 + 参数 + 返回体转 PASS；题面首轮出现 \"gLoad\" 拼接噪声（adb input 分词），二轮短题面复测成立。"
+}

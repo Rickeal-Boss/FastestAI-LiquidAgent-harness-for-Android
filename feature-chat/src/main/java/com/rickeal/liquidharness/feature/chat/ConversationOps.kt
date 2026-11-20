@@ -1,5 +1,6 @@
 package com.rickeal.liquidharness.feature.chat
 
+import com.rickeal.liquidharness.core.agent.context.COMPACT_TRIGGER_CHARS
 import com.rickeal.liquidharness.core.agent.context.contextBudgetTokens
 import com.rickeal.liquidharness.core.agent.context.shouldApply
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
@@ -69,29 +70,18 @@ internal class ConversationOps(
     /**
      * 会话级自动压缩（W7，用户裁决 (a)：正常结束只是**评估时点**，真压由体积 + 收益阈值定）。
      *
-     * ## 唯一调用点
+     * **唯一调用点**：`ChatViewModel.runOnce` 的 `collect` 内按 `shouldEvaluate(event)` 分流 —
+     * 绝不挂 `finally`（它无条件置 `isStreaming=false`），也不能只看 streaming 归零：
+     * `Finished` 与 `Cancelled` 共用 `finish(...)`，只有 `Finished(ModelStopped)` 才是正常结束。
+     * CI 席 G23 钉 `.autoCompactOnSettled(` 恰好一处 + selftest 变异自证（删调用 ⇒ 判红）。
      *
-     * `ChatViewModel.runOnce` 的 `collect` 内 `if (shouldEvaluate(event)) ops.autoCompactOnSettled()`
-     * —— **绝不挂 `finally`**（`:395-403` 无条件置 `isStreaming = false`），也不能只看
-     * streaming 归零：`EventReducer.kt:62/64` 的 `Finished` 与 `Cancelled` 共用 `finish(...)`，
-     * 只有 `Finished(ModelStopped)` 才是「正常运行结束」。CI 席 G23 会钉
-     * `.autoCompactOnSettled(` 恰好一处 + selftest 变异自证（删调用 ⇒ 判红）。
+     * **每次评估必落可见账**（noop 也写 reason，含 `nothing_to_drop`）：否则「评估了但没压」
+     * 与「根本没接上」在日志上无法区分（W6 教训）。手动压缩的三条前置拒绝才静默 return。
+     * 开关 `settings.compressContext` 关 ⇒ 本策略直接 return，**手动压缩仍可用**。
      *
-     * ## 与手动压缩的区别（不许照抄静默返回）
-     *
-     * [compressContext] 的三条前置拒绝静默 return（那是用户主动点按钮，UI 已禁用入口）；
-     * 自动路径每次评估**都要落一条可见的账**（noop 也写 reason），否则「评估了但没压」
-     * 与「根本没接上」在日志上无法区分（W6 `ConversationOps.kt:88` 的教训）。
-     *
-     * 开关 `settings.compressContext` 关 ⇒ 本策略直接 return（内核那套由 `RunnerKey` 管），
-     * **手动压缩仍可用**：显式用户动作不受自动策略约束。
-     *
-     * ## 量纲分工
-     *
-     * 触发 / 收益判据 [shouldApply] 用**字符**（`COMPACT_TRIGGER_CHARS` / `MIN_SAVINGS_CHARS`）；
-     * 压缩目标 `compressBubbles(budgetTokens)` 仍走现役 **token 软预算**（与手动同源）。
-     * 两者各有出处，不可混用：字符量纲保证「不依赖估算器正确性」，token 预算保证
-     * 「压完不会立刻再触发内核自动压缩」。
+     * **量纲分工**：[shouldApply] 用**字符**（`COMPACT_TRIGGER_CHARS` / `MIN_SAVINGS_CHARS`），
+     * 压缩目标 `compressBubbles(budgetTokens)` 仍走**token 软预算**（与手动同源）——
+     * 前者不依赖估算器正确性，后者保证压完不会立刻再触发内核自动压缩。
      */
     fun autoCompactOnSettled() {
         val snapshot = state.value
@@ -109,6 +99,17 @@ internal class ConversationOps(
             // applied=true 才把产物落到 compression（未压轮次保留严格前缀 ⇒ 缓存可能命中）。
             val outcome = compressBubbles(snapshot.bubbles, budget)
             val committedChars = committedCharsOf(snapshot.bubbles, snapshot.compression)
+            // 空转（越线且试算没压动任何东西）单独归因：`insufficient_savings` 只留给
+            // 「已产出压缩区但净收益不足」；未越线仍由 shouldApply 给 below_trigger，
+            // 已压缩态仍由 already_compressed 负责——三者不互相抢语义。
+            if (committedChars > COMPACT_TRIGGER_CHARS &&
+                snapshot.compression == null && !outcome.applied
+            ) {
+                val line = "auto_compact=noop reason=nothing_to_drop"
+                AgentLogStore.warn(line)
+                persist(line)
+                return@launch
+            }
             val savingChars = committedChars - committedCharsOf(snapshot.bubbles, outcome.compression)
             val decision = shouldApply(
                 committedChars,

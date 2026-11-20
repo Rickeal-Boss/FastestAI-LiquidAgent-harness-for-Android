@@ -1,0 +1,6 @@
+{
+  "cell": "E02_dots3",
+  "model": "openrouter dots-3-note-preview:free (512k)",
+  "state": "PARTIAL",
+  "reason": "未行使：端点切换需 UI（设置页卡片点击在本包无响应，dataStore 手工切换被拒），密钥在设备但无法激活该端点。不推断端点不可用。"
+}

@@ -1,0 +1,11 @@
+2026-11-20T10:22:01.315257Z INFO auto_compact=noop reason=insufficient_savings:net=-256
+2026-11-20T10:22:26.275832Z INFO auto_compact=noop reason=insufficient_savings:net=-256
+2026-11-20T12:22:03.777775Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-20T12:24:33.431924Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T12:25:14.125759Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T12:35:04.242662Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T12:36:02.805353Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T12:36:47.901688Z INFO auto_compact=noop reason=below_trigger
+# 设备侧文件：files/harness/logs/agent-0.log（run-as 读取）；仅摘 auto_compact 行
+# 旧包 = W36 APK（20:19 前安装）；首版 = W37 首装（20:19）；修正版 = 越线前置判后重装（20:23）
+# 无 API Key / 无账户字段 / 无设备标识 / 无本机路径

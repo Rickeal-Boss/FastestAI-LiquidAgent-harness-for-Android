@@ -1,0 +1,5 @@
+{
+  "cell": "F1_vision",
+  "state": "PARTIAL",
+  "reason": "当前端点（NV Lightning 30B）无图片输入：UI 明示「当前端点未开启图片输入」；多模态需 dots3/nano-omni，端点切换受阻（见 E02）。未用 1×1 像素替代（判据禁用）。"
+}

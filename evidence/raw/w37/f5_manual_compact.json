@@ -1,0 +1,7 @@
+{
+  "cell": "F5_manual_compact",
+  "state": "PARTIAL",
+  "ui_path": "对话页 ⋮ → 「压缩上下文」→ 点击",
+  "observed": "点击后界面无 dropped/kept 回读、无错误提示条可见（会话 2.4K << 触发线，属无损放弃），日志无 manual_compress 行（放弃路径只设 errorMessage）。",
+  "missing_half": "缺「本波 dropped/kept 双向日志」；历史 W35 applied 行不冒充本波。"
+}

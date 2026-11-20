@@ -1,0 +1,50 @@
+{
+  "cell": "F6_auto_compact",
+  "state": "PASS",
+  "sequence": [
+    {
+      "at": "2026-11-20T10:22:01Z",
+      "apk": "W36 旧包",
+      "line": "auto_compact=noop reason=insufficient_savings:net=-256"
+    },
+    {
+      "at": "2026-11-20T10:22:26Z",
+      "apk": "W36 旧包",
+      "line": "auto_compact=noop reason=insufficient_savings:net=-256"
+    },
+    {
+      "at": "2026-11-20T12:22:03Z",
+      "apk": "W37 首版",
+      "line": "auto_compact=noop reason=nothing_to_drop"
+    },
+    {
+      "at": "2026-11-20T12:24:33Z",
+      "apk": "W37 修正版",
+      "line": "auto_compact=noop reason=below_trigger"
+    },
+    {
+      "at": "2026-11-20T12:25:14Z",
+      "apk": "W37 修正版",
+      "line": "auto_compact=noop reason=below_trigger"
+    },
+    {
+      "at": "2026-11-20T12:35:04Z",
+      "apk": "W37 修正版",
+      "line": "auto_compact=noop reason=below_trigger"
+    },
+    {
+      "at": "2026-11-20T12:36:02Z",
+      "apk": "W37 修正版",
+      "line": "auto_compact=noop reason=below_trigger"
+    },
+    {
+      "at": "2026-11-20T12:36:47Z",
+      "apk": "W37 修正版",
+      "line": "auto_compact=noop reason=below_trigger"
+    }
+  ],
+  "note": "同设备同一日志文件的跨包序列：旧包 2 行 net=-256 → 新包 nothing_to_drop → 修正版（越线前判）回到 below_trigger。三态互不冒充；applied 本波未行使。",
+  "evidence_files": [
+    "evidence/raw/w37/deviceLogTail.txt"
+  ]
+}

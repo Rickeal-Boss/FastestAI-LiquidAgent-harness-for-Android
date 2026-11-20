@@ -166,9 +166,9 @@
 | 分支 | `main`（在 `build.yml` / `secret-scan.yml` 的 `on.push.branches` 白名单内，0-run 风险已排除） |
 | commit | `e90e2f232fc9520758cc27f9bd2fbf8af321ac4a`（`feat(w36): 六报告裁决不改方向 + 零 .kt 账实收口 + 新 API 多模型真机矩阵`） |
 | 提交身份 | `Rickeal-Boss <263587600+Rickeal-Boss@users.noreply.github.com>` |
-| 变更规模 | 47 文件：8 改（`06-deferred-ledger`、`w35-acceptance`、`w29-closeout-checklist`、`w35-matrix-summary.json`、`f6_auto_compact.json`、`w35/iterations.jsonl` 等）+ 新增 `w36-acceptance.md`、`handoff-w36.md`、`w36-matrix-summary.json`、`evidence/raw/w36/` 38 件 |
+| 变更规模 | 47 文件：6 改（`06-deferred-ledger`、`w35-acceptance`、`w29-closeout-checklist`、`w35-matrix-summary.json`、`f6_auto_compact.json`、`w35/iterations.jsonl` 等）+ 新增 `w36-acceptance.md`、`handoff-w36.md`、`w36-matrix-summary.json`、`evidence/raw/w36/` 38 件 |
 | 入暂存纪律 | 全程显式 `git add <路径>`，未用 `git add -A`；25 个历史 stat/EOL 脏 M 与未跟踪 `_w34/`、`_w36/` 未入库；两个 `iterations.jsonl` 被全局 `.gitignore:42:*.jsonl` 忽略，单独 `git add -f` 纳入，且已过判据 3b-ext 脱敏闸门（0 命中）方纳入 |
-| 推送判据 | `git push --dry-run` 先行：`bb757a2..e90e2f2 main -> main`（RC=0）；实推同结果（RC=0）。PAT 仅 URL inline 一次性使用、未落盘、remote 仍为干净 URL。PAT 长度 93（无重复段），按 W34 先例「长度/校验/轮换属用户侧动作」不在仓内登记。 |
+| 推送判据 | `git push --dry-run` 先行：`bb757a2..e90e2f2 main -> main`（RC=0）；实推同结果（RC=0）。PAT 仅 URL inline 一次性使用、未落盘、remote 仍为干净 URL；按 W34 先例「长度/校验/轮换属用户侧动作」不在仓内登记 PAT 元信息。 |
 
 ### 5.6.2 CI run 四字段复核（公开 API 按 head_sha 查，不采信任何转述）
 
@@ -181,7 +181,7 @@
 | Secret scan | `44719471777` | `completed` | `success` | `push` | `e90e2f232fc9…`（12 位匹配本波 commit） | ✅ | https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44719471777 |
 
 - **Build 五 job**（均 `completed/success`）：Unit tests / Arch guard / Assemble Debug (JDK 21) / Secret scan (gitleaks + trufflehog) / Lint (baseline gate)。
-- **推送次数序列（写序列不写「1 次」）**：主体 `e90e2f2` **1 次推送**触发上表两条 run；本 §5.6 CI 回填构成纯文档 tip `69d8dd6` 第 2 次推送——公开 API 实查该 tip 仅 **Secret scan `44719793648`**（completed/success/push/head_sha `69d8dd6…` 匹配）一条 run、Build **0 run**（符合 `paths-ignore` 降级规则），按既定口径**不写成「构建通过」、不逐波判 P0**，run ID 据实留痕。
+- **推送次数序列（写序列不写「1 次」）**：主体 `e90e2f2` **第 1 次推送**触发上表两条 run；本 §5.6 CI 回填构成纯文档 tip `69d8dd6` **第 2 次推送**——公开 API 实查该 tip 仅 **Secret scan `44719793648`**（completed/success/push/head_sha `69d8dd6…` 匹配）一条 run、Build **0 run**；收尾定稿 tip `8ed8304` **第 3 次推送**（`44719951896`，Secret scan success、Build 0 run）。两次纯文档 tip 按既定口径**不写成「构建通过」、不逐波判 P0**，run ID 据实留痕。
 
 ---
 

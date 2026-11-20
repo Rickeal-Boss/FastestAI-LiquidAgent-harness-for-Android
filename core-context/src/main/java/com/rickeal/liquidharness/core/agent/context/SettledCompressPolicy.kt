@@ -72,6 +72,9 @@ fun shouldEvaluate(event: AgentEvent): Boolean =
  * @param savingChars 压缩预计能省下的字符数。
  * @param compactCostChars 压缩本身的代价（切点计算 / 摘要 / 落账等字符当量）。
  * @param alreadyCompressed `ChatUiState.compression != null`。
+ * ⚠️ `insufficient_savings` 只表示「**已产出压缩区**但净收益不足」；试算没压动任何东西
+ * （`compression == null`）的空转由调用方 `ConversationOps` 前置判为 `nothing_to_drop`，
+ * 不进本函数 —— 否则 `savingChars == 0` 会伪装成净收益不足（W9-01 的语义错配）。
  */
 fun shouldApply(
     committedChars: Int,

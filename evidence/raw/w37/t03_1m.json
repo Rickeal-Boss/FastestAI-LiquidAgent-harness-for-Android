@@ -1,0 +1,5 @@
+{
+  "cell": "T03_1m",
+  "state": "PARTIAL",
+  "reason": "1M 档 readback 未行使；满窗真压受 adb input ~333 字符 + file_read 16k/次双通道硬限，维持 NOT_EXERCISED。"
+}

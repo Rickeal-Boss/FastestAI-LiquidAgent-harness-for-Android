@@ -1,0 +1,20 @@
+{
+  "cell": "F2_workspace",
+  "state": "PASS",
+  "approval_card": {
+    "tool": "file_write",
+    "arguments_exact": "{\"path\":\"w37.txt\",\"content\":\"OK\"}",
+    "buttons": [
+      "允许一次",
+      "拒绝",
+      "本会话允许相同调用"
+    ]
+  },
+  "device_side": {
+    "path": "files/harness/workspace/w37.txt",
+    "bytes": 2,
+    "content_od": "O K",
+    "mtime": "2026-11-20 20:35"
+  },
+  "note": "审批卡 exact args 与设备侧落盘字节一致；未伪造、未跳过审批。"
+}

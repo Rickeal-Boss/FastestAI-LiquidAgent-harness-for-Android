@@ -22,6 +22,29 @@
 
 ---
 
+## 判据冻结声明（用户 2026-11-20 指令，W37 起生效）
+
+> **定版即冻结**：本 checklist 的判据编号（1–7）、矩阵 schema `harness-matrix-summary/v1`、四态枚举、
+> 扫描面口径、字段最小集（34 顶层键）自 W37 起**不再扩张**。用户原话口径：「判据升级→全空转→重新取证」
+> 的循环必须停止，既有口径固化、不再逐波追加。
+>
+> **唯一允许的三类动作**（都属于「让既有判据真会响」，不是新增判据）：
+> ① 给既有断言补可跑必红注入块（删 `mutation_cases` / 数量不等 / selftest 无仓内指针）；
+> ② 把已声明但无检查逻辑的断言（`K_privacy_no_key` / `K_coverage_13`）补进 `k6_check.py`；
+> ③ 判据 7 默认值从「当波新 `CLOSED` 行」自动推导（消除 `CUR_WAVE=W34` 历史锚定）。
+>
+> **禁止**：新增判据编号 / 新建 checklist 或矩阵制品 / 新增 CI job / 改四态枚举 / 重出历史制品 /
+> 因新发现升级判据再重新取证。缺陷一律「内容订正 + 老号行内注记 + 销账」。
+>
+> **定版契约（v1，只增不改语义）**：
+> - 数据层 `cells[].state ∈ {PASS, PARTIAL, VACUOUS, FAIL}`（大写四值域；`state_counts` **只列非零出现值**，`sum == len(cells)`）；
+> - 显示层固定 `PASS→✅ / PARTIAL→⚠️ / VACUOUS→⛔vacuous / FAIL→⛔`；`FAIL` 是合法预留态，出现必须带必红用例、不得静默；
+> - 「未触发」≠「已验证通过」；`VACUOUS` 必须有 `unexercised_reason`，`PARTIAL` 必须写清缺哪一半；
+> - 既有 12 条口径固化：正控先行 strict sentinel；写 X 未发生前先自证判据会响（先 RED 再落笔）；
+>   `evidence_ref` 100% 仓内存在；制品三字段齐 + 数量相等 + selftest 仓内指针；`CLOSED` 行须带本波复核指路；
+>   派生数不写死（以实跑为准）；台账单人落笔 / 6 列无裸管道符 / 号段预检；G1–G4 与 G20 实跑；
+>   敏感串拼装不复述完整值、被 `-f` 纳入先过脱敏；收尾契约波内回改主体；推断带 caveat；历史行不冒充本波。
+
 ## 判据 1 — 挂账号段唯一性（含 1a 判红分支）
 
 **出口判据来源**：W29 段首行号段自由确认 + 重复号检测。
@@ -310,6 +333,12 @@ if set(sc)!={c["state"] for c in cells}: errs.append("state domain")
 if sum(sc.values())!=len(cells): errs.append("state sum")
 if d["iterations_total"]!=len(d["iterations"]): errs.append("iterations_total != len")
 if set(d["attempt_states"])!={c["cell_id"] for c in cells}: errs.append("attempt keys")
+# K_privacy_no_key（W37 补齐，判据冻结动作②）：制品全文不得含密钥形态（排除 sha256 误伤）
+import re as _re
+_raw=json.dumps(d,ensure_ascii=False)
+if _re.search(r"sk-[A-Za-z0-9]{16,}|github_pat_[A-Za-z0-9_]{20,}|nvapi-[A-Za-z0-9_-]{20,}",_raw): errs.append("privacy: key-like token")
+# K_coverage_13（W37 补齐）：v1 定版矩阵格数 = 13
+if len(cells)!=13: errs.append("coverage cells != 13")
 for c in cells:
     if not os.path.exists(c["evidence_ref"]): errs.append("missing ref "+c["evidence_ref"])
 print("OK feature/evidence invariants" if not errs else "RED "+"; ".join(errs))
@@ -318,7 +347,7 @@ ARTIFACT="${ARTIFACT:-evidence/w32-matrix-summary.json}"
 python _w34/k6_check.py "$ARTIFACT"
 ```
 
-**必红变异（期望 RED，六类；W35-03 新增 `K_assertion_presence`）**：工作区副本注入后逐条重跑 `_w34/k6_check.py`（`K_evidence_ref` 必红 = 把某格 `evidence_ref` 指向不存在文件；`K_assertion_presence` 必红 = 删顶层 `assertions` 字段）：
+**必红变异（期望 RED，十一类；W37 补齐三类断言可执行性必红 + `K_privacy_no_key`/`K_coverage_13` 自证必红，属冻结声明允许的动作①②）**：工作区副本注入后逐条重跑 `_w34/k6_check.py`（`K_evidence_ref` 必红 = 把某格 `evidence_ref` 指向不存在文件；`K_assertion_presence` 必红 = 删顶层 `assertions` 字段）：
 
 ```bash
 REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
@@ -333,7 +362,14 @@ muts={"k6_fail":lambda x:x["state_counts"].__setitem__("FAIL",0),
       "k6_nocell":lambda x:x.__setitem__("cells",[c for c in x["cells"] if c["cell_id"]!=(x.get("mcp") or {}).get("cell")]),
       "k6_iter":lambda x:x["iterations"].pop(len(x["iterations"])//2),
       "k6_ref":lambda x:x["cells"][0].__setitem__("evidence_ref","evidence/raw/__missing__.json"),
-      "k6_noassert":lambda x:x.pop("assertions")}
+      "k6_noassert":lambda x:x.pop("assertions"),
+      # W37 三类断言可执行性必红（冻结动作①）
+      "k6_nomut":lambda x:x.pop("mutation_cases"),
+      "k6_count":lambda x:x["mutation_cases"].pop(),
+      "k6_noptr":lambda x:x["mutation_selftest"].__setitem__("note","自报：无仓内指针"),
+      # W37 两条新断言自证必红（冻结动作②）
+      "k6_privkey":lambda x:x.__setitem__("privacy","sk-"+("A"*24)),
+      "k6_cov12":lambda x:x["cells"].pop()}
 for name,fn in muts.items():
     x=json.load(io.open(src,encoding="utf-8")); fn(x)
     io.open("_w34/mut/"+os.path.basename(src)+"."+name+".json","w",encoding="utf-8").write(json.dumps(x,ensure_ascii=False))
@@ -349,7 +385,7 @@ for f in _w34/mut/*.json; do echo "== $f"; python _w34/k6_check.py "$f"; done
 
 **出口判据来源**：W31-01 回开事故——销账证据是「人抄的机器结果」而非实跑输出；外审建议「CLOSED 行必须带判据实跑输出指路（文件加时间戳）」以防回开复发。W35-03 补：W34 同一提交把 8 行 `OPEN`→`CLOSED`，但原正则只查「证据列有任意指针形态」，不校验指针是否指向**本波复核** ⇒ 把本波复核指路删空后旧判据仍 OK（注入即假绿）；本波改为双输出。
 
-**正常态（期望 OK×2）** —— ① W30 段起（新代数）的 `CLOSED` 行，证据列必须含 `文件:行` / `evidence/…` / CI run 号 / 「实跑」之一；W30 之前的历史行显式登记为已知缺口（不判红，避免把历史形态当新异常）。② **仅** W34 销账的 8 行（`CUR_IDS`，可用环境变量覆盖；锚定范围严格 = `W30-01/W30-02/W30-03/W31-01/W32-01/W33-01/W33-02/W33-03`，不扫全表 `CLOSED`），证据列必须同时含 `本波复核指路` + 本波号 `W34` + `§2.4` + `§2.5`（W34 侧写入的精确锚点为「`W35 本波复核指路**：W34 验收物 §2.4 加 §2.5 实跑摘录在案（8 行同车复核），状态维持 CLOSED`」，连接词是中文「加」、非半角 `+`；本检查只钉锚点语义 token、不假设连接符字面）。未在本波销账的历史行（如 W31-02/W31-03，停在 W33 复核、无 W34 指路）**不在 `CUR_IDS` 内、正常态不得判红**——否则旧判据会把「本来就没有」当「被删空」，必红变异失去区分力。检查逻辑落 `_w34/k7_check.py`：
+**正常态（期望 OK×2）** —— ① W30 段起（新代数）的 `CLOSED` 行，证据列必须含 `文件:行` / `evidence/…` / CI run 号 / 「实跑」之一；W30 之前的历史行显式登记为已知缺口（不判红，避免把历史形态当新异常）。② **仅** W34 销账的 8 行（`CUR_IDS`，可用环境变量覆盖；锚定范围严格 = `W30-01/W30-02/W30-03/W31-01/W32-01/W33-01/W33-02/W33-03`，不扫全表 `CLOSED`），证据列必须同时含 `本波复核指路` + 本波号 `W34` + `§2.4` + `§2.5`（W34 侧写入的精确锚点为「`W35 本波复核指路**：W34 验收物 §2.4 加 §2.5 实跑摘录在案（8 行同车复核），状态维持 CLOSED`」，连接词是中文「加」、非半角 `+`；本检查只钉锚点语义 token、不假设连接符字面）。未在本波销账的历史行（如 W31-02/W31-03，停在 W33 复核、无 W34 指路）**不在 `CUR_IDS` 内、正常态不得判红**——否则旧判据会把「本来就没有」当「被删空」，必红变异失去区分力。检查逻辑落 `_w34/k7_check.py`（**W37 起默认值自动推导**：`CUR_WAVE` = 台账最大波号、`CUR_IDS` = 该波 `CLOSED` 行、`ANCHOR_SECS` 默认空；显式传参仍可覆盖）：
 
 ```bash
 REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
@@ -371,10 +407,22 @@ for l in closed:
     c=cells(l)
     if not pat.search(c[-1]): bad.append(c[0])
 print("OK closed rows carry runnable pointers (W30+)" if not bad else "RED closed without runnable pointer: "+", ".join(bad))
-cur_wave=os.environ.get("CUR_WAVE","W34")
-cur_ids=[x for x in os.environ.get("CUR_IDS","W30-01,W30-02,W30-03,W31-01,W32-01,W33-01,W33-02,W33-03").split(",") if x]
-# W36-02：锚点段号参数化，默认 W34→§2.4+§2.5；可用 ANCHOR_SECS 覆盖（避免新波号段硬编码）
-anchor_secs=os.environ.get("ANCHOR_SECS","§2.4,§2.5").split(",")
+# W37（判据冻结动作③）：默认从台账段头「本波销账」声明自动推导，不再锚历史波号——
+# CUR_WAVE 默认 = 台账最大波号；CUR_IDS 默认 = 最新段「本波销账：…」里列出的 ID。
+# 空命中语义：无该声明 ⇒ 输出 ids=0（合法：本波未销账），不静默冒充「全部通过」。
+cur_wave=os.environ.get("CUR_WAVE","")
+cur_ids=[x for x in os.environ.get("CUR_IDS","").split(",") if x]
+# 锚点段号默认空（自动模式只钉「本波复核指路 + 当波号」）；显式传 ANCHOR_SECS 才做段级加强检查。
+anchor_secs=[s for s in os.environ.get("ANCHOR_SECS","").split(",") if s]
+if not cur_wave:
+    _secs=[int(w) for w in re.findall(r"^### W(\d+) 段",txt,re.M)]
+    _ids=[int(w) for w in re.findall(r"^\|\s*W(\d+)-\d+\s*\|",txt,re.M)]
+    _all=_secs+_ids
+    cur_wave="W%d"%max(_all) if _all else "W0"
+if not cur_ids:
+    _decls=re.findall(r"本波销账[:：]\s*([^\n]+)",txt)
+    if _decls:
+        cur_ids=re.findall(r"W\d+-\d+",_decls[-1])
 cmap={cells(l)[0]:cells(l) for l in closed}
 cur_bad=[]
 for rid in cur_ids:
@@ -382,7 +430,7 @@ for rid in cur_ids:
     if c is None: cur_bad.append(rid+"(not CLOSED)"); continue
     ev=c[-1]
     if not ("本波复核指路" in ev and cur_wave in ev and all(s in ev for s in anchor_secs)): cur_bad.append(rid)
-print("OK closed rows carry current-wave pointers ("+cur_wave+")" if not cur_bad else "RED closed without current-wave pointer: "+", ".join(cur_bad))
+print(("OK closed rows carry current-wave pointers ("+cur_wave+", declared="+str(len(cur_ids))+")") if not cur_bad else "RED closed without current-wave pointer: "+", ".join(cur_bad))
 PY
 python _w34/k7_check.py
 ```
@@ -530,3 +578,42 @@ grep -rniE "$S1|$P1|$P2|$M1" docs evidence 2>/dev/null && echo "RED sensitive le
 - `ANCHOR_SECS` 参数化默认 `§2.4,§2.5`，新波号段可覆盖，避免把段号硬编码成新的锚定集合。
 
 > 边界：以上判据脚本位于仓外工作区 `_w34/`（不入仓），可执行原文已内联于本 checklist 判据 6/7 代码块；`_w36/` 为仓外注入副本，均不入库。改 `CLOSED` 仍由主理人单人落笔、待外审复核，本波 W35 三行与 W36 三行维持 `OPEN`。
+
+## W37 判据冻结补齐实跑输出摘录（2026-11-20）
+
+> 依据：判据冻结声明「唯一允许三类动作」——① 三类断言必红可跑注入块；② `K_privacy_no_key`/`K_coverage_13` 进 `k6_check.py`；③ 判据 7 默认从台账自动推导。
+> 脚本自本文件代码块提取后执行，命令均在仓库根；`ARTIFACT=evidence/w36-matrix-summary.json`；输出原文摘录，不含敏感字面量。
+
+**判据 6 正常态**：`OK feature/evidence invariants`
+
+**判据 6 十一类必红（W37 新增五类；其余六类同 W36）**：
+
+```
+k6_nomut   => RED mutation_cases missing
+k6_count   => RED assertion/mutation count mismatch
+k6_noptr   => RED selftest note lacks in-repo pointer
+k6_privkey => RED privacy: key-like token
+k6_cov12   => RED state sum; attempt keys; coverage cells != 13
+k6_fail    => RED zero-value keys: ['FAIL']; state domain
+k6_nomcp   => RED mcp field missing
+k6_nocell  => RED mcp claims cell F4_mcp but cells[] lacks it
+k6_iter    => RED iterations_total != len
+k6_ref     => RED missing ref evidence/raw/__missing__.json
+k6_noassert=> RED assertions missing
+```
+
+**判据 7 正常态（默认自动推导，不传 `CUR_WAVE`/`CUR_IDS`/`ANCHOR_SECS`）**：
+
+```
+OK closed rows carry runnable pointers (W30+)
+OK closed rows carry current-wave pointers (W37, declared=3)
+```
+
+**判据 7 必红（注入：`W36-01`/`W36-03` 翻 `CLOSED` 且删空本波指路 + 段头声明销账）**：
+
+```
+OK closed rows carry runnable pointers (W30+)
+RED closed without current-wave pointer: W36-01, W36-03
+```
+
+> 空命中语义：无「本波销账：…」声明时输出 `declared=0` 且不判红（合法：本波未销账），不静默冒充「全部通过」。

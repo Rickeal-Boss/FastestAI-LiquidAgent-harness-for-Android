@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.feature.chat
 
 import com.rickeal.liquidharness.core.model.AgentEvent
+import com.rickeal.liquidharness.core.model.PromptCacheStatus
 import com.rickeal.liquidharness.core.model.Role
 import com.rickeal.liquidharness.core.model.TerminationReason
 import com.rickeal.liquidharness.core.model.TokenUsage
@@ -8,6 +9,7 @@ import com.rickeal.liquidharness.core.model.ToolCall
 import com.rickeal.liquidharness.core.model.ToolResult
 import com.rickeal.liquidharness.core.model.cacheHitRatio
 import com.rickeal.liquidharness.core.model.newId
+import com.rickeal.liquidharness.core.model.promptCacheStatus
 import java.util.Locale
 
 /**
@@ -281,38 +283,35 @@ object EventReducer {
     /**
      * 上下文用量标签。**纯 ASCII**：中文文案一律走 `strings.xml`（守卫 G16）。
      *
-     * ## `cached` 是三态，不是「有值 / 没值」
+     * `cached` 走 [promptCacheStatus] 的四态派生（W12-02 起本函数是它的生产读者），
+     * 四态处置各不相同，界面上也必须长得不一样（design §2.4 / §A.8）：
+     * `HIT` / `MISS` ⇒ 命中量 + 命中率（分别查前缀与查前缀稳定性）；
+     * `CACHE_FIELDS_NOT_REPORTED` ⇒ `(cache n/a)`：provider 没上报，下一步查端点是否支持
+     * 缓存字段，而不是查前缀 —— 显示成 `0.0%` 会让人去优化一个根本不存在的命中率；
+     * `USAGE_NOT_OBSERVED` ⇒ 空标签。`prompt <= 0` 时算不出比率（分母未知），只输出命中量。
      *
-     * - `null` ⇒ `(cache n/a)`：provider **没上报**这个字段。下一步该查端点是否支持缓存字段，
-     *   而不是查前缀 —— 把它显示成 `0.0%` 会让人去优化一个根本不存在的命中率。
-     * - `0` ⇒ `(0 cached, 0.0%)`：上报了，确实没命中。下一步查前缀是否稳定。
-     * - `>0` ⇒ `(600 cached, 60.0%)`：命中。
-     *
-     * 这三条是**三种不同的处置**，界面上必须长得不一样（design §2.4 / §A.8）。
-     * `prompt <= 0` 时算不出比率（分母未知），只输出命中量，不编一个 0.0%。
-     *
-     * W9-04：命中率**不再自己算**。此前这里是 `cached * 100.0 / prompt`，与账本 / 探针
-     * 的口径分叉且分子分母各写一遍；现在统一调 [cacheHitRatio]，分母一次钉死
-     * （`prompt + cacheWrite`，写入也计费）。UI 因此能显示含写入量的真实命中率。
+     * W9-04：命中率**不再自己算**（旧码 `cached * 100.0 / prompt` 与账本 / 探针口径分叉），
+     * 统一调 [cacheHitRatio]，分母一次钉死（`prompt + cacheWrite`，写入也计费）。
      *
      * ⚠️ 能力边界：本标签只回答「**这次请求有没有命中**」，不回答「为什么没命中」。
      * 缓存命中的最小前缀长度是**端点侧性质**（GLM-4.7 实测 ≈4096 token），短前缀下
-     * `0.0%` 是**正确值**，不是缺陷。诊断时要先看上下文总量再看命中率；
-     * 「为什么没命中」读 `promptCacheStatus` 的四态，不读这个百分比。
+     * `0.0%` 是**正确值**，不是缺陷。
      */
     private fun buildUsageLabel(prompt: Int, completion: Int, cached: Int?, cacheWrite: Int?): String {
-        if (prompt <= 0 && completion <= 0) return ""
-        val cachePart = when {
-            cached == null -> " (cache n/a)"
-            prompt > 0 -> {
+        // usageObserved 的等价判据：本函数只在有 usage 时被调（prompt/completion 全 0 ⇒ 空标签）。
+        val status = promptCacheStatus(cached, usageObserved = prompt > 0 || completion > 0)
+        val cachePart = when (status) {
+            PromptCacheStatus.USAGE_NOT_OBSERVED -> return ""
+            PromptCacheStatus.CACHE_FIELDS_NOT_REPORTED -> " (cache n/a)"
+            PromptCacheStatus.HIT, PromptCacheStatus.MISS -> if (prompt <= 0) {
+                " (" + cached + " cached)"
+            } else {
                 val ratio = cacheHitRatio(
                     TokenUsage(prompt = prompt, cachedPromptTokens = cached, cacheWriteTokens = cacheWrite)
                 )
                 val rate = (ratio ?: 0.0) * 100.0
                 " (" + cached + " cached, " + String.format(Locale.US, "%.1f", rate) + "%)"
             }
-
-            else -> " (" + cached + " cached)"
         }
         return compact(prompt) + " in / " + compact(completion) + " out" + cachePart
     }

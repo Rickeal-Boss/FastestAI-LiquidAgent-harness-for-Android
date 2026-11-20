@@ -1,0 +1,7 @@
+{
+  "cell": "F4_mcp",
+  "state": "VACUOUS",
+  "server_count": 0,
+  "reason": "none_by_design：本波无外部 https MCP server（G15b 禁明文），设置页「MCP 服务器」入口存在但未核验内容；不推断「MCP 不可用」。",
+  "mcp_cell": "F4_mcp"
+}

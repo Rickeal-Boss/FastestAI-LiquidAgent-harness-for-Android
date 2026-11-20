@@ -15,6 +15,7 @@ import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.net.HttpTransport
 import com.rickeal.liquidharness.core.net.UnsafeUrlException
 import com.rickeal.liquidharness.core.net.UrlGuard
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
@@ -184,39 +185,12 @@ class AppContainer(context: Context) {
     }
 
     /**
-     * 一次 run 的提示词上下文（记忆正文 + 技能一级披露）。
+     * 一次 run 的提示词上下文（记忆 + 技能一级披露）。
      *
-     * ## 为什么是 `suspend` 且在 run 开始前调一次
-     *
-     * 两者都要读盘（记忆文件 / 技能目录）。放在 `AgentRequest` 构造处读，
-     * 保证「一个 run 内 system 字节稳定」（`00-brief.md` A8）——
-     * 若每轮重读，技能列表顺序或记忆更新时间一变，整段前缀的 prompt cache 全价重算。
-     *
-     * ## 失败降级
-     *
-     * 记忆读失败 ⇒ 空串（不带记忆，但 run 照常）；技能扫失败 ⇒ 空段。
-     * 两个都不该让「发消息」这件事失败 —— 它们是增强，不是前置条件。
+     * W37 拆分：实现迁至 `PromptContextAssembler.kt`（G10 单文件上限），本方法保留为
+     * 一行门面；语义、降级与取消纪律零变更。`PromptContext` 同文件迁为顶层类。
      */
-    suspend fun promptContext(): PromptContext {
-        val memoryText = runCatching {
-            com.rickeal.liquidharness.core.agent.memory.renderMemoryForPrompt(memory.all())
-        }.getOrDefault("")
-        // 停用的技能既不进一级披露，也不能被 skill_load 加载（工具层查同一个目录，
-        // 所以这里只过滤披露是不够的 —— 见 SkillTools 的 enabled 过滤）。
-        val disabled = runCatching { settings.disabledSkills.first() }.getOrDefault(emptySet())
-        val skillsSection = runCatching {
-            com.rickeal.liquidharness.core.agent.skill.renderSkillsSection(
-                skills.list().filterNot { it.name in disabled }
-            )
-        }.getOrDefault("")
-        return PromptContext(memoryText = memoryText, skillsSection = skillsSection)
-    }
-
-    /** 提示词上下文快照。字段直接对应 `AgentRequest` 的两个入参。 */
-    data class PromptContext(
-        val memoryText: String = "",
-        val skillsSection: String = "",
-    )
+    suspend fun promptContext(): PromptContext = assemblePromptContext()
 
     /**
      * 工具注册表的**只读暴露**，供 MCP 同步与设置页诊断使用。
