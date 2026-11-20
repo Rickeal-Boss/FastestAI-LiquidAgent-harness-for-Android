@@ -86,7 +86,7 @@
 | G3 selftest | ✅ 30/30 PASS（补 W37 欠账） | ✅ |
 | G4 fulltest | ✅ `tests=829 failures=0 errors=0 skipped=0`（14 模块） | ✅ |
 | G20 | ✅ W38 零新开、零 `W38-` 行 | ✅ |
-| CI | 待推送后回填 run 链接（见验收物 §5.6）；未回填前不写成 CI 已绿 | ⏳ |
+| CI | ✅ Build `44753956961` + Secret `44753956777` 双 completed/success，5 job 全绿（链接见验收物 §5.6） | ✅ |
 
 ---
 
@@ -108,6 +108,6 @@
 
 **不含**：会话历史 / 凭据 / 端点完整标识（模型名仅公开名）/ 账号字段 / 设备序列号 / 本机路径 / 「建议下一链做什么」。
 
-**边界**：PARTIAL 格的真实原因是「未复测 / 语义部分正确 / 无 dropped」而非能力不足；1M `NOT_EXERCISED`、MCP 0 server `VACUOUS` 不推断为 harness 缺陷；INC 根因是操作路径的推断、证据是滚动+确认切换成功的真机序列；CI 未回填前不构成绿声明。本波不把推断写成事实。
+**边界**：PARTIAL 格的真实原因是「未复测 / 语义部分正确 / 无 dropped」而非能力不足；1M `NOT_EXERCISED`、MCP 0 server `VACUOUS` 不推断为 harness 缺陷；INC 根因是操作路径的推断、证据是滚动+确认切换成功的真机序列；CI 已实取四字段（Build + Secret 双 success，5 job 全绿）。本波不把推断写成事实。
 
 > 本波止于交接，交由外部团队审查。

@@ -103,7 +103,7 @@
 | G3 selftest | ✅ **30/30 PASS**（补跑 W37 欠账，239s；含 G13/VAC 机制自证） | ✅ |
 | G4 fulltest | ✅ `tests=829 failures=0 errors=0 skipped=0`（14 模块） | ✅ |
 | G20 挂账号 | ✅ W38 段 0 行新开、`W38-` 编号 0 命中；handoff 只引用既有行首号 | ✅ |
-| CI | 见 §5.6（推送后回填 run 链接；CI 绿须附 run 链接） | ⏳ 待推送 |
+| CI | Build `44753956961` + Secret `44753956777` 双 completed/success，5 job 全绿（链接见 §5.6） | ✅ |
 
 ---
 
@@ -146,7 +146,14 @@
 2. 第 1 车代码波 `0f2e13e`。
 3. 证据 + 验收物 + 交接（本提交）。
 
-> CI run 链接：待推送后回填。按 W28 降级规则，纯文档 tip 的 Build 0 run 不写成构建通过；主体提交的 Build / Secret scan 四字段须实取 run 链接后填入本节，未取到前本节判据为 ⏳ 待验证，不冒充绿。
+**CI 四字段实取（head_sha `f8d0620ae`，2026-11-20 实测）**：
+
+| 工作流 | run id | status | conclusion | 链接 |
+|---|---|---|---|---|
+| Build（5 job 全 success：Secret scan / Unit tests / Arch guard+selftest / Assemble Debug / Lint） | `44753956961` | completed | success | https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44753956961 |
+| Secret scan | `44753956777` | completed | success | https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44753956777 |
+
+**步 5 闸门 CI 四态 = ✅**（Build + Secret scan 均 completed/success，五 job 逐项核过）。主体提交 `f8d0620` 含 `.kt` + `evidence/`，`paths-ignore`（docs/ 与 *.md）不挡，两条 run 均实触发。
 
 ---
 
@@ -171,4 +178,4 @@
 - 1M 满窗、MCP 外部 server、32K 档、north/nv-alt 端点本波未复测，沿用基线并已逐格标注，不冒充本波实测。
 - 手动压缩无本波真实 `dropped/kept`（短对话正确 noop）；不把历史行冒充本波。
 - INC-w37-settings-tap 根因是「操作路径」的推断，证据是滚动+确认后切换成功的真机序列；不写成代码 bug 也不写成设备缺陷。
-- CI 四字段待推送实取；本节在回填前不构成「CI 已绿」声明。
+- CI 四字段已于 2026-11-20 实取（Build `44753956961` + Secret `44753956777` 均 success，5 job 逐项核过），见 §5.6。
