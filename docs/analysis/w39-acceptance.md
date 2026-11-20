@@ -185,5 +185,6 @@
 - F1 的 PASS 依赖「端点高级配置里手工开启图片输入」这一前置；该开关是设置面，不是 harness 代码路径。
 - F5/F6 的 PARTIAL 原因是「本会话缺可安全截断的中段（仅 6 轮）」，不是压缩机制缺失；`applied=true` 仍未在真机出现过。
 - `SwitchNotice` 落 `core-agent` 属**层级口径待复核**，不视为已定论。
-- **缓存读数只在同一会话内可比**：小任务密集切换端点后，Dots3 的 `cached` 从 1536 跌到 0（前缀被换端点/新对话打断）；`0 cached` / `cache n/a` 不能跨端点、跨批量比较，也不能据此判端点退化。
+- **缓存读数只在同一会话内可比**（设备侧独立观察，非 CI 席主张）：Dots3 首轮 `0 cached` → 同会话第 2–4 轮 `1536 cached 11.4% → 67.9% → 85.0%`；换端点或新建对话后回到 `0 cached` 属**前缀重建的预期行为**，不能据此判端点退化，也不能跨端点/跨会话比较。
+- **CI 状态判定要用单 run 端点**：`GET /actions/runs?head_sha=<sha>`（批量列表）有约 15 分钟缓存，会给旧快照（本波实测该端点仍报 `Build in_progress`，而单 run 端点 `runs/<id>` 已是 `completed/success`）⇒ 判绿/判红一律以 `runs/<id>` 与 `runs/<id>/jobs` 为准。
 - E03 的 404 在 UI 以「本次请求失败：request rejected (HTTP 404)」上屏（`PROTOCOL` 类、非静默）；FAIL 判定依据是「请求被拒」本身，不是「有无提示」。
