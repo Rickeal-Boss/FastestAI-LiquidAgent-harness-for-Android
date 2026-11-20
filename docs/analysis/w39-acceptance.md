@@ -40,13 +40,13 @@
 | 判据 | 默认正常态（实跑原文） | 注入必红（实跑原文） | 四态 |
 |---|---|---|---|
 | 判据 1 段唯一性 + 守恒式回显 | `W39 rows = 0` / `守恒式两数回显（W39）：…本波新开挂账 0 / 本波销账 1（W24-02）…`，无 `RED`、无 `can't cd` stderr | `WAVE=W29` 保持可传参覆盖 | ✅ |
-| 判据 6 制品断言 | `OK feature/evidence invariants`（w38 与 w39 双制品） | 六类注入对 **w39** 全 RED：`state sum/coverage`、`iterations_total != len`、`mcp field missing`、`missing ref`、`privacy: key-like token`、`zero-value keys`（原文 `_w39/k6_mut_w39.txt`） | ✅ |
+| 判据 6 制品断言 | `OK feature/evidence invariants`（w38 与 w39 双制品） | **11 类必红对 w39 全部 RED**（由 CI 席按标准注入集重跑：`k6_pop` / `k6_iter` / `k6_mcp` / `k6_ref` / `k6_privkey` / `k6_face` / `k6_fail` / `k6_nocell` / `k6_nomcp` / `k6_nomut` / `k6_count`，原文 `_w39/mut39x/`） | ✅ |
 | 判据 7 销账锚点 | `OK closed rows carry runnable pointers (W30+)` + `OK closed rows carry current-wave pointers (W39, declared=1)` | 删 `W24-02` 的「本波复核指路」⇒ `RED closed without current-wave pointer: W24-02`；删 `W17-02` 锚点 ⇒ `RED … W17-02`（W38 欠账同法复核） | ✅ |
 
 **关键修正（这一波真正修的东西）**：
 1. 判据 7 的声明正则从 `本波销账[:：]` 放宽为 `本波销账\s*[:：]?\s*`，且只取**最后一个 `### W<n> 段`** 内的声明（不再 `_decls[-1]` 跨波取到文件尾）。W38 段补标准行 `> **本波销账：W17-02**`。
 2. 判据 1 默认 `WAVE` = 台账最大段号、默认 `EXPECT` = 该段「本波新开挂账 N」（与守恒式同源），`cd harness-v2` 改 `REPO_ROOT` 兜底。
-3. **两处注入失败的自证**（写进交接当方法论）：第一次把锚点替换成「（本波复核指路已删空）」——替换文本仍含 token ⇒ 判据仍双 OK，属**无效变异**；整段截断才真 RED。第二次隐私注入写成 `sk-` + 含连字符的短串（`sk-` 后紧跟另一段单词再接数字），因不匹配 `sk-[A-Za-z0-9]{16,}` ⇒ 假绿；换成 `sk-` 后直接接 16 位以上纯字母数字才 RED（字面值不入仓，只描述形态）。**变异样本自身必须先验**。
+3. **两处注入失败的自证**（写进交接当方法论；**含主理人自己第一轮的两处无效变异**：隐私注入形态不匹配 ⇒ 该行留档先是 `OK`、改正后才 `RED`；`state` 注入把键名写成 `FAIL0` 导致红因可解释性差。**判据 6 的权威必红集以 CI 席的 11 类标准注入为准**，主理人那 6 条只作过程留痕）：第一次把锚点替换成「（本波复核指路已删空）」——替换文本仍含 token ⇒ 判据仍双 OK，属**无效变异**；整段截断才真 RED。第二次隐私注入写成 `sk-` + 含连字符的短串（`sk-` 后紧跟另一段单词再接数字），因不匹配 `sk-[A-Za-z0-9]{16,}` ⇒ 假绿；换成 `sk-` 后直接接 16 位以上纯字母数字才 RED（字面值不入仓，只描述形态）。**变异样本自身必须先验**。
 
 内容订正：`K_coverage_13` → `K_coverage`（w38 制品 `assertions[].id` 同步）；`w37-acceptance:91`「拆分后净 −9」→「W36→W37 实测 2489→2506 = **+17**」；`coverage_note` 补「本波取证 PASS 4 / 沿用基线 PASS 2」；F6 note 改「本波仅 `below_trigger`，`nothing_to_drop` 未再触发」；冻结声明②多余右括号；冻结条款补「局部内容订正 ≠ 重出历史制品」。
 
@@ -153,7 +153,7 @@
 
 ## §5.6 提交与 CI
 
-- 提交序列：**单次推送** `052ad9c → 5bdb383`（代码 + 文档 + 证据 + 制品同车）；后续只有一次 docs-only 回填提交（本段文字），**不重复触发 Build**（`build.yml` 的 `paths-ignore` 设计）。
+- 提交序列：**单次主推送** `052ad9c → 5bdb383`（代码 + 文档 + 证据 + 制品同车）；其后的 docs-only 回填提交（含本段）**不触发 Build**（`build.yml` 的 `paths-ignore` 只对 Build 生效，`secret-scan.yml` **刻意不 ignore 任何路径** ⇒ 每次纯文档提交仍会跑一次 Secret scan）。因此 tip 的 CI 结论是「Secret success + Build 沿用 `5bdb383`」，不写成「tip 构建通过」。
 - 本地四闸门（同一 tree，实跑原文在 `_w39/g1_final_localbuild.log` / `g2_archguard_final.log` / `g3_selftest.log` / `g4_fulltest.log`）：
   - G1 `BUILD SUCCESSFUL in 1m 18s`
   - G2 `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0` / `result=PASS`
