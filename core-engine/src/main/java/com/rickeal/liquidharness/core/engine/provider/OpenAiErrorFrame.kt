@@ -34,16 +34,19 @@ import kotlinx.serialization.json.JsonPrimitive
  * | `context` + 超限词 | [EngineErrorKind.CONTEXT_OVERFLOW] | **false** | 内核压缩后重发 |
  * | 其余 | [EngineErrorKind.PROTOCOL] | **false** | fail-closed，直接失败 |
  *
- * 判定顺序固定「超窗 → 限流 → 服务端 → 兜底」：超窗文案里也含 `limit`（`maximum context
- * length`），先判限流会把它误归成可重试，结果是「同长度请求重发两次、两次都超窗」。
+ * 判定顺序按证据强度分两支（W41 订正）：有结构化 `type`/`code` 时「限流 → 服务端 →
+ * 超窗 → 兜底」——供应商自声明比正文措辞可信；只有 `message` 时同样先判限流/服务端
+ * 措辞，再判超窗词表（`rate limit: too many tokens` 的 token×limit 会误命中超窗）。
  *
- * ## W40：结构化字段优先 + 去掉 payload 全文
+ * ## W41：message-only 路径把限流/服务端判在超窗之前 + 数字 `code` 兜底
  *
- * 旧版把 `payload`（整帧 JSON 原文）拼进 haystack ⇒ 限流文案 `rate limit: too many tokens`
- * 同时含 `token` 与 `limit`，会先命中超窗词表被误判 `CONTEXT_OVERFLOW`（不可重试）——
- * 把「零产出时引擎内可重试」也一并关掉。现版只看 `type`/`code`/`message`/顶层错误字符串
- * 四个字段；`type`/`code` 是供应商的结构化自声明（如 OpenAI 的 `rate_limit_error`），
- * 命中限流/服务端词表**优先**于 message 词表兜底——结构化字段不会混入正文措辞。
+ * W40 只去掉了 payload 全文，但 `token`×`limit` 本来就常出现在供应商的 `message` 里：
+ * `rate limit: too many tokens` 仍会先命中超窗词表被误判 `CONTEXT_OVERFLOW`（不可重试），
+ * 把限流变成静默失败。`type`/`code` 缺失时没有结构化证据可用，因此**无结构化字段**
+ * 的路径改为「限流措辞 → 服务端措辞 → 超窗词表 → 兜底」；有结构化字段时仍沿用
+ * 「限流 → 服务端 → 超窗」的可信自声明优先顺序。数字 `code: 429` 用 `JsonPrimitive.content`
+ * 兜底为字符串，不再因 `stringOrNull` 只能读字符串而跌回词表判 PROTOCOL。
+ * 超窗分支保留供应商原始 `message`（可诊断文案不再被硬替换）。
  *
  * @param contextLimitHint 从错误体里取真实窗口的端口（由 adapter 注入，复用同一套正则，
  *   避免这里长出第二把尺子）。
@@ -60,17 +63,23 @@ internal fun decodeOpenAiErrorFrame(
 
     val errorObj = errorValue as? JsonObject
     val errorText = (errorValue as? JsonPrimitive)?.takeIf { it.isString }?.content
-    // W40：结构化字段优先。type/code 是供应商自声明（rate_limit_error / server_error），
+    // W41：数字型 code（429 / 503）在 OpenAI 兼容端点很常见，stringOrNull 只认字符串
+    // ⇒ 不兜底会跌回 message 词表、甚至判 PROTOCOL（不可重试）。JsonPrimitive.content
+    // 对字符串与数字都成立，重复值对分类无影响。
+    val codeText = (errorObj?.get("code") as? JsonPrimitive)?.content
+    // 结构化字段优先。type/code 是供应商自声明（rate_limit_error / server_error），
     // 不含正文措辞 ⇒ 命中限流/服务端词表时**先于** message 词表兜底裁决。
     // haystack 只拼四个错误字段、**不含 payload 全文**（含进去会让限流文案里的
     // token/limit 撞上超窗词表，见类 KDoc「W40」段）。
     val typeAndCode = listOfNotNull(
         AgentJson.stringOrNull(errorObj, "type"),
         AgentJson.stringOrNull(errorObj, "code"),
+        codeText,
     ).joinToString(" ").lowercase()
     val haystack = listOfNotNull(
         AgentJson.stringOrNull(errorObj, "type"),
         AgentJson.stringOrNull(errorObj, "code"),
+        codeText,
         AgentJson.stringOrNull(errorObj, "message"),
         errorText,
     ).joinToString(" ").lowercase()
@@ -91,27 +100,31 @@ internal fun decodeOpenAiErrorFrame(
     if (typeAndCode.contains("context")) {
         return GenerationEvent.Failed(
             EngineErrorKind.CONTEXT_OVERFLOW,
-            "context window exceeded",
+            message,
             retryable = false,
             contextLimitHint = contextLimitHint(payload),
         )
     }
 
-    // 词表兜底（message 字段）：超窗 → 限流 → 服务端 → 兜底，顺序理由见类 KDoc。
+    // W41：无结构化字段时，限流/服务端措辞先于超窗词表。供应商只给 message 是
+    // 最常见形态；「rate limit: too many tokens」的 token×limit 本来就命中超窗词表，
+    // 旧顺序会把拥堵判成不可重试。有结构化字段的分支已先返回，不受此处顺序影响。
     return when {
-        looksLikeContextOverflowMessage(haystack) -> GenerationEvent.Failed(
-            EngineErrorKind.CONTEXT_OVERFLOW,
-            "context window exceeded",
-            retryable = false,
-            contextLimitHint = contextLimitHint(payload),
-        )
-
-        haystack.contains("rate") || haystack.contains("429") || haystack.contains("quota") ->
+        haystack.contains("rate") || haystack.contains("429") || haystack.contains("quota") ||
+            haystack.contains("throttl") || haystack.contains("slow down") ||
+            haystack.contains("too many requests") ->
             GenerationEvent.Failed(EngineErrorKind.RATE_LIMIT, message, retryable = true)
 
         haystack.contains("overload") || haystack.contains("server") ||
             haystack.contains("5xx") || haystack.contains("unavailable") ->
             GenerationEvent.Failed(EngineErrorKind.SERVER, message, retryable = true)
+
+        looksLikeContextOverflowMessage(haystack) -> GenerationEvent.Failed(
+            EngineErrorKind.CONTEXT_OVERFLOW,
+            message,
+            retryable = false,
+            contextLimitHint = contextLimitHint(payload),
+        )
 
         else -> GenerationEvent.Failed(EngineErrorKind.PROTOCOL, message, retryable = false)
     }

@@ -186,7 +186,9 @@ class RemoteLlmEngineStreamFailureTest {
                 failed.truncatedStream,
                 "零产出 ⇒ 无内容可回滚 ⇒ 不置截断标志（引擎内按退避重试）：$failed",
             )
-            assertTrue(hits.get() >= 1, "零产出限流在引擎内按策略重试（RetryPolicy maxAttempts=3）")
+            // W41（P1-1 订正）：`>=1` 在「引擎完全不重试」的缺陷形态下仍绿。默认
+            // RetryPolicy(maxAttempts=3) 对可重试的零产出限流帧应打满 3 次请求。
+            assertEquals(3, hits.get(), "零产出限流在引擎内按策略重试（RetryPolicy maxAttempts=3）")
         }
     }
 
@@ -236,6 +238,49 @@ class RemoteLlmEngineStreamFailureTest {
                 "服务端文案含 context 不得误判超窗（结构化 type 优先）：$failed",
             )
             assertTrue(failed.retryable)
+        }
+    }
+
+    // ------------------------------------------------------------------ E5e/f/g（W41）
+
+    /**
+     * E5e（W41 P0-2 必红样本）：供应商**只给 message**（无 type/code），文案同时含
+     * `rate` 与 `token`/`limit` ⇒ 旧版「超窗词表优先」会误判 CONTEXT_OVERFLOW
+     * （不可重试），把限流变成静默失败。W41 修法：无结构化字段时限流/服务端措辞
+     * 先于超窗词表裁决。
+     */
+    @Test
+    fun messageOnlyRateLimitWordingIsNotContextOverflow() {
+        val error = """data: {"error":{"message":"rate limit: too many tokens"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val failed = runEngine(port).filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.RATE_LIMIT, failed.kind, "message-only 限流不得误判超窗：$failed")
+            assertTrue(failed.retryable, "限流必须可重试：$failed")
+            assertTrue(failed.truncatedStream, "已吐 delta 后掐流必须置位：$failed")
+        }
+    }
+
+    /** E5f（W41）：数字型 `code: 429`（OpenAI 兼容端点常见）必须按限流读，不能跌回词表判 PROTOCOL。 */
+    @Test
+    fun numericRateLimitCodeIsClassifiedAsRateLimit() {
+        val error = """data: {"error":{"code":429,"message":"provider throttled"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val failed = runEngine(port).filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.RATE_LIMIT, failed.kind, "数字 code 必须兜底：$failed")
+            assertTrue(failed.retryable)
+        }
+    }
+
+    /** E5g（W41）：结构化超窗分支保留供应商原始 message，不再硬替换成通用文案。 */
+    @Test
+    fun contextOverflowKeepsProviderMessage() {
+        val original = "maximum context length is 1000000 tokens, reduce your prompt"
+        val error = """data: {"error":{"type":"invalid_request_error","message":"$original"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val failed = runEngine(port).filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.CONTEXT_OVERFLOW, failed.kind)
+            assertEquals(original, failed.message, "原始可诊断文案不得被硬替换：$failed")
+            assertFalse(failed.retryable)
         }
     }
 

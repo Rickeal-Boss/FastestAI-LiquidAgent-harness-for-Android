@@ -1,7 +1,8 @@
 # W40 验收物 — P0-3 断流重试 + 老号代码面推进 + 真机矩阵补格
 
 > 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`）。
-> 基线 tip `0cb87ee` → 本波主体 `e900f44`（feat）+ docs 收尾提交 `b66c8b5`（纯文档：台账段 / 验收物 / 交接 / checklist 摘录）。
+> 基线 tip `0cb87ee` → 主体 `e900f44`（feat）→ docs 收尾 `b66c8b5`（纯文档：台账段 / 验收物 / 交接 / checklist 摘录）。
+> 本波共 **2 次推送**；其后的纯文档订正 `c4fc2cf` 不改变主体，不另计波次。
 > 判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；「未触发」≠「已验证通过」；推断带 caveat，不写成事实。
 > 回灌级别：脱敏 UI dump 文本判据 + `deviceLogTail`；不回灌整段 logcat / 凭据 / 未打码账号 / 设备序列号 / 本机路径。
 
@@ -24,7 +25,7 @@
 | 动作 | 结果 | 证据 |
 |---|---|---|
 | P0-1 W20-02 补 W39 行内注记 | ✅ | `docs/06-deferred-ledger.md` W20-02 行：`W39 行内注记` 命中；三方已腾行数 1477/3978/3417 + ViewModel 447；`LINE_CAPS` 未调；本体再分层仍未做 |
-| P0-2 案 A 收窄 | ✅ | W24-02 行 `W40 案 A 注记` 命中；`feature-chat/.../strings.xml` 删「或被中断」；已知边界 2→4 条（retry:/重试入口/error 帧/reasoning） |
+| P0-2 案 A 收窄 | ✅ | W24-02 行 `W40 案 A 注记` 命中；`feature-chat/.../strings.xml` 删「或被中断」；当时列 4 条边界（retry:/重试入口/error 帧/reasoning）。**W41 复核订正**：error 帧/reasoning 已于第 1 车落地，边界回到 2 条（见 W24-02 行 W41 注记） |
 | P0-3 口径订正 | ✅ | W24-02 行内「error 帧已吐字后不重试」列为 W40 第 1 车处理；`OpenAiErrorFrame` 代码面见步 3 |
 | 判据 1/6/7 双态 | ✅ | 判据 1 正常态 `W40 rows = 0` + 守恒式回显、负控 `WAVE=W30` 不传 EXPECT ⇒ `RED 缺声明…不回落 3`；判据 6 正常态 `OK feature/evidence invariants` + 注入 BOGUS_STATE ⇒ `RED state domain`；判据 7 默认 `OK … declared=0`（本波空销账合法） |
 | 守恒式两数 | ✅ | 本波 `新开 0 / 销账 0`；台账 216 行 / CLOSED 38 / OPEN 167 / CARRIED 11 不变；`W40-` 行 0；G20 141 ID |
@@ -85,8 +86,7 @@ F4 MCP server（0 server）、F6 applied=true 分支（本波无 `nothing_to_dro
 ### 步 5 · 推送 + CI
 
 - 主体提交 `e900f44`（feat，12 文件 +225/−21），身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`。
-- 推送 `0cb87ee..e900f44 main -> main`（PAT 以 URL inline 一次性使用，push 后 `git remote set-url` 清除；
-  **该 PAT 视为已暴露，需用户在 GitHub Settings 撤销重发**）。
+- 推送 `0cb87ee..e900f44 main -> main`（会话中一次性使用的推送凭据以 URL inline、push 后 `git remote set-url` 清除；凭据轮换由用户侧按安全流程处理，不在仓内闭环）。
 - CI（公开 API 实取，四字段复核）：Build run `44881943856`（`head_sha=e900f44`、
   `status=completed` / `conclusion=success`）✅；Secret scan run `44881943855`
   `completed/success` ✅。两 run 均绑定本波主体 commit `e900f44`。
@@ -130,7 +130,7 @@ F4 MCP server（0 server）、F6 applied=true 分支（本波无 `nothing_to_dro
 3. `docs/06-deferred-ledger.md`（W40 段 + W20-02/W12-02/W9-01/W24-02 行内注记）
 4. `docs/notes/w29-closeout-checklist.md`（W40 段已补录判据 1/6/7 双态实跑摘录）
 5. `.github/workflows/build.yml`（EXPECTED_TESTS 845→849）
-6. 12 文件源码 diff（`e900f44` 主体 + `b66c8b5` 文档收尾）
+6. 15 唯一文件源码 diff（2 新 + 13 改；`e900f44` + `b66c8b5` 两次提交去重后）
 
 **不含**：会话历史 / 凭据（含 GitHub PAT）/ 端点完整标识（模型名仅公开名）/ 账号字段 /
 设备序列号 / 本机路径 / 「建议下一链做什么」。

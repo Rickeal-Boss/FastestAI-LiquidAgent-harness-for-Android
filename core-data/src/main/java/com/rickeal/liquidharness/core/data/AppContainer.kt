@@ -15,7 +15,6 @@ import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.net.HttpTransport
 import com.rickeal.liquidharness.core.net.UnsafeUrlException
 import com.rickeal.liquidharness.core.net.UrlGuard
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow

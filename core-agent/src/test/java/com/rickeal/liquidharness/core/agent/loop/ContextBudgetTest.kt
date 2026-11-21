@@ -436,6 +436,59 @@ class ContextBudgetTest {
         )
     }
 
+    // ── W41：cachedLabel 的 usage 观测口径（估算不得写成「没命中」） ──────────
+
+    private fun lastCachedLabel(): String? {
+        val line = AgentLogStore.recent().lastOrNull { it.message.contains(" cached=") }?.message
+            ?: return null
+        return Regex("""cached=(\S+)""").find(line)?.groupValues?.get(1)
+    }
+
+    /**
+     * W41 P0-3 必红样本：估算兜底把 token 累加进 `promptTokens`，但 provider 从未回报 usage
+     * ⇒ 发送前标签必须是 `n/a-usage`，不能输出 `0`（那等于把「没测」写成「MISS」）。
+     * 注入「改回 `promptTokens > 0` 反推」⇒ 本用例立即 RED。
+     */
+    @Test
+    fun estimatedUsageIsNeverReportedAsObserved() {
+        val state = RunState(body())
+        state.recordEstimatedPrompt(100)
+        val ctx = testContext(
+            events = mutableListOf<AgentEvent>(),
+            request = AgentRequest(endpoint = endpoint),
+            state = state,
+        )
+        AgentLogStore.clear()
+        runBlocking { ContextBudget().prepare(ctx, "sys") }
+
+        assertEquals(
+            "n/a-usage",
+            lastCachedLabel(),
+            "估算值不得反推 usageObserved；日志=" +
+                AgentLogStore.recent().joinToString("\n") { it.message },
+        )
+    }
+
+    /** W41：真实 usage 到账后读命中量；下一轮 beginRound 重置，不拿上一轮累计冒充本轮观测。 */
+    @Test
+    fun cachedLabelFollowsRealUsagePerRound() {
+        val state = RunState(body())
+        state.recordUsage(100, 20, 50)
+        val ctx = testContext(
+            events = mutableListOf<AgentEvent>(),
+            request = AgentRequest(endpoint = endpoint),
+            state = state,
+        )
+        AgentLogStore.clear()
+        runBlocking { ContextBudget().prepare(ctx, "sys") }
+        assertEquals("50", lastCachedLabel())
+
+        state.beginRound()
+        AgentLogStore.clear()
+        runBlocking { ContextBudget().prepare(ctx, "sys") }
+        assertEquals("n/a-usage", lastCachedLabel(), "新一轮未收到 usage 前不得沿用上一轮观测态")
+    }
+
     private companion object {
         /**
          * 首行必须是段头 `[CONTEXT SUMMARY]`，否则 `parseStructuredSummary` 直接 `Rejected("no-header")`。

@@ -197,7 +197,7 @@ class GenerationRoundTruncationRetryTest {
      * 思考只计数不存文本 ⇒ 回滚 = 数字回退到 `reasoningBefore`（此处 0）。
      *
      * 必红变异：删掉 `GenerationRound.prepareRetry` 的 `truncateReasoning(reasoningBefore)`
-     * ⇒ 本用例断言失败（最终计数 = 11 而非 6）。
+     * ⇒ 本用例断言失败（最终计数 = 12 而非 6：两段 THINK 各 6 字符）。
      */
     @Test
     fun truncatedStreamRollsBackReasoningCountToo() {

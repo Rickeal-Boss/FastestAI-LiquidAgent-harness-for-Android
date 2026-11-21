@@ -7,6 +7,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -350,17 +351,16 @@ private fun ThinkingBlock(
 ) {
     val colors = LocalGlassColors.current
     val tokens = LocalGlassTokens.current
-    LiquidGlassSurface(
-        modifier = Modifier.fillMaxWidth(),
-        // 展开后是几十行思考全文；且在气泡内随 LazyColumn 逐条渲染。
-        // 判据见 GlassMaterial 文件头 KDoc：≥3 行正文禁 ULTRA_THIN，
-        // 列表 item 内取 THIN（模糊成本 ×N，下限达标即止）。
-        material = GlassMaterial.THIN,
-        cornerRadius = tokens.radiusSm,
-        onClick = onToggle,
-        // 气泡内嵌套的容器，跟着气泡一起进 LazyColumn —— 同理关色散。
-        dispersion = false,
-        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+    // W41（W24-01）：气泡本体已是 THIN 玻璃，思考块再用 THIN 会形成双层 backdrop；
+    // 展开首帧零尺寸进 AGSL / 浅色主题黑底黑字都出自这一层。改为**无 backdrop 的实底**
+    // 容器：颜色随主题取 glassTintElevated（浅色 #F2F3F8 / 深色 #22242E），文字仍用
+    // onGlass* 同族，不再让第二层 lens 参与合成。
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.glassTintElevated, RoundedCornerShape(tokens.radiusSm))
+            .then(if (onToggle != null) Modifier.clickable { onToggle() } else Modifier)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
     ) {
         Column {
             Row(

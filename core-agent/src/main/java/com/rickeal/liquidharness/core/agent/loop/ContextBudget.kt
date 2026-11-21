@@ -347,18 +347,18 @@ class ContextBudget(
      * 已判死的失真形态，design §2.4）。provider 报了 usage 但没报缓存字段时同样是 `n/a`。
      *
      * W9-04 口径订正（W12-02 四态接线）：本标签经 [promptCacheStatus] 显式分四态——
-     * `USAGE_NOT_OBSERVED`→`n/a-usage`（provider 从未回报 usage）、
+     * `USAGE_NOT_OBSERVED`→`n/a-usage`（截至上一条请求未收到真实 usage）、
      * `CACHE_FIELDS_NOT_REPORTED`→`n/a-fields`（报了 usage 没报缓存字段）、
      * `HIT`/`MISS`→实际命中量。**不再**把「未上报」与「0 命中」合并在一个 `n/a` 里
-     * （那是 W37 注记点名的失真形态：两态在日志上不可分辨）。`usageObserved` 口径与
-     * `RunState.recordUsage` 同源（`promptTokens == 0 && completionTokens == 0` ⇒ 未观测，
-     * 与 `StreamAccumulator.kt:226` 的 `usage != null` / `EventReducer:306` 的
-     * `prompt > 0 || completion > 0` 在「有 usage 就算观测」上语义一致）。
+     * W41 口径订正：`usageObserved` **不再**拿累计 token 反推（估算兜底也会累加，
+     * 会输出 `n/a-fields` 把「没测」写成「没上报」），改读 [RunState.usageObservedThisRound]：
+     * `RunState.recordUsage` 置位、`recordEstimatedPrompt` 不置位、`beginRound` 重置。
+     * 发送前日志读到的是上一条请求的观测态；本条请求的真值在 usage 到达时记账。
      */
     private fun cachedLabel(ctx: TurnContext): String = when (
         promptCacheStatus(
             ctx.state.cachedPromptTokens,
-            usageObserved = ctx.state.promptTokens > 0 || ctx.state.completionTokens > 0,
+            usageObserved = ctx.state.usageObservedThisRound,
         )
     ) {
         PromptCacheStatus.USAGE_NOT_OBSERVED -> "n/a-usage"

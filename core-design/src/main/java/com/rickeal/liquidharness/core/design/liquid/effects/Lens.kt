@@ -8,6 +8,14 @@ import com.rickeal.liquidharness.core.design.liquid.internal.applyRuntimeShader
 import com.rickeal.liquidharness.core.design.liquid.platform.isRuntimeShaderSupported
 
 /**
+ * W41（W24-01）：折射着色器的 `normalize(size)` 在零尺寸/NaN 画布上会产出 NaN。
+ * 展开动画首帧与 `Size(0,0)` 都走这里 ⇒ 退化成纯模糊是正确行为，而不是把 NaN 写进
+ * AGSL uniform。抽成纯函数是为了让 JVM 单测能直接钉住「零尺寸必须被拒」。
+ */
+internal fun lensCanvasIsSafe(minDimension: Float): Boolean =
+    minDimension.isFinite() && minDimension > 0f
+
+/**
  * 液态玻璃的**折射（lens）**效果 —— 让"毛玻璃"变成"液态玻璃"的核心。
  *
  * 与 [blur] 的区别：
@@ -44,6 +52,8 @@ fun BackdropEffectScope.lens(
         return
     }
     if (refractionHeight <= 0f || refractionAmount <= 0f) return
+    // W41（W24-01）：展开首帧 / 零尺寸画布不得进 AGSL normalize。
+    if (!lensCanvasIsSafe(size.minDimension)) return
 
     if (padding > 0f) {
         padding = (padding - refractionHeight).coerceAtLeast(0f)

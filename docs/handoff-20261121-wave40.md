@@ -1,7 +1,8 @@
 # W40 交接 — P0-3 断流重试 + 老号代码面 + 真机矩阵补格
 
 > 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`），
-> 基线 `0cb87ee` → 主体 `e900f44`（feat）+ docs 收尾提交 `b66c8b5`（纯文档）。
+> 基线 `0cb87ee` → 主体 `e900f44`（feat）→ docs 收尾提交 `b66c8b5`（纯文档）。
+> 本波共 **2 次推送**；其后的纯文档订正 `c4fc2cf` 不改变主体，不另计波次。
 > 台账权威版 = `docs/06-deferred-ledger.md`；本波验收物 = `docs/analysis/w40-acceptance.md`；
 > 判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；「未触发」≠「已验证通过」；推断带 caveat、不写成事实。
 > 本交接只引用台账 §一已有行首编号，未引入任何不在台账行首的复合编号。
@@ -115,10 +116,10 @@ F5 手动压缩 ⚠️（确认框走完 + noop「找不到安全截断点」）
 
 **制品**：`docs/analysis/w40-acceptance.md`、本交接、`docs/06-deferred-ledger.md`（W40 段 +
 四行老号注记）、`docs/notes/w29-closeout-checklist.md`（判据 1/6/7 双态实跑摘录）、
-`.github/workflows/build.yml`（EXPECTED_TESTS）、12 文件源码 diff（`e900f44` 主体 + `b66c8b5` 文档收尾）。
+`.github/workflows/build.yml`（EXPECTED_TESTS）、15 唯一文件源码 diff（2 新 + 13 改；两次提交去重）。
 
-**不含**：会话历史 / 凭据（含 GitHub PAT，需轮换）/ 端点完整标识（模型名仅公开名）/ 账号字段 /
-设备序列号 / 本机路径 / 「建议下一链做什么」。
+**不含**：会话历史 / 凭据 / 端点完整标识（模型名仅公开名）/ 账号字段 /
+设备序列号 / 本机路径 / 「建议下一链做什么」。会话中一次性使用的推送凭据由用户侧按安全流程处理，不在仓内闭环。
 
 **边界**：① 两席 429 中断、主理人接手（G1 编译由中断前完成、其余主理人亲自落地）；
 ② E02/E03 404 是端点侧观察、未查供给方公告；③ F3 @ 菜单选中时文本顺序异常属 W17-02 已销账行

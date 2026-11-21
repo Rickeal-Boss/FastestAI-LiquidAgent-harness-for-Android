@@ -151,6 +151,18 @@ class RunState(
     /** usage 是否来自本地估算兜底（provider 未回报）。 */
     var usageEstimated: Boolean = false
 
+    /**
+     * W41：自最近一次 [beginRound] 以来是否收到过 **provider 真实** usage。
+     *
+     * 与累计的 [promptTokens] / [completionTokens] 刻意分开：估算兜底
+     * ([recordEstimatedPrompt]) 也会累加 token，若拿累计值反推「观测过」就会把
+     * 「没测」写成「没命中」（`Generation.kt` 对 `usageObserved` 的口径）。
+     * 每轮 [beginRound] 重置：发送前的 `ContextBudget.cachedLabel` 读到的就是
+     * 「上一条请求有没有真值」，而不是本轮尚未发生的请求，也不是历史累计。
+     */
+    var usageObservedThisRound: Boolean = false
+        private set
+
     private val textBuffer = StringBuilder()
 
     /**
@@ -173,6 +185,7 @@ class RunState(
     /** 进入下一轮并返回轮次号（1 基）。 */
     fun beginRound(): Int {
         round += 1
+        usageObservedThisRound = false
         return round
     }
 
@@ -257,6 +270,7 @@ class RunState(
     fun recordUsage(prompt: Int, completion: Int, cachedPrompt: Int?, cacheWrite: Int? = null) {
         promptTokens += prompt
         completionTokens += completion
+        usageObservedThisRound = true
         if (cachedPrompt != null) cachedPromptTokens = (cachedPromptTokens ?: 0) + cachedPrompt
         if (cacheWrite != null) cacheWriteTokens = (cacheWriteTokens ?: 0) + cacheWrite
     }

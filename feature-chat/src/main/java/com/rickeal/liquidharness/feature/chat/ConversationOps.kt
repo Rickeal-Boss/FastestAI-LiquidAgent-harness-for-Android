@@ -158,10 +158,11 @@ internal class ConversationOps(
      */
     fun autoCompactOnSettled() {
         val snapshot = state.value
-        // ⚠️ 不判 `isStreaming`：本方法只在 `collect` 收到 `Finished(ModelStopped)` 时被调，
-        // 而 `EventReducer.finish` 不清 streaming（清它是 `runOnce` 的 `finally`，发生在
-        // collect 完成之后）⇒ 此刻 `isStreaming` 必为 true。W7 真机实摔：判了它，
-        // 自动压缩被静默早退，连 noop 账都不落（`files/harness/logs` 目录根本不创建）。
+        // ⚠️ 不判 `isStreaming`：本方法在 `collect` 收到终态事件时被调用，此时 streaming
+        // 是否清理取决于调用点顺序（W40 起 onEvent 先落终态气泡，再评估压缩）；
+        // `EventReducer.finish` 把 `isStreaming` 置 false，清缓冲则由 `runOnce` 的 finally
+        // 在 collect 完成后做——所以**不能**拿 `isStreaming` 当「气泡已落库」的代理。
+        // W7 真机实摔：判了它，自动压缩被静默早退，连 noop 账都不落。
         if (snapshot.bubbles.isEmpty()) return
         scope.launch {
             if (!container.settings.compressContext.first()) return@launch
