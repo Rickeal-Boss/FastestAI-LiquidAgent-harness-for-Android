@@ -109,6 +109,36 @@ class RemoteLlmEngineContextLimitTest {
         }
     }
 
+    /**
+     * W44 P0-2(d) 必红：HTTP 400 `token limit reached: reduce prompt`（裸 `limit`
+     * 无长度语义）不得判 CONTEXT_OVERFLOW。
+     *
+     * W43 只给 `prompt` 加了护栏，`context`/`token` 仍直接配裸 `limit` ⇒ 本样本在
+     * `looksLikeContextOverflowMessage` 上 `token`×`limit` 命中、判成超窗：不可重试 +
+     * 触发压缩 + cache 失效（W40 KDoc 点名比失败一次代价大）。W44 把裸 `limit` 从
+     * `mentionsOverflow` 整体降级（与 `prompt` 护栏同一把尺），`token limit reached`
+     * 落 PROTOCOL fail-closed。注入「把裸 limit 放回超限词表」⇒ 本条 RED
+     * （judged CONTEXT_OVERFLOW）。
+     */
+    @Test
+    fun bareTokenLimitOnHttp400IsNotContextOverflow() {
+        withServer(400, """{"error":{"message":"token limit reached: reduce prompt"}}""") { port ->
+            val endpoint = endpointFor(port)
+            val engine = RemoteLlmEngine(endpoint, OpenAiCompatibleAdapter(), HttpTransport())
+            val events = runBlocking {
+                engine.generate(
+                    GenerationRequest(
+                        messages = listOf(ChatMessage(role = Role.USER, text = "hi")),
+                        endpoint = endpoint,
+                    )
+                ).toList()
+            }
+            val failed = events.filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.PROTOCOL, failed.kind, "裸 token limit 无长度语义是普通 400，不得判超窗：$failed")
+            assertEquals(null, failed.contextLimitHint)
+        }
+    }
+
     private fun endpointFor(port: Int): RemoteEndpoint = RemoteEndpoint(
         id = "ep-1m",
         name = "1m",

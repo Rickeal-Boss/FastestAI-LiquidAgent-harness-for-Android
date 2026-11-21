@@ -50,6 +50,30 @@ object AgentLogStore {
     // 所以只能无参构造；容量上限由 DEFAULT_CAPACITY 在写入处强制。
     private val buffer = ArrayDeque<Entry>()
 
+    /**
+     * 落盘镜像（W44，W12-02 出口判据「设备侧探针按四态落盘」）。
+     *
+     * 本类刻意**不落盘**（KDoc 上方「不落盘」段），落盘由 `core-data` 的
+     * `AgentLogFileStore` 负责；但 `:core-kernel` 不能依赖 `:core-data`（模块边界），
+     * 所以这里只开一个**端口**：由 `:app` 在进程启动时把「环形缓冲 → 文件」的镜像装上。
+     *
+     * 为什么端口放在这里而不是让调用方自己双写：`cached=` 四态探针、压缩账、熔断账的
+     * 写点分散在多个模块，双写要求每个写点都知道落盘存在 —— 改一处漏一处。端口放在
+     * 单一出口 [record] 上，新增日志点自动获得落盘，不需要逐个接线。
+     *
+     * 契约：
+     * - sink 在**锁外**调用（落盘是 IO，不得持锁）；
+     * - sink 抛异常**不影响**缓冲写入与调用方（日志失败不得让 run 失败）；
+     * - sink 收到的是**已脱敏**的文本（与缓冲同一份，不重新拼）；
+     * - `null` = 卸下镜像（单测与诊断页可清）。
+     */
+    private var fileSink: ((Level, String) -> Unit)? = null
+
+    /** 安装 / 卸下落盘镜像（`null` 卸载）。进程级单例，后装覆盖先装。 */
+    fun installFileSink(sink: ((Level, String) -> Unit)?) {
+        synchronized(lock) { fileSink = sink }
+    }
+
     fun info(message: String) = record(Level.INFO, message)
 
     fun warn(message: String) = record(Level.WARN, message)
@@ -57,12 +81,27 @@ object AgentLogStore {
     fun error(message: String) = record(Level.ERROR, message)
 
     fun record(level: Level, message: String) {
-        val entry = Entry(level = level, message = sanitize(message), atMillis = System.currentTimeMillis())
+        val sanitized = sanitize(message)
+        val entry = Entry(level = level, message = sanitized, atMillis = System.currentTimeMillis())
+        val sink: ((Level, String) -> Unit)?
         synchronized(lock) {
             // 满缓冲且没有可牺牲的 INFO ⇒ 这条 INFO 自己就是最不重要的一条，直接不写。
             // 不这么做的后果：一条 INFO 会挤掉一条 WARN/ERROR，而诊断页恰恰只需要那几条。
-            if (buffer.size >= DEFAULT_CAPACITY && !dropOneFor(entry)) return
-            buffer.addLast(entry)
+            val keptInRing = buffer.size < DEFAULT_CAPACITY || dropOneFor(entry)
+            if (keptInRing) buffer.addLast(entry)
+            sink = fileSink
+        }
+        // 落盘与环形缓冲的容量口径**分开**：环形缓冲丢的是「内存里最不重要的一条」，
+        // 不代表这条日志不值得查（`cached=` 探针恰恰是 INFO）。文件侧有自己的
+        // 「256KB × 3」轮转上限，不靠环形缓冲的驱逐来控量。
+        if (sink != null) {
+            try {
+                sink(level, sanitized)
+            } catch (t: Throwable) {
+                // 日志落盘失败不改变主流程语义（与 AgentLogFileStore 内部同一契约）。
+                // 这里不能吞 CancellationException 的问题不存在：本函数是同步出口，
+                // 无挂起点；sink 实现（app 侧）只做 trySend，不做阻塞 IO。
+            }
         }
     }
 

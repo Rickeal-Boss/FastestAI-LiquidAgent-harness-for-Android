@@ -1,7 +1,7 @@
 # W43 交接 — 判序反噬双修复 / 四态口径收口 / 3b-ext 全树加固 + 真机多模型回归
 
 > 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`）。
-> 基线 `2e69dae333f6ed5ec5bd62600f75a2014fe50c1e`（W42 tip）；台账权威版 = `docs/06-deferred-ledger.md`；
+> 基线 `2e69dae333f6ed5ec5bd62600f75a2014fe50c1e`（W42 tip）→ 本波 tip `522040ae9b50d44d36bae3470ed6d9daedf7411f`（W44 回填订正）；台账权威版 = `docs/06-deferred-ledger.md`；
 > 本波验收物 = `docs/analysis/w43-acceptance.md`；判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；
 > 「未触发」≠「已验证通过」；推断带 caveat、不写成事实。守恒式两数只在派单卡抬头写一次。
 
@@ -60,6 +60,7 @@
 | 判据先行 | 两条新必红未修版本 `2 failed`、修复后 GREEN；3b-ext 正常态 rc=1 + 八类注入 rc=0 | ✅ |
 | Secret scan CI | run `44922539697` `completed/success`，gitleaks/trufflehog/**3b-ext（全树无豁免，step #6）** 逐 step success | ✅ |
 | Build CI | run `44922539579` `completed/success`（Unit tests 865 对账 + Arch guard 26 判据 + Assemble Debug + Lint 全绿） | ✅ |
+| 文档提交 CI | 另两笔纯文档提交各触发 Secret run `44922927954`（`41b3716`）与 `44923022977`（`522040a`，真 tip）均 `completed/success`；Build 0 run = `paths-ignore` 既定口径（W44 回填订正） | ✅ |
 
 ## 七、真机回归要点
 
@@ -87,6 +88,6 @@
 
 **不含**：会话历史 / 凭据 / 端点完整标识与密钥 / 未打码账号字段 / 设备序列号 / 本机路径 / 用户私人图片 / uiautomator 噪声 /「建议下一链做什么」。
 
-**边界**：① 反噬 a 修法刻意不含裸 `rate`，保住 E5i（以真样本为准）；② P1-3 采 run 级累计口径，非快照；③ 3b-ext 本地 `git add -f` 新文件不命中是 index 缓存坑，CI 全 tracked 不受影响；④ 判据冻结（3b-ext 是扫描面加固、3 条新增是既有测试类行为判据）；⑤ OR 双端点 404 与用户声明矛盾，以设备真相为准、未查供给方公告；⑥ CI 绿以 run 四字段为准，本地四闸门不代替 CI。
+**边界**：① 反噬 a 修法刻意不含裸 `rate`，保住 E5i（以真样本为准）；② P1-3 采 run 级累计口径，非快照；③ 3b-ext 本地 `git add -f` 新文件不命中是 index 缓存坑，CI 全 tracked 不受影响（W44 订正：已补未 tracked 工作树扫描兜底，见 `secret-scan.yml` W44 段）；④ 判据冻结（3b-ext 是扫描面加固、3 条新增是既有测试类行为判据）；⑤ OR 双端点 404 与用户声明矛盾，以设备真相为准、未查供给方公告；⑥ CI 绿以 run 四字段为准，本地四闸门不代替 CI；⑦ **本波为回归要点波、非矩阵波**：真机 9 格为脱敏文字结论、未产出 34 键矩阵制品与逐格 JSON，W42 制品不跨波沿用（W44 按 P1-2 二选一裁决写死此形态）；⑧ W43 真机多模型回归未派并行子席（429 前科按纪律处理），主理人亲自执行、不冒充子席产出。
 
 > 本波止于交接，交由外部团队审查。

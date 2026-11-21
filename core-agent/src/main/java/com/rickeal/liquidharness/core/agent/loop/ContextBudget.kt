@@ -357,6 +357,12 @@ class ContextBudget(
      * 读到的必是刚清零的 `false`，四态在生产路径退化为恒 `n/a-usage`）。改读
      * [RunState.usageEverObserved]：run 级持久标志，`recordUsage` 置位、估算不置位、
      * 不随 `beginRound` 重置 ⇒ 发送前读到的是「此前任何一条请求有没有真值」。
+     *
+     * W44 口径边界补写（不改语义）：run 级累计窗口下，`n/a-fields` 只表示
+     * **整个 run 从未收到缓存字段**（`RunState.cachedPromptTokens` 只在非 null 时
+     * 累加、从不清零 ⇒ run 内报过一次缓存字段后，此标签上 `n/a-fields` 结构不可达），
+     * 无法表达「本轮缺字段」；「本轮」的 per-request 四态由 `StreamAccumulator` /
+     * `EventReducer` 的 UI 路径独立表达，两条路径各表各的、不互相冒充。
      */
     private fun cachedLabel(ctx: TurnContext): String = when (
         promptCacheStatus(

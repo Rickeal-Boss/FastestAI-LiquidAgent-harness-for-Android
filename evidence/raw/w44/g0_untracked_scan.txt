@@ -1,0 +1,20 @@
+=== W44 3b-ext untracked-file scan: local two-state replication ===
+date: 2026-11-22 (W44 wave 0)
+shell: local replication of CI secret-scan 3b-ext extension
+
+[state-1 normal] cmd: git ls-files --others --exclude-standard | while read f; grep -qIF <8 patterns>; done
+output: GREEN untracked-clean (0 hits, rc=0)
+note: pre-scan of legacy untracked _w* dirs found 12 files containing local-path literals;
+      those dirs are now .gitignore'd (never staged, never committed) - see .gitignore W44 block
+
+[state-2 red probe] created untracked _w44_forceadd_probe.json containing device-serial literal
+output: RED hit: _w44_forceadd_probe.json / RED untracked leak hit (rc=1)
+verdict: scan fires on the exact W36-01 exit-criteria scenario (untracked + serial => RED)
+after: probe removed, re-scan GREEN untracked-clean
+
+[CI form] secret-scan.yml 3b-ext step extended with untracked sweep after tracked git grep:
+  git ls-files --others --exclude-standard -> per-file grep -qIF (8 patterns, same set)
+  any hit => RED; grep fault on tracked scan (rc>=2) => RED unchanged
+
+MSYS xargs assertion noise: this local run uses while-read loop (no xargs);
+xargs 'bc_ctl.arg_max' assertion in other W43 logs is local env noise, rc unaffected.

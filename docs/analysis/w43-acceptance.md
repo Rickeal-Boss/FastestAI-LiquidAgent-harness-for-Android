@@ -1,7 +1,7 @@
 # W43 验收物 — 判序反噬双修复 / 四态口径收口 / 3b-ext 全树加固 + 真机多模型回归
 
 > 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`）。
-> 基线 tip `2e69dae333f6ed5ec5bd62600f75a2014fe50c1e`（W42 tip）→ 本波 tip `fa06c0c0858bc7215db0fba9d6ab4554da4725db`。
+> 基线 `2e69dae333f6ed5ec5bd62600f75a2014fe50c1e`（W42 tip）→ 本波 tip `522040ae9b50d44d36bae3470ed6d9daedf7411f`（W44 回填订正；波内序列 `fa06c0c0858bc7215db0fba9d6ab4554da4725db` feat → `41b3716cc8d4e7b1d6d181f7e329a642cd79f5bc` docs → `522040ae9b50d44d36bae3470ed6d9daedf7411f` docs）。
 > 台账权威版 = `docs/06-deferred-ledger.md`；交接文档 = `docs/handoff-20261122-wave43.md`。
 > 判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；「未触发」≠「已验证通过」；推断带 caveat、不写成事实。
 > 守恒式两数只在派单卡抬头写一次；本波零新增 `W43-` 行、零状态字段改动、三数不变、G20 141 ID 不变。
@@ -79,12 +79,13 @@
 
 ## 步 5 · 推送 + CI ✅
 
-- 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；单一提交 `fa06c0c0858bc7215db0fba9d6ab4554da4725db`（18 文件，代码+证据同车）；`git push --dry-run` 真判据通过；PAT 仅 URL inline 一次性使用、remote 配置干净无残留。
-- CI（按 head_sha 完整 40 位实取，`2e69dae..fa06c0c main` 单次推送单提交触发一轮、两 workflow）：
+- 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；代码提交 `fa06c0c0858bc7215db0fba9d6ab4554da4725db`（18 文件，代码+证据同车）；`git push --dry-run` 真判据通过；PAT 仅 URL inline 一次性使用、remote 配置干净无残留。
+- CI（W44 回填订正：本波实为 **3 次推送 3 提交、4 条 run**——`fa06c0c` 代码提交触发 Build+Secret 两条、`41b3716cc8d4e7b1d6d181f7e329a642cd79f5bc` 与 `522040ae9b50d44d36bae3470ed6d9daedf7411f` 两笔纯文档提交各触发 Secret 一条；文档提交 Build 0 run = `paths-ignore` 既定口径）：
   - Build run `44922539579`（`head_sha=fa06c0c0858bc7215db0fba9d6ab4554da4725db`、`status=completed` / `conclusion=success`、`updated_at=2026-11-21T16:06:59Z`）✅，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44922539579`。jobs API 逐 job/step 全绿：Unit tests（含 `Reconcile EXPECTED_TESTS` success，865 对账通过 + `Run unit tests (aggregate + real XML counts)` success）、Arch guard（26 条判据 + mutation selftest success）、Assemble Debug（JDK 21）、Lint（baseline gate），失败诊断 step 均 skipped。
   - Secret scan run `44922539697`（同 head_sha、`status=completed` / `conclusion=success`）✅，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44922539697`；jobs API 逐 step 确认 gitleaks / trufflehog / **3b-ext（全树无豁免，step #6）** 均 `completed/success`。
   - 文档提交 `41b3716cc8d4e7b1d6d181f7e329a642cd79f5bc`（纯文档）另触发 Secret scan run `44922927954`（`head_sha=41b3716…`、`status=completed` / `conclusion=success`）、链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44922927954`；逐 step 全绿含 **3b-ext（全树无豁免，step #6）** —— 这是「新增文档不含泄漏形态、3b-ext 对其非 vacuous」的 CI 级验证。Build 对该纯文档提交 0 run（`build.yml` 的 `paths-ignore` 既定口径，非构建失败）。
-  - 本地四闸门不代替 CI；CI 绿以三 run（代码提交 2 + 文档提交 1）四字段为准。WebFetch 对 run 级端点有 15 分钟缓存，终态以带查询参数的新请求为准。
+  - 文档提交 `522040ae9b50d44d36bae3470ed6d9daedf7411f`（W44 回填订正补记：真 tip）触发 Secret scan run `44923022977`（`head_sha=522040a…`、`status=completed` / `conclusion=success`）、链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44923022977`（Actions 列表页 embedded JSON 实取，W44 补入）。
+  - 本地四闸门不代替 CI；CI 绿以**四 run**（代码提交 2 + 文档提交 2）四字段为准。WebFetch 对 run 级端点有 15 分钟缓存，终态以带查询参数的新请求为准。
 
 ---
 
@@ -133,9 +134,11 @@
 - ② 反噬 a 修法刻意不含裸 `rate`，否则 E5i 重引 W42 已修反向回归（本波复刻实测过一次 RED 后修正）；外审若按「rate 也该算限流语境」复核会误判，此处以真样本为准。
 - ③ P1-3 采 run 级累计口径（非草案的 per-request 快照）；「先命中后缺字段显示累计 HIT」是设计后果、由新增用例钉住，不是缺陷。
 - ④ 3b-ext 从两目录扩到全树 tracked；本地 `git add -f` 的新文件因 git grep 索引缓存不命中是本地环境坑，CI checkout 全 tracked 文件不受影响（已用真实 tracked 文件注入验证 rc=0）。
-- ⑤ 判据冻结：34 键矩阵零增删、无新 schema / checklist 段 / CI job；3b-ext 是既有判据扫描面加固，非新判据；新增 3 条是既有测试类里的行为判据、同提交对账 `EXPECTED_TESTS`。
+- ⑤ 判据冻结：无新 schema / checklist 段 / CI job；3b-ext 是既有判据扫描面加固，非新判据；新增 3 条是既有测试类里的行为判据、同提交对账 `EXPECTED_TESTS`。（W44 订正：「34 键矩阵零增删」在本波为无对象表述——本波未产出矩阵制品，见边界⑨。）
 - ⑥ 守恒式两数只在派单卡抬头；台账零新增行、状态字段零改动、三数不变、G20 141 ID 不变；W42 及更早历史数字作时点记录不回改。
 - ⑦ CI 绿以 run 四字段为准，本地四闸门不代替 CI；Build 与 Secret scan 两 run 四字段及逐 step 复核均经公开 API 实取、均 `completed/success`。
 - ⑧ OR 两端点 404 与用户声明「可用」矛盾，以设备真相为准；未查供给方公告，不归因 harness。
+- ⑨（W44 订正补记）**本波为回归要点波、非矩阵波**：步 4 的 9 格为脱敏文字结论、无 `evidence/` 制品路径，未产出 34 键 `w43-matrix-summary.json` 与逐格 JSON；W42 制品不跨波沿用。按外审 P1-2 二选一裁决取方案②（写死文字结论形态），不补造制品。
+- ⑩（W44 订正补记）本波实为 **3 次推送 3 提交、4 条 run**（`fa06c0c` 代码提交 2 + `41b3716` 文档 1 + `522040a` 真 tip 文档 1）；波内收尾时的「三 run」口径已由 W44 回填为四 run，第 4 条 run `44923022977` 四字段已补入步 5。
 
 > 本波止于交接，交由外部团队审查。

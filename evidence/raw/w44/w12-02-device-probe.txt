@@ -1,0 +1,152 @@
+=== W44 W12-02 device-side cache probe (desensitized) ===
+source: device app log agent-0.log, pulled via run-as; only probe/trace lines kept
+note: endpoint identity, keys, device serial, SSID and local paths are stripped
+scope: 4-state labels written by ContextBudget.observePrefix through the W44 file sink
+
+2026-11-19T04:16:53.631221Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T04:25:45.346812Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T05:52:16.794286Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:00:02.592741Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:02:42.486778Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:08:31.241406Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:35:10.084431Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:36:03.451714Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:38:57.422593Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:51:20.900243Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T06:58:18.430934Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T07:00:33.484546Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T07:02:28.124002Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T10:49:43.716536Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T10:52:39.114181Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T10:57:14.291001Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T11:01:02.055700Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T11:03:26.098564Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T11:54:00.890603Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T12:04:34.391411Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T12:05:35.251690Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T12:06:03.371660Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T12:06:47.042800Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T12:07:15.485283Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T12:11:45.147955Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T14:45:30.275230Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T14:50:54.246950Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T15:11:50.156997Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T15:13:10.821010Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T15:16:58.408852Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T15:19:19.369638Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T15:20:05.368851Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T15:20:45.973275Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T15:21:31.222769Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T15:22:14.494981Z INFO auto_compact=noop reason=insufficient_savings:net=-256
+2026-11-19T15:22:59.759335Z INFO auto_compact=noop reason=insufficient_savings:net=-256
+2026-11-19T15:24:01.940224Z INFO manual_compress dropped=9 kept=11 cache_invalidated=false
+2026-11-19T15:24:49.721899Z INFO auto_compact=noop reason=already_compressed
+2026-11-19T15:36:25.098411Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T16:42:42.210525Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T16:45:33.823564Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T16:47:10.135903Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T16:49:03.602630Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T16:59:03.938780Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T17:01:40.286364Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T17:02:39.255700Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T17:04:14.695625Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T17:06:34.730538Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T17:15:18.340815Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T17:35:13.926350Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T17:41:09.254755Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T17:41:59.340290Z INFO auto_compact=noop reason=below_trigger
+2026-11-19T17:42:14.975144Z INFO auto_compact=noop reason=insufficient_savings:net=-256
+2026-11-19T17:42:25.476487Z INFO auto_compact dropped=4 kept=10 cache_invalidated=false
+2026-11-19T17:42:59.720639Z INFO auto_compact=noop reason=already_compressed
+2026-11-19T17:43:24.072466Z INFO auto_compact=noop reason=already_compressed
+2026-11-20T09:29:17.675100Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T09:33:02.654558Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T09:33:42.110029Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T09:34:45.127374Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T09:38:41.387207Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T09:42:12.347574Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T09:46:46.112134Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T09:50:34.874102Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T09:53:43.252104Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T10:06:20.919775Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T10:08:42.546638Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T10:11:06.639403Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T10:12:19.064186Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T10:15:35.140911Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T10:15:47.084251Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T10:16:03.518635Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T10:16:22.673826Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T10:19:53.853647Z INFO auto_compact=noop reason=insufficient_savings:net=-256
+2026-11-20T10:21:11.374137Z INFO auto_compact=noop reason=insufficient_savings:net=-256
+2026-11-20T10:22:01.315257Z INFO auto_compact=noop reason=insufficient_savings:net=-256
+2026-11-20T10:22:26.275832Z INFO auto_compact=noop reason=insufficient_savings:net=-256
+2026-11-20T12:22:03.777775Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-20T12:24:33.431924Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T12:25:14.125759Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T12:35:04.242662Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T12:36:02.805353Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T12:36:47.901688Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T14:10:47.058365Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T14:12:40.104054Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T14:16:09.185830Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T14:17:40.174896Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T15:46:16.990129Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T16:02:28.722582Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T16:06:35.161892Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T16:12:20.938128Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T16:14:21.977006Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T16:16:02.541712Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T16:24:44.147397Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T16:26:02.842835Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T16:26:54.372442Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T16:28:07.928700Z INFO auto_compact=noop reason=below_trigger
+2026-11-20T16:28:24.660373Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-21T07:37:10.826429Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T07:43:26.489743Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T07:46:23.627418Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T10:17:26.039518Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T10:22:56.297175Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T10:24:23.250633Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T10:57:39.767495Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T10:58:59.491637Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T11:00:37.931454Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T11:01:28.742633Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T11:02:27.674266Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-21T11:03:40.775140Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-21T11:07:27.660323Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-21T13:49:25.867169Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T13:51:40.155536Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T13:57:24.776887Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T14:09:34.646940Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T14:11:08.141516Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T14:12:47.981225Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T14:15:48.737567Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T14:27:05.819681Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T15:44:21.679298Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T15:57:27.066940Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T17:16:35.554336Z INFO prefix fp=be299550 changed=none prompt=1080 cached=n/a-usage
+2026-11-21T17:16:36.844399Z WARN auto_compact=noop reason=below_trigger
+2026-11-21T17:16:36.844449Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T17:16:56.076539Z INFO prefix fp=3150f2a4 changed=none prompt=1099 cached=n/a-usage
+2026-11-21T17:16:57.272434Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T17:16:57.271765Z WARN auto_compact=noop reason=below_trigger
+2026-11-21T17:22:48.902782Z INFO prefix fp=2ef6e233 changed=none prompt=1144 cached=n/a-usage
+2026-11-21T17:23:40.435197Z INFO prefix fp=2ef6e233 changed=none prompt=2487 cached=0(cumulative)
+2026-11-21T17:23:41.975597Z INFO prefix fp=2ef6e233 changed=none prompt=2546 cached=0(cumulative)
+2026-11-21T17:23:42.939712Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T17:23:42.939695Z WARN auto_compact=noop reason=below_trigger
+2026-11-21T17:27:11.885686Z INFO prefix fp=691bdf48 changed=none prompt=1081 cached=n/a-usage
+2026-11-21T17:27:13.440881Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T17:27:13.441496Z WARN auto_compact=noop reason=below_trigger
+2026-11-21T17:44:04.247577Z INFO prefix fp=49e257ea changed=none prompt=1078 cached=n/a-usage
+2026-11-21T17:47:37.762793Z INFO prefix fp=db3db58a changed=none prompt=2116 cached=n/a-usage
+2026-11-21T17:47:40.115563Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T17:47:40.115560Z WARN auto_compact=noop reason=below_trigger
+2026-11-21T17:49:19.091090Z INFO prefix fp=9f4343da changed=none prompt=1133 cached=n/a-usage
+2026-11-21T17:49:20.554441Z INFO prefix fp=76550261 changed=HISTORY prompt=2843 cached=0(cumulative)
+2026-11-21T17:49:21.671710Z INFO auto_compact=noop reason=below_trigger
+2026-11-21T17:49:21.672384Z WARN auto_compact=noop reason=below_trigger
+2026-11-21T17:58:50.604832Z ERROR context_overflow_prevented: chars=59064 cap=50227
+2026-11-21T18:01:43.032710Z WARN manual_compress=noop reason=manual compress: nothing to drop
+2026-11-21T18:05:59.982971Z INFO prefix fp=d9813106 changed=none prompt=12324 cached=n/a-usage
+2026-11-21T18:06:02.481865Z INFO prefix fp=d9813106 changed=none prompt=12324 cached=n/a-usage

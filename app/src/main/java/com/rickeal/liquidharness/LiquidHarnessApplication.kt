@@ -20,5 +20,8 @@ class LiquidHarnessApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        // W44（W12-02 出口判据）：把环形缓冲镜像到落盘日志 —— `cached=` 四态探针
+        // 从此在设备 `files/harness/logs/agent-*.log` 可复核（此前只有 INFO→ring）。
+        DiagnosticLogSink(container.logs).install()
     }
 }

@@ -145,8 +145,11 @@ env:
   # W42：+6（context 2 / engine 3 / design 1）= 856 + 6 = 862，同提交一次改。
   # W43：+3（engine 2：E5k 超窗+too many tokens 不误判限流 / HTTP400 裸 prompt limit
   #   不判超窗；core-agent 1：cachedLabel 累计口径钉）= 862 + 3 = 865，同提交一次改。
+  # W44：+6（engine 4，全在 core-engine 两既有测试类：SSE 超窗+quota / SSE 超窗+slow down /
+  #   SSE 裸 token limit 不判超窗 / HTTP400 裸 token limit 不判超窗；core-kernel 2：
+  #   落盘镜像收到 INFO 四态探针行 / 镜像抛异常不影响 record）= 865 + 6 = 871。
   # ---------------------------------------------------------------------------
-  EXPECTED_TESTS: '865'
+  EXPECTED_TESTS: '871'
 
 jobs:
   # ===========================================================================

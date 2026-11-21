@@ -336,6 +336,60 @@ class RemoteLlmEngineStreamFailureTest {
         }
     }
 
+    // ------------------------------------------------------------------ E5l/m/n（W44 P0-2 证据强度仲裁）
+
+    /**
+     * E5l（W44 必红 ①）：message-only 超窗文案自带 `quota` 强限流词
+     * （`maximum context length exceeded (quota: 100000 tokens)`）⇒ 必须判
+     * CONTEXT_OVERFLOW（不可重试）。
+     *
+     * W43 残留（外审 P0-2(c)）：`rateContext` 六词（429/quota/throttl/slow down/
+     * too many requests/rate limit 连写）无条件置于超窗组合之前 ⇒ 本样本判
+     * RATE_LIMIT 可重试，同长度请求重发两次、两次都超窗。W44 证据强度仲裁：超窗
+     * 强组合（窗口词 × 长度语义）优先于强限流词。注入「把 quota 放回无条件强词」⇒ 本条 RED。
+     */
+    @Test
+    fun contextOverflowWithQuotaWordingIsNotRateLimit() {
+        val error = """data: {"error":{"message":"maximum context length exceeded """ +
+            """(quota: 100000 tokens)"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val failed = runEngine(port).filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.CONTEXT_OVERFLOW, failed.kind, "超窗+quota 不得误判限流：$failed")
+            assertFalse(failed.retryable, "超窗不可重试：$failed")
+        }
+    }
+
+    /** E5m（W44 必红 ②）：`context window exceeded, slow down your requests` ⇒ CONTEXT_OVERFLOW。 */
+    @Test
+    fun contextOverflowWithSlowDownWordingIsNotRateLimit() {
+        val error = """data: {"error":{"message":"context window exceeded, """ +
+            """slow down your requests"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val failed = runEngine(port).filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.CONTEXT_OVERFLOW, failed.kind, "超窗+slow down 不得误判限流：$failed")
+            assertFalse(failed.retryable, "超窗不可重试：$failed")
+        }
+    }
+
+    /**
+     * E5n（W44 必红 ③）：裸 `limit` 降级后，`token limit reached for this endpoint`
+     * （无长度语义）不再是超窗 —— 普通 SSE 错误帧，不得判 CONTEXT_OVERFLOW
+     * （不可重试 + 触发压缩 + cache 失效）。
+     *
+     * W43 残留（外审 P0-2(d)）：`context`/`token` 仍直接配裸 `limit` ⇒ 本样本判
+     * 超窗。W44 把裸 `limit` 从 `mentionsOverflow` 降级（与 `prompt` 护栏同一把尺）。
+     * 注入「把裸 limit 放回超限词表」⇒ 本条 RED（判成 CONTEXT_OVERFLOW）。
+     */
+    @Test
+    fun bareTokenLimitWithoutLengthSemanticsIsNotContextOverflow() {
+        val error = """data: {"error":{"message":"token limit reached for this endpoint"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val failed = runEngine(port).filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.PROTOCOL, failed.kind, "裸 token limit 无长度语义是普通错误帧：$failed")
+            assertFalse(failed.retryable, "PROTOCOL fail-closed：$failed")
+        }
+    }
+
     /** E5g（W41）：结构化超窗分支保留供应商原始 message，不再硬替换成通用文案。 */
     @Test
     fun contextOverflowKeepsProviderMessage() {

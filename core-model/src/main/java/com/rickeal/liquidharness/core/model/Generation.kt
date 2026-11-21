@@ -83,7 +83,10 @@ enum class PromptCacheStatus {
     /** 上报了命中量且 == 0 ⇒ 真没命中，查前缀稳定性。 */
     MISS,
 
-    /** usage 到了，但没有任何一家认识的缓存字段 ⇒ 查端点是否支持上报。 */
+    /** usage 到了，但没有任何一家认识的缓存字段 ⇒ 查端点是否支持上报。
+     *  W44 窗口边界：run 级累计窗口下此态只表示「整个 run 从未收到缓存字段」
+     *  （累计量从不清零 ⇒ 报过一次后此态不可达）；per-request 语义见下方
+     *  `promptCacheStatus` 观察窗口边界 KDoc。 */
     CACHE_FIELDS_NOT_REPORTED,
 
     /** 整个 usage 都没观测到（流被截 / 端点不回报）⇒ 查传输与末帧，不是缓存结论。 */
@@ -106,6 +109,22 @@ fun promptCacheStatus(cachedPromptTokens: Int?, usageObserved: Boolean): PromptC
     cachedPromptTokens > 0 -> PromptCacheStatus.HIT
     else -> PromptCacheStatus.MISS
 }
+
+/**
+ * 四态的**观察窗口边界**（W44 补写，不改语义）。
+ *
+ * [promptCacheStatus] 只认布尔，两种窗口都可传入；但窗口不同 ⇒ 四态的含义随之不同：
+ * - **per-request 窗口**（`StreamAccumulator` / `EventReducer` 路径）：四态描述**本条请求**，
+ *   `CACHE_FIELDS_NOT_REPORTED` 表示「本轮报了 usage 但缺缓存字段」——这正是
+ *   `CACHE_FIELDS_NOT_REPORTED` KDoc 的本意（查端点是否支持上报）。
+ * - **run 级累计窗口**（`ContextBudget.cachedLabel` 经 `RunState.usageEverObserved` /
+ *   `RunState.cachedPromptTokens`，发送前日志点）：`cachedPromptTokens` 只在非 null 时
+ *   累加、从不清零 ⇒ 只要整个 run 曾报过一次缓存字段，`n/a-fields` 在这条日志上就
+ *   **结构不可达**；此窗口下 `CACHE_FIELDS_NOT_REPORTED` 只表示「整个 run 从未收到
+ *   缓存字段」，无法表达「本轮缺字段」。「本轮缺字段」的 per-request 事实由
+ *   `StreamAccumulator` / `EventReducer` 路径独立表达（UI 四态），两条路径各表各的、
+ *   不得互相冒充（W43 累计口径裁决 + 累计用例钉住）。
+ */
 
 /**
  * 缓存命中率，**分母一次钉死**（W9-04；报告1 §二「分母口径」）。

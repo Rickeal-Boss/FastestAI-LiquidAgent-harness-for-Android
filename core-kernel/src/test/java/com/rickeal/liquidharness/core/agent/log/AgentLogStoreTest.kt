@@ -88,4 +88,48 @@ class AgentLogStoreTest {
             "200 条 INFO 之后 ERROR 已被顶掉",
         )
     }
+
+    /**
+     * W44（W12-02 出口判据）：落盘镜像必须收到 `cached=` 四态探针行。
+     *
+     * 这一条钉的是「端口被调用」而不是「端口存在」：`cached=` 只在 INFO 级写入，
+     * W44 之前它只进环形缓冲、重启即失，设备侧无从复核四态。镜像端口若不转交
+     * INFO，本用例 RED。注入「sink 只转 WARN/ERROR」⇒ RED。
+     */
+    @Test
+    fun fileSinkReceivesInfoProbeLines() {
+        AgentLogStore.clear()
+        val seen = mutableListOf<String>()
+        AgentLogStore.installFileSink { _, message -> seen.add(message) }
+        try {
+            AgentLogStore.info("prefix fp=abc changed=none prompt=1234 cached=n/a-usage")
+            AgentLogStore.info("prefix fp=abc changed=none prompt=1300 cached=0(cumulative)")
+
+            assertEquals(2, seen.size, "INFO 探针行必须逐条转交落盘镜像：seen=$seen")
+            assertTrue(seen[0].contains("cached=n/a-usage"), "四态标签不得在镜像里丢失：seen=$seen")
+            assertTrue(seen[1].contains("cached=0(cumulative)"), "累计口径后缀不得丢：seen=$seen")
+        } finally {
+            AgentLogStore.installFileSink(null)
+        }
+    }
+
+    /**
+     * W44：落盘镜像抛异常不得影响缓冲写入与调用方（日志失败 ≠ run 失败）。
+     *
+     * 注入「sink 抛异常后 record 提前返回」⇒ 本用例 RED（`survives` 不在缓冲里）。
+     */
+    @Test
+    fun fileSinkFailureDoesNotBreakRecord() {
+        AgentLogStore.clear()
+        AgentLogStore.installFileSink { _, _ -> throw IllegalStateException("disk full") }
+        try {
+            AgentLogStore.info("survives")
+            assertTrue(
+                AgentLogStore.recent().any { it.message == "survives" },
+                "sink 抛异常后缓冲仍须写入：${AgentLogStore.recent().map { it.message }}",
+            )
+        } finally {
+            AgentLogStore.installFileSink(null)
+        }
+    }
 }
