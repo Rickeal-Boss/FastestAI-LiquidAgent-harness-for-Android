@@ -81,9 +81,14 @@
 
 **W12-02 设备侧四态探针（销账证据）**：`run-as` 取回 `files/harness/logs/agent-0.log`，`cached=n/a-usage`（USAGE_NOT_OBSERVED）×3、`cached=0(cumulative)`（MISS，同一 run 内 file_write→file_read 多请求）×2。脱敏件：`evidence/raw/w44/w12-02-device-probe.txt`。`HIT` / `n/a-fields` 本波端点未上报该形态，未观察到（边界如实）。
 
-## 步 5 · 推送 + CI
+## 步 5 · 推送 + CI ✅
 
-（见本文件末尾「步 5 回填」段，推送后按 run 四字段实取填入。）
+- 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；单一代码提交 `1c3cd5a5ccaef7195a1fb41ea48a69fe12abb178`（29 文件：11 源码/测试 + 2 workflow + `.gitignore`/`.gitattributes` + 6 文档 + 11 件证据）；PAT 仅 URL inline 一次性使用，未新增 remote、无凭据落盘。
+- **1 次推送 1 提交 → 2 条 run**（`head_sha=1c3cd5a5ccaef7195a1fb41ea48a69fe12abb178`，公开 API 实取）：
+  - Build run `44935473646`：`status=completed` / `conclusion=success`、`updated_at=2026-11-21T18:28:31Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44935473646`（Unit tests 871 对账 + Arch guard + Assemble Debug + Lint）。
+  - Secret scan run `44935473364`：`status=completed` / `conclusion=success`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44935473364`（gitleaks / trufflehog / 3b-ext 含未 tracked 补扫步）。
+- **本文件的 CI 回填提交为纯文档 tip**：按既定降级规则（tip 文档提交的 run 不作 P0 判据），其触发的 Secret run 不预设 run 号、不冒充代码提交的验证；代码提交的两条 run 四字段才是本波 CI 判据。Build 对纯文档提交 0 run（`paths-ignore` 既定口径，非构建失败）。
+- 本地四闸门不代替 CI；CI 绿以 run 四字段为准。
 
 ---
 
