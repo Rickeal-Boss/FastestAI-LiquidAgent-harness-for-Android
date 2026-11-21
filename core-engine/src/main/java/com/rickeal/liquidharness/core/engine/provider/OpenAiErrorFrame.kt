@@ -29,13 +29,21 @@ import kotlinx.serialization.json.JsonPrimitive
  *
  * | 命中 | kind | retryable | 处置 |
  * |---|---|---|---|
- * | `rate` / `429` / `quota` | [EngineErrorKind.RATE_LIMIT] | true | 内核按退避重试 |
+ * | `rate` / `429` / `quota` | [EngineErrorKind.RATE_LIMIT] | true | 内核按退避重试（W40：已吐字 ⇒ 整段回滚后重试） |
  * | `overload` / `server` / `5xx` / `internal` | [EngineErrorKind.SERVER] | true | 同上 |
  * | `context` + 超限词 | [EngineErrorKind.CONTEXT_OVERFLOW] | **false** | 内核压缩后重发 |
  * | 其余 | [EngineErrorKind.PROTOCOL] | **false** | fail-closed，直接失败 |
  *
  * 判定顺序固定「超窗 → 限流 → 服务端 → 兜底」：超窗文案里也含 `limit`（`maximum context
  * length`），先判限流会把它误归成可重试，结果是「同长度请求重发两次、两次都超窗」。
+ *
+ * ## W40：结构化字段优先 + 去掉 payload 全文
+ *
+ * 旧版把 `payload`（整帧 JSON 原文）拼进 haystack ⇒ 限流文案 `rate limit: too many tokens`
+ * 同时含 `token` 与 `limit`，会先命中超窗词表被误判 `CONTEXT_OVERFLOW`（不可重试）——
+ * 把「零产出时引擎内可重试」也一并关掉。现版只看 `type`/`code`/`message`/顶层错误字符串
+ * 四个字段；`type`/`code` 是供应商的结构化自声明（如 OpenAI 的 `rate_limit_error`），
+ * 命中限流/服务端词表**优先**于 message 词表兜底——结构化字段不会混入正文措辞。
  *
  * @param contextLimitHint 从错误体里取真实窗口的端口（由 adapter 注入，复用同一套正则，
  *   避免这里长出第二把尺子）。
@@ -52,18 +60,44 @@ internal fun decodeOpenAiErrorFrame(
 
     val errorObj = errorValue as? JsonObject
     val errorText = (errorValue as? JsonPrimitive)?.takeIf { it.isString }?.content
+    // W40：结构化字段优先。type/code 是供应商自声明（rate_limit_error / server_error），
+    // 不含正文措辞 ⇒ 命中限流/服务端词表时**先于** message 词表兜底裁决。
+    // haystack 只拼四个错误字段、**不含 payload 全文**（含进去会让限流文案里的
+    // token/limit 撞上超窗词表，见类 KDoc「W40」段）。
+    val typeAndCode = listOfNotNull(
+        AgentJson.stringOrNull(errorObj, "type"),
+        AgentJson.stringOrNull(errorObj, "code"),
+    ).joinToString(" ").lowercase()
     val haystack = listOfNotNull(
         AgentJson.stringOrNull(errorObj, "type"),
         AgentJson.stringOrNull(errorObj, "code"),
         AgentJson.stringOrNull(errorObj, "message"),
         errorText,
-        payload,
     ).joinToString(" ").lowercase()
 
     val message = AgentJson.stringOrNull(errorObj, "message")
         ?: errorText
         ?: "provider error frame"
 
+    // 结构化优先：type/code 直判限流 / 服务端（不可被 message 措辞改判）。
+    if (typeAndCode.contains("rate") || typeAndCode.contains("429") || typeAndCode.contains("quota")) {
+        return GenerationEvent.Failed(EngineErrorKind.RATE_LIMIT, message, retryable = true)
+    }
+    if (typeAndCode.contains("overload") || typeAndCode.contains("server") ||
+        typeAndCode.contains("5xx") || typeAndCode.contains("unavailable")
+    ) {
+        return GenerationEvent.Failed(EngineErrorKind.SERVER, message, retryable = true)
+    }
+    if (typeAndCode.contains("context")) {
+        return GenerationEvent.Failed(
+            EngineErrorKind.CONTEXT_OVERFLOW,
+            "context window exceeded",
+            retryable = false,
+            contextLimitHint = contextLimitHint(payload),
+        )
+    }
+
+    // 词表兜底（message 字段）：超窗 → 限流 → 服务端 → 兜底，顺序理由见类 KDoc。
     return when {
         looksLikeContextOverflowMessage(haystack) -> GenerationEvent.Failed(
             EngineErrorKind.CONTEXT_OVERFLOW,

@@ -339,8 +339,11 @@ class GenerationRound(
         }
         // ③ 截断的整段回滚：先改真值源（RunState 文本缓冲），再通知 UI 清流式缓冲。
         // 顺序不能反 —— 反了会出现「UI 已清空、Finished(text) 又带上旧前缀」的撕裂窗口。
+        // 正文与思考计数一起回滚（W40 补完 W24-02 已知边界：`wroteOutput` 判据含
+        // reasoningLength，残留旧值会让第二次尝试的增长被误判）。
         if (truncatedStream && wroteOutput) {
             ctx.state.truncateText(textBefore)
+            ctx.state.truncateReasoning(reasoningBefore)
             ctx.emit(AgentEvent.StreamReset(reason))
         }
         ctx.emit(AgentEvent.Retrying(reason))

@@ -185,4 +185,51 @@ class GenerationRoundTruncationRetryTest {
         assertEquals("X", finished.text)
         assertEquals(Step.Done, outcome)
     }
+
+    // ------------------------------------------------------------------ A5（W40 补完 W24-02 已知边界）
+
+    /**
+     * A5（W40）：截断回滚**同时回退思考计数**（`RunState.truncateReasoning`）。
+     *
+     * 「先吐 reasoning 再断流」形态下，若只回滚正文、不回滚 `reasoningChars`，
+     * 第一次的 "THINK1" 计数会残留 ⇒ 终态 `reasoningLength()` 变成两段之和
+     * （"THINK1"+"THINK2"），与 UI 侧 `StreamReset` 已清空思考的状态撕裂。
+     * 思考只计数不存文本 ⇒ 回滚 = 数字回退到 `reasoningBefore`（此处 0）。
+     *
+     * 必红变异：删掉 `GenerationRound.prepareRetry` 的 `truncateReasoning(reasoningBefore)`
+     * ⇒ 本用例断言失败（最终计数 = 11 而非 6）。
+     */
+    @Test
+    fun truncatedStreamRollsBackReasoningCountToo() {
+        val secondThink = "THINK2"
+        val engine = FakeEngine(
+            scripts = listOf(
+                listOf(
+                    GenerationEvent.ReasoningDelta("THINK1"),
+                    GenerationEvent.TextDelta("AB"),
+                    truncated(),
+                ),
+                listOf(
+                    GenerationEvent.ReasoningDelta(secondThink),
+                    GenerationEvent.TextDelta("CD"),
+                    GenerationEvent.Finished(com.rickeal.liquidharness.core.model.FinishReason.STOP),
+                ),
+            )
+        )
+        val events = mutableListOf<AgentEvent>()
+        val ctx = context(engine, events)
+
+        val outcome = runBlocking { loop().run(ctx) }
+
+        assertEquals(2, engine.generateCount, "截断必须触发一次重试：events=$events")
+        assertEquals(1, events.count { it is AgentEvent.StreamReset }, "events=$events")
+        assertEquals("CD", ctx.state.partialText(), "正文回滚仍生效")
+        assertEquals(
+            secondThink.length,
+            ctx.state.reasoningLength(),
+            "思考计数必须随整段回滚退到 reasoningBefore（0），只剩第二段：" +
+                "残留第一段会与 UI 已清空的思考状态撕裂（events=$events）",
+        )
+        assertEquals(Step.Done, outcome)
+    }
 }

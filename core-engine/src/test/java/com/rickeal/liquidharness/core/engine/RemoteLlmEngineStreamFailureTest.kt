@@ -144,7 +144,14 @@ class RemoteLlmEngineStreamFailureTest {
 
     // ------------------------------------------------------------------ E5
 
-    /** E5：流内 `error` 帧（限流）⇒ `Failed(RATE_LIMIT, retryable)`，**不补 `Finished`**。 */
+    /**
+     * E5：流内 `error` 帧（限流）⇒ `Failed(RATE_LIMIT, retryable)`，**不补 `Finished`**。
+     *
+     * W40 P0-3 订正：delta 先到、error 帧后到 = 「供应商已吐内容后掐流」形态，与网络截断
+     * 同构（旧断言 `assertFalse(truncatedStream)` 钉的是「限流不是截断」的旧口径——
+     * 那个口径让内核旧闸门拦掉了唯一合理的处置：整段回滚后重试一次）。
+     * 现口径：**已吐内容 ⇒ truncatedStream=true**，零产出时才是 false（E5b）。
+     */
     @Test
     fun rateLimitErrorFrameIsRetryableWithoutFinished() {
         val error = """data: {"error":{"type":"rate_limit_exceeded","message":"slow down"}}""" + "\n\n"
@@ -154,11 +161,81 @@ class RemoteLlmEngineStreamFailureTest {
             val failed = events.filterIsInstance<GenerationEvent.Failed>().single()
             assertEquals(EngineErrorKind.RATE_LIMIT, failed.kind, "failed=$failed")
             assertTrue(failed.retryable)
-            assertFalse(failed.truncatedStream, "限流不是截断：$failed")
+            assertTrue(
+                failed.truncatedStream,
+                "已吐 delta 后的限流掐流与网络截断同构，必须置 truncatedStream（内核回滚重试）：$failed",
+            )
             assertTrue(
                 events.none { it is GenerationEvent.Finished },
                 "错误帧命中后不许再补 Finished（双终态）：events=" + events,
             )
+        }
+    }
+
+    /** E5b（W40 补）：零产出 + error 帧 ⇒ 不置 truncatedStream（无内容可回滚，走零产出重试）。 */
+    @Test
+    fun rateLimitErrorFrameBeforeAnyContentIsNotTruncated() {
+        val error = """data: {"error":{"type":"rate_limit_exceeded","message":"slow down"}}""" + "\n\n"
+        withSseServer(chunks = listOf(error), contentType = "text/event-stream") { port, hits ->
+            val events = runEngine(port)
+
+            val failed = events.filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.RATE_LIMIT, failed.kind, "failed=$failed")
+            assertTrue(failed.retryable)
+            assertFalse(
+                failed.truncatedStream,
+                "零产出 ⇒ 无内容可回滚 ⇒ 不置截断标志（引擎内按退避重试）：$failed",
+            )
+            assertTrue(hits.get() >= 1, "零产出限流在引擎内按策略重试（RetryPolicy maxAttempts=3）")
+        }
+    }
+
+    // ------------------------------------------------------------------ E5c
+
+    /**
+     * E5c（W40 交叉必红样本 ①）：限流文案**含 token/limit**（`token limit reached, slow down`）
+     * ⇒ 不得误判 `CONTEXT_OVERFLOW`。旧版 haystack 含 payload 全文 + 先判超窗词表 ⇒
+     * `token`×`limit` 同时命中被误判不可重试（把零产出引擎内重试也关掉）。结构化
+     * `type=rate_limit_error` 优先 ⇒ 必须判 RATE_LIMIT。
+     */
+    @Test
+    fun rateLimitWordingContainingTokenAndLimitIsStillRateLimit() {
+        val error = """data: {"error":{"type":"rate_limit_error","code":"429",""" +
+            """"message":"token limit reached, slow down"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val events = runEngine(port)
+
+            val failed = events.filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(
+                EngineErrorKind.RATE_LIMIT,
+                failed.kind,
+                "限流文案含 token/limit 不得误判超窗（结构化 type 优先）：$failed",
+            )
+            assertTrue(failed.retryable)
+        }
+    }
+
+    // ------------------------------------------------------------------ E5d
+
+    /**
+     * E5d（W40 交叉必红样本 ②）：服务端错误文案**含 context**（`server overloaded while
+     * processing context window`）+ 结构化 `type=server_error` ⇒ 不得因文案词表误判
+     * CONTEXT_OVERFLOW（不可重试）；结构化 type 优先 ⇒ 判 SERVER 可重试。
+     */
+    @Test
+    fun serverErrorWordingContainingContextIsStillServer() {
+        val error = """data: {"error":{"type":"server_error","code":"503",""" +
+            """"message":"server overloaded while processing context window"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val events = runEngine(port)
+
+            val failed = events.filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(
+                EngineErrorKind.SERVER,
+                failed.kind,
+                "服务端文案含 context 不得误判超窗（结构化 type 优先）：$failed",
+            )
+            assertTrue(failed.retryable)
         }
     }
 

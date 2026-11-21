@@ -357,8 +357,14 @@ class ChatViewModel(
                     if (event is AgentEvent.Failed) {
                         ops.offerContextLimit(endpoint.id, event.contextLimitHint)
                     }
-                    if (shouldEvaluate(event)) ops.autoCompactOnSettled()
+                    // W9-01 命题②（W40 落地）：autoCompact 必须在 onEvent **之后**——
+                    // 旧序先取 state 快照再让 reducer 落终态气泡，评估看到的会话
+                    // 少最终回答那一轮（`ChatUiState` 少最新气泡 ⇒ committedChars 偏小，
+                    // 越线判断在临界档位上会漏触发）。onEvent 落完气泡再评估，
+                    // 快照才是「本轮定稿后的完整会话」。G23 守卫（collect 内
+                    // `.autoCompactOnSettled(` 唯一调用点）对本序仍成立。
                     onEvent(event, generation)
+                    if (shouldEvaluate(event)) ops.autoCompactOnSettled()
                 }
             }
         } finally {

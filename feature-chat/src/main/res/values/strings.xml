@@ -20,8 +20,10 @@
     <string name="chat_action_attach">添加图片</string>
     <string name="chat_status_retrying">网络抖动，正在重试…</string>
     <string name="chat_status_cancelled">已停止（本轮没有产出内容）</string>
-    <!-- W24-02：回答撞到输出上限 / 流被截断。气泡仍保留已收到的内容。 -->
-    <string name="chat_status_truncated">回答可能不完整（已达输出上限或被中断）</string>
+    <!-- W24-02：回答撞到输出上限（显式 finishReason=LENGTH）。断流形态走整段回滚重试，
+         重试成功/两次失败都不产生 TRUNCATED 状态（W40 案 A 订正：删「或被中断」，
+         文案只覆盖该状态真正可达的场景）。气泡仍保留已收到的内容。 -->
+    <string name="chat_status_truncated">回答可能不完整（已达输出上限）</string>
     <!-- %1$d = 已等待的整秒数。秒数由 UI 每秒累加（见 ChatScreen.waitingStatusText）。 -->
     <string name="chat_status_waiting">正在等待模型响应… %1$ds</string>
     <string name="chat_action_remove_attachment">移除附件</string>

@@ -215,6 +215,18 @@ class RunState(
     fun reasoningLength(): Int = reasoningChars
 
     /**
+     * 回滚思考通道计数到 [length]（W24-02 已知边界补完，W40）。
+     *
+     * `truncateText` 回滚正文、本函数回滚思考计数——`prepareRetry` 的 `wroteOutput`
+     * 判据含 `reasoningLength()`，若只回滚正文，第二次尝试新增的 reasoning 会把
+     * 「截断前 vs 截断后」的差值判错（旧值残留 ⇒ 第二次尝试 0 增长被误判成没写过）。
+     * 思考只计数不存文本 ⇒ 回滚 = 数字回退，无文本拼接风险。
+     */
+    fun truncateReasoning(length: Int) {
+        if (length in 0..reasoningChars) reasoningChars = length else reasoningChars = 0
+    }
+
+    /**
      * 本轮是否产出过**任何**可见内容（正文或思考）。
      *
      * 「空输出」判定的唯一真值源：引擎层的 `hasEmittedAny` 是同一口径的传输侧镜像。

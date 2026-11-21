@@ -19,9 +19,11 @@ import com.rickeal.liquidharness.core.agent.engine.LlmEngine
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
 import com.rickeal.liquidharness.core.agent.prompt.AgentPromptComposer
 import com.rickeal.liquidharness.core.model.ChatMessage
+import com.rickeal.liquidharness.core.model.PromptCacheStatus
 import com.rickeal.liquidharness.core.model.Role
 import com.rickeal.liquidharness.core.model.TokenEstimator
 import com.rickeal.liquidharness.core.model.ToolSpec
+import com.rickeal.liquidharness.core.model.promptCacheStatus
 
 /**
  * 发送前的上下文预算与压缩。**每轮生成前唯一允许改写工作副本的地方。**
@@ -344,12 +346,25 @@ class ContextBudget(
      * 一个 token 都没回报过 ⇒ `n/a`，不伪装成 0（「未上报」与「0 命中」不可分辨是本仓
      * 已判死的失真形态，design §2.4）。provider 报了 usage 但没报缓存字段时同样是 `n/a`。
      *
-     * W9-04 口径订正：本标签只有「三态」的展示能力，`n/a` 同时覆盖
-     * `CACHE_FIELDS_NOT_REPORTED` 与 `USAGE_NOT_OBSERVED` 两态。要区分二者请读
-     * `promptCacheStatus(cached, usageObserved)`，不要从这行日志反推缓存归因。
+     * W9-04 口径订正（W12-02 四态接线）：本标签经 [promptCacheStatus] 显式分四态——
+     * `USAGE_NOT_OBSERVED`→`n/a-usage`（provider 从未回报 usage）、
+     * `CACHE_FIELDS_NOT_REPORTED`→`n/a-fields`（报了 usage 没报缓存字段）、
+     * `HIT`/`MISS`→实际命中量。**不再**把「未上报」与「0 命中」合并在一个 `n/a` 里
+     * （那是 W37 注记点名的失真形态：两态在日志上不可分辨）。`usageObserved` 口径与
+     * `RunState.recordUsage` 同源（`promptTokens == 0 && completionTokens == 0` ⇒ 未观测，
+     * 与 `StreamAccumulator.kt:226` 的 `usage != null` / `EventReducer:306` 的
+     * `prompt > 0 || completion > 0` 在「有 usage 就算观测」上语义一致）。
      */
-    private fun cachedLabel(ctx: TurnContext): String =
-        if (ctx.state.promptTokens == 0) "n/a" else (ctx.state.cachedPromptTokens?.toString() ?: "n/a")
+    private fun cachedLabel(ctx: TurnContext): String = when (
+        promptCacheStatus(
+            ctx.state.cachedPromptTokens,
+            usageObserved = ctx.state.promptTokens > 0 || ctx.state.completionTokens > 0,
+        )
+    ) {
+        PromptCacheStatus.USAGE_NOT_OBSERVED -> "n/a-usage"
+        PromptCacheStatus.CACHE_FIELDS_NOT_REPORTED -> "n/a-fields"
+        PromptCacheStatus.HIT, PromptCacheStatus.MISS -> ctx.state.cachedPromptTokens.toString()
+    }
 
     /**
      * system 消息：**id 用 `sys:<runId>` 稳定派生**，每轮复用同一个 id。

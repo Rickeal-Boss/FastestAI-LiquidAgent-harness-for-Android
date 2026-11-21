@@ -229,12 +229,17 @@ class RemoteLlmEngine(
                     // W24-02：错误帧先于 decodeEvent 判定。命中即收尾，**不经过 adapter.finish**
                     // （它会在下面再补一个 Finished ⇒ 双终态）。`finishReason != null` 时忽略：
                     // 供应商在正常收尾后追打的错误帧不得改判已定的结论（E6）。
+                    // W40（P0-3）：已吐内容后供应商掐流发 error 帧（限流 / 拥堵）与网络截断
+                    // **同构** —— 已产出半截、重发都会从头再答 ⇒ 整段回滚后重试一次是正确处置。
+                    // 置 truncatedStream 让内核 prepareRetry 走回滚分支；零产出不置
+                    // （无内容可回滚，走原有「零产出可重试」通路，语义不变）。
                     if (state.finishReason == null) {
                         val failure = adapter.decodeFailure(event)
                         if (failure != null) {
                             emitFlushed(state)
+                            val truncated = state.hasEmittedAny && failure.retryable
                             return if (failure.retryable) {
-                                AttemptOutcome.Retryable(state, failure, null)
+                                AttemptOutcome.Retryable(state, failure.copy(truncatedStream = truncated), null)
                             } else {
                                 AttemptOutcome.Fatal(state, failure)
                             }
