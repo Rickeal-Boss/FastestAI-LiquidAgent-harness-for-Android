@@ -93,8 +93,12 @@ enum class PromptCacheStatus {
 /**
  * 四态派生。**唯一口径**，不要在 UI / 日志 / 台账里各自 `?: 0` 重算。
  *
- * @param usageObserved 本次生成是否收到过 provider 的 usage（不是本地估算兜底）。
+ * @param usageObserved 是否有真实 provider usage 可供判定（不是本地估算兜底）。
  *   本地估算必须传 `false`，否则会把「没测」写成「没命中」。
+ *   W43 口径订正：调用方既可传「本次生成」的观测态（`StreamAccumulator`，per-request），
+ *   也可传 run 级累计标志（`ContextBudget.cachedLabel` 经 `RunState.usageEverObserved`，
+ *   发送前日志点用）；两种都是「是否见过真值」，只是观察窗口不同。本函数只认布尔，不
+ *   区分窗口——累计口径下命中量由调用方带 `(cumulative)` 后缀明示。
  */
 fun promptCacheStatus(cachedPromptTokens: Int?, usageObserved: Boolean): PromptCacheStatus = when {
     !usageObserved -> PromptCacheStatus.USAGE_NOT_OBSERVED

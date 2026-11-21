@@ -500,14 +500,15 @@ class ContextBudgetTest {
 
         state.recordUsage(100, 20, 50)
 
-        // 第二轮：beginRound → 发送。读到的是上一条请求的观测态（HIT/MISS 四态可达）。
+        // 第二轮：beginRound → 发送。读到的是本 run 至今的累计观测态（HIT/MISS 四态可达）。
+        // W43 口径订正：非「上一条请求」快照——标志与命中量都是 run 级累计，值带 (cumulative)。
         state.beginRound()
         AgentLogStore.clear()
         runBlocking { ContextBudget().prepare(ctx, "sys") }
         assertEquals(
             "50(cumulative)",
             lastCachedLabel(),
-            "beginRound 之后发送前必须读到上一条请求的观测态（W41 版本在此恒 n/a-usage）：" +
+            "beginRound 之后发送前必须读到本 run 累计观测态（W41 版本在此恒 n/a-usage）：" +
                 AgentLogStore.recent().joinToString("\n") { it.message },
         )
 
@@ -557,6 +558,38 @@ class ContextBudgetTest {
             "n/a-fields",
             lastCachedLabel(),
             "报 usage 没报缓存字段必须是 n/a-fields：" + AgentLogStore.recent().joinToString("\n") { it.message },
+        )
+    }
+
+    /**
+     * W43（P1-3 口径收口）：先命中、后一轮报了 usage 但没报缓存字段 ⇒ 仍显示**累计**
+     * 命中量，不退成 `n/a-fields`。
+     *
+     * 这是 run 级累计口径的直接后果：`cachedPromptTokens` 只在非 null 时累加、从不清零，
+     * `usageEverObserved` 也是 run 级持久。审查草案假设 per-request 快照口径，要求此形态
+     * 判 `n/a-fields`；W43 裁决不采纳——W42 刚建立累计口径且值带 `(cumulative)` 明示，
+     * 改成快照会让四态语义反复横跳。本用例钉住累计口径：删 `(cumulative)` 后缀或把标志
+     * 改成每轮重置 ⇒ RED。
+     */
+    @Test
+    fun cachedLabelKeepsCumulativeWhenLaterRoundOmitsCacheFields() {
+        val state = RunState(body())
+        state.beginRound()
+        state.recordUsage(100, 20, 50) // 首轮命中 50
+        val ctx = testContext(
+            events = mutableListOf<AgentEvent>(),
+            request = AgentRequest(endpoint = endpoint),
+            state = state,
+        )
+        state.beginRound()
+        state.recordUsage(100, 20, null) // 次轮报 usage、缓存字段缺失 ⇒ 累计值不被覆盖
+        AgentLogStore.clear()
+        runBlocking { ContextBudget().prepare(ctx, "sys") }
+        assertEquals(
+            "50(cumulative)",
+            lastCachedLabel(),
+            "run 级累计口径下先命中后缺字段仍显示累计量，不退 n/a-fields：" +
+                AgentLogStore.recent().joinToString("\n") { it.message },
         )
     }
 

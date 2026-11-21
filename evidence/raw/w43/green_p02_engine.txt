@@ -1,0 +1,68 @@
+[localbuild] repo            = <repo>
+[localbuild] JAVA_HOME       = <jdk>
+[localbuild] ANDROID_HOME    = <sdk>
+[localbuild] GRADLE_USER_HOME= <gradle-home>
+[localbuild] proxy           = 127.0.0.1:1606 (from https_proxy)
+[localbuild] java -version   = openjdk version "21.0.12.1" 2026-08-18 LTS
+[localbuild] launcher        = ./gradlew  task=:core-engine:testDebugUnitTest --tests com.rickeal.liquidharness.core.engine.RemoteLlmEngineStreamFailureTest --tests com.rickeal.liquidharness.core.engine.RemoteLlmEngineContextLimitTest
+[localbuild] 开始构建（失败先看输出里的 '^\* What went wrong' 段）
+-------------------------------------------------------------------
+assertion "bc_ctl.arg_max >= LINE_MAX" failed: file "xargs.c", line 512, function: main
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.7.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :core-model:preBuild UP-TO-DATE
+> Task :core-engine:preBuild UP-TO-DATE
+> Task :core-net:preBuild UP-TO-DATE
+> Task :core-engine:preDebugBuild UP-TO-DATE
+> Task :core-model:preDebugBuild UP-TO-DATE
+> Task :core-net:preDebugBuild UP-TO-DATE
+> Task :core-model:generateDebugResources UP-TO-DATE
+> Task :core-net:generateDebugResources UP-TO-DATE
+> Task :core-engine:generateDebugResources UP-TO-DATE
+> Task :core-engine:packageDebugResources UP-TO-DATE
+> Task :core-net:packageDebugResources UP-TO-DATE
+> Task :core-model:packageDebugResources UP-TO-DATE
+> Task :core-net:processDebugNavigationResources UP-TO-DATE
+> Task :core-engine:processDebugNavigationResources UP-TO-DATE
+> Task :core-model:processDebugNavigationResources UP-TO-DATE
+> Task :core-engine:parseDebugLocalResources UP-TO-DATE
+> Task :core-net:parseDebugLocalResources UP-TO-DATE
+> Task :core-model:parseDebugLocalResources UP-TO-DATE
+> Task :core-model:generateDebugRFile UP-TO-DATE
+> Task :core-engine:generateDebugRFile UP-TO-DATE
+> Task :core-net:generateDebugRFile UP-TO-DATE
+> Task :core-net:javaPreCompileDebug UP-TO-DATE
+> Task :core-engine:javaPreCompileDebug UP-TO-DATE
+> Task :core-engine:preDebugUnitTestBuild UP-TO-DATE
+> Task :core-engine:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-engine:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-model:javaPreCompileDebug UP-TO-DATE
+> Task :core-model:compileDebugKotlin
+> Task :core-model:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-model:processDebugJavaRes UP-TO-DATE
+> Task :core-model:bundleLibRuntimeToJarDebug
+> Task :core-model:bundleLibCompileToJarDebug
+> Task :core-net:compileDebugKotlin UP-TO-DATE
+> Task :core-net:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-net:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-net:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-net:processDebugJavaRes UP-TO-DATE
+> Task :core-engine:compileDebugKotlin
+> Task :core-engine:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-engine:processDebugJavaRes UP-TO-DATE
+> Task :core-engine:bundleLibRuntimeToJarDebug
+> Task :core-engine:bundleLibCompileToJarDebug
+> Task :core-engine:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :core-engine:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core-engine:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-engine:testDebugUnitTest
+
+BUILD SUCCESSFUL in 55s
+35 actionable tasks: 7 executed, 28 up-to-date
+-------------------------------------------------------------------
+[localbuild] 成功 (rc=0)
+[localbuild] 产物：./app/build/outputs/apk/debug/app-debug.apk
+[localbuild] 真机安装（applicationId = com.rickeal.liquidharness.debug）：
+[localbuild]   MSYS_NO_PATHCONV=1 adb push "./app/build/outputs/apk/debug/app-debug.apk" /data/local/tmp/app.apk
+[localbuild]   MSYS_NO_PATHCONV=1 adb shell pm install -r /data/local/tmp/app.apk
+[localbuild]   MSYS_NO_PATHCONV=1 adb shell monkey -p com.rickeal.liquidharness.debug -c android.intent.category.LAUNCHER 1

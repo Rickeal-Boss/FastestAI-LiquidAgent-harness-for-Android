@@ -79,6 +79,36 @@ class RemoteLlmEngineContextLimitTest {
         }
     }
 
+    /**
+     * W43 P0-2 反噬 b 必红：HTTP 400 普通错误体 `prompt limit reached for this endpoint`
+     * 不得判 CONTEXT_OVERFLOW。
+     *
+     * W42 给共享超窗词表补 `prompt` 窗口词后，`prompt`×`limit` 在
+     * `looksLikeContextOverflowMessage` 单一真值源上同时命中 ⇒ HTTP 400 路径
+     * （`classifyHttpFailure(status==400)`）把普通配额/参数错误判成超窗：不可重试 +
+     * 触发内核压缩 + prompt cache 失效，代价远大于失败一次。本条钉 `prompt` 只在长度
+     * 语义（`too long`/`maximum`/`exceed`/`length`）下才是窗口词，裸 `prompt limit` 不算。
+     * 注入「删 prompt 护栏」⇒ 本条 RED。
+     */
+    @Test
+    fun promptLimitOnHttp400IsNotContextOverflow() {
+        withServer(400, """{"error":{"message":"prompt limit reached for this endpoint"}}""") { port ->
+            val endpoint = endpointFor(port)
+            val engine = RemoteLlmEngine(endpoint, OpenAiCompatibleAdapter(), HttpTransport())
+            val events = runBlocking {
+                engine.generate(
+                    GenerationRequest(
+                        messages = listOf(ChatMessage(role = Role.USER, text = "hi")),
+                        endpoint = endpoint,
+                    )
+                ).toList()
+            }
+            val failed = events.filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.PROTOCOL, failed.kind, "裸 prompt limit 是普通 400，不得判超窗：$failed")
+            assertEquals(null, failed.contextLimitHint)
+        }
+    }
+
     private fun endpointFor(port: Int): RemoteEndpoint = RemoteEndpoint(
         id = "ep-1m",
         name = "1m",

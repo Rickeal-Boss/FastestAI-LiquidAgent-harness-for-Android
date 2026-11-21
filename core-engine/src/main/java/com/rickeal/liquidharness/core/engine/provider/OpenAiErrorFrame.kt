@@ -60,6 +60,22 @@ import kotlinx.serialization.json.JsonPrimitive
  * 退到超窗组合之后兜底。E5e（限流不误判超窗）与 E5c/E5d（结构化优先）不受影响；
  * 新增反向必红 E5h/E5i/E5j：超窗文案含 server/rate 字样仍判 CONTEXT_OVERFLOW。
  *
+ * ## W43：修 W42 修法自身的两处反噬
+ *
+ * (a) `too many tokens` 被 W42 列为**无条件**限流强词并置于超窗之前 ⇒ `context length
+ * exceeded: too many tokens`（超窗文案报告 token 过多，属常态）被判 RATE_LIMIT
+ * 可重试，重发同长度请求两次都超窗。W43 收为**限流语境内强词**：须与显式限流语境
+ * （`rate limit` 连写 / `quota`/`throttl`/`429`/`slow down`/`too many requests`）同现才算
+ * 限流；E5e `rate limit: too many tokens` 有连写仍保住。**不含裸 `rate`**——E5i
+ * `request rate too large: maximum context length exceeded` 是超窗，裸 rate 会重引
+ * W42 已修的反向回归。新增 E5k 必红。
+ *
+ * (b) 窗口词补 `prompt` 后，裸 `prompt`×`limit` 在 HTTP 400 路径把普通 400
+ * （`prompt limit reached for this endpoint`）判成 CONTEXT_OVERFLOW（不可重试 + 触发
+ * 压缩 + cache 失效）。W43 给 `prompt` 加护栏：`context`/`token` 仍是窗口词，`prompt`
+ * 仅在搭配长度语义（`too long`/`maximum`/`exceed`/`length`，**不含**裸 `limit`）时算窗口词。
+ * E5j `prompt too long` 仍命中；两条路径共用本函数，单一真值源不漂移。
+ *
  * @param contextLimitHint 从错误体里取真实窗口的端口（由 adapter 注入，复用同一套正则，
  *   避免这里长出第二把尺子）。
  */
@@ -129,11 +145,19 @@ internal fun decodeOpenAiErrorFrame(
     // 限流措辞（rate limit 连写 / too many tokens）；② 超窗强组合（窗口词 × 超限
     // 词，见 looksLikeContextOverflowMessage）；③ 服务端弱词；④ 裸 `rate` 兜底；
     // ⑤ PROTOCOL fail-closed。
+    // W43（反噬 a）：显式限流的语种语境。`too many tokens` 只在限流语境内才算限流强词，
+    // 不能像 W42 那样无条件排在超窗之前——超窗文案也常报告 token 过多（E5k）。
+    // 注意不含裸 `rate`：E5i `request rate too large: maximum context length exceeded`
+    // 是超窗文案，裸 rate 会重引 W42 已修的反向回归。只认显式限流语境。
+    val rateContext = haystack.contains("429") || haystack.contains("quota") ||
+        haystack.contains("throttl") || haystack.contains("slow down") ||
+        haystack.contains("too many requests") || haystack.contains("rate limit")
+    val explicitRateLimit = haystack.contains("429") || haystack.contains("quota") ||
+        haystack.contains("throttl") || haystack.contains("slow down") ||
+        haystack.contains("too many requests") || haystack.contains("rate limit") ||
+        (haystack.contains("too many tokens") && rateContext)
     return when {
-        haystack.contains("429") || haystack.contains("quota") ||
-            haystack.contains("throttl") || haystack.contains("slow down") ||
-            haystack.contains("too many requests") ||
-            haystack.contains("rate limit") || haystack.contains("too many tokens") ->
+        explicitRateLimit ->
             GenerationEvent.Failed(EngineErrorKind.RATE_LIMIT, message, retryable = true)
 
         looksLikeContextOverflowMessage(haystack) -> GenerationEvent.Failed(
@@ -164,16 +188,22 @@ internal fun decodeOpenAiErrorFrame(
  *
  * W42：窗口词从 `context|token` 扩到含 `prompt` —— 供应商超窗文案常用
  * `prompt too long, server rejected`（外审 P1-1 反向样本 E5j），原词表判不出超窗、
- * 会被服务端弱词抢走。加 `prompt` 后仍要求**同时**命中超限词，误判面窄；单一真值源
- * 改一处即 HTTP 400 与 SSE 帧同步生效，不长出第二把尺子。
+ * 会被服务端弱词抢走。单一真值源改一处即 HTTP 400 与 SSE 帧同步生效，不长出第二把尺子。
+ *
+ * W43（反噬 b 护栏）：裸 `prompt` 配 `limit` 是高频普通 400（`prompt limit reached for
+ * this endpoint` / `your prompt is malformed, limit 10 requests`），不是超窗。故
+ * `context`/`token` 仍直接算窗口词，`prompt` 只在搭配**长度语义**（`too long` /
+ * `maximum` / `exceed` / `length`，明确**不含**裸 `limit`）时才算窗口词。E5j
+ * `prompt too long` 仍命中；新增必红钉「HTTP 400 裸 prompt limit 不判超窗」。
  */
 internal fun looksLikeContextOverflowMessage(lower: String): Boolean {
-    val mentionsWindow = lower.contains("context") || lower.contains("token") ||
-        lower.contains("prompt")
-    val mentionsOverflow = lower.contains("too long") ||
+    val mentionsLengthOverflow = lower.contains("too long") ||
         lower.contains("maximum") ||
         lower.contains("exceed") ||
-        lower.contains("limit") ||
         lower.contains("length")
+    val mentionsOverflow = mentionsLengthOverflow || lower.contains("limit")
+    // context/token 直接算窗口词（配任意超限词）；prompt 需长度语义护栏。
+    val mentionsWindow = lower.contains("context") || lower.contains("token") ||
+        (lower.contains("prompt") && mentionsLengthOverflow)
     return mentionsWindow && mentionsOverflow
 }

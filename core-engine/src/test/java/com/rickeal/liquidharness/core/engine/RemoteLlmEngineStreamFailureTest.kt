@@ -316,6 +316,26 @@ class RemoteLlmEngineStreamFailureTest {
         }
     }
 
+    /**
+     * E5k（W43 P0-2 反噬 a 必红）：message-only 超窗文案自带 `too many tokens`
+     * （`context length exceeded: too many tokens`）⇒ 必须判 CONTEXT_OVERFLOW（不可重试）。
+     *
+     * W42 把 `too many tokens` 提为「无条件显式限流强词」并置于超窗组合之前，本样本
+     * 会命中该强词判 RATE_LIMIT（可重试）⇒ 同长度请求重发两次、两次都超窗（W40 KDoc
+     * 点名的形态）。E5e `rate limit: too many tokens` 靠 `rate limit` 连写仍须保住限流；
+     * 本样本无该连写、有 `context`×`exceeded` 超窗强组合 ⇒ 必须落超窗。
+     * 注入「把 too many tokens 放回无条件强词」⇒ 本条 RED。
+     */
+    @Test
+    fun contextOverflowWithTooManyTokensIsNotRateLimit() {
+        val error = """data: {"error":{"message":"context length exceeded: too many tokens"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val failed = runEngine(port).filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.CONTEXT_OVERFLOW, failed.kind, "超窗+too many tokens 不得误判限流：$failed")
+            assertFalse(failed.retryable, "超窗不可重试：$failed")
+        }
+    }
+
     /** E5g（W41）：结构化超窗分支保留供应商原始 message，不再硬替换成通用文案。 */
     @Test
     fun contextOverflowKeepsProviderMessage() {
