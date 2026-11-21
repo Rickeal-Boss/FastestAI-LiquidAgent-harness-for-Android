@@ -1,7 +1,7 @@
 # W40 验收物 — P0-3 断流重试 + 老号代码面推进 + 真机矩阵补格
 
 > 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`）。
-> 基线 tip `0cb87ee` → 本波主体 `e900f44`（feat）+ 台账判据订正提交（本文件落笔后回填）。
+> 基线 tip `0cb87ee` → 本波主体 `e900f44`（feat）+ docs 收尾提交 `b66c8b5`（纯文档：台账段 / 验收物 / 交接 / checklist 摘录）。
 > 判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；「未触发」≠「已验证通过」；推断带 caveat，不写成事实。
 > 回灌级别：脱敏 UI dump 文本判据 + `deviceLogTail`；不回灌整段 logcat / 凭据 / 未打码账号 / 设备序列号 / 本机路径。
 
@@ -87,12 +87,15 @@ F4 MCP server（0 server）、F6 applied=true 分支（本波无 `nothing_to_dro
 - 主体提交 `e900f44`（feat，12 文件 +225/−21），身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`。
 - 推送 `0cb87ee..e900f44 main -> main`（PAT 以 URL inline 一次性使用，push 后 `git remote set-url` 清除；
   **该 PAT 视为已暴露，需用户在 GitHub Settings 撤销重发**）。
-- CI（公开 API 实取，四字段复核）：Build run `44881943856`（`head_sha=e900f4486`、
+- CI（公开 API 实取，四字段复核）：Build run `44881943856`（`head_sha=e900f44`、
   `status=completed` / `conclusion=success`）✅；Secret scan run `44881943855`
   `completed/success` ✅。两 run 均绑定本波主体 commit `e900f44`。
   链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44881943856` /
   `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44881943855`。
-  > 本地 G1–G4 全绿与 CI 双 run success 一致；CI 绿以 run 四字段为准，不以本地结果代替。
+- docs 收尾提交 `b66c8b5`（纯文档，`build.yml` paths-ignore ⇒ Build 0 run）触发 Secret scan run
+  `44883294189`（`head_sha=b66c8b51…`、`status=completed` / `conclusion=success`）✅；
+  链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44883294189`。
+  > 本地 G1–G4 全绿与 CI 三 run success 一致；CI 绿以 run 四字段为准，不以本地结果代替。
 - `build.yml` on.push.branches=[main]，本提交含 `.kt` 非纯文档 ⇒ Build 必触发（Secret scan 全路径必跑）。
 
 ---
@@ -125,9 +128,9 @@ F4 MCP server（0 server）、F6 applied=true 分支（本波无 `nothing_to_dro
 1. `docs/analysis/w40-acceptance.md`（本文件）
 2. `docs/handoff-20261121-wave40.md`（交接文档）
 3. `docs/06-deferred-ledger.md`（W40 段 + W20-02/W12-02/W9-01/W24-02 行内注记）
-4. `docs/notes/w29-closeout-checklist.md`（判据 1/6/7 双态实跑摘录在 W40 段补录后）
+4. `docs/notes/w29-closeout-checklist.md`（W40 段已补录判据 1/6/7 双态实跑摘录）
 5. `.github/workflows/build.yml`（EXPECTED_TESTS 845→849）
-6. 12 文件源码 diff（`e900f44` + 台账判据订正提交）
+6. 12 文件源码 diff（`e900f44` 主体 + `b66c8b5` 文档收尾）
 
 **不含**：会话历史 / 凭据（含 GitHub PAT）/ 端点完整标识（模型名仅公开名）/ 账号字段 /
 设备序列号 / 本机路径 / 「建议下一链做什么」。

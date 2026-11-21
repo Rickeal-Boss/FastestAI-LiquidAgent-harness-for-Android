@@ -1,7 +1,7 @@
 # W40 交接 — P0-3 断流重试 + 老号代码面 + 真机矩阵补格
 
 > 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`），
-> 基线 `0cb87ee` → 主体 `e900f44`（feat）+ 台账判据订正提交（本文件落笔后回填）。
+> 基线 `0cb87ee` → 主体 `e900f44`（feat）+ docs 收尾提交 `b66c8b5`（纯文档）。
 > 台账权威版 = `docs/06-deferred-ledger.md`；本波验收物 = `docs/analysis/w40-acceptance.md`；
 > 判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；「未触发」≠「已验证通过」；推断带 caveat、不写成事实。
 > 本交接只引用台账 §一已有行首编号，未引入任何不在台账行首的复合编号。
@@ -19,7 +19,7 @@ truncatedStream 走整段回滚重试」。第 1 车落代码面：`decodeFailur
 补完 W24-02 已知边界。`EXPECTED_TESTS 845→849`（4 条新用例，含两条交叉必红 + reasoning 必红变异）。
 真机 6 端点预检、E01 echo 逐字 PASS、F2 file_write 审批+落盘 `W40OK` PASS、F3 @ 菜单两 skill 可见
 PASS（推翻 W39 vacuous）、F5 确认框+noop PARTIAL；E02/E03 端点侧 404 如实标注。四闸门全绿、
-CI 双 run success（Build `44881943856` + Secret `44881943855`）。
+CI 三 run success（主体 Build `44881943856` + Secret `44881943855`；docs 收尾 Secret `44883294189`）。
 
 ---
 
@@ -94,7 +94,7 @@ F5 手动压缩 ⚠️（确认框走完 + noop「找不到安全截断点」）
 | G2 arch-guard | `OK=27 VACUOUS=1 VIOLATION=0`（G20 141 ID、G23 唯一调用点） | ✅ |
 | G3 selftest | `30/30 PASS（262s）` | ✅ |
 | G4 fulltest | `tests=849 failures=0`（14 模块） | ✅ |
-| CI | Build `44881943856` completed/success + Secret `44881943855` completed/success @ `e900f44`（四字段 API 复核） | ✅ |
+| CI | Build `44881943856` + Secret `44881943855` success @ `e900f44`；docs 收尾 `b66c8b5` Secret `44883294189` success（四字段 API 复核） | ✅ |
 
 链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44881943856`
 
@@ -108,14 +108,14 @@ F5 手动压缩 ⚠️（确认框走完 + noop「找不到安全截断点」）
 
 ## 九、OPEN 挂账
 
-逐条（触发信号 / 缓解动作 / 挂账号）见 `docs/analysis/w40-acceptance.md` §步 6 表。本波零销账、零新开，
+逐条（触发信号 / 缓解动作 / 挂账号）见 `docs/analysis/w40-acceptance.md` §「OPEN 挂账」表。本波零销账、零新开，
 不注水；台账 216 行三数不变。
 
 ## 十、交给外部审查团队的制品 + 边界声明
 
 **制品**：`docs/analysis/w40-acceptance.md`、本交接、`docs/06-deferred-ledger.md`（W40 段 +
 四行老号注记）、`docs/notes/w29-closeout-checklist.md`（判据 1/6/7 双态实跑摘录）、
-`.github/workflows/build.yml`（EXPECTED_TESTS）、12 文件源码 diff（`e900f44` + 台账判据订正提交）。
+`.github/workflows/build.yml`（EXPECTED_TESTS）、12 文件源码 diff（`e900f44` 主体 + `b66c8b5` 文档收尾）。
 
 **不含**：会话历史 / 凭据（含 GitHub PAT，需轮换）/ 端点完整标识（模型名仅公开名）/ 账号字段 /
 设备序列号 / 本机路径 / 「建议下一链做什么」。
