@@ -469,24 +469,95 @@ class ContextBudgetTest {
         )
     }
 
-    /** W41：真实 usage 到账后读命中量；下一轮 beginRound 重置，不拿上一轮累计冒充本轮观测。 */
+    // ── W42（P0-2 订正）：cachedLabel 按 TurnLoop 真实顺序的链上必红 ──────────
+
+    /**
+     * W42 P0-2 主用例：**按 TurnLoop 生产顺序**（beginRound → prepare → recordUsage →
+     * beginRound → prepare）断言四态可达性。
+     *
+     * W41 版本断言 `beginRound` 之后是 `n/a-usage`、并据此判「重置正确」—— 那正是
+     * 生产链恒 `n/a-usage` 的缺陷本身（`TurnLoop.kt` 每轮先 `beginRound` 再
+     * `generation.run`，发送前的 `cachedLabel` 读到的永远是刚清零的标志）。
+     * 注入「把持久标志改回每轮重置」⇒ 第二轮断言立即 RED。
+     */
     @Test
     fun cachedLabelFollowsRealUsagePerRound() {
         val state = RunState(body())
-        state.recordUsage(100, 20, 50)
         val ctx = testContext(
             events = mutableListOf<AgentEvent>(),
             request = AgentRequest(endpoint = endpoint),
             state = state,
         )
-        AgentLogStore.clear()
-        runBlocking { ContextBudget().prepare(ctx, "sys") }
-        assertEquals("50", lastCachedLabel())
-
+        // 第一轮：beginRound → 发送（prepare）→ usage 到账。首条请求前没有任何观测 ⇒ n/a-usage。
         state.beginRound()
         AgentLogStore.clear()
         runBlocking { ContextBudget().prepare(ctx, "sys") }
-        assertEquals("n/a-usage", lastCachedLabel(), "新一轮未收到 usage 前不得沿用上一轮观测态")
+        assertEquals(
+            "n/a-usage",
+            lastCachedLabel(),
+            "首条请求前不得有观测态：" + AgentLogStore.recent().joinToString("\n") { it.message },
+        )
+
+        state.recordUsage(100, 20, 50)
+
+        // 第二轮：beginRound → 发送。读到的是上一条请求的观测态（HIT/MISS 四态可达）。
+        state.beginRound()
+        AgentLogStore.clear()
+        runBlocking { ContextBudget().prepare(ctx, "sys") }
+        assertEquals(
+            "50(cumulative)",
+            lastCachedLabel(),
+            "beginRound 之后发送前必须读到上一条请求的观测态（W41 版本在此恒 n/a-usage）：" +
+                AgentLogStore.recent().joinToString("\n") { it.message },
+        )
+
+        // 第三轮同序复证：观测态跨轮保持，不因 beginRound 丢失。
+        state.beginRound()
+        AgentLogStore.clear()
+        runBlocking { ContextBudget().prepare(ctx, "sys") }
+        assertEquals("50(cumulative)", lastCachedLabel())
+    }
+
+    /** W42 P0-2 附带：估算兜底**不**置位持久标志——usage 到账前的估算轮仍 n/a-usage。 */
+    @Test
+    fun estimatedPromptDoesNotPoluteEverObservedAcrossRounds() {
+        val state = RunState(body())
+        state.beginRound()
+        state.recordEstimatedPrompt(100)
+        val ctx = testContext(
+            events = mutableListOf<AgentEvent>(),
+            request = AgentRequest(endpoint = endpoint),
+            state = state,
+        )
+        state.beginRound()
+        AgentLogStore.clear()
+        runBlocking { ContextBudget().prepare(ctx, "sys") }
+        assertEquals(
+            "n/a-usage",
+            lastCachedLabel(),
+            "估算兜底跨轮不得置位观测标志：" + AgentLogStore.recent().joinToString("\n") { it.message },
+        )
+    }
+
+    /** W42 P0-2 附带：报了 usage 但没报缓存字段 ⇒ `n/a-fields` 态在生产顺序可达。 */
+    @Test
+    fun usageWithoutCacheFieldsReachesNaFieldsInProductionOrder() {
+        val state = RunState(body())
+        state.beginRound()
+        state.recordUsage(100, 20, null)
+        val ctx = testContext(
+            events = mutableListOf<AgentEvent>(),
+            request = AgentRequest(endpoint = endpoint),
+            state = state,
+        )
+        state.beginRound()
+        AgentLogStore.clear()
+        runBlocking { ContextBudget().prepare(ctx, "sys") }
+        assertEquals(
+            "n/a-fields",
+            lastCachedLabel(),
+            "报 usage 没报缓存字段必须是 n/a-fields：" + AgentLogStore.recent().joinToString("\n") { it.message },
+        )
     }
 
     private companion object {

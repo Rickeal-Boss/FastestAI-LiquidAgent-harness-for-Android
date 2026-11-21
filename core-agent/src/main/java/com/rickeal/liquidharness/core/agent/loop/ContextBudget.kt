@@ -342,28 +342,34 @@ class ContextBudget(
      *
      * ⚠️ 它是**本 run 累计**的命中量，不是本请求的：`prepare` 发生在生成之前，此时本请求的
      * `usage` 还不存在。本请求的命中量由 `GenerationRound` 的 `Usage` 分支记（那一行是
-     * per-request 真值）。本字段在这里的价值是「这个 run 至今有没有任何命中」。
-     * 一个 token 都没回报过 ⇒ `n/a`，不伪装成 0（「未上报」与「0 命中」不可分辨是本仓
-     * 已判死的失真形态，design §2.4）。provider 报了 usage 但没报缓存字段时同样是 `n/a`。
+     * per-request 真值）。本字段在这里的价值是「这个 run 至今有没有任何命中」—— W42 起
+     * HIT/MISS 态的值带 `(cumulative)` 后缀明示口径。一个 token 都没回报过 ⇒ `n/a`，
+     * 不伪装成 0（「未上报」与「0 命中」不可分辨是本仓已判死的失真形态，design §2.4）。
+     * provider 报了 usage 但没报缓存字段时同样是 `n/a`。
      *
      * W9-04 口径订正（W12-02 四态接线）：本标签经 [promptCacheStatus] 显式分四态——
      * `USAGE_NOT_OBSERVED`→`n/a-usage`（截至上一条请求未收到真实 usage）、
      * `CACHE_FIELDS_NOT_REPORTED`→`n/a-fields`（报了 usage 没报缓存字段）、
-     * `HIT`/`MISS`→实际命中量。**不再**把「未上报」与「0 命中」合并在一个 `n/a` 里
-     * W41 口径订正：`usageObserved` **不再**拿累计 token 反推（估算兜底也会累加，
-     * 会输出 `n/a-fields` 把「没测」写成「没上报」），改读 [RunState.usageObservedThisRound]：
-     * `RunState.recordUsage` 置位、`recordEstimatedPrompt` 不置位、`beginRound` 重置。
-     * 发送前日志读到的是上一条请求的观测态；本条请求的真值在 usage 到达时记账。
+     * `HIT`/`MISS`→实际命中量。**不再**把「未上报」与「0 命中」合并在一个 `n/a` 里。
+     * W42 订正（W41 时序缺陷）：`usageObserved` **不再**拿累计 token 反推（估算兜底
+     * 也会累加，会把「没测」写成「没上报」），也**不再**读每轮 `beginRound` 重置的
+     * `usageObservedThisRound`（`TurnLoop` 每轮先 `beginRound` 再 run ⇒ 发送前
+     * 读到的必是刚清零的 `false`，四态在生产路径退化为恒 `n/a-usage`）。改读
+     * [RunState.usageEverObserved]：run 级持久标志，`recordUsage` 置位、估算不置位、
+     * 不随 `beginRound` 重置 ⇒ 发送前读到的是「此前任何一条请求有没有真值」。
      */
     private fun cachedLabel(ctx: TurnContext): String = when (
         promptCacheStatus(
             ctx.state.cachedPromptTokens,
-            usageObserved = ctx.state.usageObservedThisRound,
+            usageObserved = ctx.state.usageEverObserved,
         )
     ) {
         PromptCacheStatus.USAGE_NOT_OBSERVED -> "n/a-usage"
         PromptCacheStatus.CACHE_FIELDS_NOT_REPORTED -> "n/a-fields"
-        PromptCacheStatus.HIT, PromptCacheStatus.MISS -> ctx.state.cachedPromptTokens.toString()
+        // W42：值是本 run 累计命中量（见上 KDoc ⚠️ 段），标签必须自带口径，防止被读成
+        // 「上一条请求命中了这么多」。删 `(cumulative)` 改回裸数字 ⇒ P0-2 用例必红。
+        PromptCacheStatus.HIT, PromptCacheStatus.MISS ->
+            ctx.state.cachedPromptTokens.toString() + "(cumulative)"
     }
 
     /**

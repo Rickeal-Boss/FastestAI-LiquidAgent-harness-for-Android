@@ -152,15 +152,24 @@ class RunState(
     var usageEstimated: Boolean = false
 
     /**
-     * W41：自最近一次 [beginRound] 以来是否收到过 **provider 真实** usage。
+     * W42（订正 W41 时序缺陷）：本 run **至今**是否收到过 provider 真实 usage。
      *
      * 与累计的 [promptTokens] / [completionTokens] 刻意分开：估算兜底
      * ([recordEstimatedPrompt]) 也会累加 token，若拿累计值反推「观测过」就会把
      * 「没测」写成「没命中」（`Generation.kt` 对 `usageObserved` 的口径）。
-     * 每轮 [beginRound] 重置：发送前的 `ContextBudget.cachedLabel` 读到的就是
-     * 「上一条请求有没有真值」，而不是本轮尚未发生的请求，也不是历史累计。
+     *
+     * ## 为什么不在 [beginRound] 重置（W41 教训，写在字段上防复发）
+     *
+     * W41 版本叫 `usageObservedThisRound` 并在 `beginRound()` 里重置 —— 但
+     * `cachedLabel` 的唯一生产调用点在 `ContextBudget.prepare`（发送前），而
+     * `TurnLoop` 每轮先 `beginRound()` 再 `generation.run()` ⇒ 每轮读到的都是刚清零
+     * 的 `false`，生产路径恒输出 `n/a-usage`，`HIT`/`MISS`/`n/a-fields` 在这条
+     * 日志上不可达（W41 的必红用例恰好跳过了 `beginRound`，测的是生产不存在的顺序）。
+     * 持久标志恢复「此前是否收到过真值」的语义：首个请求前是 `n/a-usage`（正确——
+     * 上一条请求确实不存在），之后每轮发送前都读得到**上一条请求**的观测态。
+     * 若要判「本轮」观测，那要在 usage **到达之后**的日志点读，不是发送前。
      */
-    var usageObservedThisRound: Boolean = false
+    var usageEverObserved: Boolean = false
         private set
 
     private val textBuffer = StringBuilder()
@@ -182,10 +191,9 @@ class RunState(
         cancelledFlag.set(true)
     }
 
-    /** 进入下一轮并返回轮次号（1 基）。 */
+    /** 进入下一轮并返回轮次号（1 基）。W42：不再重置 usage 观测标志（见字段 KDoc）。 */
     fun beginRound(): Int {
         round += 1
-        usageObservedThisRound = false
         return round
     }
 
@@ -270,7 +278,7 @@ class RunState(
     fun recordUsage(prompt: Int, completion: Int, cachedPrompt: Int?, cacheWrite: Int? = null) {
         promptTokens += prompt
         completionTokens += completion
-        usageObservedThisRound = true
+        usageEverObserved = true
         if (cachedPrompt != null) cachedPromptTokens = (cachedPromptTokens ?: 0) + cachedPrompt
         if (cacheWrite != null) cacheWriteTokens = (cacheWriteTokens ?: 0) + cacheWrite
     }

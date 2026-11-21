@@ -48,6 +48,18 @@ import kotlinx.serialization.json.JsonPrimitive
  * 兜底为字符串，不再因 `stringOrNull` 只能读字符串而跌回词表判 PROTOCOL。
  * 超窗分支保留供应商原始 `message`（可诊断文案不再被硬替换）。
  *
+ * ## W42：message-only 判序的反向回归订正
+ *
+ * W41 顺序（限流/服务端措辞全在超窗之前）引入反向形态：超窗文案里常自带
+ * `server`/`rate` 字样（`server cannot process: maximum context length exceeded`），
+ * 会被判 SERVER/RATE_LIMIT **可重试** ⇒ 同长度请求重发两次、两次都超窗（W40 KDoc
+ * 曾点名该风险）。W42 按证据强度重排：**显式限流措辞**（`rate limit` 连写 /
+ * `too many tokens` / 强限流词 429/quota/throttl/slow down/too many requests）最前
+ * ——限流按 token 计、文案天然带 token/limit，`rate limit: too many tokens`（E5e）
+ * 只有这一支能救回来；**超窗强组合**提到服务端/裸 rate 弱词之前；裸 `rate`/`server`
+ * 退到超窗组合之后兜底。E5e（限流不误判超窗）与 E5c/E5d（结构化优先）不受影响；
+ * 新增反向必红 E5h/E5i/E5j：超窗文案含 server/rate 字样仍判 CONTEXT_OVERFLOW。
+ *
  * @param contextLimitHint 从错误体里取真实窗口的端口（由 adapter 注入，复用同一套正则，
  *   避免这里长出第二把尺子）。
  */
@@ -106,18 +118,23 @@ internal fun decodeOpenAiErrorFrame(
         )
     }
 
-    // W41：无结构化字段时，限流/服务端措辞先于超窗词表。供应商只给 message 是
-    // 最常见形态；「rate limit: too many tokens」的 token×limit 本来就命中超窗词表，
-    // 旧顺序会把拥堵判成不可重试。有结构化字段的分支已先返回，不受此处顺序影响。
+    // W42：无结构化字段时的判序按「证据强度」重排。判序冲突点先说清楚：
+    // `rate limit: too many tokens`（E5e 样本）同时命中「限流语境」与超窗词表
+    // （token×limit）——限流按 token 计，文案天然带 token/limit 字样；而真实
+    // 超窗文案极少自称 `rate limit`。因此「显式限流措辞」（rate limit 连写 /
+    // too many tokens / 强限流词）优先于超窗组合；超窗组合优先于裸 server/rate
+    // 弱词（W41 反向回归形态：`server cannot process: maximum context length
+    // exceeded` 不得因 `server` 字样被判可重试）。
+    // 判序：① 限流强词（429/quota/throttl/slow down/too many requests）+ 显式
+    // 限流措辞（rate limit 连写 / too many tokens）；② 超窗强组合（窗口词 × 超限
+    // 词，见 looksLikeContextOverflowMessage）；③ 服务端弱词；④ 裸 `rate` 兜底；
+    // ⑤ PROTOCOL fail-closed。
     return when {
-        haystack.contains("rate") || haystack.contains("429") || haystack.contains("quota") ||
+        haystack.contains("429") || haystack.contains("quota") ||
             haystack.contains("throttl") || haystack.contains("slow down") ||
-            haystack.contains("too many requests") ->
+            haystack.contains("too many requests") ||
+            haystack.contains("rate limit") || haystack.contains("too many tokens") ->
             GenerationEvent.Failed(EngineErrorKind.RATE_LIMIT, message, retryable = true)
-
-        haystack.contains("overload") || haystack.contains("server") ||
-            haystack.contains("5xx") || haystack.contains("unavailable") ->
-            GenerationEvent.Failed(EngineErrorKind.SERVER, message, retryable = true)
 
         looksLikeContextOverflowMessage(haystack) -> GenerationEvent.Failed(
             EngineErrorKind.CONTEXT_OVERFLOW,
@@ -125,6 +142,13 @@ internal fun decodeOpenAiErrorFrame(
             retryable = false,
             contextLimitHint = contextLimitHint(payload),
         )
+
+        haystack.contains("overload") || haystack.contains("server") ||
+            haystack.contains("5xx") || haystack.contains("unavailable") ->
+            GenerationEvent.Failed(EngineErrorKind.SERVER, message, retryable = true)
+
+        haystack.contains("rate") ->
+            GenerationEvent.Failed(EngineErrorKind.RATE_LIMIT, message, retryable = true)
 
         else -> GenerationEvent.Failed(EngineErrorKind.PROTOCOL, message, retryable = false)
     }
@@ -134,12 +158,18 @@ internal fun decodeOpenAiErrorFrame(
  * 「这段错误文案指向上下文超窗」。
  *
  * 与 `RemoteLlmEngine.looksLikeContextOverflow`（HTTP 400 错误体）**共用同一个词表**：
- * 「context/token」与「超限词」必须同时命中。两处都判的代价是重复，收益是
+ * 「窗口词」与「超限词」必须同时命中。两处都判的代价是重复，收益是
  * 「流内错误帧」与「HTTP 400」不会各自漂移成两套判据 —— 所以词表只在这里定义一次，
  * 引擎侧那一份改为委托本函数。
+ *
+ * W42：窗口词从 `context|token` 扩到含 `prompt` —— 供应商超窗文案常用
+ * `prompt too long, server rejected`（外审 P1-1 反向样本 E5j），原词表判不出超窗、
+ * 会被服务端弱词抢走。加 `prompt` 后仍要求**同时**命中超限词，误判面窄；单一真值源
+ * 改一处即 HTTP 400 与 SSE 帧同步生效，不长出第二把尺子。
  */
 internal fun looksLikeContextOverflowMessage(lower: String): Boolean {
-    val mentionsWindow = lower.contains("context") || lower.contains("token")
+    val mentionsWindow = lower.contains("context") || lower.contains("token") ||
+        lower.contains("prompt")
     val mentionsOverflow = lower.contains("too long") ||
         lower.contains("maximum") ||
         lower.contains("exceed") ||

@@ -268,6 +268,51 @@ class RemoteLlmEngineStreamFailureTest {
             val failed = runEngine(port).filterIsInstance<GenerationEvent.Failed>().single()
             assertEquals(EngineErrorKind.RATE_LIMIT, failed.kind, "数字 code 必须兜底：$failed")
             assertTrue(failed.retryable)
+            // W42（P1-7）：同一族用例口径对齐 E5e——已吐 delta 后掐流必须置 truncatedStream。
+            assertTrue(failed.truncatedStream, "已吐 delta 后掐流必须置位（与 E5e 同口径）：$failed")
+        }
+    }
+
+    // ------------------------------------------------------------------ E5h/i/j（W42 P1-1）
+
+    /**
+     * E5h（W42 反向必红 ①）：无结构化字段，超窗文案**含 `server` 字样**
+     * （`server cannot process: maximum context length exceeded`）⇒ 必须判
+     * CONTEXT_OVERFLOW（不可重试）。W41 判序（服务端弱词先于超窗词表）会把它判
+     * SERVER 可重试 ⇒ 同长度请求重发两次、两次都超窗。注入「把服务端弱词提到
+     * 超窗组合之前」⇒ 本用例立即 RED。
+     */
+    @Test
+    fun contextOverflowWordingWithServerIsNotServer() {
+        val error = """data: {"error":{"message":"server cannot process: """ +
+            """maximum context length exceeded"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val failed = runEngine(port).filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.CONTEXT_OVERFLOW, failed.kind, "超窗文案含 server 不得误判服务端：$failed")
+            assertFalse(failed.retryable, "超窗不可重试：$failed")
+        }
+    }
+
+    /** E5i（W42 反向必红 ②）：`request rate too large: maximum context length exceeded` ⇒ CONTEXT_OVERFLOW。 */
+    @Test
+    fun contextOverflowWordingWithRateIsNotRateLimit() {
+        val error = """data: {"error":{"message":"request rate too large: """ +
+            """maximum context length exceeded"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val failed = runEngine(port).filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.CONTEXT_OVERFLOW, failed.kind, "超窗文案含 rate 不得误判限流：$failed")
+            assertFalse(failed.retryable, "超窗不可重试：$failed")
+        }
+    }
+
+    /** E5j（W42 反向必红 ③）：`prompt too long, server rejected` ⇒ CONTEXT_OVERFLOW（token/prompt × too long）。 */
+    @Test
+    fun promptTooLongWithServerWordIsStillContextOverflow() {
+        val error = """data: {"error":{"message":"prompt too long, server rejected"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val failed = runEngine(port).filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.CONTEXT_OVERFLOW, failed.kind, "prompt×too long 是超窗组合，不被 server 字样改判：$failed")
+            assertFalse(failed.retryable, "超窗不可重试：$failed")
         }
     }
 

@@ -25,4 +25,25 @@ class LensCanvasGuardTest {
         assertTrue(lensCanvasIsSafe(1f), "1px 是有效画布，守卫不得过宽")
         assertTrue(lensCanvasIsSafe(200f))
     }
+
+    /**
+     * W42（P1-5）：协作用例 —— 上面的纯函数自测**删掉生产调用点仍全绿**（空转判别力），
+     * 本条钉住「守卫确实被调用、且在 shader uniform 写入之前」。
+     *
+     * JVM 无 Compose / AGSL 运行时，无法在单测里真的构造 `Size(0,0)` 走渲染分支；
+     * 按本仓 arch-guard 的静态判据手法（`AgentRunnerTest.runnerHasNoMoreThanOneRunInFlight`
+     * 同款：读源码文本断言形态）钉调用点。删 `Lens.kt` 的 `if (!lensCanvasIsSafe(...)) return`
+     * ⇒ 本条立即 RED；把调用挪到 `applyRuntimeShader` 之后也 RED。
+     */
+    @Test
+    fun guardCallSitePrecedesRefractionShader() {
+        val source = java.io.File(
+            "src/main/java/com/rickeal/liquidharness/core/design/liquid/effects/Lens.kt"
+        ).readText()
+        val guard = source.indexOf("if (!lensCanvasIsSafe(size.minDimension)) return")
+        val shader = source.indexOf("renderEffect = renderEffect.applyRuntimeShader")
+        assertTrue(guard >= 0, "Lens.kt 必须调用零尺寸守卫；删调用点后纯函数用例仍绿、本条必红")
+        assertTrue(shader >= 0, "锚点自检：shader 应用点必须存在，否则本用例失去判别力")
+        assertTrue(guard < shader, "守卫必须在 shader uniform 写入之前，否则 NaN 已进 AGSL")
+    }
 }
