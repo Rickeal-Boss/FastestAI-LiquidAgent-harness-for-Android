@@ -83,6 +83,7 @@
   Build `44935473646`（`updated_at=2026-11-21T18:28:31Z`）、Secret scan `44935473364`；
   链接分别为 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44935473646` 与 `.../runs/44935473364`。
 - 本交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按既定降级规则不作 P0 判据、不预设 run 号。
+- 实际 run 清点：本波共 3 条 run 全 `completed/success`（代码提交 2 条 + 首次文档回填 1 条 `44935945732`）；第二次文档提交（本交接所在 tip）的 Secret run 按同一降级规则显式记为「不预设 run 号」。
 - 本地四闸门不代替 CI；CI 绿以 run 四字段为准。
 
 ## 八、明确未做（逐条带中文段位，编号见验收物）

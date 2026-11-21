@@ -88,6 +88,7 @@
   - Build run `44935473646`：`status=completed` / `conclusion=success`、`updated_at=2026-11-21T18:28:31Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44935473646`（Unit tests 871 对账 + Arch guard + Assemble Debug + Lint）。
   - Secret scan run `44935473364`：`status=completed` / `conclusion=success`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44935473364`（gitleaks / trufflehog / 3b-ext 含未 tracked 补扫步）。
 - **本文件的 CI 回填提交为纯文档 tip**：按既定降级规则（tip 文档提交的 run 不作 P0 判据），其触发的 Secret run 不预设 run 号、不冒充代码提交的验证；代码提交的两条 run 四字段才是本波 CI 判据。Build 对纯文档提交 0 run（`paths-ignore` 既定口径，非构建失败）。
+- **实际 run 清点（3 条，全部 `completed/success`）**：代码提交 `1c3cd5a` → Build `44935473646` + Secret `44935473364`；文档提交 `327b314` → Secret `44935945732`（Build 0 run）。本段所在的第二次文档提交亦为纯文档 tip，其 Secret run 按同一降级规则不预设 run 号 —— 这是显式声明，不是漏记。
 - 本地四闸门不代替 CI；CI 绿以 run 四字段为准。
 
 ---
