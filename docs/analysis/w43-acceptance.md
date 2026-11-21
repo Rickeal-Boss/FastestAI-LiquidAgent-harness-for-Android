@@ -83,7 +83,8 @@
 - CI（按 head_sha 完整 40 位实取，`2e69dae..fa06c0c main` 单次推送单提交触发一轮、两 workflow）：
   - Build run `44922539579`（`head_sha=fa06c0c0858bc7215db0fba9d6ab4554da4725db`、`status=completed` / `conclusion=success`、`updated_at=2026-11-21T16:06:59Z`）✅，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44922539579`。jobs API 逐 job/step 全绿：Unit tests（含 `Reconcile EXPECTED_TESTS` success，865 对账通过 + `Run unit tests (aggregate + real XML counts)` success）、Arch guard（26 条判据 + mutation selftest success）、Assemble Debug（JDK 21）、Lint（baseline gate），失败诊断 step 均 skipped。
   - Secret scan run `44922539697`（同 head_sha、`status=completed` / `conclusion=success`）✅，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44922539697`；jobs API 逐 step 确认 gitleaks / trufflehog / **3b-ext（全树无豁免，step #6）** 均 `completed/success`。
-  - 本地四闸门不代替 CI；CI 绿以两 run 四字段为准。WebFetch 对 run 级端点有 15 分钟缓存，终态以带查询参数的新请求（`conclusion=success`、`updated_at=16:06:59Z`）为准。
+  - 文档提交 `41b3716cc8d4e7b1d6d181f7e329a642cd79f5bc`（纯文档）另触发 Secret scan run `44922927954`（`head_sha=41b3716…`、`status=completed` / `conclusion=success`）、链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44922927954`；逐 step 全绿含 **3b-ext（全树无豁免，step #6）** —— 这是「新增文档不含泄漏形态、3b-ext 对其非 vacuous」的 CI 级验证。Build 对该纯文档提交 0 run（`build.yml` 的 `paths-ignore` 既定口径，非构建失败）。
+  - 本地四闸门不代替 CI；CI 绿以三 run（代码提交 2 + 文档提交 1）四字段为准。WebFetch 对 run 级端点有 15 分钟缓存，终态以带查询参数的新请求为准。
 
 ---
 
