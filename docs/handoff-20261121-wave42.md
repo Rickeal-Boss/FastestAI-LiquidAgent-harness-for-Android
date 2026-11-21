@@ -91,7 +91,11 @@
 | G3 selftest | `30/30 PASS（384s）` | ✅ |
 | G4 fulltest | `tests=862 failures=0 errors=0 skipped=0`（14 模块） | ✅ |
 | 判据 1/6/7/3b-ext | 正控 OK + 必红 RED（见验收物步 2/3） | ✅ |
-| CI | 待推送后回填 Build / Secret 双 workflow run 链接与四字段 | — |
+| CI | Build `44914544403` + Secret `44914544409`，均 `completed/success` @ tip `4ba99c0`（四字段公开 API 复核） | ✅ |
+
+CI 链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44914544403`（Build）、
+`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44914544409`（Secret scan，jobs API 逐 step 确认 3b-ext 步 `completed/success`）。
+单次推送推两提交（`3637057..4ba99c0`），CI 只按 tip 触发一轮；feat `8fcd30b` 无独立 run。
 
 ---
 

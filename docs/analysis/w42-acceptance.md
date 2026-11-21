@@ -75,8 +75,13 @@
 
 - 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`。
 - 推送分支 `main`（`git push --dry-run` 真判据通过；一次性凭据只走 URL inline、推后清 remote；凭据轮换属用户侧）。
-- CI：Build + Secret scan 双 workflow 四字段复核（run 链接见下）。
-  > 待推送后回填 run 号与四字段，附链接。
+- CI（公开 API 四字段复核，tip `4ba99c055c1a6f9564cad6af25f59a832cc37953`）：
+  Build run `44914544403`（`head_sha=4ba99c055c…`、`status=completed` / `conclusion=success`）✅，链接
+  `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44914544403`；
+  Secret scan run `44914544409`（`head_sha=4ba99c055c…`、`status=completed` / `conclusion=success`）✅，链接
+  `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44914544409`。
+  本次为**单次推送推两个提交**（`3637057..4ba99c0`），CI 只按 tip 触发一轮；feat 提交 `8fcd30b` 无独立 run，符合单 push 多 commit 口径。
+  > Secret scan 的 jobs API 逐 step 复核：`gitleaks` / `trufflehog` / **3b-ext（路径 / 设备标识 / PAT 元信息脱敏；覆盖 evidence/raw/\*\*）** 三步均 `completed/success` —— P0-1 入闸得到 CI 级验证，非本地自证。两 run 均四字段实取复核，本地四闸门不代替 CI。
 
 ---
 
