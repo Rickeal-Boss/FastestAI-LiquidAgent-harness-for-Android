@@ -1,0 +1,8 @@
+{
+ "cell_id": "E05_dots3",
+ "state": "FAIL",
+ "glyph": "⛔",
+ "feature_face": "endpoint_axis",
+ "detail": "Reply with exactly DOTS3OK -> 本次请求失败：request rejected (HTTP 404)。",
+ "note_if_vacuous": null
+}

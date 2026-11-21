@@ -1,0 +1,8 @@
+{
+ "cell_id": "E06_north",
+ "state": "FAIL",
+ "glyph": "⛔",
+ "feature_face": "endpoint_axis",
+ "detail": "Reply with exactly NORTHOK -> 本次请求失败：request rejected (HTTP 404)。",
+ "note_if_vacuous": null
+}

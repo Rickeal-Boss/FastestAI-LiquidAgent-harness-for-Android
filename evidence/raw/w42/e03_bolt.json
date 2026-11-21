@@ -1,0 +1,8 @@
+{
+ "cell_id": "E03_bolt",
+ "state": "PARTIAL",
+ "glyph": "⚠️",
+ "feature_face": "endpoint_axis",
+ "detail": "Reply with exactly BOLTOK -> \"This is the final answer\"（未逐字）；1.3k in / 6 out (1376 cached, 98.6%)=HIT。端点通、逐字判据不满足。",
+ "note_if_vacuous": null
+}

@@ -1,5 +1,5 @@
 ================ arch-guard-selftest（28 个变异自证 case） ================
-repo = /d/WBfil/2026-09-18-18-27-37/harness-v2
+repo = <repo>
 mode = batch   work = C:\Users\16896\AppData\Local\Temp/arch-guard-selftest.pdDuIU
 -------------------------------------------------------------------
 [selftest] 注入变异（batch：全部落在同一棵树，各变异落在不同判据域）

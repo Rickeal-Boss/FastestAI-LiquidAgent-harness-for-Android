@@ -1,8 +1,8 @@
 # W40 验收物 — P0-3 断流重试 + 老号代码面推进 + 真机矩阵补格
 
 > 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`）。
-> 基线 tip `0cb87ee` → 主体 `e900f44`（feat）→ docs 收尾 `b66c8b5`（纯文档：台账段 / 验收物 / 交接 / checklist 摘录）。
-> 本波共 **2 次推送**；其后的纯文档订正 `c4fc2cf` 不改变主体，不另计波次。
+> 基线 tip `0cb87ee` → 主体 `e900f44`（feat）→ docs 收尾 `b66c8b5142853e318125f1a57fbf1acd3dfb74db`（纯文档：台账段 / 验收物 / 交接 / checklist 摘录；W42 补录完整 40 位 SHA）。
+> 本波共 **2 次推送**；其后的纯文档订正 `c4fc2cf7f8d6a7b0ef1dab84eebf9202fb25c60d` 不改变主体，不另计波次（W42 补录完整 40 位 SHA）。
 > 判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；「未触发」≠「已验证通过」；推断带 caveat，不写成事实。
 > 回灌级别：脱敏 UI dump 文本判据 + `deviceLogTail`；不回灌整段 logcat / 凭据 / 未打码账号 / 设备序列号 / 本机路径。
 

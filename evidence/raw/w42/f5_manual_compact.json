@@ -1,0 +1,8 @@
+{
+ "cell_id": "F5_manual_compact",
+ "state": "PARTIAL",
+ "glyph": "⚠️",
+ "feature_face": "compression",
+ "detail": "更多操作>压缩上下文>确认 -> \"没有可压缩的内容：历史本来就装得下，或找不到安全的截断点\"。",
+ "note_if_vacuous": null
+}

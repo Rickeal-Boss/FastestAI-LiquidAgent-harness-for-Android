@@ -1,0 +1,8 @@
+{
+ "cell_id": "F6_auto_compact",
+ "state": "PARTIAL",
+ "glyph": "⚠️",
+ "feature_face": "compression",
+ "detail": "deviceLogTail.txt 末 40 行全部 auto_compact=noop reason=below_trigger；无 applied 分支。",
+ "note_if_vacuous": null
+}

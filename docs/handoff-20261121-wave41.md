@@ -1,7 +1,7 @@
 # W41 交接 — 限流分类补全 / 四态 usage 同源 / 思考框实底 + 真机制品入仓
 
 > 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`）。
-> 基线 `c4fc2cf` → 代码主体 `93808be`（feat，本波唯一代码提交）；证据与验收物随其后的纯文档提交落库。
+> 基线 `c4fc2cf7f8d6a7b0ef1dab84eebf9202fb25c60d` → 代码主体 `93808be874c1fb6dcc64a7023154c88f9fbeb367`（feat，本波唯一代码提交）→ 证据 `757b28db3fc3f234118339c07f99726d36e4e6d5` → tip `3637057617f4c22207412c36dda0033866398412`（W42 补录完整 40 位 SHA）。
 > 台账权威版 = `docs/06-deferred-ledger.md`；本波验收物 = `docs/analysis/w41-acceptance.md`；
 > 判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；「未触发」≠「已验证通过」；推断带 caveat、不写成事实。
 > 守恒式两数只在派单卡抬头写一次，本交接不复述；台账零 `W41-` 行、三数不变。
@@ -44,6 +44,9 @@
   `W20-02`（G10 余量收窄）；整行状态均不动。
 - 两数只在派单卡抬头；W40 段历史数字作为时点记录保留，不回改。checklist 加的是**边界说明**（摘录不算追加、判据 7 解析规则），
   不新增段、不新增编号。
+- **波次归属（W42 订正说明）**：W40 文档订正跨 `c4fc2cf7f8`（波前基线收尾）与 `93808be874c`（W41 feat 提交内的回改）
+  两笔；前者属波前基线、不算 W41 第 0 车。本文件 §三「W40 段历史数字不回改」指**数值口径**不回改，与 §四 记录的
+  W40 文档抬头/边界数/计数订正（事实订正）并行不悖、非口径冲突。
 
 ---
 
@@ -100,6 +103,12 @@
 
 CI 链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44898126012`（主体 Build）、
 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44898562000`（证据/交接 Build）。
+
+**W42 补漏**（本波公开 API 实取复核，均 `completed/success`）：波前订正提交
+`c4fc2cf7f8d6a7b0ef1dab84eebf9202fb25c60d` → Secret run `44890089061`；本波 tip 提交
+`3637057617f4c22207412c36dda0033866398412` → Secret run `44898959485`。
+链接：`…/actions/runs/44890089061` / `…/actions/runs/44898959485`（完整 host 见上）。
+本波三次推送共 5 条 run + 波前订正 1 条 = 六条；正文「四条」为落笔时点记录，不回改。
 
 ---
 

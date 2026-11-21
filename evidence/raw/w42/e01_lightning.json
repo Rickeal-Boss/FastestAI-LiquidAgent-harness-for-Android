@@ -1,0 +1,8 @@
+{
+ "cell_id": "E01_lightning",
+ "state": "PASS",
+ "glyph": "✅",
+ "feature_face": "endpoint_axis",
+ "detail": "Reply with exactly LIGHTOK -> 气泡逐字 LIGHTOK；1.8k in / 72 out；上下文 1.9K/127K。",
+ "note_if_vacuous": null
+}

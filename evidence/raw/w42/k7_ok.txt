@@ -1,0 +1,5 @@
+=== 判据 1（W42 零新增段波，SKIP-empty-wave）===
+W42 rows = 0（声明 SKIP-empty-wave：新开 0）
+=== 判据 7（CUR_WAVE=W42，无声明行 ⇒ declared=0 合法空销账）===
+OK closed rows carry runnable pointers (W30+)
+OK closed rows carry current-wave pointers (W42, declared=0)

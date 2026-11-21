@@ -1,0 +1,8 @@
+{
+ "cell_id": "E04_supervl_1m",
+ "state": "PASS",
+ "glyph": "✅",
+ "feature_face": "endpoint_axis",
+ "detail": "Reply with exactly W42SEQOK -> 逐字 W42SEQOK；1.8k in / 32 out；上下文 1.9K/995.9K。",
+ "note_if_vacuous": null
+}

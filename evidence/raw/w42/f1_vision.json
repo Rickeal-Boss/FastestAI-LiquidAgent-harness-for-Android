@@ -1,0 +1,8 @@
+{
+ "cell_id": "F1_vision",
+ "state": "PASS",
+ "glyph": "✅",
+ "feature_face": "vision",
+ "detail": "附件 w42_vision_probe.png（240x140，红矩形+蓝圆）-> \"red rectangle ... blue circle centered inside it\"；2.1k in / 171 out。",
+ "note_if_vacuous": null
+}

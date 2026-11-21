@@ -1,7 +1,7 @@
 # W41 验收物 — 限流分类补全 / 四态 usage 同源 / 思考框实底 + 真机矩阵入仓
 
 > 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`）。
-> 基线 `c4fc2cf`（W40 收尾订正）→ 代码主体 `93808be`（feat，本波唯一代码提交）。
+> 基线 `c4fc2cf7f8d6a7b0ef1dab84eebf9202fb25c60d`（W40 收尾订正）→ 代码主体 `93808be874c1fb6dcc64a7023154c88f9fbeb367`（feat，本波唯一代码提交）→ 证据 `757b28db3fc3f234118339c07f99726d36e4e6d5` → tip `3637057617f4c22207412c36dda0033866398412`（W42 补录完整 40 位 SHA）。
 > 守恒式两数只写在派单卡抬头；本文件不复述。判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；「未触发」≠「已验证通过」。
 > 回灌级别：脱敏 UI dump 文本、思考框裁剪截图、`deviceLogTail`；不回灌整段 logcat / 凭据 / 未打码账号 / 设备序列号 / 本机路径。
 
@@ -92,6 +92,13 @@
   链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44898562000` /
   `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44898561966`。
   > 四条 run 均为四字段实取复核；本地 G1–G4 全绿与 CI success 一致，CI 绿以 run 为准。
+- **W42 补漏（本波实取复核）**：波前基线订正提交 `c4fc2cf7f8d6a7b0ef1dab84eebf9202fb25c60d` → Secret scan run `44890089061`
+  （`head_sha=c4fc2cf7f8…`、`status=completed` / `conclusion=success`）✅；
+  本波 tip 提交 `3637057617f4c22207412c36dda0033866398412` → Secret scan run `44898959485`
+  （`head_sha=3637057617f4…`、`status=completed` / `conclusion=success`）✅。
+  链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44890089061` /
+  `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44898959485`。
+  > 六条 run 均四字段实取复核（本波三次推送共 5 条 + 波前订正 1 条）；W41 正文「四条」为落笔时点记录，此处补齐、不回改历史数字。
 
 ---
 
@@ -127,7 +134,7 @@
 4. `docs/notes/w29-closeout-checklist.md`（判据 7 解析规则与摘录边界说明）
 5. `evidence/w41-matrix-summary.json`（34 键冻结）+ `evidence/raw/w41/`（逐格 JSON、脱敏裁剪图、判据实跑输出、设备日志尾）
 6. `.github/workflows/build.yml`（EXPECTED_TESTS 849→856）
-7. 代码主体 `93808be` 的逐文件 diff（15 个 `.kt`/`.yml`/文档改动，含 1 个新增纯函数测试文件）
+7. 代码主体 `93808be` 的逐文件 diff（**16 文件 = 15 改 + 1 新**，含 1 个新增纯函数测试文件；W42 订正原「15 个…含 1 新增」字面少 1）
 
 **不含**：会话历史 / 凭据（含一次性推送凭据）/ 端点完整标识与密钥 / 未打码账号字段 / 设备序列号 / 本机路径 / 「建议下一链做什么」。
 

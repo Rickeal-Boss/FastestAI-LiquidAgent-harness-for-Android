@@ -1,0 +1,8 @@
+{
+ "cell_id": "F2_workspace",
+ "state": "PASS",
+ "glyph": "✅",
+ "feature_face": "workspace",
+ "detail": "工具 file_write 请求授权 -> 允许一次 -> \"wrote 5 chars to probe_w42.txt\"；设备侧 cat = W42OK。",
+ "note_if_vacuous": null
+}

@@ -1,0 +1,8 @@
+{
+ "cell_id": "T01_1m_tier",
+ "state": "PASS",
+ "glyph": "✅",
+ "feature_face": "context_tier",
+ "detail": "对话状态行 \"上下文 2.1K / 995.9K\" -> 档位=1M 生效；双硬限注入（W20-05/W9-11）未解禁，未写真压 PASS。",
+ "note_if_vacuous": null
+}

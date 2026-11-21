@@ -1,0 +1,8 @@
+{
+ "cell_id": "F3_skill",
+ "state": "PASS",
+ "glyph": "✅",
+ "feature_face": "skill",
+ "detail": "设置>技能 -> notes-organizer / pdf-toolkit 两技能与工具清单可见。按 W41 口径不冒充 skill_load 工具调用。",
+ "note_if_vacuous": null
+}

@@ -1,0 +1,9 @@
+{
+ "cell_id": "F4_mcp",
+ "state": "VACUOUS",
+ "glyph": "⛔vacuous",
+ "feature_face": "mcp",
+ "detail": "设置>MCP 服务器 -> \"还没有 MCP 服务器\"；无端点可测，unexercised_reason = server_count 0。",
+ "note_if_vacuous": "server_count 0",
+ "unexercised_reason": "MCP server 数 0，无端点可测；G15b 外部 https 独立裁决未解禁"
+}

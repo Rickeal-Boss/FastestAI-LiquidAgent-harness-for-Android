@@ -1,7 +1,7 @@
-[localbuild] repo            = /d/WBfil/2026-09-18-18-27-37/harness-v2
-[localbuild] JAVA_HOME       = /d/WBfil/2026-09-18-18-27-37/_j2env/jdk/jdk-21.0.12.1+1
-[localbuild] ANDROID_HOME    = /d/WBfil/2026-09-18-18-27-37/_j2env/sdk
-[localbuild] GRADLE_USER_HOME= /d/WBfil/2026-09-18-18-27-37/_j2env/gradle-home
+[localbuild] repo            = <repo>
+[localbuild] JAVA_HOME       = <jdk>
+[localbuild] ANDROID_HOME    = <sdk>
+[localbuild] GRADLE_USER_HOME= <gradle-home>
 [localbuild] proxy           = 127.0.0.1:4003 (from https_proxy)
 [localbuild] java -version   = openjdk version "21.0.12.1" 2026-08-18 LTS
 [localbuild] launcher        = ./gradlew  task=:core-engine:testDebugUnitTest --tests com.rickeal.liquidharness.core.engine.RemoteLlmEngineStreamFailureTest.rateLimitErrorFrameBeforeAnyContentIsNotTruncated
