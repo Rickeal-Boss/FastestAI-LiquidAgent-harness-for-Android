@@ -1,0 +1,114 @@
+[localbuild] repo            = /d/WBfil/2026-09-18-18-27-37/harness-v2
+[localbuild] JAVA_HOME       = /d/WBfil/2026-09-18-18-27-37/_j2env/jdk/jdk-21.0.12.1+1
+[localbuild] ANDROID_HOME    = /d/WBfil/2026-09-18-18-27-37/_j2env/sdk
+[localbuild] GRADLE_USER_HOME= /d/WBfil/2026-09-18-18-27-37/_j2env/gradle-home
+[localbuild] proxy           = 127.0.0.1:4003 (from https_proxy)
+[localbuild] java -version   = openjdk version "21.0.12.1" 2026-08-18 LTS
+[localbuild] launcher        = ./gradlew  task=:core-engine:testDebugUnitTest --tests com.rickeal.liquidharness.core.engine.RemoteLlmEngineStreamFailureTest :core-agent:testDebugUnitTest --tests com.rickeal.liquidharness.core.agent.loop.ContextBudgetTest
+[localbuild] 开始构建（失败先看输出里的 '^\* What went wrong' 段）
+-------------------------------------------------------------------
+assertion "bc_ctl.arg_max >= LINE_MAX" failed: file "xargs.c", line 512, function: main
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.7.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :core-engine:preBuild UP-TO-DATE
+> Task :core-model:preBuild UP-TO-DATE
+> Task :core-kernel:preBuild UP-TO-DATE
+> Task :core-agent:preBuild UP-TO-DATE
+> Task :core-net:preBuild UP-TO-DATE
+> Task :core-context:preBuild UP-TO-DATE
+> Task :core-engine:preDebugBuild UP-TO-DATE
+> Task :core-model:preDebugBuild UP-TO-DATE
+> Task :core-kernel:preDebugBuild UP-TO-DATE
+> Task :core-context:preDebugBuild UP-TO-DATE
+> Task :core-agent:preDebugBuild UP-TO-DATE
+> Task :core-net:preDebugBuild UP-TO-DATE
+> Task :core-engine:generateDebugResources UP-TO-DATE
+> Task :core-net:generateDebugResources UP-TO-DATE
+> Task :core-model:generateDebugResources UP-TO-DATE
+> Task :core-context:generateDebugResources UP-TO-DATE
+> Task :core-agent:generateDebugResources UP-TO-DATE
+> Task :core-kernel:generateDebugResources UP-TO-DATE
+> Task :core-net:packageDebugResources UP-TO-DATE
+> Task :core-context:packageDebugResources UP-TO-DATE
+> Task :core-engine:packageDebugResources UP-TO-DATE
+> Task :core-model:packageDebugResources UP-TO-DATE
+> Task :core-kernel:packageDebugResources UP-TO-DATE
+> Task :core-agent:packageDebugResources UP-TO-DATE
+> Task :core-engine:processDebugNavigationResources UP-TO-DATE
+> Task :core-context:processDebugNavigationResources UP-TO-DATE
+> Task :core-model:processDebugNavigationResources UP-TO-DATE
+> Task :core-agent:processDebugNavigationResources UP-TO-DATE
+> Task :core-net:processDebugNavigationResources UP-TO-DATE
+> Task :core-kernel:processDebugNavigationResources UP-TO-DATE
+> Task :core-agent:parseDebugLocalResources UP-TO-DATE
+> Task :core-context:parseDebugLocalResources UP-TO-DATE
+> Task :core-engine:parseDebugLocalResources UP-TO-DATE
+> Task :core-net:parseDebugLocalResources UP-TO-DATE
+> Task :core-kernel:parseDebugLocalResources UP-TO-DATE
+> Task :core-net:generateDebugRFile UP-TO-DATE
+> Task :core-engine:generateDebugRFile UP-TO-DATE
+> Task :core-agent:generateDebugRFile UP-TO-DATE
+> Task :core-context:generateDebugRFile UP-TO-DATE
+> Task :core-model:parseDebugLocalResources UP-TO-DATE
+> Task :core-agent:javaPreCompileDebug UP-TO-DATE
+> Task :core-net:javaPreCompileDebug UP-TO-DATE
+> Task :core-context:javaPreCompileDebug UP-TO-DATE
+> Task :core-engine:javaPreCompileDebug UP-TO-DATE
+> Task :core-kernel:generateDebugRFile UP-TO-DATE
+> Task :core-agent:preDebugUnitTestBuild UP-TO-DATE
+> Task :core-engine:preDebugUnitTestBuild UP-TO-DATE
+> Task :core-model:generateDebugRFile UP-TO-DATE
+> Task :core-engine:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-kernel:javaPreCompileDebug UP-TO-DATE
+> Task :core-agent:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-agent:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-engine:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-model:compileDebugKotlin UP-TO-DATE
+> Task :core-model:javaPreCompileDebug UP-TO-DATE
+> Task :core-model:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-model:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-model:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-model:processDebugJavaRes UP-TO-DATE
+> Task :core-kernel:compileDebugKotlin UP-TO-DATE
+> Task :core-net:compileDebugKotlin UP-TO-DATE
+> Task :core-kernel:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-net:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-kernel:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-net:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-kernel:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-net:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-kernel:processDebugJavaRes UP-TO-DATE
+> Task :core-net:processDebugJavaRes UP-TO-DATE
+> Task :core-context:compileDebugKotlin UP-TO-DATE
+> Task :core-context:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-context:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-context:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-context:processDebugJavaRes UP-TO-DATE
+> Task :core-engine:compileDebugKotlin
+> Task :core-engine:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-agent:compileDebugKotlin
+> Task :core-agent:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-engine:processDebugJavaRes UP-TO-DATE
+> Task :core-agent:processDebugJavaRes UP-TO-DATE
+> Task :core-engine:bundleLibRuntimeToJarDebug
+> Task :core-engine:bundleLibCompileToJarDebug
+> Task :core-agent:bundleLibRuntimeToJarDebug
+> Task :core-agent:bundleLibCompileToJarDebug
+> Task :core-engine:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :core-engine:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core-engine:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-agent:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :core-agent:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core-agent:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-agent:testDebugUnitTest
+> Task :core-engine:testDebugUnitTest
+
+BUILD SUCCESSFUL in 43s
+70 actionable tasks: 8 executed, 62 up-to-date
+-------------------------------------------------------------------
+[localbuild] 成功 (rc=0)
+[localbuild] 产物：./app/build/outputs/apk/debug/app-debug.apk
+[localbuild] 真机安装（applicationId = com.rickeal.liquidharness.debug）：
+[localbuild]   MSYS_NO_PATHCONV=1 adb push "./app/build/outputs/apk/debug/app-debug.apk" /data/local/tmp/app.apk
+[localbuild]   MSYS_NO_PATHCONV=1 adb shell pm install -r /data/local/tmp/app.apk
+[localbuild]   MSYS_NO_PATHCONV=1 adb shell monkey -p com.rickeal.liquidharness.debug -c android.intent.category.LAUNCHER 1

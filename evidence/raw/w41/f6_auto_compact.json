@@ -1,0 +1,8 @@
+{
+  "cell_id": "F6_auto_compact",
+  "feature_face": "compression",
+  "state": "PARTIAL",
+  "note": "终态后评估链真跑，agent-0.log 新增 11:02:27 / 11:03:40 / 11:07:27 UTC nothing_to_drop；applied 未行使。",
+  "wave": "W41",
+  "evidence_level": "device_ui_dump"
+}

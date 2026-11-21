@@ -1,0 +1,8 @@
+{
+  "cell_id": "E01_lightning",
+  "feature_face": "endpoint_axis",
+  "state": "PASS",
+  "note": "NV Lightning 逐字正控：OK_W41_ECHO 命中，1.8k in / 73 out；本波 APK 正常链路无回归。",
+  "wave": "W41",
+  "evidence_level": "device_ui_dump"
+}

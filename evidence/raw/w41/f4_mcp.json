@@ -1,0 +1,8 @@
+{
+  "cell_id": "F4_mcp",
+  "feature_face": "mcp",
+  "state": "VACUOUS",
+  "note": "MCP server 计数 0；明文 URL 测试仅得泛化 transport_error，不足以归因 G15b，不冒充门禁通过。",
+  "wave": "W41",
+  "evidence_level": "device_ui_dump"
+}

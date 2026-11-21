@@ -1,0 +1,8 @@
+{
+  "cell_id": "T03_1m",
+  "feature_face": "context_tier",
+  "state": "PARTIAL",
+  "note": "1M 端点档位回读 995.9K 且真请求至 106.6K 上下文；会话预算 400k 在 used=439211 时安全熔断，非满窗真压。",
+  "wave": "W41",
+  "evidence_level": "device_ui_dump"
+}

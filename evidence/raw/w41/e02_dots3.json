@@ -1,0 +1,8 @@
+{
+  "cell_id": "E02_dots3",
+  "feature_face": "endpoint_axis",
+  "state": "FAIL",
+  "note": "Dots3 note preview 请求 HTTP 404；公开模型清单同日查无该 ID，归端点侧，不归因 harness。",
+  "wave": "W41",
+  "evidence_level": "device_ui_dump"
+}

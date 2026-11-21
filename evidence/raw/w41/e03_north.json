@@ -1,0 +1,8 @@
+{
+  "cell_id": "E03_north",
+  "feature_face": "endpoint_axis",
+  "state": "VACUOUS",
+  "note": "本波未切换复测；公开模型清单同日查无 north-mini-code ID，不冒充通过。",
+  "wave": "W41",
+  "evidence_level": "device_ui_dump"
+}

@@ -1,0 +1,8 @@
+{
+  "cell_id": "F5_manual_compact",
+  "feature_face": "compression",
+  "state": "PARTIAL",
+  "note": "确认框三段文案走完，执行后报『没有可压缩的内容 / 找不到安全截断点』；applied 分支未行使。",
+  "wave": "W41",
+  "evidence_level": "device_ui_dump"
+}

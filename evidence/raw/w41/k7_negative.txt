@@ -1,0 +1,2 @@
+OK closed rows carry runnable pointers (W30+)
+RED closed without current-wave pointer: W26-01

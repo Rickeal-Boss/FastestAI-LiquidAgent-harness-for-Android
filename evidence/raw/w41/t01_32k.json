@@ -1,0 +1,8 @@
+{
+  "cell_id": "T01_32k",
+  "feature_face": "context_tier",
+  "state": "VACUOUS",
+  "note": "本波未单独切 32K 窗口回读。",
+  "wave": "W41",
+  "evidence_level": "device_ui_dump"
+}

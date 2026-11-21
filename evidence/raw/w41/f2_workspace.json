@@ -1,0 +1,8 @@
+{
+  "cell_id": "F2_workspace",
+  "feature_face": "workspace",
+  "state": "PASS",
+  "note": "file_write 审批框 + 设备侧 /workspace/probe_w41.txt 落盘 W41OK（hex 57 34 31 4f 4b）。",
+  "wave": "W41",
+  "evidence_level": "device_ui_dump"
+}

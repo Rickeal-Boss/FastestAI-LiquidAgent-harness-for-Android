@@ -1,0 +1,9 @@
+{
+  "source": "public model catalogue snapshot (2026-11-21)",
+  "dots_id_present": false,
+  "north_mini_id_present": false,
+  "free_model_examples": [
+    "nvidia/nemotron-3.5-super-vl:free",
+    "nvidia/nemotron-3.5-lightning:free"
+  ]
+}

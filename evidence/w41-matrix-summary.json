@@ -1,0 +1,391 @@
+{
+  "schema": "harness-matrix-summary/v1",
+  "wave": "W41",
+  "generated_at": "2026-11-21T19:10+08:00",
+  "matrix_type": "device_endpoint_context_feature",
+  "judge_policy": "four-state PASS/PARTIAL/VACUOUS/FAIL; 未触发≠通过; PARTIAL 必须写清缺哪一半",
+  "state_glyph_mapping": {
+    "PASS": "✅",
+    "PARTIAL": "⚠️",
+    "VACUOUS": "⛔vacuous",
+    "FAIL": "⛔"
+  },
+  "state_glyph_mapping_assertion": "K_state_domain：state_counts 非零键集 == cells[].state 值域（本波四态齐现）",
+  "declared_feature_faces": [
+    "endpoint_axis",
+    "context_tier",
+    "vision",
+    "workspace",
+    "skill",
+    "mcp",
+    "compression"
+  ],
+  "feature_faces_with_cells": [
+    "endpoint_axis",
+    "context_tier",
+    "vision",
+    "workspace",
+    "skill",
+    "mcp",
+    "compression"
+  ],
+  "cells": [
+    {
+      "cell_id": "E01_lightning",
+      "attempt_n": 1,
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w41/e01_lightning.json",
+      "note": "NV Lightning 逐字正控：OK_W41_ECHO 命中，1.8k in / 73 out；本波 APK 正常链路无回归。"
+    },
+    {
+      "cell_id": "E02_dots3",
+      "attempt_n": 1,
+      "feature_face": "endpoint_axis",
+      "state": "FAIL",
+      "glyph": "⛔",
+      "evidence_ref": "evidence/raw/w41/e02_dots3.json",
+      "note": "Dots3 note preview 请求 HTTP 404；公开模型清单同日查无该 ID，归端点侧，不归因 harness。"
+    },
+    {
+      "cell_id": "E03_north",
+      "attempt_n": 1,
+      "feature_face": "endpoint_axis",
+      "state": "VACUOUS",
+      "glyph": "⛔vacuous",
+      "evidence_ref": "evidence/raw/w41/e03_north.json",
+      "note": "本波未切换复测；公开模型清单同日查无 north-mini-code ID，不冒充通过。",
+      "unexercised_reason": "本波未切换复测；公开模型清单同日查无 north-mini-code ID，不冒充通过。"
+    },
+    {
+      "cell_id": "E04_supervl_1m",
+      "attempt_n": 1,
+      "feature_face": "endpoint_axis",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w41/e04_supervl_1m.json",
+      "note": "SuperVL 1M 端点连通，档位回读 995.9K；同会话多轮缓存 64.7%→69.0%→80.2%→89.5%。"
+    },
+    {
+      "cell_id": "F1_vision",
+      "attempt_n": 1,
+      "feature_face": "vision",
+      "state": "VACUOUS",
+      "glyph": "⛔vacuous",
+      "evidence_ref": "evidence/raw/w41/f1_vision.json",
+      "note": "图片输入开关已开启，但系统选择器暴露敏感错误报告条目，拒绝授权且未发图；不沿用 W39 PASS。",
+      "unexercised_reason": "图片输入开关已开启，但系统选择器暴露敏感错误报告条目，拒绝授权且未发图；不沿用 W39 PASS。"
+    },
+    {
+      "cell_id": "F2_workspace",
+      "attempt_n": 1,
+      "feature_face": "workspace",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w41/f2_workspace.json",
+      "note": "file_write 审批框 + 设备侧 /workspace/probe_w41.txt 落盘 W41OK（hex 57 34 31 4f 4b）。"
+    },
+    {
+      "cell_id": "F3_skill",
+      "attempt_n": 1,
+      "feature_face": "skill",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w41/f3_skill.json",
+      "note": "@ 菜单两技能可见；选中后运行并列出技能说明，输出可读。"
+    },
+    {
+      "cell_id": "F4_mcp",
+      "attempt_n": 1,
+      "feature_face": "mcp",
+      "state": "VACUOUS",
+      "glyph": "⛔vacuous",
+      "evidence_ref": "evidence/raw/w41/f4_mcp.json",
+      "note": "MCP server 计数 0；明文 URL 测试仅得泛化 transport_error，不足以归因 G15b，不冒充门禁通过。",
+      "unexercised_reason": "MCP server 计数 0；明文 URL 测试仅得泛化 transport_error，不足以归因 G15b，不冒充门禁通过。"
+    },
+    {
+      "cell_id": "F5_manual_compact",
+      "attempt_n": 1,
+      "feature_face": "compression",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w41/f5_manual_compact.json",
+      "note": "确认框三段文案走完，执行后报『没有可压缩的内容 / 找不到安全截断点』；applied 分支未行使。"
+    },
+    {
+      "cell_id": "F6_auto_compact",
+      "attempt_n": 1,
+      "feature_face": "compression",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w41/f6_auto_compact.json",
+      "note": "终态后评估链真跑，agent-0.log 新增 11:02:27 / 11:03:40 / 11:07:27 UTC nothing_to_drop；applied 未行使。"
+    },
+    {
+      "cell_id": "T01_32k",
+      "attempt_n": 1,
+      "feature_face": "context_tier",
+      "state": "VACUOUS",
+      "glyph": "⛔vacuous",
+      "evidence_ref": "evidence/raw/w41/t01_32k.json",
+      "note": "本波未单独切 32K 窗口回读。",
+      "unexercised_reason": "本波未单独切 32K 窗口回读。"
+    },
+    {
+      "cell_id": "T02_512k",
+      "attempt_n": 1,
+      "feature_face": "context_tier",
+      "state": "VACUOUS",
+      "glyph": "⛔vacuous",
+      "evidence_ref": "evidence/raw/w41/t02_512k.json",
+      "note": "本波未单独切 512K 窗口回读。",
+      "unexercised_reason": "本波未单独切 512K 窗口回读。"
+    },
+    {
+      "cell_id": "T03_1m",
+      "attempt_n": 1,
+      "feature_face": "context_tier",
+      "state": "PARTIAL",
+      "glyph": "⚠️",
+      "evidence_ref": "evidence/raw/w41/t03_1m.json",
+      "note": "1M 端点档位回读 995.9K 且真请求至 106.6K 上下文；会话预算 400k 在 used=439211 时安全熔断，非满窗真压。"
+    },
+    {
+      "cell_id": "W2401_thinking_block",
+      "attempt_n": 1,
+      "feature_face": "vision",
+      "state": "PASS",
+      "glyph": "✅",
+      "evidence_ref": "evidence/raw/w41/w2401_thinking_block.json",
+      "note": "浅/深 × 收起/展开 4 态裁剪图：浅色背景亮度 ~220 / 深色 ~46，文字对比可辨，无整块黑面板。"
+    }
+  ],
+  "cells_total": 14,
+  "state_counts": {
+    "PASS": 5,
+    "FAIL": 1,
+    "VACUOUS": 5,
+    "PARTIAL": 3
+  },
+  "iterations": [
+    {
+      "round": 1,
+      "cell_id": "E01_lightning",
+      "state": "PASS"
+    },
+    {
+      "round": 2,
+      "cell_id": "E02_dots3",
+      "state": "FAIL"
+    },
+    {
+      "round": 3,
+      "cell_id": "E03_north",
+      "state": "VACUOUS"
+    },
+    {
+      "round": 4,
+      "cell_id": "E04_supervl_1m",
+      "state": "PASS"
+    },
+    {
+      "round": 5,
+      "cell_id": "F1_vision",
+      "state": "VACUOUS"
+    },
+    {
+      "round": 6,
+      "cell_id": "F2_workspace",
+      "state": "PASS"
+    },
+    {
+      "round": 7,
+      "cell_id": "F3_skill",
+      "state": "PASS"
+    },
+    {
+      "round": 8,
+      "cell_id": "F4_mcp",
+      "state": "VACUOUS"
+    },
+    {
+      "round": 9,
+      "cell_id": "F5_manual_compact",
+      "state": "PARTIAL"
+    },
+    {
+      "round": 10,
+      "cell_id": "F6_auto_compact",
+      "state": "PARTIAL"
+    },
+    {
+      "round": 11,
+      "cell_id": "T01_32k",
+      "state": "VACUOUS"
+    },
+    {
+      "round": 12,
+      "cell_id": "T02_512k",
+      "state": "VACUOUS"
+    },
+    {
+      "round": 13,
+      "cell_id": "T03_1m",
+      "state": "PARTIAL"
+    },
+    {
+      "round": 14,
+      "cell_id": "W2401_thinking_block",
+      "state": "PASS"
+    }
+  ],
+  "iterations_total": 14,
+  "iterations_note": "每格一次取证轮；VACUOUS 格同样记轮，但不冒充通过。",
+  "attempt_states": {
+    "E01_lightning": "PASS",
+    "E02_dots3": "FAIL",
+    "E03_north": "VACUOUS",
+    "E04_supervl_1m": "PASS",
+    "F1_vision": "VACUOUS",
+    "F2_workspace": "PASS",
+    "F3_skill": "PASS",
+    "F4_mcp": "VACUOUS",
+    "F5_manual_compact": "PARTIAL",
+    "F6_auto_compact": "PARTIAL",
+    "T01_32k": "VACUOUS",
+    "T02_512k": "VACUOUS",
+    "T03_1m": "PARTIAL",
+    "W2401_thinking_block": "PASS"
+  },
+  "attempt_budget": "每格 <=3 次真机尝试；本波最高 E04=6 条同会话请求（档位回读 + 缓存链）",
+  "na_cell_ids": [
+    "E03_north",
+    "F1_vision",
+    "F4_mcp",
+    "T01_32k",
+    "T02_512k"
+  ],
+  "positive_control_verified_by": "E01_lightning（strict 逐字，OK_W41_ECHO 在矩阵 APK 上复跑命中）",
+  "device_executed": true,
+  "runner_fingerprint": "com.rickeal.liquidharness.debug 0.1.0-debug / W41 限流分类 + 四态 usage + 思考块实底增量包；同 tree 编译后三步法装机",
+  "zero_kotlin": false,
+  "cells_provenance": "真机 UI dump / 裁剪截图判据 / run-as 设备侧文件与日志摘录；14 格全部本波判定，无沿用基线 PASS。",
+  "coverage_note": "14 格：PASS 5 / PARTIAL 3 / VACUOUS 5 / FAIL 1；FAIL 为端点侧 404，VACUOUS 已逐格写原因。",
+  "full_context_1M_stress": "PARTIAL：1M 档位回读 995.9K + 真请求至 106.6K 且缓存命中 89.5%；used=439211 / limit=400000 时安全熔断，PreStepBudget 400k 与 RoundHeadGate 双硬限注入仍未做。",
+  "matrix_vs_gate_order": "G1 编译 → 真机取证 → G2/G3/G4 全绿（同 tree）；边测边改本次未触发新代码提交。",
+  "environment_incidents": [
+    "OR 两免费模型 ID 在公开清单同日查无，E02 实跑 404 / E03 本波未复测；归端点侧。",
+    "系统图片选择器暴露敏感错误报告条目，拒绝授权，F1 判 vacuous。",
+    "静置会回锁；每步取证前 KEYCODE_WAKEUP + 屏亮核验。"
+  ],
+  "mcp": {
+    "cell": "F4_mcp",
+    "server_count": 0,
+    "coverage_note": "none_by_design"
+  },
+  "privacy": "证据仅含脱敏 UI dump 文本、裁剪截图与设备侧日志尾；无 Key / 账号字段 / 设备序列号 / 本机路径；模型名仅公开名。",
+  "credential_policy": "密钥仍留于真机 Keystore 加密存储；仓内与证据均无明文。",
+  "baseline_note": "对照 W39 13 格：本波新增 W2401_thinking_block 格、E04 换 SuperVL 1M 回读；F3 保持 PASS、F4 保持 VACUOUS、E02 由 PASS 转 FAIL（端点侧 ID 失效）。",
+  "assertions": [
+    {
+      "id": "K_state_domain",
+      "description": "state_counts 非零键集 == cells[].state 值域；无零值键",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "add FAIL:0",
+        "expected": "RED state domain"
+      }
+    },
+    {
+      "id": "K_feature_enum",
+      "description": "每格 feature_face ∈ declared_feature_faces；declared 含 mcp ⇒ 顶层 mcp 字段存在",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "delete mcp field",
+        "expected": "RED mcp field missing"
+      }
+    },
+    {
+      "id": "K_iteration_consistency",
+      "description": "iterations_total == len(iterations[])",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "delete middle iteration",
+        "expected": "RED iterations_total != len"
+      }
+    },
+    {
+      "id": "K_evidence_ref",
+      "description": "cells[].evidence_ref 100% 指向仓内真实存在文件",
+      "verified": true,
+      "kind": "rule_definition",
+      "injected_sample": {
+        "mutation": "point ref to missing file",
+        "expected": "RED missing ref"
+      }
+    },
+    {
+      "id": "K_privacy_no_key",
+      "description": "制品与证据不含 sk-/github_pat_/nvapi- 明文 token",
+      "verified": true,
+      "kind": "k6_check",
+      "injected_sample": {
+        "mutation": "inject sk- token",
+        "expected": "RED privacy: key-like token"
+      }
+    },
+    {
+      "id": "K_coverage",
+      "description": "cells 格数由 cells_total 自证（不钉死 13）",
+      "verified": true,
+      "kind": "k6_check",
+      "injected_sample": {
+        "mutation": "pop one cell",
+        "expected": "RED coverage cells != cells_total"
+      }
+    }
+  ],
+  "mutation_cases": [
+    {
+      "id": "K_state_domain",
+      "mutation": "add FAIL:0",
+      "expected": "RED state domain"
+    },
+    {
+      "id": "K_feature_enum",
+      "mutation": "delete mcp field",
+      "expected": "RED mcp field missing"
+    },
+    {
+      "id": "K_iteration_consistency",
+      "mutation": "delete middle iteration",
+      "expected": "RED iterations_total != len"
+    },
+    {
+      "id": "K_evidence_ref",
+      "mutation": "point ref to missing file",
+      "expected": "RED missing ref"
+    },
+    {
+      "id": "K_privacy_no_key",
+      "mutation": "inject sk- token",
+      "expected": "RED privacy: key-like token"
+    },
+    {
+      "id": "K_coverage",
+      "mutation": "pop one cell",
+      "expected": "RED coverage cells != cells_total"
+    }
+  ],
+  "mutation_selftest": {
+    "total": 6,
+    "rejected": 6,
+    "all_verified": true,
+    "note": "v1 六条断言各一注入，对 W41 制品实跑全部 RED；输出见证据目录 k6_ok.txt / k6_red.txt 与 docs/notes/w29-closeout-checklist.md 判据 6 段。"
+  }
+}

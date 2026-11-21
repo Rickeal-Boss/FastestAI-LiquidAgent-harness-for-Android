@@ -1,0 +1,8 @@
+{
+  "cell_id": "W2401_thinking_block",
+  "feature_face": "vision",
+  "state": "PASS",
+  "note": "浅/深 × 收起/展开 4 态裁剪图：浅色背景亮度 ~220 / 深色 ~46，文字对比可辨，无整块黑面板。",
+  "wave": "W41",
+  "evidence_level": "device_ui_dump_and_crop"
+}

@@ -1,0 +1,8 @@
+{
+  "cell_id": "F3_skill",
+  "feature_face": "skill",
+  "state": "PASS",
+  "note": "@ 菜单两技能可见；选中后运行并列出技能说明，输出可读。",
+  "wave": "W41",
+  "evidence_level": "device_ui_dump"
+}

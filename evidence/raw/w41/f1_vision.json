@@ -1,0 +1,8 @@
+{
+  "cell_id": "F1_vision",
+  "feature_face": "vision",
+  "state": "VACUOUS",
+  "note": "图片输入开关已开启，但系统选择器暴露敏感错误报告条目，拒绝授权且未发图；不沿用 W39 PASS。",
+  "wave": "W41",
+  "evidence_level": "device_ui_dump"
+}

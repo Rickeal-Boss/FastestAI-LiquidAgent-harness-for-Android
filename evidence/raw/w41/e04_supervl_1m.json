@@ -1,0 +1,8 @@
+{
+  "cell_id": "E04_supervl_1m",
+  "feature_face": "endpoint_axis",
+  "state": "PASS",
+  "note": "SuperVL 1M 端点连通，档位回读 995.9K；同会话多轮缓存 64.7%→69.0%→80.2%→89.5%。",
+  "wave": "W41",
+  "evidence_level": "device_ui_dump"
+}
