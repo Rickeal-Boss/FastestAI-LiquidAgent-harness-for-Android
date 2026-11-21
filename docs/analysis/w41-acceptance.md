@@ -86,7 +86,12 @@
   `status=completed` / `conclusion=success`）✅；Secret scan run `44898125963`（`completed/success`）✅。
   链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44898126012` /
   `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44898125963`。
-- 证据/验收物随纯文档提交推送；纯文档提交 Build 0 run 是 `paths-ignore` 既定口径，Secret scan 仍全路径跑；其 run 链接在 handoff 步 5 补记。
+- 证据/验收物提交 `757b28d`（纯文档 + 证据文件）推送后也触发了 Build run `44898562000`
+  （`head_sha=757b28db…`、`status=completed` / `conclusion=success`）与 Secret scan run `44898561966`
+  （`completed/success`）；本次证据目录不在 `paths-ignore` 名单内，故「纯文档 Build 0 run」的旧假设**不适用**。
+  链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44898562000` /
+  `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44898561966`。
+  > 四条 run 均为四字段实取复核；本地 G1–G4 全绿与 CI success 一致，CI 绿以 run 为准。
 
 ---
 

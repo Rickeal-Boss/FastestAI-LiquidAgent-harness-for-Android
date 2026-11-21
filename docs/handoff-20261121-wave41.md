@@ -96,9 +96,10 @@
 | G2 arch-guard | `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`（G20 141 ID） | ✅ |
 | G3 selftest | `30/30 PASS（264s）` | ✅ |
 | G4 fulltest | `tests=856 failures=0 errors=0 skipped=0`（14 模块） | ✅ |
-| CI | Build run `44898126012` + Secret scan run `44898125963` @ `93808be`（四字段复核见验收物步 5） | ✅ |
+| CI | `93808be`：Build `44898126012` + Secret `44898125963`；`757b28d`：Build `44898562000` + Secret `44898561966`，四 run 均 `completed/success`（四字段复核见验收物步 5） | ✅ |
 
-CI 链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44898126012`。
+CI 链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44898126012`（主体 Build）、
+`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44898562000`（证据/交接 Build）。
 
 ---
 
