@@ -790,3 +790,49 @@ ref         => RED missing ref evidence/raw/__missing__.json
 - 未跑 `scripts/arch-guard.sh`、未跑 gradle、未改任何 `.kt`（另一席在搬文件，守卫会读中间态）。
 - 未改台账 `docs/06-deferred-ledger.md`、未改 `docs/handoff-*`（主理人落笔域）。
 - 未新增判据编号、未新建 checklist / 矩阵制品、未改四态枚举、未加 CI job、未动 `.github/workflows`。
+
+
+---
+
+## W40 判据 1 / 6 / 7 双态实跑摘录（2026-11-21，主理人）
+
+> 说明：本段是判据**输出摘录**（可复核原文），不新增判据编号、不改四态枚举、不新建制品。
+> 本波销账 0（空销账合法）。判据 7 自身修复：首版 W40 段解释文字含已 CLOSED 老号编号被正则误抓
+> ⇒ `declared=1` 假绿，删编号后重跑 `declared=0` 才是本波真值 —— **判据要被验证，不是读出来就采信**。
+
+### 判据 1 — 挂账号段唯一性
+
+```
+[正常态] W40 rows = 0
+[正常态] 守恒式两数回显（W40）：### W40 段（2026-11-21，0 行新开：**本波新开挂账 0 / 本波销账 0**…）
+[负控 WAVE=W30 不传 EXPECT] RED 缺 W30 段「本波新开挂账 N」声明（不回落默认值）
+[负控] W30 rows = 3 / W30-01 -> 1 / W30-02 -> 1 / W30-03 -> 1
+[负控] 守恒式两数回显（W30）：RED 缺本波新开/销账声明（判据7将空过 declared=0）
+```
+结论：默认锚当波（W40）、EXPECT 同源推导、不回落 3；负控真响（✅）。
+
+### 判据 6 — 制品面定义 AND 断言 + evidence_ref 可复核
+
+```
+[正常态] python _w34/k6_check.py evidence/w39-matrix-summary.json
+       → OK feature/evidence invariants
+[必红注入] 把 cells[0].state 改成 BOGUS_STATE（副本）后重跑
+       → RED state domain
+```
+结论：正常态 OK、注入必红真响；本波未新建制品（34 键零增删、沿用 W39 制品；✅）。
+
+### 判据 7 — CLOSED 行须带判据实跑输出指路
+
+```
+[正常态] python _w34/k7_check.py
+       → OK closed rows carry runnable pointers (W30+)
+       → OK closed rows carry current-wave pointers (W40, declared=0)
+```
+结论：本波空销账合法空命中（`declared=0`），不冒充「全部通过」；修复前 `declared=1` 假绿已订正（✅）。
+
+### 守恒式与台账不变量
+
+```
+W40 rows = 0（零 new 行）；台账 216 行；状态 38 CLOSED / 167 OPEN / 11 CARRIED（与 W39 一致）
+grep -cE '^\| W40-' docs/06-deferred-ledger.md → 0
+```
