@@ -59,7 +59,7 @@
 | G2 arch-guard | `OK=27 VACUOUS=1 VIOLATION=0 SELF_FAULT=0`（G20 141 ID） | ✅ | `evidence/raw/w45/g2_archguard.txt` |
 | G3 selftest | `30/30`（290s） | ✅ | `evidence/raw/w45/g3_selftest.txt` |
 | G4 fulltest | `tests=878 failures=0 errors=0 skipped=0`（14 模块） | ✅ | `evidence/raw/w45/g4_fulltest.txt` |
-| 行数闸门 | `LINE_CAPS`/`TOTAL_LINE_CAP` 未调；`OpenAiErrorFrame` 291/400 | ✅ | G2 输出（G10/G11/G12） |
+| 行数闸门 | `LINE_CAPS`/`TOTAL_LINE_CAP` 未调；`OpenAiErrorFrame` **286**/400（P2 订正：原文写 291，本环境 `wc -l` 与 `splitlines` 一致为 286） | ✅ | G2 输出（G10/G11/G12） |
 
 ## 步 4 · 真机（多模型 / 多上下文 / 功能入口 / 落盘白名单）
 
@@ -74,7 +74,7 @@
 | E5 skill | ✅ | `LoadSkillNotesOrganizerAndFollowItsSteps` ⇒ 遵循 skill 流程、列 workspace 文件、要求只收集点名的笔记文件 |
 | E6 MCP | ⛔vacuous | `设置 → MCP 服务器` = 「还没有 MCP 服务器」（0 个）；外部 https 仍受既有阻塞项限制 |
 | E7 手动压缩 | ⚠️ | 确认框（缓存重建 + 较早消息不再发）走完；日志 `manual_compress=noop reason=manual compress: nothing to drop`（会话体积小，正确行为） |
-| E8 落盘白名单（本波改动） | ✅ | `run-as` 取回 `agent-0.log`：本波 11-22 时间窗 5+ 行**全部**探针形态（`cached=n/a-usage` / `cached=0(cumulative)` / `auto_compact` / `manual_compress`），非探针 0 行；历史残留行（11-21 `hard_budget`）按时间窗分离、不冒充本波 |
+| E8 落盘白名单（本波改动） | ✅ | `run-as` 取回 `agent-0.log`：本波 11-22 时间窗 5+ 行**全部白名单形态**（含 1 条 `run failed` 账本行，《P1-3 口径订正》见下；`cached=n/a-usage` / `cached=0(cumulative)` / `auto_compact` / `manual_compress`），非白名单 0 行；历史残留行（11-21 `hard_budget`）按时间窗分离、不冒充本波。**W46 P1-3 口径订正**：`run failed: request rejected (HTTP 404)` 是 12 类白名单前缀之一、属账本行，但它拼的是动态 provider message（见 `RunTermination.kt:109`），「全部探针形态」的旧措辞过度声明，改为「全部白名单形态（含 1 条 run failed 账本行）」；W46 对该类加正文形态约束。 |
 | E9 端点切换守卫 | ✅ | 每次「设为当前」弹确认框 + 诊断串（`empty_session` / `char_floor_unmeasured` / `unverified_window`） |
 | E10 OR Dots3（用户声明可用） | ⛔ | 会话请求 `本次请求失败: request rejected (HTTP 404)`（连续第四波设备真相，端点侧非 harness） |
 | E11 自动压缩 `applied` 分支 | ⚠️ | 本会话短、只观察到 `auto_compact=noop reason=below_trigger`；`applied` 未行使，不以推断代替证据 |
@@ -84,10 +84,12 @@
 ## 步 5 · 推送 + CI ✅
 
 - 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；单一代码提交 `cb7442ec1056d64aa0c677218002ef9b919ec9eb`（含全部代码/文档/证据）；PAT 仅 URL inline 一次性使用，未新增 remote、无凭据落盘。
-- **1 次推送 1 提交 → 2 条 run**（`head_sha=cb7442ec1056d64aa0c677218002ef9b919ec9eb`，公开 API 四字段实取，均 `completed/success`）：
-  - Build run `44998694521`：`status=completed` / `conclusion=success`、`updated_at=2026-11-22T07:34:35Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44998694521`（Unit tests 878 对账 + Arch guard + Assemble + Lint）。
-  - Secret scan run `44998694565`：`status=completed` / `conclusion=success`、`updated_at=2026-11-22T07:32:48Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44998694565`（gitleaks / trufflehog / 3b-ext 双路含 `--ignored`）。
-- 本验收物与交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按既有降级规则（补链 + 挂老号、不作 P0 判据）回填，不冒充代码提交的验证；代码提交两条 run 四字段才是本波 CI 判据。
+- **实际 4 条 run（代码提交 2 + 文档提交 2；tip 文档 run 按 W29 降级仅记录、不作 P0 判据）**：完整提交序列 = 代码 `cb7442ec1056d64aa0c677218002ef9b919ec9eb` → 文档回填 `bbdd45e3046b065b5e589299145a5ed6d3c4a54d` → tip `e32a7043b67742a11d54045dd6f320c39f4f3cfb`；公开 API 四字段实取，均 `completed/success`：
+  - Build `44998694521`（@`cb7442ec1056…`）：`status=completed` / `conclusion=success`、`updated_at=2026-11-22T07:34:35Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44998694521`（Unit tests 878 对账 + Arch guard + Assemble + Lint）。
+  - Secret scan `44998694565`（@`cb7442ec1056…`）：`status=completed` / `conclusion=success`、`updated_at=2026-11-22T07:32:48Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44998694565`（gitleaks / trufflehog / 3b-ext 双路含 `--ignored`）。
+  - Secret scan `44999031147`（@`bbdd45e3046b…`，纯文档提交，Build 0 run 为 `paths-ignore` 既定口径）：`completed/success`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44999031147`，降级仅记录。
+  - Secret scan `44999170747`（@tip `e32a7043b67742a11d54045dd6f320c39f4f3cfb`，本文件所在 tip）：`head_sha=e32a7043b67742a11d54045dd6f320c39f4f3cfb` / `status=completed` / `conclusion=success` / `updated_at=2026-11-22T07:39:00Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44999170747`（公开 API 实取）。按 W29 降级规则（补链 + 挂老号、不再逐波判 P0，**降级 ≠ 不记录**）只记录、不作判据。
+- 本验收物与交接所在文档提交为纯文档 tip；代码提交两条 run 四字段才是本波 CI 判据；tip 文档 run 按既定降级规则补链（已补，见上），不再写「待下一波 / 不预设 run 号」。
 - 本地四闸门不代替 CI；CI 绿以 run 四字段为准。
 
 ---

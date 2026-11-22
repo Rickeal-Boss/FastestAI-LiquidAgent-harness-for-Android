@@ -63,6 +63,28 @@ class DiagnosticLogSinkTest {
     }
 
     /**
+     * W46 P1-3 必红（正文形态约束）：白名单前缀后拼自由文本 —— 即使前缀命中也不得落盘。
+     *
+     * `RunTermination.kt:109` 是 `"run failed: " + message`（message 为动态 provider 正文）、
+     * `ConversationOps.kt:256` / `LayeredContextCompressor.kt:254` 的 `reason=` 亦动态；
+     * provider 400/500 错误体常把用户 prompt 回显进 message。W45 只判 `startsWith(prefix)`
+     * 会让这类回显穿透白名单；注入「去掉正文约束」⇒ 本条 RED。
+     */
+    @Test
+    fun dynamicProviderMessageWithUserContentIsNotMirrored() {
+        // 前缀命中但正文含非 ASCII 用户内容 / 超长自由文本 ⇒ 拦下。
+        assertFalse(DiagnosticLogSink.isProbeLine("run failed: rejected your prompt 我的密码是secret123"))
+        assertFalse(DiagnosticLogSink.isProbeLine("run failed: " + "x".repeat(200)))
+        assertFalse(DiagnosticLogSink.isProbeLine("manual_compress=noop reason=user wrote " + "y".repeat(200)))
+        assertFalse(DiagnosticLogSink.isProbeLine("auto_compact=noop reason=prompt: 帮我写一段很长的中文传记故事"))
+        // 固定诊断码形态仍须落盘（防「一刀切全拒」把合法摘要也丢了）。
+        assertTrue(DiagnosticLogSink.isProbeLine("run failed: request rejected (HTTP 404)"))
+        assertTrue(DiagnosticLogSink.isProbeLine("run failed: protocol error"))
+        assertTrue(DiagnosticLogSink.isProbeLine("manual_compress=noop reason=manual compress: nothing to drop"))
+        assertTrue(DiagnosticLogSink.isProbeLine("layered compress: mode=L1_FALLBACK reason=over-hard-budget"))
+    }
+
+    /**
      * W45 必红（队列满时探针优先保留）：真实落盘 + 真实 512 条 DROP_OLDEST 队列。
      *
      * 先写探针、再灌 600 条普通 WARN（> QUEUE_CAPACITY）。白名单生效时普通行在入队前

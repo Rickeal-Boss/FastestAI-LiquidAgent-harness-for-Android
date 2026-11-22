@@ -1,0 +1,2 @@
+w46-ledger-symbol-check: test-class refs=20 test-method refs=60 kt-files=321
+OK all backticked test symbols (with test context) resolvable in *.kt

@@ -1,0 +1,23 @@
+mode=w46 samples=21
+  OK  R01  rate                   RATE_LIMIT       exp=RATE_LIMIT       rate limit: too many tokens
+  OK  R02  rate                   RATE_LIMIT       exp=RATE_LIMIT       token rate limit exceeded
+  OK  R03  rate                   RATE_LIMIT       exp=RATE_LIMIT       too many tokens: rate limit exceeded
+  OK  R04  rate                   RATE_LIMIT       exp=RATE_LIMIT       tokens per minute limit exceeded
+  OK  R05  rate                   RATE_LIMIT       exp=RATE_LIMIT       tpm exceeded: token budget
+  OK  R06  rate                   RATE_LIMIT       exp=RATE_LIMIT       rate limit: maximum 100 tokens per minute
+  OK  R07  rate                   RATE_LIMIT       exp=RATE_LIMIT       you have exceeded your token quota
+  OK  R08  rate                   RATE_LIMIT       exp=RATE_LIMIT       prompt too long: rate limit exceeded
+  OK  C01  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW server cannot process: maximum context length exceeded
+  OK  C02  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW request rate too large: maximum context length exceeded
+  OK  C03  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW prompt too long, server rejected
+  OK  C04  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW context length exceeded: too many tokens
+  OK  C05  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW maximum context length exceeded (quota: 100000 tokens)
+  OK  C06  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW context window exceeded, slow down your requests
+  OK  C07  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW maximum token count exceeded (quota: 100000)
+  OK  C08  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW token length exceeded: slow down your requests
+  OK  C09  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW token limit reached: maximum 100000 tokens
+  OK  P01  protocol               PROTOCOL         exp=PROTOCOL         token limit reached for this endpoint
+  OK  P02  protocol               PROTOCOL         exp=PROTOCOL         token limit reached: reduce prompt
+  OK  P03  protocol               PROTOCOL         exp=PROTOCOL         prompt limit reached for this endpoint
+  OK  C10  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW token budget exceeded
+OK all 21 samples match expected

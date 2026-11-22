@@ -1,0 +1,18 @@
+=== W46 3b-ext local gate: four-state local replication (desensitized) ===
+routes: tracked git grep + --exclude-standard + --ignored --exclude-standard (CI semantics: _w*/ and local.properties excluded)
+fixture: _w46/forceadd_probe.jsonl (gitignored, git add -f in STATE 2b, removed in STATE 3)
+=== STATE 1: clean checkout（期望三路全 0）===
+ROUTE1_HITS=0
+ROUTE2_HITS=0
+ROUTE3_HITS=0
+=== STATE 2a: 被 ignore 的 .jsonl 未 -f（第三路应 RED）===
+check-ignore: _w46/forceadd_probe.jsonl (ignored ✓)
+RED ignored: _w46/forceadd_probe.jsonl
+RED ignored hit: _w46/forceadd_probe.jsonl
+=== STATE 2b: 同上 + git add -f（第一路 tracked git grep 应 RED）===
+_w46/forceadd_probe.jsonl:1:serial=<test-serial> path=<workspace-root>
+RED tracked hit (git grep rc=0): _w46/forceadd_probe.jsonl
+=== STATE 3: 移除探针回 GREEN ===
+ROUTE1_HITS=0 ; probe file exists=no ; in-index=no
+probe literal hits after removal=0 (expect 0)
+=== selftest end（探针已还原，工作树与 index 干净）===

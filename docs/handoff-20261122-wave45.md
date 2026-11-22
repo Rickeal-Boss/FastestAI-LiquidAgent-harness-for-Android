@@ -46,7 +46,7 @@
 | LENGTH 端到端诊断卡 | `core-agent/.../AgentRunnerTest.kt` | `Finished(LENGTH)` ⇒ `report.kind=Truncated`、正文保留 |
 | 测试数对账 | `build.yml` | `871→878`（+3 engine / +3 app / +1 core-agent） |
 
-行数：`LINE_CAPS`/`TOTAL_LINE_CAP` 未调；`OpenAiErrorFrame` 291/400。
+行数：`LINE_CAPS`/`TOTAL_LINE_CAP` 未调；`OpenAiErrorFrame` **286/400**（P2 订正：原文写 291，`wc -l` 与 `splitlines` 一致为 286）。
 
 ## 六、四闸门 + 真机
 
@@ -76,12 +76,10 @@
 
 ## 七、推送 + CI
 
-- 代码提交 `cb7442ec1056d64aa0c677218002ef9b919ec9eb`（含全部代码/文档/证据）；一次推送一提交触发两条 run，公开 API 四字段实取，均 `completed/success`：
-  - Build `44998694521`（`updated_at=2026-11-22T07:34:35Z`）：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44998694521`
-  - Secret scan `44998694565`（`updated_at=2026-11-22T07:32:48Z`）：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44998694565`
-- 本交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按既有降级规则（补链 + 挂老号、不作 P0 判据）回填；代码提交两条 run 四字段才是本波 CI 判据。
-- **tip 文档 run 降级补链**（W29 规则：补链 + 挂并行键老号、不逐波判 P0，降级≠不记录）：CI 回填提交 `bbdd45e3046b…` 触发 Secret scan `44999031147`（`completed/success`，公开 API 实取，链接 `.../runs/44999031147`），仅记录、不作 P0。本段所在的文档提交按 W28 先例不再第四次推送（避免自指循环），其 Secret run 待下一波按降级规则补链——**显式待办、不预设 run 号，不是漏记**。
-- 本地四闸门不代替 CI；CI 绿以 run 四字段为准。
+- **实际 4 条 run（代码 2 + 文档 2；tip 文档 run 按 W29 降级仅记录、不作 P0）**：完整序列 = 代码 `cb7442ec1056d64aa0c677218002ef9b919ec9eb` → 文档回填 `bbdd45e3046b065b5e589299145a5ed6d3c4a54d` → tip `e32a7043b67742a11d54045dd6f320c39f4f3cfb`：
+  - Build `44998694521`（`updated_at=2026-11-22T07:34:35Z`）与 Secret `44998694565`（`2026-11-22T07:32:48Z`），均 @`cb7442ec1056…`、`completed/success`；链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44998694521` 与 `.../runs/44998694565`。代码提交两条 run 四字段才是本波 CI 判据。
+  - 文档回填 Secret `44999031147` @`bbdd45e3046b…`（纯文档提交，Build 0 run 为 `paths-ignore` 既定口径）与 tip Secret `44999170747` @`e32a7043b677…`（`head_sha=e32a7043b67742a11d54045dd6f320c39f4f3cfb` / `completed` / `success` / `updated_at=2026-11-22T07:39:00Z`，公开 API 实取），链接 `.../runs/44999031147` 与 `.../runs/44999170747`。
+- W29 降级规则原文（补链 + 挂老号、不再逐波判 P0，**降级 ≠ 不记录**）：tip run 已按该规则补链入账，不再写「待下一波 / 不预设 run 号」——W46 第 0 车统一为「实际 4 条 run」口径（见验收物步 5）。本地四闸门不代替 CI；CI 绿以 run 四字段为准。
 
 ## 八、明确未做（逐条带中文段位，编号见验收物）
 

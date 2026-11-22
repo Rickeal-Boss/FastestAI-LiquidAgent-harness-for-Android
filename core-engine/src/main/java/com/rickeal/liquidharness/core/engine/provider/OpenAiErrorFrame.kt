@@ -192,10 +192,17 @@ internal fun decodeOpenAiErrorFrame(
     // 注入「把 quota 放回无条件强词」⇒ 超窗+quota 必红 RED（W44 新增）。
     // 注意不含裸 `rate`：E5i `request rate too large: maximum context length exceeded`
     // 是超窗文案，裸 rate 会重引 W42 已修的反向回归。只认显式限流语境。
+    // W46（P1-1 结构性收口）：逐字复刻的 21 样本里，W45 强弱分级仍有 5 向边界
+    // （R04 tokens per minute / R05 tpm / R08 prompt too long+rate limit / C07 maximum token
+    // count + quota / C08 token length + slow down）—— 与 W42→W45 四轮「点状补词→镜像反噬」
+    // 同型。W46 停止逐波打地鼠，把 message 词表降为**分层启发式**：
+    //   ① 结构化 type/code + HTTP 429 仍是唯一权威（上方已裁决，不受本段影响）；
+    //   ② 限流语境扩到时间/速率词（tpm/tokens per minute/requests per minute/per-minute）；
+    //   ③ 区分**强限流语境**（能压过窗口词×长度语义）与弱限流词（quota/slow down）；
+    //   ④ 长度语义分强（maximum/too long/length）与弱（exceed）—— 强窗口词配弱 exceed
+    //      也算超窗（保 C10/E5j），但强限流语境可压过它（修 R08）。
+    // 双向混淆样本集 + 单测参数化 + 本仓复刻脚本共用 scripts/fixtures/ 同一份 JSON。
     val rateContext = mentionsRateLimitContext(haystack)
-    // W45：真删 W44 遗留的冗余合取项（`A || (B && A) = A`，第二项恒被第一项蕴含、
-    // 行为不变）；W44 验收物「一并简化」与当时实现不符，以本删除为准（外审 P2-1）。
-    val explicitRateLimit = rateContext
     return when {
         looksLikeContextOverflowMessage(haystack) -> GenerationEvent.Failed(
             EngineErrorKind.CONTEXT_OVERFLOW,
@@ -204,7 +211,7 @@ internal fun decodeOpenAiErrorFrame(
             contextLimitHint = contextLimitHint(payload),
         )
 
-        explicitRateLimit ->
+        rateContext ->
             GenerationEvent.Failed(EngineErrorKind.RATE_LIMIT, message, retryable = true)
 
         haystack.contains("overload") || haystack.contains("server") ||
@@ -256,31 +263,54 @@ internal fun decodeOpenAiErrorFrame(
  * [mentionsRateLimitContext]，SSE 帧与 HTTP 400 同源），保持单一真值源不漂移。
  */
 internal fun looksLikeContextOverflowMessage(lower: String): Boolean {
-    val mentionsLengthOverflow = lower.contains("too long") ||
-        lower.contains("maximum") ||
-        lower.contains("exceed") ||
+    // W46 分层：长度语义分强弱 —— 强 maximum/too long/length、弱 exceed。
+    val strongLength = lower.contains("too long") || lower.contains("maximum") ||
         lower.contains("length")
-    // W44：裸 `limit` 降级出超限词表（见 KDoc）——与 `prompt` 护栏同一把尺。
-    val mentionsOverflow = mentionsLengthOverflow
-    // 强窗口词：context 直接算；prompt 需长度语义护栏（W43）。强窗口词 × 长度语义
-    // 无条件成立（E5h/E5i/E5j/E5l/E5m 不回退）。
-    val strongWindow = lower.contains("context") ||
-        (lower.contains("prompt") && mentionsLengthOverflow)
-    if (strongWindow && mentionsOverflow) return true
-    // W45 弱窗口词：仅 token 时须长度语义**且无限流语境**（见 KDoc 死角样本）。
-    val rateContext = mentionsRateLimitContext(lower)
-    val weakWindowIsOverflow = lower.contains("token") && mentionsLengthOverflow && !rateContext
-    return weakWindowIsOverflow
+    val weakLength = lower.contains("exceed")
+    val anyLength = strongLength || weakLength
+    // 窗口词：context 直接算；prompt 需长度语义护栏（W43，裸 prompt limit 不算）。
+    val strongWindow = lower.contains("context") || (lower.contains("prompt") && anyLength)
+    val tokenWindow = lower.contains("token")
+    val strongRate = mentionsStrongRateLimit(haystack = lower)
+
+    // ① 强窗口词（context/prompt）× 任意长度语义（含弱 exceed）：
+    //    无强限流语境时无条件判超窗（E5h/i/j/k/l/m、C01-C06 不回退）；
+    //    有强限流语境时让位（修 R08 `prompt too long: rate limit exceeded`）。
+    if (strongWindow && anyLength && !strongRate) return true
+    // ② 弱窗口词 token × 强长度语义（maximum/too long/length）：
+    //    无强限流语境即判超窗，quota / slow down 这类**弱**限流词不让位
+    //    （修 C07 `maximum token count exceeded (quota: …)` / C08 `token length exceeded:
+    //    slow down your requests`，即 W44 两条必红的弱窗口词变体）。
+    if (tokenWindow && strongLength && !strongRate) return true
+    // ③ 弱窗口词 token × 弱长度语义（仅 exceed）：须无任何限流语境
+    //    （保 C10 `token budget exceeded` 判超窗、W45 死角 token quota 落限流）。
+    return tokenWindow && weakLength && !mentionsRateLimitContext(lower)
 }
 
 /**
- * 「显式限流语境」词表（W45 从 decodeOpenAiErrorFrame 提取为单一真值源）。
+ * 「显式限流语境」词表（W45 提取为单一真值源，W46 扩到时间/速率词）。
  *
- * `token`×`exceed` 在限流文案里高频共现，弱窗口词分支靠它区分「限流文案带长度字样」
- * 与「真超窗」。词表（429/quota/throttl/slow down/too many requests/rate limit 连写）
- * 与 SSE 帧判定用的 `rateContext` 完全同源——改一处即两路同步。
+ * 与 SSE 帧判定用的 `rateContext` 完全同源 —— 改一处即两路同步。
+ * W46 扩表：`tpm` / `tokens per minute` / `requests per minute` / `per-minute`，
+ * 修 R04 `tokens per minute limit exceeded` / R05 `tpm exceeded: token budget`
+ * 被 `token`×`exceed` 误判超窗（外审 P1-1 双向混淆样本，未修版实跑 RED）。
  */
 internal fun mentionsRateLimitContext(lower: String): Boolean =
     lower.contains("429") || lower.contains("quota") ||
         lower.contains("throttl") || lower.contains("slow down") ||
-        lower.contains("too many requests") || lower.contains("rate limit")
+        lower.contains("too many requests") || lower.contains("rate limit") ||
+        lower.contains("tpm") || lower.contains("tokens per minute") ||
+        lower.contains("requests per minute") || lower.contains("per-minute")
+
+/**
+ * 「强限流语境」——证据强度高于「窗口词 × 长度语义」的那一档（W46 新增）。
+ *
+ * 只有这些词能压过 ① 强窗口词分支与 ② 弱 token × 强长度分支；`quota` / `slow down`
+ * 是弱词（限流文案常报告 used quota、建议 slow down，超窗文案也常自带），不足以让位。
+ * 单一真值源 [mentionsRateLimitContext] 的子集，两处不各自另起一套词表。
+ */
+internal fun mentionsStrongRateLimit(haystack: String): Boolean =
+    haystack.contains("429") || haystack.contains("rate limit") ||
+        haystack.contains("throttl") || haystack.contains("too many requests") ||
+        haystack.contains("tpm") || haystack.contains("tokens per minute") ||
+        haystack.contains("requests per minute") || haystack.contains("per-minute")

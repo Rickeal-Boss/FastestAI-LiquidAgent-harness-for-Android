@@ -98,12 +98,46 @@ class DiagnosticLogSink(private val store: AgentLogFileStore) {
             "context limit writeback",
         )
 
-        /** 落盘白名单判据（internal 供 JVM 单测直接钉行为）。 */
+        /**
+         * 落盘白名单判据（internal 供 JVM 单测直接钉行为）。
+         *
+         * W46（P1-3 白名单正文约束）：[PROBE_PREFIXES] 只管前缀，但 `run failed: ` /
+         * `reason=` 两类的正文是动态的 —— `RunTermination.kt:109` 拼 provider message、
+         * `ConversationOps.kt:256` 拼 `outcome.reason`。W45 KDoc 称「正文不含用户内容」
+         * 在这两类上不成立。W46 给这两类加**正文形态约束**：只允许固定诊断码 / HTTP 数字 /
+         * ASCII 词法且长度有上限；回显用户 prompt 的自由文本不得落盘。
+         */
         internal fun isProbeLine(message: String): Boolean {
             val m = message.trim()
+            if (m.startsWith("run failed")) return isSafeFailureDigest(m)
+            if (m.startsWith("layered compress") || m.startsWith("manual_compress=") ||
+                m.startsWith("auto_compact")
+            ) return isSafeReasonLine(m)
             return PROBE_PREFIXES.any { m.startsWith(it) } ||
                 // `prefix fp=… prompt=… cached=…` 行的固定开头（ContextBudget.observePrefix）。
                 (m.startsWith("prefix ") && m.contains("cached="))
         }
+
+        /**
+         * `run failed: ` 落盘只认固定摘要：`run failed: request rejected (HTTP 400)` /
+         * `run failed: protocol error` 这类「ASCII 诊断码 + 可选 HTTP 数字」。
+         * 正文超 [MAX_DIGEST_CHARS] 或含非 ASCII（用户 prompt 常见形态）⇒ 不落盘。
+         */
+        private fun isSafeFailureDigest(m: String): Boolean {
+            if (m.length > MAX_DIGEST_CHARS) return false
+            return m.all { it.code in 0x20..0x7E }
+        }
+
+        /**
+         * `reason=` 类准许固定诊断码（below-insufficient_savings / nothing_to_drop /
+         * over-hard-budget / no-summarizer / HTTP 数字 …），要求整行 ASCII 且有长度上限。
+         */
+        private fun isSafeReasonLine(m: String): Boolean {
+            if (m.length > MAX_DIGEST_CHARS) return false
+            return m.all { it.code in 0x20..0x7E }
+        }
+
+        /** 摘要行长度上限：诊断码 + HTTP 数字远小于此；用户整段 prompt 必然超。 */
+        private const val MAX_DIGEST_CHARS = 160
     }
 }

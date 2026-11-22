@@ -1,0 +1,27 @@
+{
+  "schema": "w46-error-classification-samples-v1",
+  "note": "双向混淆样本集：限流侧各带 token/exceed/maximum 等超窗特征词，超窗侧各带 quota/rate/slow down 等限流特征词。JVM 参数化测试与 scripts/w46-classification-replay.py 共用此文件。expected 为 EngineErrorKind。message-only（无结构化 type/code、非 HTTP 429）路径。",
+  "samples": [
+    { "id": "R01", "side": "rate", "message": "rate limit: too many tokens", "expected": "RATE_LIMIT", "anchor": "E5e/W41" },
+    { "id": "R02", "side": "rate", "message": "token rate limit exceeded", "expected": "RATE_LIMIT", "anchor": "W45必红" },
+    { "id": "R03", "side": "rate", "message": "too many tokens: rate limit exceeded", "expected": "RATE_LIMIT", "anchor": "W45必红" },
+    { "id": "R04", "side": "rate", "message": "tokens per minute limit exceeded", "expected": "RATE_LIMIT", "anchor": "W46新边界/外审P1-1" },
+    { "id": "R05", "side": "rate", "message": "tpm exceeded: token budget", "expected": "RATE_LIMIT", "anchor": "W46新边界/外审P1-1" },
+    { "id": "R06", "side": "rate", "message": "rate limit: maximum 100 tokens per minute", "expected": "RATE_LIMIT", "anchor": "W45死角" },
+    { "id": "R07", "side": "rate", "message": "you have exceeded your token quota", "expected": "RATE_LIMIT", "anchor": "W45反例" },
+    { "id": "R08", "side": "rate", "message": "prompt too long: rate limit exceeded", "expected": "RATE_LIMIT", "anchor": "W46新边界/外审P1-1" },
+    { "id": "C01", "side": "overflow", "message": "server cannot process: maximum context length exceeded", "expected": "CONTEXT_OVERFLOW", "anchor": "E5h/W42" },
+    { "id": "C02", "side": "overflow", "message": "request rate too large: maximum context length exceeded", "expected": "CONTEXT_OVERFLOW", "anchor": "E5i/W42" },
+    { "id": "C03", "side": "overflow", "message": "prompt too long, server rejected", "expected": "CONTEXT_OVERFLOW", "anchor": "E5j/W42" },
+    { "id": "C04", "side": "overflow", "message": "context length exceeded: too many tokens", "expected": "CONTEXT_OVERFLOW", "anchor": "E5k/W43" },
+    { "id": "C05", "side": "overflow", "message": "maximum context length exceeded (quota: 100000 tokens)", "expected": "CONTEXT_OVERFLOW", "anchor": "E5l/W44必红" },
+    { "id": "C06", "side": "overflow", "message": "context window exceeded, slow down your requests", "expected": "CONTEXT_OVERFLOW", "anchor": "E5m/W44必红" },
+    { "id": "C07", "side": "overflow", "message": "maximum token count exceeded (quota: 100000)", "expected": "CONTEXT_OVERFLOW", "anchor": "W46新边界/W44弱词变体" },
+    { "id": "C08", "side": "overflow", "message": "token length exceeded: slow down your requests", "expected": "CONTEXT_OVERFLOW", "anchor": "W46新边界/W44弱词变体" },
+    { "id": "C09", "side": "overflow", "message": "token limit reached: maximum 100000 tokens", "expected": "CONTEXT_OVERFLOW", "anchor": "W45真超窗死角" },
+    { "id": "P01", "side": "protocol", "message": "token limit reached for this endpoint", "expected": "PROTOCOL", "anchor": "W44必红" },
+    { "id": "P02", "side": "protocol", "message": "token limit reached: reduce prompt", "expected": "PROTOCOL", "anchor": "W44 HTTP400必红" },
+    { "id": "P03", "side": "protocol", "message": "prompt limit reached for this endpoint", "expected": "PROTOCOL", "anchor": "W43 HTTP400必红" },
+    { "id": "C10", "side": "overflow", "message": "token budget exceeded", "expected": "CONTEXT_OVERFLOW", "anchor": "W45合取语义（exceed 算长度语义）" }
+  ]
+}

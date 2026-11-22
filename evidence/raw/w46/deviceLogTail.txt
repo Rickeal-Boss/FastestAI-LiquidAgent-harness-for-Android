@@ -1,0 +1,27 @@
+=== W46 deviceLogTail (desensitized: probe/ledger prefixes only; no full logcat, keys, endpoint identity, serial) ===
+window: 2026-11-22T10:14Z+ current wave; historical 11-21 lines excluded
+2026-11-22T10:19:23.349482Z INFO prefix fp=9a387fa6 changed=none prompt=1079 cached=n/a-usage
+2026-11-22T10:19:26.180249Z INFO auto_compact=noop reason=below_trigger
+2026-11-22T10:19:26.180960Z WARN auto_compact=noop reason=below_trigger
+2026-11-22T10:20:03.679964Z INFO prefix fp=9db80ffc changed=none prompt=1098 cached=n/a-usage
+2026-11-22T10:20:36.809187Z INFO prefix fp=f65ace67 changed=HISTORY prompt=2440 cached=0(cumulative)
+2026-11-22T10:20:37.971893Z INFO prefix fp=f65ace67 changed=none prompt=2499 cached=0(cumulative)
+2026-11-22T10:20:39.466924Z INFO auto_compact=noop reason=below_trigger
+2026-11-22T10:20:39.467518Z WARN auto_compact=noop reason=below_trigger
+2026-11-22T10:23:47.168966Z INFO prefix fp=4fd5e4c6 changed=none prompt=2214 cached=n/a-usage
+2026-11-22T10:23:49.873668Z WARN auto_compact=noop reason=below_trigger
+2026-11-22T10:23:49.874692Z INFO auto_compact=noop reason=below_trigger
+2026-11-22T10:24:40.641690Z INFO prefix fp=4fd5e4c6 changed=none prompt=1316 cached=n/a-usage
+2026-11-22T10:24:42.164169Z INFO prefix fp=4fd5e4c6 changed=none prompt=3103 cached=0(cumulative)
+2026-11-22T10:24:44.478159Z INFO prefix fp=4fd5e4c6 changed=none prompt=3210 cached=0(cumulative)
+2026-11-22T10:24:49.307184Z INFO prefix fp=4fd5e4c6 changed=none prompt=4022 cached=0(cumulative)
+2026-11-22T10:24:54.405659Z INFO prefix fp=4fd5e4c6 changed=none prompt=6244 cached=0(cumulative)
+2026-11-22T10:24:57.712009Z INFO prefix fp=4fd5e4c6 changed=none prompt=8376 cached=4336(cumulative)
+2026-11-22T10:25:06.501666Z INFO auto_compact=noop reason=below_trigger
+2026-11-22T10:25:06.501916Z WARN auto_compact=noop reason=below_trigger
+2026-11-22T10:29:26.052610Z WARN manual_compress=noop reason=manual compress: nothing to drop
+2026-11-22T10:35:11.671471Z INFO prefix fp=4fd5e4c6 changed=none prompt=4087 cached=n/a-usage
+2026-11-22T10:35:13.118239Z INFO auto_compact=noop reason=below_trigger
+2026-11-22T10:35:13.118740Z WARN auto_compact=noop reason=below_trigger
+2026-11-22T10:38:36.254728Z INFO prefix fp=4fd5e4c6 changed=none prompt=4101 cached=n/a-usage
+2026-11-22T10:38:38.088913Z ERROR run failed: request rejected (HTTP 404)

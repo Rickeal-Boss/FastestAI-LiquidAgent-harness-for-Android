@@ -3,6 +3,8 @@ source: files/harness/logs/agent-0.log via run-as; only current-wave (2026-11-22
 stripped: endpoint identity, keys, device serial, SSID, local paths, fp values
 current-wave lines: 5; probe/ledger lines: 5; non-probe lines: 0 (expected 0)
 verdict: W45 whitelist effective — only probe/ledger prefixes land on disk
+note (W46 P2-3): below 5 lines are regrouped by probe shape, NOT in raw run-as chronological order
+  (WARN auto_compact=noop .390411 precedes INFO .390511). Raw capture order not retained; no claim of逐行原始时序.
 
 2026-11-22T06:51:58.977354Z INFO prefix fp=<fp> changed=none prompt=1078 cached=n/a-usage
 2026-11-22T06:52:03.077684Z ERROR run failed: request rejected (HTTP 404)
