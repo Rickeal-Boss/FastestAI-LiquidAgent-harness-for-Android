@@ -74,9 +74,11 @@
 
 **回灌级别**：只写脱敏判据结论与 deviceLogTail 探针行；不回灌整段 logcat / 凭据 / 端点完整标识 / 序列号 / SSID / 路径 / 私人图片。题面一律英文无空格单词（本机 `input text` 连续 `%s` 会被吞，已规避）。
 
-## 七、推送 + CI
-
-待推送后回填。
+- 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；代码提交 `c69d0ff76da73b32c075d5c6e2a3f6c98676b30b`（含全部代码/文档/证据），PAT 仅 URL inline 一次性使用，remote URL 保持干净。
+- **代码提交 2 条 run（公开 API 四字段实取，均 `completed/success`）**：
+  - Build `45014327186`：`head_sha=c69d0ff76da73b32c075d5c6e2a3f6c98676b30b` / `completed` / `success` / `updated_at=2026-11-22T10:52:12Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45014327186`。
+  - Secret scan `45014327291`：`head_sha=c69d0ff76da73b32c075d5c6e2a3f6c98676b30b` / `completed` / `success` / `updated_at=2026-11-22T10:50:16Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45014327291`。
+- 本交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按 W29 降级规则（补链 + 挂老号、不作 P0 判据）回填；代码提交两条 run 四字段才是本波 CI 判据。本地四闸门不代替 CI；CI 绿以 run 四字段为准。
 
 ## 八、明确未做（逐条带中文段位，编号见验收物）
 

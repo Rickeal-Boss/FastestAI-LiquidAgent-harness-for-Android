@@ -76,9 +76,11 @@
 
 **回灌级别**：截图判据（e_1m_echo / e_lightning30b / e_file_rw / e_multimodal / e_skill / e_mcp_vacuous / e_endpoint_guard / e_dots3_404）与 `deviceLogTail.txt` 均为脱敏件；PNG 二进制可打印串抽样 0 命中（无 `sk-`/Bearer/serial/本机路径）。题面一律英文无空格词（`input text` 连续 `%s` 会被吞，已规避）。
 
-## 步 5 · 推送 + CI
-
-待推送后回填（代码提交须 Build + Secret 双 run 四字段；文档 tip run 按 W29 降级仅记录不作 P0）。
+- 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；单一代码提交 `c69d0ff76da73b32c075d5c6e2a3f6c98676b30b`（含全部代码/文档/证据）；PAT 仅 URL inline 一次性使用，未新增 remote、无凭据落盘。
+- **代码提交 2 条 run（公开 API 四字段实取，均 `completed/success`）**：
+  - Build `45014327186`：`head_sha=c69d0ff76da73b32c075d5c6e2a3f6c98676b30b` / `status=completed` / `conclusion=success` / `updated_at=2026-11-22T10:52:12Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45014327186`。
+  - Secret scan `45014327291`：`head_sha=c69d0ff76da73b32c075d5c6e2a3f6c98676b30b` / `status=completed` / `conclusion=success` / `updated_at=2026-11-22T10:50:16Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45014327291`。
+- 本验收物与交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按 W29 降级规则（补链 + 挂老号、不作 P0 判据）回填，回填后由公开 API 实取记录（见交接 §七）。代码提交两条 run 四字段才是本波 CI 判据；本地四闸门不代替 CI。
 
 ---
 
