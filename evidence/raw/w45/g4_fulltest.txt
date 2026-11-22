@@ -1,0 +1,17 @@
+BUILD SUCCESSFUL in 39s
+[fulltest] tests=878 failures=0 errors=0 skipped=0
+[fulltest]   - app: tests=10 failures=0 errors=0
+[fulltest]   - core-agent: tests=262 failures=0 errors=0
+[fulltest]   - core-context: tests=60 failures=0 errors=0
+[fulltest]   - core-data: tests=77 failures=0 errors=0
+[fulltest]   - core-design: tests=33 failures=0 errors=0
+[fulltest]   - core-engine: tests=85 failures=0 errors=0
+[fulltest]   - core-kernel: tests=6 failures=0 errors=0
+[fulltest]   - core-mcp: tests=35 failures=0 errors=0
+[fulltest]   - core-model: tests=99 failures=0 errors=0
+[fulltest]   - core-net: tests=39 failures=0 errors=0
+[fulltest]   - core-skills: tests=31 failures=0 errors=0
+[fulltest]   - feature-chat: tests=104 failures=0 errors=0
+[fulltest]   - feature-settings: tests=29 failures=0 errors=0
+[fulltest]   - feature-tools: tests=8 failures=0 errors=0
+[fulltest] 通过：tests=878 failures=0 errors=0 skipped=0（全部用例绿）

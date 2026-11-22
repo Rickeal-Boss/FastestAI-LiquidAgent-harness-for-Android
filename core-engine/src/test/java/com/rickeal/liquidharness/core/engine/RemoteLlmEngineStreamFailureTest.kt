@@ -390,6 +390,39 @@ class RemoteLlmEngineStreamFailureTest {
         }
     }
 
+    // ------------------------------------------------------------------ E5o/p（W45 P0-1 镜像反噬）
+
+    /**
+     * E5o（W45 必红 ①）：message-only 限流文案 `token rate limit exceeded`
+     * （token × exceed + 显式限流语境）⇒ 必须判 RATE_LIMIT（可重试），
+     * 不得被超窗强组合吃成 CONTEXT_OVERFLOW（不可重试 + 触发压缩 + cache 失效）。
+     *
+     * W44 把超窗强组合无条件前置 + `token` 无条件算窗口词 ⇒ 本样本 `token`×`exceed`
+     * 命中判超窗，与 W40 KDoc 点名的「限流被放大成最贵处置」同型（镜像反噬）。
+     * W45 窗口词强弱分级：`token` 是弱窗口词，须长度语义**且无限流语境**。
+     * 注入「把 token 升回无条件窗口词」⇒ 本条 RED（judged CONTEXT_OVERFLOW）。
+     */
+    @Test
+    fun tokenRateLimitExceededIsRateLimitNotContextOverflow() {
+        val error = """data: {"error":{"message":"token rate limit exceeded"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val failed = runEngine(port).filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.RATE_LIMIT, failed.kind, "限流文案含 token+exceed 不得误判超窗：$failed")
+            assertTrue(failed.retryable, "限流必须可重试：$failed")
+        }
+    }
+
+    /** E5p（W45 必红 ②）：`too many tokens: rate limit exceeded` ⇒ RATE_LIMIT（同上，token×length 形态）。 */
+    @Test
+    fun tooManyTokensWithRateLimitExceededIsRateLimit() {
+        val error = """data: {"error":{"message":"too many tokens: rate limit exceeded"}}""" + "\n\n"
+        withSseServer(chunks = listOf(deltaFrame, error), contentType = "text/event-stream") { port, _ ->
+            val failed = runEngine(port).filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.RATE_LIMIT, failed.kind, "token×length 限流文案不得误判超窗：$failed")
+            assertTrue(failed.retryable, "限流必须可重试：$failed")
+        }
+    }
+
     /** E5g（W41）：结构化超窗分支保留供应商原始 message，不再硬替换成通用文案。 */
     @Test
     fun contextOverflowKeepsProviderMessage() {

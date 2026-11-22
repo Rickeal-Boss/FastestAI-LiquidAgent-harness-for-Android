@@ -148,8 +148,12 @@ env:
   # W44：+6（engine 4，全在 core-engine 两既有测试类：SSE 超窗+quota / SSE 超窗+slow down /
   #   SSE 裸 token limit 不判超窗 / HTTP400 裸 token limit 不判超窗；core-kernel 2：
   #   落盘镜像收到 INFO 四态探针行 / 镜像抛异常不影响 record）= 865 + 6 = 871。
+  # W45：+7（engine 3：SSE token+exceed 限流 / SSE too many tokens+rate limit /
+  #   HTTP400 token+exceed 限流；app 3：探针白名单正向 / 用户内容不落盘 / 洪水时探针
+  #   优先保留；core-agent 1：LENGTH 端到端截断报告）
+  #   = 871 + 7 = 878，同提交一次改。
   # ---------------------------------------------------------------------------
-  EXPECTED_TESTS: '871'
+  EXPECTED_TESTS: '878'
 
 jobs:
   # ===========================================================================

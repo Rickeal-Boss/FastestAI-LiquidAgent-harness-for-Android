@@ -82,8 +82,12 @@
 - 代码提交 `1c3cd5a5ccaef7195a1fb41ea48a69fe12abb178`（29 文件）；一次推送一提交触发两条 run，均 `completed/success`：
   Build `44935473646`（`updated_at=2026-11-21T18:28:31Z`）、Secret scan `44935473364`；
   链接分别为 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44935473646` 与 `.../runs/44935473364`。
-- 本交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按既定降级规则不作 P0 判据、不预设 run 号。
-- 实际 run 清点：本波共 3 条 run 全 `completed/success`（代码提交 2 条 + 首次文档回填 1 条 `44935945732`）；第二次文档提交（本交接所在 tip）的 Secret run 按同一降级规则显式记为「不预设 run 号」。
+- 本交接所在文档提交为纯文档 tip `6e4a7f048f0c74245d02c3ce2a869ff1cfec4a54`（前置文档提交 `327b314aa9680a5e2ee1c054454394798920dc81`）：Build 0 run（既定 `paths-ignore` 口径）；两次文档提交各触发一条 Secret run，四字段实取见下。
+- **实际 run 清点：本波共 4 条 run 全 `completed/success`**（W45 第 0 车订正，原写 3 条漏记第 4 条）：
+  ① Build `44935473646`@`1c3cd5a`；② Secret `44935473364`@`1c3cd5a`；③ Secret `44935945732`@`327b314`；
+  ④ Secret `44936219342`@`6e4a7f0`（`completed/success`，Actions 列表页 embedded JSON 实取，链接 `.../runs/44936219342`）。
+  两次文档 tip 的 Secret run 按既定降级规则**补链 + 挂并行键老号、不作 P0 判据**，不是「不记录」。
+- **W29 降级规则原文**（`handoff-20261118-wave29.md:21` / `w28-acceptance.md:48`）：「tip run 按上一波自设规则降级（**补链 + 挂老号注记、不再逐波判 P0**）」—— 降级 ≠ 不记录；本波照此把 ③④ 两条文档 run 补链入仓。
 - 本地四闸门不代替 CI；CI 绿以 run 四字段为准。
 
 ## 八、明确未做（逐条带中文段位，编号见验收物）

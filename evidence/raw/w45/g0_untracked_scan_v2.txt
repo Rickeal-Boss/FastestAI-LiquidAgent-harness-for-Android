@@ -1,0 +1,40 @@
+=== W45 3b-ext 双路 + tracked 三路扫描：四态本地复刻（desensitized） ===
+date: 2026-11-22 (W45 wave 0)
+shell: local replication of CI secret-scan 3b-ext (tracked git grep + 2 untracked sweeps)
+patterns: 8 classes (device id / 2 local-path forms / 4 user-dir forms / PAT-length meta), assembled to avoid self-hit
+note: device id and local path literals below are TEST FIXTURE tokens, not real leaked values
+
+[historical must-red samples] W44 g0 self-disclosed 12 files containing local-path literals
+  that the W44 single-path (--exclude-standard) scan wrongly reported GREEN. After W45
+  `.gitignore _w[0-9]*/` these are never staged; they are the MUST-RED set for the ignored sweep:
+  01 _w34/mut/ledger_w42_red.md
+  02 _w34/mut/privacy_red_probe.txt
+  03 _w34/w35_k6_run.txt
+  04 _w37/ledger_inj.md
+  05 _w39/mut_w39_k7.md
+  06 _w41/chat.sh
+  07 _w41/chat_continue.sh
+  08 _w41/ledger_mutant.md
+  09 _w43_redact.py
+  10 _w44_red_probe.txt
+  11 _w44_scan_test.sh
+  12 _w44_untracked_scan.sh
+  These 12 live only in the local working tree (gitignored, never committed, never pushed).
+  On CI checkout the tree is clean => normal-state GREEN is correct, not a cover-up.
+  Local pre-commit gate: if any of them is force-added (-f) or swept by the ignored path,
+  the corresponding route fires RED (see STATE 2a/2b below).
+
+=== STATE 1: clean checkout（CI 语义，期望 TOTAL_HITS=0）===
+TOTAL_HITS=0
+=== STATE 2a: 被 ignore 的 .jsonl 未 -f（第三路应 RED）===
+check-ignore: _w45/forceadd_probe.jsonl
+HIT ignored: _w45/forceadd_probe.jsonl
+TOTAL_HITS=1
+=== STATE 2b: 同上 + git add -f（第一路 tracked git grep 应 RED）===
+warning: in the working copy of '_w45/forceadd_probe.jsonl', LF will be replaced by CRLF the next time Git touches it
+in-index: _w45/forceadd_probe.jsonl
+_w45/forceadd_probe.jsonl:1:serial=<test-serial> path=<workspace-root>
+HIT tracked (git grep rc=0)
+TOTAL_HITS=1
+=== STATE 3: 移除探针回 GREEN ===
+TOTAL_HITS=0

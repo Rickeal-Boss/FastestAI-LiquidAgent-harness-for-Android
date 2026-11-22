@@ -2,6 +2,7 @@ package com.rickeal.liquidharness.core.agent
 
 import com.rickeal.liquidharness.core.agent.engine.LlmEngine
 import com.rickeal.liquidharness.core.agent.loop.FakeEngine
+import com.rickeal.liquidharness.core.agent.loop.TRUNCATED_KIND
 import com.rickeal.liquidharness.core.agent.loop.testRequest
 import com.rickeal.liquidharness.core.model.AgentEvent
 import com.rickeal.liquidharness.core.model.EngineCapabilities
@@ -39,6 +40,38 @@ class AgentRunnerTest {
 
         assertEquals("done", events.filterIsInstance<AgentEvent.Finished>().single().text)
         assertFalse(runner.isBusy)
+    }
+
+    /**
+     * W45（W24-02 显式 LENGTH ⇒ TRUNCATED 端到端用例，外审 P1 建议）：
+     * 引擎回报 `finish_reason=LENGTH` ⇒ 门面导出的 `AgentEvent.Finished.report.kind`
+     * 必须是 `TRUNCATED_KIND`、正文保留、terminatedBy 仍是 ModelStopped。
+     *
+     * 这条把「TRUNCATED 链路可达」从代码链路（RunTermination → EventReducer）升级为
+     * **行为证据**：FakeEngine 吐一帧 LENGTH，经真实 TurnLoop / RunTermination 收尾，
+     * 断言门面事件携带诊断卡。`feature-chat/EventReducerTest` 已钉消费端
+     * （`report.kind=Truncated` ⇒ `ChatStatus.TRUNCATED`）；本条补生产端真跑。
+     * 注入「RunTermination 不按 LENGTH 填 report」⇒ 本条 RED。
+     */
+    @Test
+    fun lengthFinishReasonProducesTruncatedReportEndToEnd() = runBlocking {
+        val events = mutableListOf<AgentEvent>()
+        val script = listOf(
+            GenerationEvent.TextDelta("half answer"),
+            GenerationEvent.Finished(FinishReason.LENGTH),
+        )
+        val runner = AgentRunner(engine = FakeEngine(scripts = listOf(script)))
+
+        runner.run(testRequest()).collect { events += it }
+
+        val finished = events.filterIsInstance<AgentEvent.Finished>().single()
+        assertEquals("half answer", finished.text, "截断正文不丢")
+        assertEquals(TRUNCATED_KIND, finished.report?.kind, "LENGTH 必须产出截断诊断卡")
+        assertTrue(
+            finished.report?.detail?.contains("LENGTH") == true,
+            "诊断串应带 LENGTH 便于真机取证：${finished.report?.detail}",
+        )
+        assertEquals(TerminationReason.ModelStopped, finished.terminatedBy)
     }
 
     @Test

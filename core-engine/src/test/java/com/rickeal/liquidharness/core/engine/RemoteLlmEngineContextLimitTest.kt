@@ -139,6 +139,35 @@ class RemoteLlmEngineContextLimitTest {
         }
     }
 
+    /**
+     * W45 P0-1 必红：HTTP 400 `token rate limit exceeded`（message-only，token × exceed +
+     * 显式限流语境）不得判 CONTEXT_OVERFLOW。
+     *
+     * W44 窗口词不分强弱 ⇒ `token`×`exceed` 在 `looksLikeContextOverflowMessage` 上命中、
+     * `classifyHttpFailure(status==400)` 把限流 400 判成超窗（不可重试 + 触发压缩 +
+     * cache 失效）。W45 弱窗口词须长度语义**且无限流语境**，本样本落回 PROTOCOL
+     * fail-closed（400 语义下不重试是正确的保守方向）。注入「把 token 升回无条件
+     * 窗口词」⇒ 本条 RED（judged CONTEXT_OVERFLOW）。
+     */
+    @Test
+    fun tokenRateLimitOnHttp400IsNotContextOverflow() {
+        withServer(400, """{"error":{"message":"token rate limit exceeded"}}""") { port ->
+            val endpoint = endpointFor(port)
+            val engine = RemoteLlmEngine(endpoint, OpenAiCompatibleAdapter(), HttpTransport())
+            val events = runBlocking {
+                engine.generate(
+                    GenerationRequest(
+                        messages = listOf(ChatMessage(role = Role.USER, text = "hi")),
+                        endpoint = endpoint,
+                    )
+                ).toList()
+            }
+            val failed = events.filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.PROTOCOL, failed.kind, "限流语义的 400 不得判超窗：$failed")
+            assertEquals(null, failed.contextLimitHint)
+        }
+    }
+
     private fun endpointFor(port: Int): RemoteEndpoint = RemoteEndpoint(
         id = "ep-1m",
         name = "1m",

@@ -1,7 +1,8 @@
 # W44 验收物 — 判序证据强度仲裁 / 落盘镜像销账 / 真机多模型回归
 
 > 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`）。
-> 基线 `522040ae9b50d44d36bae3470ed6d9daedf7411f`（W43 tip）。
+> 基线 `522040ae9b50d44d36bae3470ed6d9daedf7411f`（W43 tip）；本波真 tip `6e4a7f048f0c74245d02c3ce2a869ff1cfec4a54`。
+> 三提交：`1c3cd5a5ccaef7195a1fb41ea48a69fe12abb178`（代码）→ `327b314aa9680a5e2ee1c054454394798920dc81`（文档回填）→ `6e4a7f048f0c74245d02c3ce2a869ff1cfec4a54`（tip 声明）。
 > 台账权威版 = `docs/06-deferred-ledger.md`；交接 = `docs/handoff-20261122-wave44.md`。
 > 判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；「未触发」≠「已验证通过」；推断带 caveat、不写成事实。
 > 回灌级别：只回灌脱敏判据文本与 `deviceLogTail` 结论；不回灌整段 logcat / 凭据 / 端点标识 / 序列号 / 本机路径 / 用户私人图片。
@@ -88,7 +89,7 @@
   - Build run `44935473646`：`status=completed` / `conclusion=success`、`updated_at=2026-11-21T18:28:31Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44935473646`（Unit tests 871 对账 + Arch guard + Assemble Debug + Lint）。
   - Secret scan run `44935473364`：`status=completed` / `conclusion=success`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44935473364`（gitleaks / trufflehog / 3b-ext 含未 tracked 补扫步）。
 - **本文件的 CI 回填提交为纯文档 tip**：按既定降级规则（tip 文档提交的 run 不作 P0 判据），其触发的 Secret run 不预设 run 号、不冒充代码提交的验证；代码提交的两条 run 四字段才是本波 CI 判据。Build 对纯文档提交 0 run（`paths-ignore` 既定口径，非构建失败）。
-- **实际 run 清点（3 条，全部 `completed/success`）**：代码提交 `1c3cd5a` → Build `44935473646` + Secret `44935473364`；文档提交 `327b314` → Secret `44935945732`（Build 0 run）。本段所在的第二次文档提交亦为纯文档 tip，其 Secret run 按同一降级规则不预设 run 号 —— 这是显式声明，不是漏记。
+- **实际 run 清点（4 条，全部 `completed/success`）**：代码提交 `1c3cd5a5ccaef7195a1fb41ea48a69fe12abb178` → Build `44935473646` + Secret `44935473364`；文档提交 `327b314aa9680a5e2ee1c054454394798920dc81` → Secret `44935945732`（Build 0 run）；本文件所在的第二次文档提交 tip `6e4a7f048f0c74245d02c3ce2a869ff1cfec4a54` → Secret `44936219342`（`head_sha=6e4a7f048f…`、`completed/success`，Actions 列表页 embedded JSON 实取，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44936219342`）。**tip 文档 run 按既有降级规则挂老号、不作 P0 判据**——W29 规则原文是「tip run 降级**补链** + 挂 `W20-08`、不再逐波判 P0」（`handoff-20261118-wave29.md:21` / `w28-acceptance.md:48`），**降级 ≠ 不记录**：本波第一次文档回填补了 `44935945732`，第二次文档 tip 也应补链，不应只写「不预设 run 号」。
 - 本地四闸门不代替 CI；CI 绿以 run 四字段为准。
 
 ---

@@ -1,0 +1,11 @@
+=== W45 device-side probe log (desensitized run-as capture) ===
+source: files/harness/logs/agent-0.log via run-as; only current-wave (2026-11-22) window
+stripped: endpoint identity, keys, device serial, SSID, local paths, fp values
+current-wave lines: 5; probe/ledger lines: 5; non-probe lines: 0 (expected 0)
+verdict: W45 whitelist effective — only probe/ledger prefixes land on disk
+
+2026-11-22T06:51:58.977354Z INFO prefix fp=<fp> changed=none prompt=1078 cached=n/a-usage
+2026-11-22T06:52:03.077684Z ERROR run failed: request rejected (HTTP 404)
+2026-11-22T06:57:27.155249Z INFO prefix fp=<fp> changed=none prompt=1079 cached=n/a-usage
+2026-11-22T06:57:28.390511Z INFO auto_compact=noop reason=below_trigger
+2026-11-22T06:57:28.390411Z WARN auto_compact=noop reason=below_trigger

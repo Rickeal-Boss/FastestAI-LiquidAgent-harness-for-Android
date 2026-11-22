@@ -1,0 +1,6 @@
+=== W45 P1-4 mutant RED: no whitelist filter injected ===
+expect probe-flood case fail (probe evicted by 600 user lines)
+DiagnosticLogSinkTest > probeLineSurvivesFloodOfUserContentLines FAILED
+3 tests completed, 1 failed
+> Task :app:testDebugUnitTest FAILED
+BUILD FAILED in 57s

@@ -1,0 +1,14 @@
+=== W45 P0-1 mutant RED: W44 token-unconditional-window injected ===
+expect 3 new must-red fail + W44 regressions; 28 tests completed, 7 failed observed
+assertion "bc_ctl.arg_max >= LINE_MAX" failed: file "xargs.c", line 512, function: main
+RemoteLlmEngineContextLimitTest > tokenRateLimitOnHttp400IsNotContextOverflow FAILED
+RemoteLlmEngineStreamFailureTest > promptTooLongWithServerWordIsStillContextOverflow FAILED
+RemoteLlmEngineStreamFailureTest > tokenRateLimitExceededIsRateLimitNotContextOverflow FAILED
+RemoteLlmEngineStreamFailureTest > tooManyTokensWithRateLimitExceededIsRateLimit FAILED
+RemoteLlmEngineStreamFailureTest > contextOverflowWordingWithRateIsNotRateLimit FAILED
+RemoteLlmEngineStreamFailureTest > contextOverflowWordingWithServerIsNotServer FAILED
+RemoteLlmEngineStreamFailureTest > contextOverflowWithSlowDownWordingIsNotRateLimit FAILED
+28 tests completed, 7 failed
+> Task :core-engine:testDebugUnitTest FAILED
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':core-engine:testDebugUnitTest'.
+BUILD FAILED in 34s

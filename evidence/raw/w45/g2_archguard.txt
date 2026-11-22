@@ -1,0 +1,3 @@
+[G20] 挂账不丢失        OK  (141 个 handoff ID 全在台账内，CLOSED 行证据均非空)
+[G21] 空转棘轮           OK  (VACUOUS=1 ≤ 基线 1（G19）)
+OK=27  VACUOUS=1  VIOLATION=0  SELF_FAULT=0

@@ -100,6 +100,28 @@ import kotlinx.serialization.json.JsonPrimitive
  * 护栏同一把尺：`token limit reached` 不再算超窗（W44 新必红），`maximum context
  * length` / `context length exceeded` 等真实超窗文案不受影响。
  *
+ * ## W45：窗口词强弱分级（外审 P0-1 镜像反噬收口）
+ *
+ * W44 仲裁修好了「超窗文案含限流强词」一侧（W43 残留），但把超窗强组合**无条件**
+ * 前置又引入**镜像反噬**：`mentionsWindow` 里的 `token` 与 `mentionsLengthOverflow` 里的
+ * `exceed`/`length` 在**限流**文案里同样是高频词（限流恰好按 token 计、文案天然带 exceed）——
+ * `token rate limit exceeded` / `you have exceeded your token quota` /
+ * `too many tokens: rate limit exceeded` 全被判 `CONTEXT_OVERFLOW`（不可重试 + 触发压缩 +
+ * cache 失效），方向与代价同 W40 KDoc 点名形态（把限流错放大成最贵的处置）。
+ *
+ * W45 分级：窗口词按证据强度分两级。
+ * - **强窗口词** `context` / `prompt`（限流文案极少自称 context）：× 长度语义 ⇒ 无条件
+ *   先于强限流词，与 W44 行为一致（E5h/E5i/E5j/E5l/E5m 全部不回退）。
+ * - **弱窗口词** `token`（限流按 token 计）：长度语义**且无限流语境**才判超窗——
+ *   强长度语义（`maximum`/`too long`/`length`）或弱 `exceed` 都须先过「无限流语境」
+ *   这一关。于是 `token rate limit exceeded` 与死角样本 `rate limit: maximum 100
+ *   tokens per minute`（限流文案带 maximum）都落回限流处置；无 rate limit 语境的
+ *   `token limit reached: maximum 100000 tokens`（真超窗）仍判超窗；裸
+ *   `token limit reached` 落 PROTOCOL（W44 必红③不回退）。
+ * 三条新必红（SSE `token rate limit exceeded` / SSE `too many tokens: rate limit
+ * exceeded` / HTTP400 `token rate limit exceeded`）未修版实跑 RED；注入「把 token 升回
+ * 无条件窗口词」⇒ RED。
+ *
  * @param contextLimitHint 从错误体里取真实窗口的端口（由 adapter 注入，复用同一套正则，
  *   避免这里长出第二把尺子）。
  */
@@ -170,11 +192,10 @@ internal fun decodeOpenAiErrorFrame(
     // 注入「把 quota 放回无条件强词」⇒ 超窗+quota 必红 RED（W44 新增）。
     // 注意不含裸 `rate`：E5i `request rate too large: maximum context length exceeded`
     // 是超窗文案，裸 rate 会重引 W42 已修的反向回归。只认显式限流语境。
-    val rateContext = haystack.contains("429") || haystack.contains("quota") ||
-        haystack.contains("throttl") || haystack.contains("slow down") ||
-        haystack.contains("too many requests") || haystack.contains("rate limit")
-    val explicitRateLimit = rateContext ||
-        (haystack.contains("too many tokens") && rateContext)
+    val rateContext = mentionsRateLimitContext(haystack)
+    // W45：真删 W44 遗留的冗余合取项（`A || (B && A) = A`，第二项恒被第一项蕴含、
+    // 行为不变）；W44 验收物「一并简化」与当时实现不符，以本删除为准（外审 P2-1）。
+    val explicitRateLimit = rateContext
     return when {
         looksLikeContextOverflowMessage(haystack) -> GenerationEvent.Failed(
             EngineErrorKind.CONTEXT_OVERFLOW,
@@ -224,6 +245,15 @@ internal fun decodeOpenAiErrorFrame(
  * 落限流/配额/PROTOCOL 分类。新增必红：SSE `token limit reached for this endpoint`、
  * HTTP 400 `token limit reached: reduce prompt`（后者在 ContextLimitTest）。
  * 注入「把裸 limit 放回 mentionsOverflow」⇒ 两条必红 RED。
+ *
+ * W45（窗口词强弱分级，外审 P0-1 镜像反噬）：W44 把超窗组合无条件前置后，
+ * 限流文案（按 token 计、天然带 `exceed`/`length`）反向被吃进超窗。分级规则：
+ * - 强窗口词 `context`/`prompt`（须长度语义，W43/W44 护栏不变）× 长度语义 ⇒ 超窗；
+ * - 弱窗口词 `token` 须长度语义**且无限流语境**（强长度语义 `maximum`/`too long`/`length`
+ *   与弱 `exceed` 同过这一关）—— `token rate limit exceeded` 落回限流处置，
+ *   `token limit reached: maximum 100000 tokens`（无 rate limit 语境的真超窗）仍判超窗。
+ * `rateContextWords` 是 `rateContext` 的同一把限流语境尺（提取为顶层函数
+ * [mentionsRateLimitContext]，SSE 帧与 HTTP 400 同源），保持单一真值源不漂移。
  */
 internal fun looksLikeContextOverflowMessage(lower: String): Boolean {
     val mentionsLengthOverflow = lower.contains("too long") ||
@@ -232,8 +262,25 @@ internal fun looksLikeContextOverflowMessage(lower: String): Boolean {
         lower.contains("length")
     // W44：裸 `limit` 降级出超限词表（见 KDoc）——与 `prompt` 护栏同一把尺。
     val mentionsOverflow = mentionsLengthOverflow
-    // context/token 直接算窗口词（配长度语义超限词）；prompt 需长度语义护栏。
-    val mentionsWindow = lower.contains("context") || lower.contains("token") ||
+    // 强窗口词：context 直接算；prompt 需长度语义护栏（W43）。强窗口词 × 长度语义
+    // 无条件成立（E5h/E5i/E5j/E5l/E5m 不回退）。
+    val strongWindow = lower.contains("context") ||
         (lower.contains("prompt") && mentionsLengthOverflow)
-    return mentionsWindow && mentionsOverflow
+    if (strongWindow && mentionsOverflow) return true
+    // W45 弱窗口词：仅 token 时须长度语义**且无限流语境**（见 KDoc 死角样本）。
+    val rateContext = mentionsRateLimitContext(lower)
+    val weakWindowIsOverflow = lower.contains("token") && mentionsLengthOverflow && !rateContext
+    return weakWindowIsOverflow
 }
+
+/**
+ * 「显式限流语境」词表（W45 从 decodeOpenAiErrorFrame 提取为单一真值源）。
+ *
+ * `token`×`exceed` 在限流文案里高频共现，弱窗口词分支靠它区分「限流文案带长度字样」
+ * 与「真超窗」。词表（429/quota/throttl/slow down/too many requests/rate limit 连写）
+ * 与 SSE 帧判定用的 `rateContext` 完全同源——改一处即两路同步。
+ */
+internal fun mentionsRateLimitContext(lower: String): Boolean =
+    lower.contains("429") || lower.contains("quota") ||
+        lower.contains("throttl") || lower.contains("slow down") ||
+        lower.contains("too many requests") || lower.contains("rate limit")

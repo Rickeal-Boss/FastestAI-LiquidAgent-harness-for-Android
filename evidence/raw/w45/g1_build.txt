@@ -1,0 +1,15 @@
+[localbuild] repo            = <workspace>/...
+[localbuild] JAVA_HOME       = <workspace>/...+1
+[localbuild] ANDROID_HOME    = <workspace>/...
+[localbuild] GRADLE_USER_HOME= <workspace>/...
+[localbuild] proxy           = 127.0.0.1:3384 (from https_proxy)
+[localbuild] java -version   = openjdk version "21.0.12.1" 2026-08-18 LTS
+[localbuild] launcher        = ./gradlew  task=:app:assembleDebug
+[localbuild] 开始构建（失败先看输出里的 '^\* What went wrong' 段）
+BUILD SUCCESSFUL in 46s
+[localbuild] 成功 (rc=0)
+[localbuild] 产物：./app/build/outputs/apk/debug/app-debug.apk
+[localbuild] 真机安装（applicationId = com.rickeal.liquidharness.debug）：
+[localbuild]   MSYS_NO_PATHCONV=1 adb push "./app/build/outputs/apk/debug/app-debug.apk" /data/local/tmp/app.apk
+[localbuild]   MSYS_NO_PATHCONV=1 adb shell pm install -r /data/local/tmp/app.apk
+[localbuild]   MSYS_NO_PATHCONV=1 adb shell monkey -p com.rickeal.liquidharness.debug -c android.intent.category.LAUNCHER 1
