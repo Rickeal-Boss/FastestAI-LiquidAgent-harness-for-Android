@@ -80,6 +80,7 @@
   - Build `44998694521`（`updated_at=2026-11-22T07:34:35Z`）：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44998694521`
   - Secret scan `44998694565`（`updated_at=2026-11-22T07:32:48Z`）：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44998694565`
 - 本交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按既有降级规则（补链 + 挂老号、不作 P0 判据）回填；代码提交两条 run 四字段才是本波 CI 判据。
+- **tip 文档 run 降级补链**（W29 规则：补链 + 挂并行键老号、不逐波判 P0，降级≠不记录）：CI 回填提交 `bbdd45e3046b…` 触发 Secret scan `44999031147`（`completed/success`，公开 API 实取，链接 `.../runs/44999031147`），仅记录、不作 P0。本段所在的文档提交按 W28 先例不再第四次推送（避免自指循环），其 Secret run 待下一波按降级规则补链——**显式待办、不预设 run 号，不是漏记**。
 - 本地四闸门不代替 CI；CI 绿以 run 四字段为准。
 
 ## 八、明确未做（逐条带中文段位，编号见验收物）
