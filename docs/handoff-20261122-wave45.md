@@ -76,7 +76,11 @@
 
 ## 七、推送 + CI
 
-<!-- CI-PENDING: 推送后回填 commit SHA / run 四字段 / 链接 -->
+- 代码提交 `cb7442ec1056d64aa0c677218002ef9b919ec9eb`（含全部代码/文档/证据）；一次推送一提交触发两条 run，公开 API 四字段实取，均 `completed/success`：
+  - Build `44998694521`（`updated_at=2026-11-22T07:34:35Z`）：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44998694521`
+  - Secret scan `44998694565`（`updated_at=2026-11-22T07:32:48Z`）：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/44998694565`
+- 本交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按既有降级规则（补链 + 挂老号、不作 P0 判据）回填；代码提交两条 run 四字段才是本波 CI 判据。
+- 本地四闸门不代替 CI；CI 绿以 run 四字段为准。
 
 ## 八、明确未做（逐条带中文段位，编号见验收物）
 
