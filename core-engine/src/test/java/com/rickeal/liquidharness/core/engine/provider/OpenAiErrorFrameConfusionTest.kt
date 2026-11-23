@@ -54,7 +54,7 @@ class OpenAiErrorFrameConfusionTest {
     @Test
     fun bidirectionalConfusionSamplesAreClassifiedToEvidenceAuthority() {
         val samples = loadFixture()
-        assertEquals(21, samples.size, "样本集条数与对账不一致（与复刻脚本共用 JSON）")
+        assertEquals(25, samples.size, "样本集条数与对账不一致（与复刻脚本共用 JSON；W47 判序最后一轮 21→25）")
         val failed = mutableListOf<String>()
         samples.forEach { el ->
             val o: JsonObject = el.jsonObject
@@ -81,6 +81,13 @@ class OpenAiErrorFrameConfusionTest {
             "maximum token count exceeded (quota: 100000)" to EngineErrorKind.CONTEXT_OVERFLOW,
             "token length exceeded: slow down your requests" to EngineErrorKind.CONTEXT_OVERFLOW,
             "prompt too long: rate limit exceeded" to EngineErrorKind.RATE_LIMIT,
+            // W47（P0-2 判序最后一轮）：context 恢复无条件强窗口词，4 条真超窗自带强限流词
+            // 不得回退成 RATE_LIMIT；prompt 让位语义保留（第 5 条偏限流仍判 RATE_LIMIT）。
+            "maximum context length exceeded (rate limit: 100000 tokens)" to EngineErrorKind.CONTEXT_OVERFLOW,
+            "context length exceeded: rate limit 100000 tokens" to EngineErrorKind.CONTEXT_OVERFLOW,
+            "maximum context length exceeded, tpm exceeded" to EngineErrorKind.CONTEXT_OVERFLOW,
+            "context length exceeded: 429" to EngineErrorKind.CONTEXT_OVERFLOW,
+            "prompt too long (requests per minute cap)" to EngineErrorKind.RATE_LIMIT,
         )
         cases.forEach { (message, expected) ->
             val result = decodeOpenAiErrorFrame(

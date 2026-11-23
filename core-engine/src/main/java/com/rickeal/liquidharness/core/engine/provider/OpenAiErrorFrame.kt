@@ -269,15 +269,24 @@ internal fun looksLikeContextOverflowMessage(lower: String): Boolean {
     val weakLength = lower.contains("exceed")
     val anyLength = strongLength || weakLength
     // 窗口词：context 直接算；prompt 需长度语义护栏（W43，裸 prompt limit 不算）。
-    val strongWindow = lower.contains("context") || (lower.contains("prompt") && anyLength)
+    // W47 拆为 contextWindow / promptWindow（让位语义不同，见下方判定）。
     val tokenWindow = lower.contains("token")
     val strongRate = mentionsStrongRateLimit(haystack = lower)
 
-    // ① 强窗口词（context/prompt）× 任意长度语义（含弱 exceed）：
-    //    无强限流语境时无条件判超窗（E5h/i/j/k/l/m、C01-C06 不回退）；
-    //    有强限流语境时让位（修 R08 `prompt too long: rate limit exceeded`）。
-    if (strongWindow && anyLength && !strongRate) return true
-    // ② 弱窗口词 token × 强长度语义（maximum/too long/length）：
+    // W47（P0-2 判序最后一轮）：context 恢复**无条件**强窗口词；强限流语境让位只留给
+    // prompt。W46 让 context 也在强限流语境下让位，但真超窗文案天然自带 rate limit /
+    // tpm / 429 字样（`maximum context length exceeded (rate limit: 100000 tokens)`），
+    // 被误判 RATE_LIMIT ⇒ 同长度请求重发两次（W40 KDoc 点名的代价）。`context` 自称
+    // 超窗窗口是比限流词更强的证据；真正需要让位的只有 `prompt`（`prompt too long:
+    // rate limit exceeded` 语义偏限流，保 R08）。W48 起不再扩词表，改判据范式。
+    val contextWindow = lower.contains("context")
+    val promptWindow = lower.contains("prompt") && anyLength
+    // ① context × 任意长度语义（含弱 exceed）：无条件判超窗，强限流语境不让位
+    //    （E5h/i/l、C01-C06 与 4 条扩展边界不回退）。
+    if (contextWindow && anyLength) return true
+    // ② prompt × 任意长度语义：强限流语境下让位（保 R08），否则判超窗（E5j/C03）。
+    if (promptWindow && !strongRate) return true
+    // ③ 弱窗口词 token × 强长度语义（maximum/too long/length）：
     //    无强限流语境即判超窗，quota / slow down 这类**弱**限流词不让位
     //    （修 C07 `maximum token count exceeded (quota: …)` / C08 `token length exceeded:
     //    slow down your requests`，即 W44 两条必红的弱窗口词变体）。

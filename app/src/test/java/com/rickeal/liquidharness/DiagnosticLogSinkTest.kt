@@ -17,7 +17,9 @@ import kotlin.test.assertTrue
  * W44 版镜像把**全部** INFO/WARN/ERROR 落盘 —— 普通 WARN 行（`tool threw`、
  * `unknown tool requested`）会携带用户 prompt 正文 / 工具参数 / 模型输出片段进入
  * `run-as` 可取的持久化文件，隐私面比「内存 ring、重启即消失」大得多。
- * W45 白名单只在落盘收窄；环形缓冲（诊断页）行为不变。
+ * W45 白名单只在落盘收窄；环形缓冲（诊断页）行为不变。W47 P1-1 再把两类动态正文
+ * （`run failed:` / `reason=`）从「ASCII + ≤160」收窄为固定诊断码白名单形态，堵住
+ * ≤160 的 ASCII 自由文本（英文 prompt 回显 / 邮箱 / 密码）穿透。
  *
  * 三条判据互为方向：
  * - 正向：探针 / 账本行必须落盘（`cached=` 四态是 W12-02 销账的出口判据，不得丢）；
@@ -82,6 +84,26 @@ class DiagnosticLogSinkTest {
         assertTrue(DiagnosticLogSink.isProbeLine("run failed: protocol error"))
         assertTrue(DiagnosticLogSink.isProbeLine("manual_compress=noop reason=manual compress: nothing to drop"))
         assertTrue(DiagnosticLogSink.isProbeLine("layered compress: mode=L1_FALLBACK reason=over-hard-budget"))
+    }
+
+    /**
+     * W47 P1-1 必红（外审：短 ASCII 自由文本洞）：W46 的 isSafeFailureDigest /
+     * isSafeReasonLine 只判「ASCII + ≤160 字符」，任何 ≤160 的 ASCII 用户内容都能穿透
+     * （如英文 prompt 回显）。本条把正文约束收窄为**固定诊断码白名单形态**：只有
+     * `(HTTP <num>)` / `protocol error` / 固定 reason 码可落盘，其余 ASCII 自由文本拦下。
+     * 注入「保留 W46 ASCII+160 判据」⇒ 本条 RED。
+     */
+    @Test
+    fun shortAsciiFreeTextIsNotMirrored() {
+        assertFalse(DiagnosticLogSink.isProbeLine("run failed: your password is hunter2 and email is a@b.com"))
+        assertFalse(DiagnosticLogSink.isProbeLine("run failed: please summarize chapter 12 for me"))
+        assertFalse(DiagnosticLogSink.isProbeLine("manual_compress=noop reason=user asked to keep it short"))
+        assertFalse(DiagnosticLogSink.isProbeLine("auto_compact=noop reason=prompt too long in chapter 12"))
+        // 固定诊断码白名单仍须落盘（防一刀切）。
+        assertTrue(DiagnosticLogSink.isProbeLine("run failed: request rejected (HTTP 429)"))
+        assertTrue(DiagnosticLogSink.isProbeLine("run failed: protocol error"))
+        assertTrue(DiagnosticLogSink.isProbeLine("auto_compact=noop reason=below_trigger"))
+        assertTrue(DiagnosticLogSink.isProbeLine("manual_compress=noop reason=manual compress: nothing to drop"))
     }
 
     /**

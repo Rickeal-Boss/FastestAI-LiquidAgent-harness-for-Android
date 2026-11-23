@@ -80,7 +80,7 @@
 - **代码提交 2 条 run（公开 API 四字段实取，均 `completed/success`）**：
   - Build `45014327186`：`head_sha=c69d0ff76da73b32c075d5c6e2a3f6c98676b30b` / `status=completed` / `conclusion=success` / `updated_at=2026-11-22T10:52:12Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45014327186`。
   - Secret scan `45014327291`：`head_sha=c69d0ff76da73b32c075d5c6e2a3f6c98676b30b` / `status=completed` / `conclusion=success` / `updated_at=2026-11-22T10:50:16Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45014327291`。
-- 本验收物与交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按 W29 降级规则（补链 + 挂老号、不作 P0 判据）回填，回填后由公开 API 实取记录（见交接 §七）。代码提交两条 run 四字段才是本波 CI 判据；本地四闸门不代替 CI。
+- 本验收物与交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按 W29 降级规则（补链 + 挂老号、不作 P0 判据）回填。W46 全波**实际 4 条 run**（代码提交 2 + 文档提交 2），文档 tip `ebb093ba6…` / `9d05a64b996002b6006a230e4eb3a6ea1525c524` 分别触发 Secret scan `45014659822` / `45014733519`，四字段由公开 API 实取记录（见交接 §七）。代码提交两条 run 四字段才是本波 CI 判据；本地四闸门不代替 CI。
 
 ---
 

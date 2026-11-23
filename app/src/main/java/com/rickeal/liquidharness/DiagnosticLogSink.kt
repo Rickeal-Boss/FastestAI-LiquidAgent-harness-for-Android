@@ -119,25 +119,50 @@ class DiagnosticLogSink(private val store: AgentLogFileStore) {
         }
 
         /**
-         * `run failed: ` 落盘只认固定摘要：`run failed: request rejected (HTTP 400)` /
-         * `run failed: protocol error` 这类「ASCII 诊断码 + 可选 HTTP 数字」。
-         * 正文超 [MAX_DIGEST_CHARS] 或含非 ASCII（用户 prompt 常见形态）⇒ 不落盘。
+         * `run failed: ` 落盘只认固定摘要（W47 P1-1 收窄）：仅
+         * `run failed: request rejected (HTTP <num>)` / `run failed: protocol error`
+         * 一类由常量模板 + HTTP 数字构成的诊断码。
+         *
+         * W46 只判「ASCII + ≤160 字符」，任何 ≤160 的 ASCII 自由文本（英文 prompt 回显、
+         * 邮箱、密码）都能穿透 —— 外审 P1-1 的短 ASCII 洞。W47 改为**固定形态整行匹配**：
+         * 正文必须是白名单句式之一，其余一律不落盘。动态 provider message 仍在进程内
+         * ring（诊断页可见），只是不进 `run-as` 可取的持久化文件。
          */
         private fun isSafeFailureDigest(m: String): Boolean {
             if (m.length > MAX_DIGEST_CHARS) return false
-            return m.all { it.code in 0x20..0x7E }
+            return FAILURE_DIGEST.matches(m)
         }
 
         /**
-         * `reason=` 类准许固定诊断码（below-insufficient_savings / nothing_to_drop /
-         * over-hard-budget / no-summarizer / HTTP 数字 …），要求整行 ASCII 且有长度上限。
+         * `reason=` / `layered compress` 类只认固定诊断码（W47 收窄）。
+         *
+         * 白名单码来自现役写点的有限枚举（SettledCompressPolicy / ConversationOps /
+         * LayeredContextCompressor / ManualCompress），`insufficient_savings:net=<int>` 带数值。
+         * 新增码若漏登记只损失落盘、不损失 ring，方向安全（沿用 W45 KDoc 纪律）。
          */
         private fun isSafeReasonLine(m: String): Boolean {
             if (m.length > MAX_DIGEST_CHARS) return false
-            return m.all { it.code in 0x20..0x7E }
+            return REASON_LINE.matches(m) || REASON_CODE_LINE.matches(m) || REASON_APPLIED.matches(m)
         }
 
         /** 摘要行长度上限：诊断码 + HTTP 数字远小于此；用户整段 prompt 必然超。 */
         private const val MAX_DIGEST_CHARS = 160
+
+        /** 固定失败摘要：`run failed: request rejected (HTTP 400)` / `run failed: protocol error`。 */
+        private val FAILURE_DIGEST = Regex(
+            """^run failed: (request rejected \(HTTP \d{3}\)|protocol error)$"""
+        )
+        /** `auto_compact=noop reason=<固定码>` / `manual_compress=noop reason=<固定码>`。 */
+        private val REASON_LINE = Regex(
+            """^(auto_compact|manual_compress)=noop reason=[a-z][a-z0-9_-]*(:\w+=[-\d]+)?$"""
+        )
+        /** `layered compress: mode=<CODE> reason=<固定码>`（含 manual compress: nothing to drop 短语形态）。 */
+        private val REASON_CODE_LINE = Regex(
+            """^(layered compress: mode=[A-Z0-9_]+ reason=[a-z][a-z0-9_-]*|manual_compress=noop reason=manual compress: nothing to drop)$"""
+        )
+        /** `auto_compact dropped=N kept=N cache_invalidated=<bool>` 账本行（applied 分支）。 */
+        private val REASON_APPLIED = Regex(
+            """^auto_compact dropped=\d+ kept=\d+ cache_invalidated=(true|false)$"""
+        )
     }
 }

@@ -58,15 +58,19 @@ def w46_looks_overflow(low):
     strong_len = any(x in low for x in STRONG_LEN)
     weak_len = any(x in low for x in WEAK_LEN)
     any_len = strong_len or weak_len
-    strong_window = ("context" in low) or ("prompt" in low)
     token_window = "token" in low
-    # (1) 强窗口词 context/prompt（prompt 须搭配长度语义）× 长度语义，且无强限流语境
-    if strong_window and any_len and not w46_strong_rate(low):
+    # W47（P0-2 最后一轮）：context 恢复无条件强窗口词（真超窗文案自带 rate limit/tpm/429，
+    # 不能让位）；让位只留给 prompt（prompt too long + 强限流语境 ⇒ RATE_LIMIT，保 R08）。
+    # (1) context × 任意长度语义：无条件超窗
+    if "context" in low and any_len:
         return True
-    # (2) 弱窗口词 token × 强长度语义，且无强限流语境（含 quota/slow down 弱词也不让位）
+    # (2) prompt × 任意长度语义：仅强限流语境让位
+    if "prompt" in low and any_len and not w46_strong_rate(low):
+        return True
+    # (3) 弱窗口词 token × 强长度语义，且无强限流语境（含 quota/slow down 弱词也不让位）
     if token_window and strong_len and not w46_strong_rate(low):
         return True
-    # (3) 弱窗口词 token × 弱长度语义（仅 exceed），且无任何限流语境
+    # (4) 弱窗口词 token × 弱长度语义（仅 exceed），且无任何限流语境
     if token_window and weak_len and not w46_rate_context(low):
         return True
     return False

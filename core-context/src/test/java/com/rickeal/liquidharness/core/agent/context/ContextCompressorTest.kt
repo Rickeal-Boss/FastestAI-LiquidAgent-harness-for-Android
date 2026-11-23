@@ -2,6 +2,7 @@ package com.rickeal.liquidharness.core.agent.context
 
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
 import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
+import com.rickeal.liquidharness.core.agent.policy.DEFAULT_COMPRESS_TARGET_RATIO
 import com.rickeal.liquidharness.core.model.Attachment
 import com.rickeal.liquidharness.core.model.AttachmentKind
 import com.rickeal.liquidharness.core.model.ChatMessage

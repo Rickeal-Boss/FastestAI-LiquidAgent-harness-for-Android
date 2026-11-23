@@ -1,0 +1,27 @@
+=== W47 deviceLogTail (desensitized: probe/ledger prefixes only; no full logcat, keys, endpoint identity, serial, paths) ===
+window: 2026-11-23T05:38Z .. 06:18Z current wave; historical lines excluded
+note: probe lines are fixed-diagnostic-code shapes; W47 sink narrowing (P1-1) verified on-device: all 24 lines still land in whitelist
+2026-11-23T05:38:25.056415Z INFO prefix fp=6e5c4a96 changed=none prompt=1074 cached=n/a-usage
+2026-11-23T05:38:29.286097Z INFO auto_compact=noop reason=below_trigger
+2026-11-23T05:38:29.286673Z WARN auto_compact=noop reason=below_trigger
+2026-11-23T05:43:15.064921Z INFO prefix fp=5e115f72 changed=none prompt=1076 cached=n/a-usage
+2026-11-23T05:43:23.624973Z INFO auto_compact=noop reason=below_trigger
+2026-11-23T05:43:23.625796Z WARN auto_compact=noop reason=below_trigger
+2026-11-23T05:44:28.008520Z INFO prefix fp=c4ae730b changed=none prompt=1132 cached=n/a-usage
+2026-11-23T05:45:17.606765Z INFO prefix fp=d8bf9c8f changed=HISTORY prompt=2467 cached=0(cumulative)
+2026-11-23T05:45:18.542543Z INFO prefix fp=d8bf9c8f changed=none prompt=2523 cached=0(cumulative)
+2026-11-23T05:45:20.030040Z INFO auto_compact=noop reason=below_trigger
+2026-11-23T05:45:20.030027Z WARN auto_compact=noop reason=below_trigger
+2026-11-23T06:01:47.334702Z INFO prefix fp=9f13c143 changed=none prompt=2106 cached=n/a-usage
+2026-11-23T06:01:50.039977Z INFO auto_compact=noop reason=below_trigger
+2026-11-23T06:01:50.039981Z WARN auto_compact=noop reason=below_trigger
+2026-11-23T06:02:54.517415Z INFO prefix fp=2ad40a62 changed=none prompt=1082 cached=n/a-usage
+2026-11-23T06:03:00.575994Z INFO prefix fp=d419cb04 changed=HISTORY prompt=2789 cached=0(cumulative)
+2026-11-23T06:03:02.269258Z INFO prefix fp=b6b1a1d4 changed=HISTORY prompt=2896 cached=0(cumulative)
+2026-11-23T06:03:05.865388Z INFO prefix fp=b6b1a1d4 changed=none prompt=4564 cached=0(cumulative)
+2026-11-23T06:03:10.286199Z INFO auto_compact=noop reason=below_trigger
+2026-11-23T06:03:10.286945Z WARN auto_compact=noop reason=below_trigger
+2026-11-23T06:09:14.575895Z WARN manual_compress=noop reason=manual compress: nothing to drop
+2026-11-23T06:18:31.259960Z INFO prefix fp=02088cf7 changed=none prompt=1075 cached=n/a-usage
+2026-11-23T06:18:35.034900Z WARN auto_compact=noop reason=below_trigger
+2026-11-23T06:18:35.034899Z INFO auto_compact=noop reason=below_trigger

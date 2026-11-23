@@ -3,11 +3,11 @@ package com.rickeal.liquidharness.core.agent.loop
 import com.rickeal.liquidharness.core.agent.context.ContextCompressor
 import com.rickeal.liquidharness.core.agent.context.ContextSummarizer
 import com.rickeal.liquidharness.core.agent.context.CutPolicy
-import com.rickeal.liquidharness.core.agent.context.DEFAULT_COMPRESS_TARGET_RATIO
 import com.rickeal.liquidharness.core.agent.context.LayeredContextCompressor
 import com.rickeal.liquidharness.core.agent.context.PrefixFingerprint
 import com.rickeal.liquidharness.core.agent.context.PrefixSegmentKind
 import com.rickeal.liquidharness.core.agent.context.WindowContextCompressor
+import com.rickeal.liquidharness.core.agent.policy.DEFAULT_COMPRESS_TARGET_RATIO
 import com.rickeal.liquidharness.core.agent.context.contextBudgetTokens
 import com.rickeal.liquidharness.core.agent.context.fingerprintOf
 import com.rickeal.liquidharness.core.agent.context.historySegment

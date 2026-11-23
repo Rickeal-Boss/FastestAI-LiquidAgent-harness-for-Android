@@ -1,0 +1,13 @@
+W47 P0-2 判序最后一轮：判据先行实证（replay.py 等价复刻）
+
+[1] 未修版 W46 判序对 4 条扩展边界 RED（写X未发生前先自证会响）:
+  X01-X04 got=RATE_LIMIT exp=CONTEXT_OVERFLOW (4 RED); X05 got=RATE_LIMIT exp=RATE_LIMIT (OK)
+
+[2] legacy(--legacy) 25 样本: 5 RED (R04,R05,R08,C07,C08), rc=1
+RED mismatches (5): R04,R05,R08,C07,C08
+
+[3] --w46 目标判序 25 样本全绿, rc=0:
+OK all 25 samples match expected
+
+[4] 注入「context 也让位」(W46 旧逻辑) => 4 RED (C11-C14), rc=1; 还原 rc=0
+  证据: evidence/raw/w47/red_p02_context_yield_mutant.txt

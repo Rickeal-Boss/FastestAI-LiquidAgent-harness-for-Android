@@ -155,8 +155,10 @@ env:
   # W46：+3（engine 2：OpenAiErrorFrameConfusionTest 双向混淆样本参数化 /
   #   W46 五条边界必红；app 1：Dynamic provider message 含用户内容不落盘）
   #   = 878 + 3 = 881，同提交一次改。
+  # W47：+1（app 1：shortAsciiFreeTextIsNotMirrored 短 ASCII 自由文本不落盘反向必红）
+  #   = 881 + 1 = 882。判序最后一轮只扩样本 JSON 21→25，JVM 参数化方法数不变。
   # ---------------------------------------------------------------------------
-  EXPECTED_TESTS: '881'
+  EXPECTED_TESTS: '882'
 
 jobs:
   # ===========================================================================
@@ -629,6 +631,18 @@ jobs:
           echo "::group::wrapper pin (仓库钉住的 Gradle 版本)"
           grep -E '^distributionUrl' gradle/wrapper/gradle-wrapper.properties 2>/dev/null || echo "no wrapper properties"
           echo "::endgroup::"
+
+      # W47（P1-2 判据接闸门，零新 G 编号）：把 W46 建的判序双向混淆复刻脚本接进既有
+      # unit-test job，跑 `--w46`，25 条样本必须全部符合 expected。改坏样本 JSON 的
+      # expected ⇒ 本步 RED（本地实证 rc=1），还原 ⇒ GREEN（rc=0）。与 JVM 参数化
+      # 测试共用 scripts/fixtures/ 同一份 JSON，判据冻结下不新增 G 编号、不新增 job。
+      - name: 判序双向混淆样本复刻（--w46 全绿）
+        run: |
+          if [ ! -f scripts/w46-classification-replay.py ]; then
+            echo "::error::scripts/w46-classification-replay.py 缺失 —— 判序复刻判据失效。"
+            exit 1
+          fi
+          python3 scripts/w46-classification-replay.py --w46
 
       - name: Run unit tests (aggregate + real XML counts)
         # 固定口径 = scripts/fulltest.sh：内部 `test --continue`（禁 fail-fast

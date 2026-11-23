@@ -1,6 +1,8 @@
 package com.rickeal.liquidharness.core.agent.context
 
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
+import com.rickeal.liquidharness.core.agent.policy.DEFAULT_COMPRESS_ALIGN_MAX_EXTRA_DROP_RATIO
+import com.rickeal.liquidharness.core.agent.policy.DEFAULT_COMPRESS_TARGET_RATIO
 import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.Role
 import com.rickeal.liquidharness.core.model.TokenEstimator
@@ -33,32 +35,11 @@ enum class CutPolicy {
     TURN_ALIGNED,
 }
 
-/**
- * 压缩目标水位线（占 `budgetTokens` 的比例）。**默认 0.6**。
- *
- * ## 为什么必须有它（design §2.1）
- *
- * 贪心装填的终止条件是「再装一条就超预算」，所以压缩后的余量恒 `< 被丢第一条消息的代价`
- * （通常只有半条消息量级）。而一条满额读类工具结果 ≈ 4 000 token（`AgentPolicy.maxReadToolOutputChars`
- * = 16 000 字符）⇒ 下一轮追加它**几乎必然**再次越门槛 ⇒ 压缩按「每轮一次」复发，
- * 每轮都把切点往后推一次，即每轮前缀失效一次。0.6 × 24k = 14.4k，留 9.6k ≈ 2.4 条满额
- * 工具结果 ⇒ 连续 2–3 轮不会复发。
- *
- * ⚠️ **它仍不在 `AgentPolicy` 里**：W4 登记「W5 第一件事是搬进 policy」，W5/W6 两波都没做
- * （A 组文件域已含 policy，只是没人排进任务）。**挂账 W7**。代价照旧：不能被端点 / 设置页调。
- */
-const val DEFAULT_COMPRESS_TARGET_RATIO: Float = 0.6f
-
-/**
- * `TURN_ALIGNED` 的额外丢弃上限（占 `budgetTokens` 的比例）。**默认 0.25**。
- *
- * 为什么必须有上限：单个 turn 可能很长（一条 user + 30 轮工具）。无上限对齐会把整段 turn
- * 丢掉 ⇒ 压缩完仍超预算 ⇒ 下一轮再压 ⇒ 退化成「每轮一次」的病态（design §3.A.5）。
- * 超限即退回 [CutPolicy.MINIMAL] 的结果，并记 `compress_align=skipped`。
- *
- * 同样挂账 W7 搬进 `AgentPolicy`（理由同上）。
- */
-const val DEFAULT_COMPRESS_ALIGN_MAX_EXTRA_DROP_RATIO: Float = 0.25f
+// W47（W9-01 拆分）：上面的两个压缩常量已搬入唯一真值源
+// `com.rickeal.liquidharness.core.agent.policy.AgentPolicy`（DEFAULT_COMPRESS_TARGET_RATIO /
+// DEFAULT_COMPRESS_ALIGN_MAX_EXTRA_DROP_RATIO），本文件与 core-agent / feature-chat 的三个
+// 消费方统一 import 该处。历史理由（design §2.1 / §3.A.5、W4/W5/W6 挂账沿革）随常量搬入
+// AgentPolicy 的 KDoc；本文件仅保留端口与实现，不再持有可漂移的第二份常量定义。
 
 /**
  * 朴素滑动窗口压缩。

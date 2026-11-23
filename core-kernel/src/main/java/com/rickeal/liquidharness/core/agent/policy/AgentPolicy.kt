@@ -233,3 +233,10 @@ data class AgentPolicy(
     /** 工具总数超过此值时自动切 ON_DEMAND 披露（`03-contracts.md` §五 #24）。W2 接线。 */
     val disclosureThreshold: Int = 24,
 )
+
+// W47 W9-01 拆分：两个压缩常量从 core-context 搬入本唯一真值源（三消费方改 import）；
+// 完整理由见 compressThreshold KDoc 与 W47 验收物（core-kernel 450 行上限，此处从简）。
+/** 压缩目标水位线 0.6（压到多小）；与 compressThreshold 0.75（要不要压）不是同一个数。 */
+const val DEFAULT_COMPRESS_TARGET_RATIO: Float = 0.6f
+/** TURN_ALIGNED 额外丢弃上限 0.25；超限退回 CutPolicy.MINIMAL（design §3.A.5）。 */
+const val DEFAULT_COMPRESS_ALIGN_MAX_EXTRA_DROP_RATIO: Float = 0.25f

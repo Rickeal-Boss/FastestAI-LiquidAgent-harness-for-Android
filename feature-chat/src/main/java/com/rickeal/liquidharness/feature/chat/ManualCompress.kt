@@ -2,8 +2,8 @@ package com.rickeal.liquidharness.feature.chat
 
 import com.rickeal.liquidharness.core.agent.context.ContextCompressor
 import com.rickeal.liquidharness.core.agent.context.CutPolicy
-import com.rickeal.liquidharness.core.agent.context.DEFAULT_COMPRESS_TARGET_RATIO
 import com.rickeal.liquidharness.core.agent.context.WindowContextCompressor
+import com.rickeal.liquidharness.core.agent.policy.DEFAULT_COMPRESS_TARGET_RATIO
 import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.Role
 import com.rickeal.liquidharness.core.model.TokenEstimator

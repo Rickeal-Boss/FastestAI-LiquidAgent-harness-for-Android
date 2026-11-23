@@ -1,0 +1,10 @@
+W47 P1-1 白名单写点收窄：判据先行实证
+
+[1] 未修实现 (W46 ASCII+160 判据) 跑 shortAsciiFreeTextIsNotMirrored:
+DiagnosticLogSinkTest > shortAsciiFreeTextIsNotMirrored FAILED
+1 test completed, 1 failed
+BUILD FAILED in 1m 56s
+  => 1 failed RED（≤160 ASCII 自由文本穿透，洞真实存在）
+
+[2] 处方：isSafeFailureDigest / isSafeReasonLine 从 ASCII+160 收窄为固定诊断码白名单正则
+  FAILURE_DIGEST / REASON_LINE / REASON_CODE_LINE / REASON_APPLIED 四条形态整行匹配

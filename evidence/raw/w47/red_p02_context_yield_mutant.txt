@@ -1,0 +1,6 @@
+W47 P0-2 注入必红：context 也让位 (W46 旧逻辑)
+  RED C11  overflow               RATE_LIMIT       exp=CONTEXT_OVERFLOW maximum context length exceeded (rate limit: 100000 tokens)
+  RED C12  overflow               RATE_LIMIT       exp=CONTEXT_OVERFLOW context length exceeded: rate limit 100000 tokens
+  RED C13  overflow               RATE_LIMIT       exp=CONTEXT_OVERFLOW maximum context length exceeded, tpm exceeded
+  RED C14  overflow               RATE_LIMIT       exp=CONTEXT_OVERFLOW context length exceeded: 429
+RED mismatches (4): C11,C12,C13,C14

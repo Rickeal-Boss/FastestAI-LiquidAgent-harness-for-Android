@@ -79,7 +79,10 @@
   - Build `45014327186`：`head_sha=c69d0ff76da73b32c075d5c6e2a3f6c98676b30b` / `completed` / `success` / `updated_at=2026-11-22T10:52:12Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45014327186`。
   - Secret scan `45014327291`：`head_sha=c69d0ff76da73b32c075d5c6e2a3f6c98676b30b` / `completed` / `success` / `updated_at=2026-11-22T10:50:16Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45014327291`。
 - 本交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按 W29 降级规则（补链 + 挂老号、不作 P0 判据）回填；代码提交两条 run 四字段才是本波 CI 判据。本地四闸门不代替 CI；CI 绿以 run 四字段为准。
-- **实际 3 条 run**（代码提交 2 + 本波文档回填 tip 1）：文档 tip `ebb093ba6ce2b6793295b0f5571027d5b2b8efca`（回填上条 run 四字段所在提交）触发 Secret scan `45014659822`（`head_sha=ebb093ba6…` / `completed` / `success` / `updated_at=2026-11-22T10:54:23Z`，公开 API 实取，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45014659822`），按 W29 降级**仅记录、不作 P0**，不因本段自指再第四次推送。
+- **实际 4 条 run**（代码提交 2 + 文档提交 2；文档 tip run 按 W29 降级仅记录、不作 P0）：
+  - 文档 tip `ebb093ba6ce2b6793295b0f5571027d5b2b8efca`（回填上条 run 四字段所在提交）触发 Secret scan `45014659822`（`head_sha=ebb093ba6…` / `status=completed` / `conclusion=success` / `updated_at=2026-11-22T10:54:23Z`，公开 API 实取，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45014659822`）。
+  - 文档 tip `9d05a64b996002b6006a230e4eb3a6ea1525c524`（本波最终 tip，补记上条降级 Secret run 四字段所在提交）触发 Secret scan `45014733519`（`head_sha=9d05a64b996002b6006a230e4eb3a6ea1525c524` / `status=completed` / `conclusion=success` / `updated_at=2026-11-22T10:55:23Z`，公开 API 实取，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45014733519`）。按 W29 降级**仅记录、不作 P0**。
+  - 以公开 API 取值为准；两条代码提交 run（`45014327186` / `45014327291`）才是本波 CI 判据。
 
 ## 八、明确未做（逐条带中文段位，编号见验收物）
 

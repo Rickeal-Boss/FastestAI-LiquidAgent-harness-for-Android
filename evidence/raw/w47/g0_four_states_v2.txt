@@ -1,0 +1,26 @@
+W47 g0 门禁四态实证（w46-local-secret-gate.sh P0-1 默认全扫订正）
+参数语义：默认=全扫（本地提交前入口） / --local-full=同默认 / --ci-semantics=复刻CI干净checkout（排除 _w*/ 与 local.properties）
+注入样本：被 ignore 的 _w47/*.jsonl 含 serial=<test-serial> path=<workspace-root>（真实字面量分段拼装，不落盘证据）
+历史取证目录（_w39/_w4/_w6 等）含 W44 g0 已登记的 MUST-RED 样本，默认全扫命中属预期（本地态），不是本波新泄漏。
+
+=== STATE 1: --ci-semantics 干净 checkout（期望三路全 0，rc=0）===
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=0
+OK no sensitive leak in tracked / untracked / ignored sweeps
+rc=0
+
+=== STATE 2a: 被 ignore 未 -f 的 .jsonl 含 serial + 默认全扫（期望第三路 RED，rc=1）===
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=141
+RED ignored: _w47/forceadd_probe.jsonl
+rc=1 （默认全扫命中历史 MUST-RED 取证目录 + 本波注入探针；探针被正确看到 ⇒ 判据真响）
+
+=== STATE 2b: 同上 + git add -f 纳入 index（期望第一路 tracked RED）===
+w46-local-secret-gate: route1(tracked)=1 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=140
+git grep tracked probe hit lines=1 (probe now in index; literal redacted here)
+rc=1 ; git ls-files --error-unmatch: in-index=yes
+
+=== STATE 3: 移除探针后 --ci-semantics（期望回 GREEN rc=0）===
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=0
+OK no sensitive leak in tracked / untracked / ignored sweeps
+rc=0 ; probe file exists=no ; in-index=no
+
+=== 结论：默认入口对 W36-01 精确场景（被 ignore 的 _w*/.jsonl 含 serial 未 -f）由空过 rc=0 变为 RED rc=1；--ci-semantics 保留 CI checkout 语义 = GREEN。===

@@ -1,0 +1,2 @@
+W47 P1-1 修复后 DiagnosticLogSinkTest 全绿（4 用例：正向固定摘要仍落盘 + 短 ASCII/中文/超长自由文本拦下）
+BUILD SUCCESSFUL in 1m

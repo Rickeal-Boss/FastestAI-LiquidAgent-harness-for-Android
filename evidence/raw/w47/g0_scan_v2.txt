@@ -1,0 +1,5 @@
+W47 g0_scan_v2（全扫态重出，参数见 g0_four_states_v2.txt）
+--ci-semantics（CI checkout 语义）:
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=0
+OK no sensitive leak in tracked / untracked / ignored sweeps
+rc=0
