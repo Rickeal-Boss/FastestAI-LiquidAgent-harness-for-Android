@@ -88,11 +88,13 @@
 
 **回灌级别**：8 张 PNG 二进制可打印串抽样对 `sk-`/Bearer/端点域名/serial/本机路径 0 命中；deviceLogTail 只含探针行；题面 ASCII 无空格或 `%s` 还原空格（连续 `%s` 吞词坑已规避）。
 
-## 步 5 · CI（推送后回填）
+## 步 5 · CI（公开 API 四字段实取）
 
 - 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
-- CI run 四字段与链接：见交接 §七（推送后由公开 API 实取回填；本节在回填前不预写未发生的 run 号）。
-- 本地四闸门不代替 CI；CI 绿以 run 四字段为准。纯文档 tip 触发的 Secret run 按 W29 降级仅记录、不作 P0。
+- **实际 4 条 run（代码两提交各 2，tip 双绿）**，完整四字段与链接见交接 §七：
+  - 主体 `4fc96e183461503eca94d03b9a0ca33680f069e0`：Build `45124200338` `completed/success`（`2026-11-23T06:30:07Z`）；Secret `45124200326` `completed/failure`（`2026-11-23T06:27:32Z`）——3b-ext 命中 G3 selftest 证据未脱敏的用户目录形态，已由下一提交修正，红态如实记录。
+  - 脱敏修正（最终代码 tip）`6e8751f7e200d47007e0c99d032534bfa2d46ace`：Build `45125222158` `completed/success`（`2026-11-23T06:37:30Z`）；Secret `45125222248` `completed/success`（`2026-11-23T06:36:39Z`）。**交付判据 = 最终 tip 双 run 全绿**。
+- 本地四闸门不代替 CI；CI 绿以最终 tip 的 run 四字段为准。纯文档 tip 触发的 Secret run 按 W29 降级仅记录、不作 P0。
 
 ---
 
