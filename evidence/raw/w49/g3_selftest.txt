@@ -1,6 +1,6 @@
 ================ arch-guard-selftest（28 个变异自证 case） ================
-repo = /d/WBfil/2026-09-18-18-27-37/harness-v2
-mode = batch   work = C:\Users\16896\AppData\Local\Temp/arch-guard-selftest.O4dA5v
+repo = <workspace-root>/harness-v2
+mode = batch   work = <user-home>\AppData\Local\Temp/arch-guard-selftest.<rand>
 -------------------------------------------------------------------
 [selftest] 注入变异（batch：全部落在同一棵树，各变异落在不同判据域）
 [selftest] arch-guard 退出码 = 1（预期非 0：注入了 20+ 处违规）

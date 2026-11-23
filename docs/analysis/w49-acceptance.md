@@ -49,6 +49,7 @@
 | P1-5 收尾契约 | W48 交接 §七 / 验收物步 5 补文档 tip `45154919970` 四字段 + 链接，口径「代码提交 2 条 + 文档 tip 1 条（降级）」 | ✅ | 两份文档同段 |
 | P2-9 格数 | 交接 §六 加「本波 13 格，锚验收物 E1–E13；W47 12 格为时点记录」 | ✅ | 交接 §六 |
 | P2-6 脱敏 | `green_p02_paradigm.txt:106` → `hostname="<host>"`；3b-ext 加属性形态判据（tracked + 未 tracked 两路同口径）；本地门禁同步 | ✅ | `evidence/raw/w49/g0_3bext_hostname.txt`（正控 rc=1 / 注入 rc=0 / 占位符豁免 / 门禁 RED→GREEN） |
+| 闸门证据脱敏（本波自捕） | `g2_archguard.txt` / `g3_selftest.txt` 含本机工作区绝对路径与用户临时目录形态 ⇒ CI 3b-ext 判红；已改 `<workspace-root>` / `<user-home>` / `<rand>`，本地门禁 tracked 路复扫 0 命中 | ✅ | 首次推送 Secret scan `45182694954` failure → 修正后复跑 GREEN |
 
 **台账守恒**：挂账行 216 / `CLOSED` 39 / `OPEN` 166 / `CARRIED` 11（与 W44–W48 逐值相等）；零 `W49-` 挂账行；G20 `141` ID 不变。
 
