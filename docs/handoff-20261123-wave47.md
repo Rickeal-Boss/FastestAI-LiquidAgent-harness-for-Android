@@ -48,7 +48,7 @@
 | 判序最后一轮：`context` 无条件强窗口词、让位只留 `prompt` | `core-engine/.../OpenAiErrorFrame.kt` | 4 条扩展边界未修版全 RED → 修后 GREEN；JVM 注入旧逻辑 2 failed；E5e/h/i/j/k/l/m/n 不回退 |
 | 样本集 21→25（C11–C14）| 样本 JSON + replay.py + ConfusionTest | 三处共用同一 JSON；legacy 5 RED / --w46 25 全绿 |
 | 白名单收窄（固定诊断码白名单正则）| `app/.../DiagnosticLogSink.kt` + 测试 | 未修版 `shortAsciiFreeTextIsNotMirrored` 1 failed RED → 修后 4 用例全绿；正向固定摘要仍落盘 |
-| W9-01 带预算拆分 | `AgentPolicy.kt` + `ContextCompressor.kt` + 3 消费方 import | 唯一真值源迁 AgentPolicy（242/400）；G10 曾 461>450，精简 KDoc 后转绿、上限未调；行为等价 |
+| W9-01 带预算拆分 | `AgentPolicy.kt` + `ContextCompressor.kt` + 4 个文件改 import（其中 2 个运行时消费方） | 唯一真值源迁 AgentPolicy（242/400）；G10 曾 461>450，精简 KDoc 后转绿、上限未调；行为等价 |
 | 测试数对账 | `build.yml` | `881→882`（app +1），`EXPECTED_TESTS: '882'` |
 
 ## 六、四闸门 + 真机
@@ -82,10 +82,10 @@
 ## 七、CI（公开 API 四字段实取）
 
 - 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
-- **实际 4 条 run（代码两提交各 2，tip 双绿）**：
+- **代码提交 4 条 run + 文档 tip 1 条（降级）**（W48 注记：「实际 4 条 run」口径易被读成本波全部 run，实取共 5 条，据此订正）：
   - 主体提交 `4fc96e183461503eca94d03b9a0ca33680f069e0`：Build `45124200338`（`head_sha=4fc96e183461503eca94d03b9a0ca33680f069e0` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T06:30:07Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45124200338`）；Secret scan `45124200326`（`head_sha=4fc96e183461503eca94d03b9a0ca33680f069e0` / `status=completed` / `conclusion=failure` / `updated_at=2026-11-23T06:27:32Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45124200326`）—— **3b-ext 命中 G3 selftest 证据里未脱敏的用户目录形态，已由下一提交修正**。主体 Build 绿、Secret 红如实记录、不掩盖。
   - 脱敏修正提交 `6e8751f7e200d47007e0c99d032534bfa2d46ace`（本波最终代码 tip）：Build `45125222158`（`head_sha=6e8751f7e200d47007e0c99d032534bfa2d46ace` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T06:37:30Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45125222158`）；Secret scan `45125222248`（`head_sha=6e8751f7e200d47007e0c99d032534bfa2d46ace` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T06:36:39Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45125222248`）。**最终代码 tip 双 run 全绿**，是交付判据。
-- 本交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按 W29 降级规则（补链 + 挂老号、不作 P0 判据）在回填后由公开 API 实取记录；本句不再触发进一步回填。
+- 本交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径）；其 Secret run `45125649179`（`head_sha=8e1d986723e200f9ca9854932adf9c04309b86cc` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T06:40:07Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45125649179`）按 W29 降级规则（补链 + 挂老号、不作 P0 判据）仅记录（W48 注记补录四字段与链接）；本句不再触发进一步回填。
 - 本地四闸门不代替 CI；CI 绿以最终 tip 的 run 四字段为准。
 
 ## 八、明确未做（逐条带中文段位，编号见验收物）
@@ -104,6 +104,6 @@
 
 **不含**：会话历史 / 凭据 / 端点完整标识与密钥 / 未打码账号字段 / 设备序列号 / SSID / 本机路径 / 用户私人图片 / uiautomator 噪声 /「建议下一链做什么」。
 
-**边界**：① 判序最后一轮只改 context/prompt 让位语义、样本 21→25，W48 起改范式不再扩词表；② 白名单收窄是形态白名单非语义判断，新码漏登记只损失落盘不损失 ring，动态 provider message 不进持久化文件；③ 门禁默认全扫命中本地历史 MUST-RED 取证目录属预期，`--ci-semantics` 才是 CI 语义；④ E6 MCP / E10 Dots3 / E12 applied 四态如实 vacuous/⚠️，E10 未取得会话级 404 证据、不写成已复测也不写成可用；⑤ 1M 档为常规请求非满窗真压；⑥ 三待拍板未获用户字面裁决，代裁未发生；⑦ CI 绿以 run 四字段为准，tip 文档 run 按 W29 降级只记录不作 P0。
+**边界**：① 判序最后一轮只改 context/prompt 让位语义、样本 21→25，W48 起改范式不再扩词表；② 白名单收窄是形态白名单非语义判断，W47 实态为**两类**动态写点（`run failed` / `reason=`）已收为固定形态正则、其余 10 类前缀与 `prefix` 分支仍 `startsWith`（生产写点均为常量模板+数字，判据不对称已登记，W48 订正措辞不写成 12 类全覆盖），新码漏登记只损失落盘不损失 ring，动态 provider message 不进持久化文件；③ 门禁默认全扫命中本地历史 MUST-RED 取证目录属预期，`--ci-semantics` 才是 CI 语义；④ E6 MCP / E10 Dots3 / E12 applied 四态如实 vacuous/⚠️，E10 未取得会话级 404 证据、不写成已复测也不写成可用；⑤ 1M 档为常规请求非满窗真压；⑥ 三待拍板未获用户字面裁决，代裁未发生；⑦ CI 绿以 run 四字段为准，tip 文档 run 按 W29 降级只记录不作 P0。
 
 > 本波止于交接，交由外部团队审查。

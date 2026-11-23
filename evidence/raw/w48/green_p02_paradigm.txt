@@ -1,0 +1,106 @@
+=== W48 判序范式 GREEN：25 样本 replay --w46 ===
+mode=w46 samples=25
+  OK  R01  rate                   RATE_LIMIT       exp=RATE_LIMIT       rate limit: too many tokens
+  OK  R02  rate                   RATE_LIMIT       exp=RATE_LIMIT       token rate limit exceeded
+  OK  R03  rate                   RATE_LIMIT       exp=RATE_LIMIT       too many tokens: rate limit exceeded
+  OK  R04  rate                   RATE_LIMIT       exp=RATE_LIMIT       tokens per minute limit exceeded
+  OK  R05  rate                   RATE_LIMIT       exp=RATE_LIMIT       tpm exceeded: token budget
+  OK  R06  rate                   RATE_LIMIT       exp=RATE_LIMIT       rate limit: maximum 100 tokens per minute
+  OK  R07  rate                   RATE_LIMIT       exp=RATE_LIMIT       you have exceeded your token quota
+  OK  R08  rate                   RATE_LIMIT       exp=RATE_LIMIT       prompt too long: rate limit exceeded
+  OK  C01  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW server cannot process: maximum context length exceeded
+  OK  C02  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW request rate too large: maximum context length exceeded
+  OK  C03  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW prompt too long, server rejected
+  OK  C04  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW context length exceeded: too many tokens
+  OK  C05  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW maximum context length exceeded (quota: 100000 tokens)
+  OK  C06  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW context window exceeded, slow down your requests
+  OK  C07  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW maximum token count exceeded (quota: 100000)
+  OK  C08  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW token length exceeded: slow down your requests
+  OK  C09  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW token limit reached: maximum 100000 tokens
+  OK  C11  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW maximum context length exceeded (rate limit: 100000 tokens)
+  OK  C12  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW context length exceeded: rate limit 100000 tokens
+  OK  C13  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW maximum context length exceeded, tpm exceeded
+  OK  C14  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW context length exceeded: 429
+  OK  P01  protocol               PROTOCOL         exp=PROTOCOL         token limit reached for this endpoint
+  OK  P02  protocol               PROTOCOL         exp=PROTOCOL         token limit reached: reduce prompt
+  OK  P03  protocol               PROTOCOL         exp=PROTOCOL         prompt limit reached for this endpoint
+  OK  C10  overflow               CONTEXT_OVERFLOW exp=CONTEXT_OVERFLOW token budget exceeded
+OK all 25 samples match expected
+replay_rc=0
+
+=== W48 判序范式 GREEN：core-engine 单测（ConfusionTest + ContextLimitTest + StreamFailureTest）===
+[localbuild] repo            = <workspace-root>/2026-09-18-18-27-37/harness-v2
+[localbuild] JAVA_HOME       = <workspace-root>/2026-09-18-18-27-37/_j2env/jdk/jdk-21.0.12.1+1
+[localbuild] ANDROID_HOME    = <workspace-root>/2026-09-18-18-27-37/_j2env/sdk
+[localbuild] GRADLE_USER_HOME= <workspace-root>/2026-09-18-18-27-37/_j2env/gradle-home
+[localbuild] proxy           = 127.0.0.1:12612 (from https_proxy)
+[localbuild] java -version   = openjdk version "21.0.12.1" 2026-08-18 LTS
+[localbuild] launcher        = ./gradlew  task=:core-engine:test
+[localbuild] 开始构建（失败先看输出里的 '^\* What went wrong' 段）
+-------------------------------------------------------------------
+assertion "bc_ctl.arg_max >= LINE_MAX" failed: file "xargs.c", line 512, function: main
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.7.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :core-net:preBuild UP-TO-DATE
+> Task :core-engine:preBuild UP-TO-DATE
+> Task :core-model:preBuild UP-TO-DATE
+> Task :core-engine:preDebugBuild UP-TO-DATE
+> Task :core-net:preDebugBuild UP-TO-DATE
+> Task :core-model:preDebugBuild UP-TO-DATE
+> Task :core-net:generateDebugResources UP-TO-DATE
+> Task :core-engine:generateDebugResources UP-TO-DATE
+> Task :core-model:generateDebugResources UP-TO-DATE
+> Task :core-net:packageDebugResources UP-TO-DATE
+> Task :core-engine:packageDebugResources UP-TO-DATE
+> Task :core-model:packageDebugResources UP-TO-DATE
+> Task :core-engine:processDebugNavigationResources UP-TO-DATE
+> Task :core-model:processDebugNavigationResources UP-TO-DATE
+> Task :core-net:processDebugNavigationResources UP-TO-DATE
+> Task :core-engine:parseDebugLocalResources UP-TO-DATE
+> Task :core-model:parseDebugLocalResources UP-TO-DATE
+> Task :core-net:parseDebugLocalResources UP-TO-DATE
+> Task :core-model:generateDebugRFile UP-TO-DATE
+> Task :core-net:generateDebugRFile UP-TO-DATE
+> Task :core-engine:generateDebugRFile UP-TO-DATE
+> Task :core-engine:javaPreCompileDebug UP-TO-DATE
+> Task :core-engine:preDebugUnitTestBuild UP-TO-DATE
+> Task :core-net:javaPreCompileDebug UP-TO-DATE
+> Task :core-engine:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-engine:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-model:javaPreCompileDebug UP-TO-DATE
+> Task :core-model:compileDebugKotlin
+> Task :core-model:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-model:processDebugJavaRes UP-TO-DATE
+> Task :core-model:bundleLibRuntimeToJarDebug
+> Task :core-model:bundleLibCompileToJarDebug
+> Task :core-net:compileDebugKotlin
+> Task :core-net:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-net:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-net:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-net:processDebugJavaRes UP-TO-DATE
+> Task :core-engine:compileDebugKotlin
+> Task :core-engine:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-engine:processDebugJavaRes UP-TO-DATE
+> Task :core-engine:bundleLibRuntimeToJarDebug
+> Task :core-engine:bundleLibCompileToJarDebug
+
+> Task :core-engine:compileDebugUnitTestKotlin
+w: file:///<workspace-root>/harness-v2/core-engine/src/test/java/com/rickeal/liquidharness/core/engine/RemoteLlmEngineStreamFailureTest.kt:123:30 Unnecessary non-null assertion (!!) on a non-null receiver of type 'GenerationEvent.Failed'.
+
+> Task :core-engine:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core-engine:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-engine:testDebugUnitTest
+> Task :core-engine:test
+
+BUILD SUCCESSFUL in 1m
+35 actionable tasks: 9 executed, 26 up-to-date
+-------------------------------------------------------------------
+[localbuild] 成功 (rc=0)
+[localbuild] 产物：./app/build/outputs/apk/debug/app-debug.apk
+[localbuild] 真机安装（applicationId = com.rickeal.liquidharness.debug）：
+[localbuild]   MSYS_NO_PATHCONV=1 adb push "./app/build/outputs/apk/debug/app-debug.apk" /data/local/tmp/app.apk
+[localbuild]   MSYS_NO_PATHCONV=1 adb shell pm install -r /data/local/tmp/app.apk
+[localbuild]   MSYS_NO_PATHCONV=1 adb shell monkey -p com.rickeal.liquidharness.debug -c android.intent.category.LAUNCHER 1
+core_engine_rc=0
+XML counts appended
+tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-23T09:09:35.809Z" hostname="子瀚" time="0.122"

@@ -76,81 +76,46 @@ class DiagnosticLogSink(private val store: AgentLogFileStore) {
         const val QUEUE_CAPACITY: Int = 512
 
         /**
-         * 探针 / 账本行白名单（W45 落盘最小化）。
+         * 探针 / 账本行白名单（W45 落盘最小化；W48 P1-1 形态正则全覆盖）。
          *
-         * 只认**固定诊断前缀**，正文由常量模板 + 数字 / ASCII 诊断码构成、不含用户
-         * prompt / 工具参数 / 模型输出正文。新增探针行时把它的稳定前缀加进来 ——
-         * 前缀必须与写点字面量同源（漏了只损失落盘、不损失 ring，方向安全）。
-         * `context limit writeback` 对应 `core-data/ContextLimitWriteback` 的账本行。
-         */
-        private val PROBE_PREFIXES = arrayOf(
-            "cached=",
-            "auto_compact",
-            "manual_compress",
-            "compress_align",
-            "compress=disabled_by_policy",
-            "context_overflow_prevented",
-            "run cancelled",
-            "run failed",
-            "context compressed",
-            "summary truncated",
-            "layered compress",
-            "context limit writeback",
-        )
-
-        /**
-         * 落盘白名单判据（internal 供 JVM 单测直接钉行为）。
+         * W45–W47 是**前缀**白名单（12 类 `PROBE_PREFIXES`），W47 只给 `run failed` /
+         * `reason=` 两类动态写点加固定形态正则，其余 10 类与 `prefix` 分支仍是
+         * `startsWith` ⇒ 前缀后拼用户正文可穿透落盘（外审 P1-1 判据不对称，9 条样本
+         * 等价复刻坐实）。W48 起**全部写点按整行固定形态正则**匹配（常量模板 + 数字 /
+         * 固定诊断码），自由文本一律不落盘；漏登记只损失落盘、不损失 ring（方向安全）。
          *
-         * W46（P1-3 白名单正文约束）：[PROBE_PREFIXES] 只管前缀，但 `run failed: ` /
-         * `reason=` 两类的正文是动态的 —— `RunTermination.kt:109` 拼 provider message、
-         * `ConversationOps.kt:256` 拼 `outcome.reason`。W45 KDoc 称「正文不含用户内容」
-         * 在这两类上不成立。W46 给这两类加**正文形态约束**：只允许固定诊断码 / HTTP 数字 /
-         * ASCII 词法且长度有上限；回显用户 prompt 的自由文本不得落盘。
+         * 形态与生产写点一一对应（改写点先改这里，否则该行不再落盘）：
+         * - `cached=` 标签值域 ← `ContextBudget.cachedLabel`（n/a-usage / n/a-fields / N(cumulative)）；
+         * - `auto_compact`/`manual_compress` reason 码与 applied/undone 账本 ← `ConversationOps` 写点；
+         * - `layered compress` 三形态 ← `LayeredContextCompressor:161,214,254`（W47 过窄正则曾把
+         *   `l1 could not cut` / `mode=L2` 两条合法账本拦成不落盘，W48 补回）；
+         * - `compress_align=skipped` ← `ContextCompressor:157`；`compress=disabled_by_policy` ← `ContextBudget:164`；
+         * - `context_overflow_prevented` ← `PreStepBudget:160`；`run cancelled` ← `RunTermination:130`；
+         * - `run failed` 固定摘要（可选 ` [证据标签]` 后缀，W48 判序范式诊断用）← `RunTermination:109`
+         *   与 `AgentRunner:192`（动态 provider 正文不落盘，只进 ring）；
+         * - `context compressed` 双写点 ← `ContextCompressor:109` / `ContextBudget:190`；
+         * - `summary truncated` ← `LayeredContextCompressor:211`；
+         * - `context limit writeback` ← 测试钉形态（`A -> B`）；
+         * - `prefix fp=…` 账行 ← `ContextBudget:278`（fp 为 hex、changed 为段名或 none、cached 为标签值域）。
          */
-        internal fun isProbeLine(message: String): Boolean {
-            val m = message.trim()
-            if (m.startsWith("run failed")) return isSafeFailureDigest(m)
-            if (m.startsWith("layered compress") || m.startsWith("manual_compress=") ||
-                m.startsWith("auto_compact")
-            ) return isSafeReasonLine(m)
-            return PROBE_PREFIXES.any { m.startsWith(it) } ||
-                // `prefix fp=… prompt=… cached=…` 行的固定开头（ContextBudget.observePrefix）。
-                (m.startsWith("prefix ") && m.contains("cached="))
-        }
+        /** `cached=` 标签值域（与 `ContextBudget.cachedLabel` 同源；改一处须同步另一处）。 */
+        private const val CACHED_LABEL = """(?:n/a-usage|n/a-fields|\d+\(cumulative\))"""
 
-        /**
-         * `run failed: ` 落盘只认固定摘要（W47 P1-1 收窄）：仅
-         * `run failed: request rejected (HTTP <num>)` / `run failed: protocol error`
-         * 一类由常量模板 + HTTP 数字构成的诊断码。
-         *
-         * W46 只判「ASCII + ≤160 字符」，任何 ≤160 的 ASCII 自由文本（英文 prompt 回显、
-         * 邮箱、密码）都能穿透 —— 外审 P1-1 的短 ASCII 洞。W47 改为**固定形态整行匹配**：
-         * 正文必须是白名单句式之一，其余一律不落盘。动态 provider message 仍在进程内
-         * ring（诊断页可见），只是不进 `run-as` 可取的持久化文件。
-         */
-        private fun isSafeFailureDigest(m: String): Boolean {
-            if (m.length > MAX_DIGEST_CHARS) return false
-            return FAILURE_DIGEST.matches(m)
-        }
-
-        /**
-         * `reason=` / `layered compress` 类只认固定诊断码（W47 收窄）。
-         *
-         * 白名单码来自现役写点的有限枚举（SettledCompressPolicy / ConversationOps /
-         * LayeredContextCompressor / ManualCompress），`insufficient_savings:net=<int>` 带数值。
-         * 新增码若漏登记只损失落盘、不损失 ring，方向安全（沿用 W45 KDoc 纪律）。
-         */
-        private fun isSafeReasonLine(m: String): Boolean {
-            if (m.length > MAX_DIGEST_CHARS) return false
-            return REASON_LINE.matches(m) || REASON_CODE_LINE.matches(m) || REASON_APPLIED.matches(m)
-        }
-
-        /** 摘要行长度上限：诊断码 + HTTP 数字远小于此；用户整段 prompt 必然超。 */
+        /** 摘要行长度上限：诊断码 + 数字远小于此；用户整段 prompt 必然超。 */
         private const val MAX_DIGEST_CHARS = 160
 
-        /** 固定失败摘要：`run failed: request rejected (HTTP 400)` / `run failed: protocol error`。 */
+        /**
+         * 固定失败摘要：`run failed: request rejected (HTTP 400)` / `run failed: protocol error`，
+         * 可选 ` [证据标签]` 后缀（W48 判序范式：`Failed.evidenceTag` 随失败行落盘供真机诊断，
+         * 标签为 `[a-z0-9:_.-]+` 诊断码形态，不含自由文本）。
+         *
+         * W46 只判「ASCII + ≤160 字符」，任何 ≤160 的 ASCII 自由文本（英文 prompt 回显、
+         * 邮箱、密码）都能穿透 —— 外审 P1-1 的短 ASCII 洞。W47 改为**固定形态整行匹配**；
+         * 动态 provider message 仍在进程内 ring（诊断页可见），只是不进 `run-as` 可取的
+         * 持久化文件。
+         */
         private val FAILURE_DIGEST = Regex(
-            """^run failed: (request rejected \(HTTP \d{3}\)|protocol error)$"""
+            """^run failed: (request rejected \(HTTP \d{3}\)|protocol error)( \[[a-z0-9:_.-]+\])?$"""
         )
         /** `auto_compact=noop reason=<固定码>` / `manual_compress=noop reason=<固定码>`。 */
         private val REASON_LINE = Regex(
@@ -164,5 +129,50 @@ class DiagnosticLogSink(private val store: AgentLogFileStore) {
         private val REASON_APPLIED = Regex(
             """^auto_compact dropped=\d+ kept=\d+ cache_invalidated=(true|false)$"""
         )
+
+        private val PROBE_FORMS: List<Regex> = listOf(
+            // cached= 四态标签独立行（防御性形态；生产常态走 prefix 账行）。
+            Regex("""^cached=$CACHED_LABEL$"""),
+            // auto_compact / manual_compress noop reason 码（固定码，可带 :key=int 后缀）。
+            REASON_LINE,
+            // auto_compact applied 账本行。
+            REASON_APPLIED,
+            // manual_compress applied / undone 账本行。
+            Regex("""^manual_compress dropped=\d+ kept=\d+ cache_invalidated=(?:true|false)$"""),
+            Regex("""^manual_compress undone cache_invalidated=true$"""),
+            // layered compress：mode=CODE reason=码 / nothing to drop / l1 could not cut / L2 账本。
+            REASON_CODE_LINE,
+            Regex("""^layered compress: l1 could not cut \(est=\d+ budget=\d+\)$"""),
+            Regex("""^layered compress: mode=L2 dropped=\d+ droppedTokens=\d+ summaryTokens=\d+$"""),
+            // compress_align / compress=disabled_by_policy / context_overflow_prevented / run cancelled。
+            Regex("""^compress_align=skipped extra=\d+ cap=\d+ budget=\d+$"""),
+            Regex("""^compress=disabled_by_policy prompt=\d+ budget=\d+$"""),
+            Regex("""^context_overflow_prevented: chars=\d+ cap=\d+$"""),
+            Regex("""^run cancelled: chars=\d+ rounds=\d+$"""),
+            // run failed 固定摘要（动态正文不落盘）。
+            FAILURE_DIGEST,
+            // context compressed 双写点（ContextCompressor 带 tokens/dropped 尾巴、ContextBudget 无）。
+            Regex("""^context compressed: \d+ -> \d+ messages \(budget=\d+ target=\d+(?: tokens, dropped=\d+)?\)$"""),
+            Regex("""^context compressed before round \d+: \d+ -> \d+ messages \(estimated \d+ > budget \d+\)$"""),
+            // summary truncated / context limit writeback。
+            Regex("""^summary truncated: max=\d+$"""),
+            Regex("""^context limit writeback: \d+ -> \d+$"""),
+            // prefix 账行（fp hex、changed 段名或 none、cached 标签值域；prompt 段可缺省）。
+            Regex("""^prefix fp=[0-9a-f]+ changed=[A-Za-z_,]+ prompt=\d+ cached=$CACHED_LABEL$"""),
+            Regex("""^prefix fp=[0-9a-f]+ changed=[A-Za-z_,]+ cached=$CACHED_LABEL$"""),
+        )
+
+        /**
+         * 落盘白名单判据（internal 供 JVM 单测直接钉行为）。
+         *
+         * W48 P1-1 起按 [PROBE_FORMS] **整行固定形态**匹配，不再有 startsWith 兜底：
+         * 前缀后拼用户自由文本（中文 prompt / 邮箱密码 / ≤160 ASCII / 用户 echo）一律
+         * 不落盘；固定模板 + 数字的账本行照常落盘。
+         */
+        internal fun isProbeLine(message: String): Boolean {
+            val m = message.trim()
+            if (m.length > MAX_DIGEST_CHARS) return false
+            return PROBE_FORMS.any { it.matches(m) }
+        }
     }
 }

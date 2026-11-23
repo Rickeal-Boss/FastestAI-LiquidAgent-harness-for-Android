@@ -122,6 +122,22 @@ import kotlinx.serialization.json.JsonPrimitive
  * exceeded` / HTTP400 `token rate limit exceeded`）未修版实跑 RED；注入「把 token 升回
  * 无条件窗口词」⇒ RED。
  *
+ * ## W48：判据范式转换（词表封版，不再扩自然语言词表）
+ *
+ * W42→W47 五轮「点状补词 → 镜像反噬」打完后，W47 已承诺 W48 起改判据范式。本段是范式
+ * 本体，此后**再出反例只改结构化映射与证据标签、不改词表**：
+ *
+ * 1. **结构化 `type`/`code` 与 HTTP status 是唯一权威**（供应商自声明）：命中即裁决，
+ *    message 措辞不得改判（E5c/E5d 口径，注入「回退到词表优先」⇒ 必红 RED）。
+ * 2. **message 只做兜底**：无结构化字段时走既有分层启发式（词表**冻结**，逐字沿用
+ *    W46/W47 形态，25 样本 + C11–C14 全部在新范式下保持原判级）。
+ * 3. **每次裁决携带证据标签** [GenerationEvent.Failed.evidenceTag]：结构化支
+ *    `frame:structured-rate|server|context`；message 兜底支 `frame:overflow-wording` /
+ *    `frame:rate-wording` / `frame:server-wording` / `frame:rate-weak-wording`；fail-closed
+ *    `frame:protocol-fallback`。HTTP 路径同口径（`RemoteLlmEngine.classifyHttpFailure`：
+ *    `http:auth|rate|timeout|overflow|server|rejected`）。标签是固定诊断码形态，随
+ *    `run failed:` 行落盘供真机诊断，不含用户内容。
+ *
  * @param contextLimitHint 从错误体里取真实窗口的端口（由 adapter 注入，复用同一套正则，
  *   避免这里长出第二把尺子）。
  */
@@ -164,12 +180,16 @@ internal fun decodeOpenAiErrorFrame(
 
     // 结构化优先：type/code 直判限流 / 服务端（不可被 message 措辞改判）。
     if (typeAndCode.contains("rate") || typeAndCode.contains("429") || typeAndCode.contains("quota")) {
-        return GenerationEvent.Failed(EngineErrorKind.RATE_LIMIT, message, retryable = true)
+        return GenerationEvent.Failed(
+            EngineErrorKind.RATE_LIMIT, message, retryable = true, evidenceTag = "frame:structured-rate",
+        )
     }
     if (typeAndCode.contains("overload") || typeAndCode.contains("server") ||
         typeAndCode.contains("5xx") || typeAndCode.contains("unavailable")
     ) {
-        return GenerationEvent.Failed(EngineErrorKind.SERVER, message, retryable = true)
+        return GenerationEvent.Failed(
+            EngineErrorKind.SERVER, message, retryable = true, evidenceTag = "frame:structured-server",
+        )
     }
     if (typeAndCode.contains("context")) {
         return GenerationEvent.Failed(
@@ -177,6 +197,7 @@ internal fun decodeOpenAiErrorFrame(
             message,
             retryable = false,
             contextLimitHint = contextLimitHint(payload),
+            evidenceTag = "frame:structured-context",
         )
     }
 
@@ -209,19 +230,28 @@ internal fun decodeOpenAiErrorFrame(
             message,
             retryable = false,
             contextLimitHint = contextLimitHint(payload),
+            evidenceTag = "frame:overflow-wording",
         )
 
         rateContext ->
-            GenerationEvent.Failed(EngineErrorKind.RATE_LIMIT, message, retryable = true)
+            GenerationEvent.Failed(
+                EngineErrorKind.RATE_LIMIT, message, retryable = true, evidenceTag = "frame:rate-wording",
+            )
 
         haystack.contains("overload") || haystack.contains("server") ||
             haystack.contains("5xx") || haystack.contains("unavailable") ->
-            GenerationEvent.Failed(EngineErrorKind.SERVER, message, retryable = true)
+            GenerationEvent.Failed(
+                EngineErrorKind.SERVER, message, retryable = true, evidenceTag = "frame:server-wording",
+            )
 
         haystack.contains("rate") ->
-            GenerationEvent.Failed(EngineErrorKind.RATE_LIMIT, message, retryable = true)
+            GenerationEvent.Failed(
+                EngineErrorKind.RATE_LIMIT, message, retryable = true, evidenceTag = "frame:rate-weak-wording",
+            )
 
-        else -> GenerationEvent.Failed(EngineErrorKind.PROTOCOL, message, retryable = false)
+        else -> GenerationEvent.Failed(
+            EngineErrorKind.PROTOCOL, message, retryable = false, evidenceTag = "frame:protocol-fallback",
+        )
     }
 }
 

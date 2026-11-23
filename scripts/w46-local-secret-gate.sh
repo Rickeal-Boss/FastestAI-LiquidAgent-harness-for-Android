@@ -17,12 +17,20 @@
 # W46 版默认按 CI checkout 语义排除该目录 ⇒ 对该场景 rc=0 空过，等于把 CI 空转换成本地默认空转。
 # CI checkout 语义移到显式 `--ci-semantics`（仅复刻干净 checkout 时用）。
 #
+# W48（P1-2 门禁去噪）：默认全扫在开发者本机被历史 MUST-RED 取证样本 / 历史构建日志
+# 恒红（W47 自记 ROUTE3_HITS=141）——「默认恒红 → 习惯性加 --ci-semantics → 又空过」
+# 的工作流退化。处方：不再一刀切排除目录，改按**已登记 fixture 文件哈希白名单**跳过
+# 历史样本（scripts/fixtures/w46-gate-legacy-hashes.txt，W48 注册基线 140 件）：
+#   - 命中敏感形态的文件先查册，sha256 在册 ⇒ 历史样本，跳过不报红；
+#   - 不在册（新注入 / 被修改）⇒ 照常 RED；tracked 路1 永远不豁免（真泄漏面）。
+# 于是单一默认参数同时满足「不误报历史」与「抓新注入」，--ci-semantics 只剩复刻用途。
+#
 # 用法：
 #   bash scripts/w46-local-secret-gate.sh                 # 全扫当前工作树（本地提交前默认入口）
 #   bash scripts/w46-local-secret-gate.sh --local-full     # 同默认（保留显式入口，兼容 W46 注释用法）
 #   bash scripts/w46-local-secret-gate.sh --ci-semantics   # 复刻 CI checkout：排除 _w*/ 与 local.properties
-#   bash scripts/w46-local-secret-gate.sh --selftest       # 在临时探针文件上跑四态注入/还原
-#     STATE 1 clean=0 / STATE 2a ignored未-f=RED / STATE 2b add-f tracked=RED / STATE 3 removed=0
+#   bash scripts/w46-local-secret-gate.sh --selftest       # 五态注入/还原（历史在场 GREEN / 新探针 RED /
+#                                                          #   add-f tracked RED / 移除 GREEN / --ci-semantics GREEN）
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT" || exit 2
@@ -37,6 +45,15 @@ U3="/Us""ers/"         # 用户目录形态 3
 U4="/ho""me/"          # 用户目录形态 4
 M1="长度 ""129"        # PAT 长度元信息
 PAT=(-e "$S1" -e "$P1" -e "$P2" -e "$U1" -e "$U2" -e "$U3" -e "$U4" -e "$M1")
+LEGACY_HASHES="$ROOT/scripts/fixtures/w46-gate-legacy-hashes.txt"
+
+# W48 P1-2：历史 fixture 哈希白名单。在册 ⇒ 已登记的历史样本（跳过）；不在册 ⇒ 新命中（报红）。
+# 只作用于路2/路3 的文件行走；tracked 路1 不豁免。
+is_legacy_fixture() {
+  local h
+  h=$(sha256sum "$1" 2>/dev/null | awk '{print $1}')
+  [ -n "$h" ] && [ -f "$LEGACY_HASHES" ] && grep -qxF "$h" "$LEGACY_HASHES"
+}
 
 scan_tracked() {
   git grep -nIF "${PAT[@]}" -- . 2>/dev/null
@@ -44,7 +61,9 @@ scan_tracked() {
 scan_untracked() {
   local hits=0 f
   while IFS= read -r f; do
-    grep -qIF "${PAT[@]}" -- "$f" 2>/dev/null && { echo "RED untracked: $f"; hits=$((hits+1)); }
+    grep -qIF "${PAT[@]}" -- "$f" 2>/dev/null || continue
+    if is_legacy_fixture "$f"; then continue; fi
+    echo "RED untracked: $f"; hits=$((hits+1))
   done < <(git ls-files --others --exclude-standard 2>/dev/null)
   echo "ROUTE2_HITS=$hits"
 }
@@ -61,25 +80,29 @@ scan_ignored() {
     if [ "$ci_semantics" -eq 1 ]; then
       case "$f" in _w[0-9]*/|_w[0-9]*|local.properties) continue ;; esac
     fi
-    grep -qIF "${PAT[@]}" -- "$f" 2>/dev/null && { echo "RED ignored: $f"; hits=$((hits+1)); }
+    grep -qIF "${PAT[@]}" -- "$f" 2>/dev/null || continue
+    # W48 P1-2：历史 fixture 哈希在册 ⇒ 跳过（默认态不再被历史样本恒红）。
+    if is_legacy_fixture "$f"; then continue; fi
+    echo "RED ignored: $f"; hits=$((hits+1))
   done < <(git ls-files --others --ignored --exclude-standard 2>/dev/null)
   echo "ROUTE3_HITS=$hits"
 }
 
 selftest() {
-  local probe="_w46/forceadd_probe.jsonl"
-  mkdir -p _w46
-  echo "=== STATE 1: --ci-semantics 干净 checkout（期望三路全 0；W47 注明参数）==="
+  local probe="_w48/forceadd_probe.jsonl"
+  mkdir -p _w48
+  echo "=== STATE 1: 默认全扫 + 历史 fixture 在场（W48 哈希白名单后应三路全 0，GREEN rc=0）==="
   scan_tracked | head -3; echo "ROUTE1_HITS=$(scan_tracked | wc -l | tr -d ' ')"
-  scan_untracked | tail -1; scan_ignored --ci-semantics | tail -1
-  echo "=== STATE 2a: 被 ignore 的 .jsonl 未 -f + 默认全扫（第三路应 RED）==="
+  scan_untracked | tail -1; scan_ignored | tail -1
+  echo "=== STATE 2a: 被 ignore 的新 .jsonl 含 serial 未 -f + 默认全扫（第三路应 RED，rc=1）==="
   printf 'serial=%s path=%s\n' "$S1" "$P1" > "$probe"
   git check-ignore "$probe" >/dev/null 2>&1 && echo "check-ignore: $probe (ignored ✓)"
   scan_ignored | grep "$probe" && echo "RED ignored hit: $probe" || echo "WARN: route3 did not see probe"
-  echo "=== STATE 2b: 同上 + git add -f（第一路 tracked git grep 应 RED）==="
+  echo "=== STATE 2b: 同上 + git add -f（第一路 tracked git grep 应 RED，rc=1）==="
   git add -f "$probe" 2>/dev/null
-  scan_tracked | grep "$probe" && echo "RED tracked hit (git grep rc=0): $probe" || echo "WARN: route1 did not see staged probe"
-  echo "=== STATE 3: 移除探针回 GREEN ==="
+  # 只打文件名列，不打命中行内容 —— 命中行含真实字面量，禁止进证据（W47 g3 前车）。
+  scan_tracked | grep "$probe" | cut -d: -f1 | grep -q "$probe" && echo "RED tracked hit (git grep rc=0): $probe" || echo "WARN: route1 did not see staged probe"
+  echo "=== STATE 3: 移除探针回默认 GREEN（历史 fixture 仍在场）==="
   git rm --cached -f "$probe" >/dev/null 2>&1
   rm -f "$probe"
   local t1 t3
@@ -88,7 +111,10 @@ selftest() {
   if [ -e "$probe" ]; then pe=yes; else pe=no; fi
   if git ls-files --error-unmatch "$probe" >/dev/null 2>&1; then pi=yes; else pi=no; fi
   echo "ROUTE1_HITS=$t1 ; probe file exists=$pe ; in-index=$pi"
-  echo "probe literal hits after removal=$t3 (expect 0)" 
+  echo "probe literal hits after removal=$t3 (expect 0)"
+  scan_ignored | tail -1
+  echo "=== STATE 4: --ci-semantics（复刻 CI checkout，应 GREEN rc=0）==="
+  scan_ignored --ci-semantics | tail -1
   echo "=== selftest end（探针已还原，工作树与 index 干净）==="
 }
 

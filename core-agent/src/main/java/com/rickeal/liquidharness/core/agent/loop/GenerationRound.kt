@@ -235,6 +235,8 @@ class GenerationRound(
                                 // 400 带回的真实窗口，经 RunState 传到 AgentEvent.Failed，
                                 // 由宿主写回端点（AppContainer.recordContextLimit）。
                                 ctx.state.recordContextLimitHint(event.contextLimitHint)
+                                // W48 判序范式：判据证据标签同步透传（只透传、不判断）。
+                                if (event.evidenceTag.isNotEmpty()) ctx.state.evidenceTag = event.evidenceTag
                                 failure = event
                             }
                         }
@@ -262,6 +264,7 @@ class GenerationRound(
                 EngineErrorKind.TIMEOUT,
                 firstByteTimeoutMessage(ctx.policy.generationTimeoutMillis),
                 retryable = false,
+                evidenceTag = "engine:watchdog",
             )
         } catch (t: Throwable) {
             val message = "stream failed: " + (t.message ?: t::class.simpleName ?: "unknown")

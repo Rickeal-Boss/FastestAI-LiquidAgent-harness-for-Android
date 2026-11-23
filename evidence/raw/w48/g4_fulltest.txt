@@ -1,0 +1,408 @@
+[fulltest] launcher=./gradlew  task=test  （固定带 --continue，禁用 fail-fast 残缺口径）
+[fulltest] 期望模块数（settings include 条目）= 14
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.7.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :core-mcp:preBuild UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :feature-chat:preBuild UP-TO-DATE
+> Task :core-net:preBuild UP-TO-DATE
+> Task :core-design:preBuild UP-TO-DATE
+> Task :core-engine:preBuild UP-TO-DATE
+> Task :core-kernel:preBuild UP-TO-DATE
+> Task :core-agent:preBuild UP-TO-DATE
+> Task :core-data:preBuild UP-TO-DATE
+> Task :feature-tools:preBuild UP-TO-DATE
+> Task :core-skills:preBuild UP-TO-DATE
+> Task :feature-settings:preBuild UP-TO-DATE
+> Task :core-model:preBuild UP-TO-DATE
+> Task :core-context:preBuild UP-TO-DATE
+> Task :core-kernel:preDebugBuild UP-TO-DATE
+> Task :core-design:preDebugBuild UP-TO-DATE
+> Task :core-mcp:preDebugBuild UP-TO-DATE
+> Task :core-agent:preDebugBuild UP-TO-DATE
+> Task :core-context:preDebugBuild UP-TO-DATE
+> Task :core-engine:preDebugBuild UP-TO-DATE
+> Task :core-data:preDebugBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :feature-chat:preDebugBuild UP-TO-DATE
+> Task :feature-tools:preDebugBuild UP-TO-DATE
+> Task :feature-settings:preDebugBuild UP-TO-DATE
+> Task :core-net:preDebugBuild UP-TO-DATE
+> Task :core-model:preDebugBuild UP-TO-DATE
+> Task :core-skills:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :feature-settings:processDebugNavigationResources UP-TO-DATE
+> Task :core-engine:processDebugNavigationResources UP-TO-DATE
+> Task :core-data:processDebugNavigationResources UP-TO-DATE
+> Task :core-agent:processDebugNavigationResources UP-TO-DATE
+> Task :feature-tools:processDebugNavigationResources UP-TO-DATE
+> Task :core-skills:processDebugNavigationResources UP-TO-DATE
+> Task :core-context:processDebugNavigationResources UP-TO-DATE
+> Task :core-kernel:processDebugNavigationResources UP-TO-DATE
+> Task :core-model:processDebugNavigationResources UP-TO-DATE
+> Task :core-net:processDebugNavigationResources UP-TO-DATE
+> Task :core-design:processDebugNavigationResources UP-TO-DATE
+> Task :feature-chat:processDebugNavigationResources UP-TO-DATE
+> Task :core-mcp:processDebugNavigationResources UP-TO-DATE
+> Task :core-engine:generateDebugResources UP-TO-DATE
+> Task :core-design:generateDebugResources UP-TO-DATE
+> Task :feature-chat:generateDebugResources UP-TO-DATE
+> Task :core-mcp:generateDebugResources UP-TO-DATE
+> Task :core-kernel:generateDebugResources UP-TO-DATE
+> Task :core-context:generateDebugResources UP-TO-DATE
+> Task :core-skills:generateDebugResources UP-TO-DATE
+> Task :core-model:generateDebugResources UP-TO-DATE
+> Task :core-net:generateDebugResources UP-TO-DATE
+> Task :core-agent:generateDebugResources UP-TO-DATE
+> Task :core-data:generateDebugResources UP-TO-DATE
+> Task :feature-tools:generateDebugResources UP-TO-DATE
+> Task :feature-settings:generateDebugResources UP-TO-DATE
+> Task :core-context:javaPreCompileDebug UP-TO-DATE
+> Task :core-agent:javaPreCompileDebug UP-TO-DATE
+> Task :feature-tools:javaPreCompileDebug UP-TO-DATE
+> Task :feature-settings:javaPreCompileDebug UP-TO-DATE
+> Task :core-data:javaPreCompileDebug UP-TO-DATE
+> Task :core-mcp:javaPreCompileDebug UP-TO-DATE
+> Task :core-context:writeDebugAarMetadata UP-TO-DATE
+> Task :core-agent:writeDebugAarMetadata UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :feature-chat:packageDebugResources UP-TO-DATE
+> Task :core-net:packageDebugResources UP-TO-DATE
+> Task :core-engine:packageDebugResources UP-TO-DATE
+> Task :feature-tools:writeDebugAarMetadata UP-TO-DATE
+> Task :core-model:packageDebugResources UP-TO-DATE
+> Task :core-skills:packageDebugResources UP-TO-DATE
+> Task :core-design:packageDebugResources UP-TO-DATE
+> Task :core-data:writeDebugAarMetadata UP-TO-DATE
+> Task :core-kernel:packageDebugResources UP-TO-DATE
+> Task :core-context:extractDeepLinksDebug UP-TO-DATE
+> Task :core-agent:extractDeepLinksDebug UP-TO-DATE
+> Task :core-mcp:writeDebugAarMetadata UP-TO-DATE
+> Task :feature-settings:writeDebugAarMetadata UP-TO-DATE
+> Task :core-agent:packageDebugResources UP-TO-DATE
+> Task :core-mcp:packageDebugResources UP-TO-DATE
+> Task :core-context:packageDebugResources UP-TO-DATE
+> Task :feature-tools:packageDebugResources UP-TO-DATE
+> Task :feature-settings:packageDebugResources UP-TO-DATE
+> Task :core-data:packageDebugResources UP-TO-DATE
+> Task :core-kernel:parseDebugLocalResources UP-TO-DATE
+> Task :core-model:parseDebugLocalResources UP-TO-DATE
+> Task :feature-chat:parseDebugLocalResources UP-TO-DATE
+> Task :core-skills:parseDebugLocalResources UP-TO-DATE
+> Task :core-design:parseDebugLocalResources UP-TO-DATE
+> Task :core-engine:parseDebugLocalResources UP-TO-DATE
+> Task :core-net:parseDebugLocalResources UP-TO-DATE
+> Task :core-engine:generateDebugRFile UP-TO-DATE
+> Task :core-model:generateDebugRFile UP-TO-DATE
+> Task :core-kernel:generateDebugRFile UP-TO-DATE
+> Task :core-skills:generateDebugRFile UP-TO-DATE
+> Task :feature-chat:generateDebugRFile UP-TO-DATE
+> Task :core-kernel:javaPreCompileDebug UP-TO-DATE
+> Task :core-design:generateDebugRFile UP-TO-DATE
+> Task :core-net:generateDebugRFile UP-TO-DATE
+> Task :core-skills:javaPreCompileDebug UP-TO-DATE
+> Task :core-engine:javaPreCompileDebug UP-TO-DATE
+> Task :core-kernel:writeDebugAarMetadata UP-TO-DATE
+> Task :core-net:javaPreCompileDebug UP-TO-DATE
+> Task :feature-settings:parseDebugLocalResources UP-TO-DATE
+> Task :feature-chat:javaPreCompileDebug UP-TO-DATE
+> Task :core-data:parseDebugLocalResources UP-TO-DATE
+> Task :core-skills:writeDebugAarMetadata UP-TO-DATE
+> Task :feature-tools:parseDebugLocalResources UP-TO-DATE
+> Task :feature-chat:writeDebugAarMetadata UP-TO-DATE
+> Task :core-kernel:extractDeepLinksDebug UP-TO-DATE
+> Task :core-context:parseDebugLocalResources UP-TO-DATE
+> Task :core-engine:writeDebugAarMetadata UP-TO-DATE
+> Task :feature-settings:generateDebugRFile UP-TO-DATE
+> Task :core-skills:extractDeepLinksDebug UP-TO-DATE
+> Task :core-mcp:parseDebugLocalResources UP-TO-DATE
+> Task :core-net:writeDebugAarMetadata UP-TO-DATE
+> Task :core-net:extractDeepLinksDebug UP-TO-DATE
+> Task :feature-settings:extractDeepLinksDebug UP-TO-DATE
+> Task :core-engine:extractDeepLinksDebug UP-TO-DATE
+> Task :core-context:generateDebugRFile UP-TO-DATE
+> Task :feature-chat:extractDeepLinksDebug UP-TO-DATE
+> Task :core-agent:parseDebugLocalResources UP-TO-DATE
+> Task :core-mcp:generateDebugRFile UP-TO-DATE
+> Task :core-skills:processDebugManifest UP-TO-DATE
+> Task :core-mcp:extractDeepLinksDebug UP-TO-DATE
+> Task :core-kernel:processDebugManifest UP-TO-DATE
+> Task :core-context:processDebugManifest UP-TO-DATE
+> Task :core-skills:mapDebugSourceSetPaths UP-TO-DATE
+> Task :core-data:generateDebugRFile UP-TO-DATE
+> Task :core-net:processDebugManifest UP-TO-DATE
+> Task :feature-tools:generateDebugRFile UP-TO-DATE
+> Task :core-engine:processDebugManifest UP-TO-DATE
+> Task :core-agent:generateDebugRFile UP-TO-DATE
+> Task :feature-tools:extractDeepLinksDebug UP-TO-DATE
+> Task :core-context:mapDebugSourceSetPaths UP-TO-DATE
+> Task :core-kernel:mapDebugSourceSetPaths UP-TO-DATE
+> Task :core-engine:mapDebugSourceSetPaths UP-TO-DATE
+> Task :core-skills:compileDebugLibraryResources UP-TO-DATE
+> Task :core-skills:preDebugUnitTestBuild UP-TO-DATE
+> Task :feature-chat:processDebugManifest UP-TO-DATE
+> Task :core-net:mapDebugSourceSetPaths UP-TO-DATE
+> Task :core-data:extractDeepLinksDebug UP-TO-DATE
+> Task :core-kernel:compileDebugLibraryResources UP-TO-DATE
+> Task :core-engine:compileDebugLibraryResources UP-TO-DATE
+> Task :core-context:compileDebugLibraryResources UP-TO-DATE
+> Task :feature-settings:processDebugManifest UP-TO-DATE
+> Task :core-agent:processDebugManifest UP-TO-DATE
+> Task :core-context:preDebugUnitTestBuild UP-TO-DATE
+> Task :core-kernel:preDebugUnitTestBuild UP-TO-DATE
+> Task :core-engine:preDebugUnitTestBuild UP-TO-DATE
+> Task :core-net:compileDebugLibraryResources UP-TO-DATE
+> Task :core-mcp:processDebugManifest UP-TO-DATE
+> Task :core-agent:mapDebugSourceSetPaths UP-TO-DATE
+> Task :core-net:preDebugUnitTestBuild UP-TO-DATE
+> Task :feature-chat:mapDebugSourceSetPaths UP-TO-DATE
+> Task :feature-settings:mapDebugSourceSetPaths UP-TO-DATE
+> Task :core-mcp:mapDebugSourceSetPaths UP-TO-DATE
+> Task :feature-settings:compileDebugLibraryResources UP-TO-DATE
+> Task :feature-settings:preDebugUnitTestBuild UP-TO-DATE
+> Task :feature-chat:compileDebugLibraryResources UP-TO-DATE
+> Task :core-agent:compileDebugLibraryResources UP-TO-DATE
+> Task :feature-tools:processDebugManifest UP-TO-DATE
+> Task :core-agent:preDebugUnitTestBuild UP-TO-DATE
+> Task :core-data:processDebugManifest UP-TO-DATE
+> Task :feature-chat:preDebugUnitTestBuild UP-TO-DATE
+> Task :core-mcp:compileDebugLibraryResources UP-TO-DATE
+> Task :core-mcp:preDebugUnitTestBuild UP-TO-DATE
+> Task :feature-tools:mapDebugSourceSetPaths UP-TO-DATE
+> Task :core-data:mapDebugSourceSetPaths UP-TO-DATE
+> Task :feature-tools:compileDebugLibraryResources UP-TO-DATE
+> Task :core-data:compileDebugLibraryResources UP-TO-DATE
+> Task :feature-tools:preDebugUnitTestBuild UP-TO-DATE
+> Task :core-agent:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-data:preDebugUnitTestBuild UP-TO-DATE
+> Task :core-skills:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-kernel:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-context:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-agent:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-skills:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-kernel:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-context:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-net:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-net:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-mcp:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-engine:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-mcp:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-engine:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-model:compileDebugKotlin UP-TO-DATE
+> Task :core-model:javaPreCompileDebug UP-TO-DATE
+> Task :core-model:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-model:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-model:writeDebugAarMetadata UP-TO-DATE
+> Task :core-model:extractDeepLinksDebug UP-TO-DATE
+> Task :core-model:processDebugManifest UP-TO-DATE
+> Task :core-model:mapDebugSourceSetPaths UP-TO-DATE
+> Task :core-model:compileDebugLibraryResources UP-TO-DATE
+> Task :core-model:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-model:processDebugJavaRes UP-TO-DATE
+> Task :core-model:preDebugUnitTestBuild UP-TO-DATE
+> Task :core-model:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-net:compileDebugKotlin UP-TO-DATE
+> Task :core-net:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-net:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-net:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-net:processDebugJavaRes UP-TO-DATE
+> Task :feature-settings:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :core-design:compileDebugKotlin UP-TO-DATE
+> Task :feature-settings:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :feature-chat:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-data:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :feature-tools:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-design:javaPreCompileDebug UP-TO-DATE
+> Task :feature-chat:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-design:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-data:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:generateDebugRFile UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :core-engine:compileDebugKotlin UP-TO-DATE
+> Task :core-design:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :feature-tools:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :core-design:writeDebugAarMetadata UP-TO-DATE
+> Task :core-design:extractDeepLinksDebug UP-TO-DATE
+> Task :core-engine:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-engine:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-design:processDebugManifest UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :core-design:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :core-design:compileDebugLibraryResources UP-TO-DATE
+> Task :core-design:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-design:processDebugJavaRes UP-TO-DATE
+> Task :core-design:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :core-kernel:compileDebugKotlin UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :core-kernel:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-kernel:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-kernel:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-kernel:processDebugJavaRes UP-TO-DATE
+> Task :core-engine:processDebugJavaRes UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :core-context:compileDebugKotlin UP-TO-DATE
+> Task :core-context:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-context:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-context:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-context:processDebugJavaRes UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-engine:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :core-engine:bundleLibRuntimeToJarDebug
+> Task :core-engine:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core-engine:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-design:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :core-agent:compileDebugKotlin UP-TO-DATE
+> Task :core-agent:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-agent:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-agent:processDebugJavaRes UP-TO-DATE
+> Task :core-design:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :core-design:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :core-design:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core-design:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-mcp:compileDebugKotlin UP-TO-DATE
+> Task :core-mcp:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-mcp:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-mcp:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-mcp:processDebugJavaRes UP-TO-DATE
+> Task :feature-tools:compileDebugKotlin UP-TO-DATE
+> Task :feature-tools:compileDebugJavaWithJavac NO-SOURCE
+> Task :feature-tools:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :feature-tools:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :feature-tools:processDebugJavaRes UP-TO-DATE
+> Task :core-agent:bundleLibRuntimeToJarDebug
+> Task :core-skills:compileDebugKotlin UP-TO-DATE
+> Task :core-skills:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-skills:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-skills:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-skills:processDebugJavaRes UP-TO-DATE
+> Task :core-data:compileDebugKotlin UP-TO-DATE
+> Task :core-data:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-data:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core-data:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core-data:processDebugJavaRes UP-TO-DATE
+> Task :feature-chat:compileDebugKotlin UP-TO-DATE
+> Task :feature-chat:compileDebugJavaWithJavac NO-SOURCE
+> Task :feature-chat:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :feature-chat:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :feature-chat:processDebugJavaRes UP-TO-DATE
+> Task :feature-settings:compileDebugKotlin UP-TO-DATE
+> Task :feature-settings:compileDebugJavaWithJavac NO-SOURCE
+> Task :feature-settings:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :feature-settings:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :feature-settings:processDebugJavaRes UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :core-model:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
+> Task :core-kernel:compileDebugUnitTestKotlin
+> Task :core-net:compileDebugUnitTestKotlin
+> Task :core-kernel:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core-net:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core-skills:compileDebugUnitTestKotlin
+> Task :core-net:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-skills:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core-skills:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-kernel:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :feature-tools:compileDebugUnitTestKotlin
+> Task :feature-tools:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :feature-tools:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-mcp:compileDebugUnitTestKotlin
+> Task :core-mcp:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core-mcp:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-design:testDebugUnitTest
+> Task :core-design:test
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :feature-settings:compileDebugUnitTestKotlin
+> Task :feature-settings:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :feature-settings:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-context:compileDebugUnitTestKotlin
+> Task :core-context:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core-context:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-kernel:testDebugUnitTest
+> Task :core-kernel:test
+> Task :core-net:testDebugUnitTest
+> Task :core-net:test
+> Task :core-mcp:testDebugUnitTest
+> Task :core-mcp:test
+> Task :core-skills:testDebugUnitTest
+> Task :core-skills:test
+> Task :feature-tools:testDebugUnitTest
+> Task :feature-tools:test
+> Task :core-engine:testDebugUnitTest
+> Task :core-engine:test
+> Task :app:testDebugUnitTest
+> Task :app:test
+> Task :feature-settings:testDebugUnitTest
+> Task :feature-settings:test
+> Task :core-context:testDebugUnitTest
+> Task :core-context:test
+> Task :core-model:compileDebugUnitTestKotlin
+> Task :core-model:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :feature-chat:compileDebugUnitTestKotlin
+> Task :core-model:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :feature-chat:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :feature-chat:processDebugUnitTestJavaRes UP-TO-DATE
+
+> Task :core-data:compileDebugUnitTestKotlin
+w: file:///<workspace-root>/harness-v2/core-data/src/test/java/com/rickeal/liquidharness/core/data/StreamTruncationRetryTest.kt:69:25 Unnecessary non-null assertion (!!) on a non-null receiver of type 'AgentEvent.Finished'.
+
+> Task :core-data:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core-data:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-model:testDebugUnitTest
+> Task :core-model:test
+> Task :feature-chat:testDebugUnitTest
+> Task :feature-chat:test
+> Task :core-data:testDebugUnitTest
+> Task :core-data:test
+
+> Task :core-agent:compileDebugUnitTestKotlin
+w: file:///<workspace-root>/harness-v2/core-agent/src/test/java/com/rickeal/liquidharness/core/agent/loop/EngineBackedSummarizerTest.kt:91:48 No cast needed.
+w: file:///<workspace-root>/harness-v2/core-agent/src/test/java/com/rickeal/liquidharness/core/agent/loop/EngineBackedSummarizerTest.kt:104:28 No cast needed.
+w: file:///<workspace-root>/harness-v2/core-agent/src/test/java/com/rickeal/liquidharness/core/agent/loop/EngineBackedSummarizerTest.kt:115:25 No cast needed.
+w: file:///<workspace-root>/harness-v2/core-agent/src/test/java/com/rickeal/liquidharness/core/agent/loop/EngineBackedSummarizerTest.kt:146:46 No cast needed.
+w: file:///<workspace-root>/harness-v2/core-agent/src/test/java/com/rickeal/liquidharness/core/agent/loop/EngineBackedSummarizerTest.kt:156:45 No cast needed.
+w: file:///<workspace-root>/harness-v2/core-agent/src/test/java/com/rickeal/liquidharness/core/agent/loop/PreStepBudgetTest.kt:294:16 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Int'.
+
+> Task :core-agent:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core-agent:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :core-agent:testDebugUnitTest
+> Task :core-agent:test
+
+BUILD SUCCESSFUL in 47s
+284 actionable tasks: 30 executed, 254 up-to-date
+-------------------------------------------------------------------
+[fulltest] 汇总 91 个 TEST-*.xml（真实用例数口径，非 gradle 的「N tests completed」）：
+[fulltest] tests=886 failures=0 errors=0 skipped=0
+[fulltest]   - app: tests=14 failures=0 errors=0
+[fulltest]   - core-agent: tests=262 failures=0 errors=0
+[fulltest]   - core-context: tests=60 failures=0 errors=0
+[fulltest]   - core-data: tests=77 failures=0 errors=0
+[fulltest]   - core-design: tests=33 failures=0 errors=0
+[fulltest]   - core-engine: tests=89 failures=0 errors=0
+[fulltest]   - core-kernel: tests=6 failures=0 errors=0
+[fulltest]   - core-mcp: tests=35 failures=0 errors=0
+[fulltest]   - core-model: tests=99 failures=0 errors=0
+[fulltest]   - core-net: tests=39 failures=0 errors=0
+[fulltest]   - core-skills: tests=31 failures=0 errors=0
+[fulltest]   - feature-chat: tests=104 failures=0 errors=0
+[fulltest]   - feature-settings: tests=29 failures=0 errors=0
+[fulltest]   - feature-tools: tests=8 failures=0 errors=0
+[fulltest] TEST-*.xml mtime 范围：最早 2026-11-23 17:18:47  最晚 2026-11-23 17:19:08
+[fulltest] 覆盖模块数：14（settings include 条目 = 14）
+-------------------------------------------------------------------
+[fulltest] 通过：tests=886 failures=0 errors=0 skipped=0（全部用例绿）
+rc=0

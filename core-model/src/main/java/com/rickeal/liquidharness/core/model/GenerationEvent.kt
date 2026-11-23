@@ -69,6 +69,12 @@ sealed interface GenerationEvent {
      * 看到两段拼接。默认 `false` ⇒ 既有构造点与既有引擎行为零改动（先例 `contextLimitHint`）。
      * **不是** `@Serializable` 字段，不进线格式；引擎不得把它当「引擎内重试」的许可 ——
      * 引擎侧仍按「已 emit 内容不重发」执行，回滚重试只发生在内核层。
+     *
+     * [evidenceTag]（W48 判序范式）：本次失败**命中哪条判据**的证据标签（如
+     * `http:rate` / `frame:structured-rate` / `frame:overflow-wording`），供真机诊断
+     * 直接读出分类依据，不用回放词表推理。取值为固定诊断码词表（见
+     * `OpenAiErrorFrame` 的 W48 段），不含用户内容。默认 `""` ⇒ 既有构造点零改动
+     * （先例 `contextLimitHint`）；**不是** `@Serializable` 字段，不进线格式。
      */
     data class Failed(
         val kind: EngineErrorKind,
@@ -76,6 +82,7 @@ sealed interface GenerationEvent {
         val retryable: Boolean,
         val contextLimitHint: Int? = null,
         val truncatedStream: Boolean = false,
+        val evidenceTag: String = "",
     ) : GenerationEvent
 }
 

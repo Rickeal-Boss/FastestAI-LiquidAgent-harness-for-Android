@@ -141,4 +141,53 @@ class DiagnosticLogSinkTest {
             tmp.deleteRecursively()
         }
     }
+
+    /**
+     * W48 P1-1 必红（外审 P1-1 判据不对称）：W47 只给两类动态写点（`run failed` / `reason=`）
+     * 加固定形态正则，其余 10 类前缀与 `prefix` 分支仍是 `startsWith` —— 前缀后拼用户正文
+     * 穿透落盘（外审等价复刻 9 条）。本条把 9 条自由文本逐条钉为不得落盘：≤160 ASCII /
+     * 中文 prompt / 邮箱密码 / 用户 echo。未修版（startsWith）实跑本条 RED，修后 GREEN；
+     * 注入「把 `cached=` 放回 startsWith」⇒ 本条 RED。
+     */
+    @Test
+    fun probePrefixWithUserFreeTextIsNotMirrored() {
+        assertFalse(DiagnosticLogSink.isProbeLine("cached=我的密码是hunter2 and email a@b.com"))
+        assertFalse(DiagnosticLogSink.isProbeLine("context compressed: 用户说帮我写一段中文传记"))
+        assertFalse(DiagnosticLogSink.isProbeLine("summary truncated: original prompt was 请总结第12章"))
+        assertFalse(DiagnosticLogSink.isProbeLine("run cancelled: user typed 取消任务因为密码是abc123"))
+        assertFalse(DiagnosticLogSink.isProbeLine("compress_align=skipped 用户内容 hello"))
+        assertFalse(DiagnosticLogSink.isProbeLine("context_overflow_prevented: 用户原始prompt片段"))
+        assertFalse(DiagnosticLogSink.isProbeLine("compress=disabled_by_policy 用户原始prompt片段"))
+        assertFalse(DiagnosticLogSink.isProbeLine("context limit writeback: user echoed hunter2 email a@b.com"))
+        assertFalse(DiagnosticLogSink.isProbeLine("prefix fp=ab12 changed=none prompt=1234 cached=用户echo内容"))
+    }
+
+    /**
+     * W48 P1-1 正向（防一刀切）：五类常量模板 + 数字整行形态必须照常落盘 ——
+     * `context compressed` 双写点 / `compress_align` / `compress=disabled_by_policy` /
+     * `layered compress` 补两形态 / `manual_compress undone`。写点形态逐条对源
+     * （ContextCompressor:109,157 / ContextBudget:164,190 / LayeredContextCompressor:161,214 /
+     * ConversationOps:281）。
+     */
+    @Test
+    fun fixedFormTemplateLinesStillMirror() {
+        assertTrue(
+            DiagnosticLogSink.isProbeLine(
+                "context compressed: 30 -> 12 messages (budget=20928 target=12556 tokens, dropped=18)",
+            ),
+        )
+        assertTrue(
+            DiagnosticLogSink.isProbeLine(
+                "context compressed before round 3: 30 -> 12 messages (estimated 40000 > budget 20928)",
+            ),
+        )
+        assertTrue(DiagnosticLogSink.isProbeLine("compress_align=skipped extra=2 cap=450 budget=400"))
+        assertTrue(DiagnosticLogSink.isProbeLine("compress=disabled_by_policy prompt=59064 budget=50227"))
+        assertTrue(DiagnosticLogSink.isProbeLine("layered compress: l1 could not cut (est=40000 budget=20928)"))
+        assertTrue(DiagnosticLogSink.isProbeLine("layered compress: mode=L2 dropped=12 droppedTokens=3456 summaryTokens=789"))
+        assertTrue(DiagnosticLogSink.isProbeLine("manual_compress undone cache_invalidated=true"))
+        assertTrue(DiagnosticLogSink.isProbeLine("summary truncated: max=1024"))
+        assertTrue(DiagnosticLogSink.isProbeLine("run cancelled: chars=120 rounds=3"))
+        assertTrue(DiagnosticLogSink.isProbeLine("context_overflow_prevented: chars=59064 cap=50227"))
+    }
 }

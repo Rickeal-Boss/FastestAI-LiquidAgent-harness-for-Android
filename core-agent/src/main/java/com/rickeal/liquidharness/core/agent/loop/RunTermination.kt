@@ -104,14 +104,20 @@ class RunTermination {
      * `contextLimitHint` 从 [RunState.contextLimitHint] 透传（W5-02 的学习式写回通道）：
      * 值由 `GenerationRound` 从 `GenerationEvent.Failed` 抄进 RunState，这里只负责让它
      * 走出内核。宿主的 run 收尾读这个字段写回端点 —— 内核不判断它、不改写它。
+     *
+     * W48 判序范式：`evidenceTag` 同一口径透传，并附在 `run failed:` 行尾
+     * （` [http:rate]` 形态，固定诊断码、白名单 FAILURE_DIGEST 允许的可选后缀）——
+     * 落盘后真机 `run-as` 可直接读出「这次失败命中了哪条判据」，不用回放词表推理。
      */
     suspend fun emitFailed(ctx: TurnContext, message: String, cause: Throwable? = null) {
-        AgentLogStore.error("run failed: " + message)
+        val tag = ctx.state.evidenceTag
+        AgentLogStore.error("run failed: " + message + if (tag.isEmpty()) "" else " [$tag]")
         ctx.emit(
             AgentEvent.Failed(
                 message = message,
                 cause = cause,
                 contextLimitHint = ctx.state.contextLimitHint,
+                evidenceTag = tag,
             )
         )
     }

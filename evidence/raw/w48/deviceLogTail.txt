@@ -1,0 +1,45 @@
+W48 deviceLogTail（脱敏探针行摘录，agent-0.log 设备侧落盘经 run-as 取回）
+时间窗 2026-11-23T09:32–10:01Z（W48 真机矩阵）；只含探针/账本行，无凭据/端点完整标识/路径/序列号。
+W48 判序范式 evidenceTag 真机首落盘：run failed 行尾 [http:rejected]（对比 11-22 旧形态无标签）。
+白名单复核：40 条全部固定诊断码/常量模板形态，零形态外行（用户自由文本 0 命中）。
+---
+2026-11-23T09:32:04.831217Z INFO prefix fp=8e395bd6 changed=none prompt=3300 cached=6336(cumulative)
+2026-11-23T09:32:06.598335Z INFO prefix fp=8e395bd6 changed=none prompt=3465 cached=8448(cumulative)
+2026-11-23T09:32:08.896734Z INFO prefix fp=8e395bd6 changed=none prompt=3616 cached=10560(cumulative)
+2026-11-23T09:32:11.376232Z INFO prefix fp=8e395bd6 changed=none prompt=3787 cached=12672(cumulative)
+2026-11-23T09:32:12.371171Z INFO prefix fp=8e395bd6 changed=none prompt=3944 cached=14784(cumulative)
+2026-11-23T09:32:13.811011Z INFO prefix fp=8e395bd6 changed=none prompt=4011 cached=16896(cumulative)
+2026-11-23T09:32:19.210309Z INFO prefix fp=8e395bd6 changed=none prompt=5341 cached=19008(cumulative)
+2026-11-23T09:32:22.040589Z INFO prefix fp=8e395bd6 changed=none prompt=8625 cached=19008(cumulative)
+2026-11-23T09:34:53.463177Z INFO prefix fp=8e395bd6 changed=none prompt=5723 cached=n/a-usage
+2026-11-23T09:34:59.337935Z INFO prefix fp=8e395bd6 changed=none prompt=13796 cached=0(cumulative)
+2026-11-23T09:35:01.751526Z INFO prefix fp=8e395bd6 changed=none prompt=13869 cached=12672(cumulative)
+2026-11-23T09:35:03.831976Z INFO prefix fp=8e395bd6 changed=none prompt=15192 cached=25344(cumulative)
+2026-11-23T09:35:06.474782Z INFO prefix fp=8e395bd6 changed=none prompt=17232 cached=38016(cumulative)
+2026-11-23T09:35:09.607992Z INFO prefix fp=8e395bd6 changed=none prompt=17287 cached=52800(cumulative)
+2026-11-23T09:35:17.335398Z INFO prefix fp=8e395bd6 changed=none prompt=17350 cached=67584(cumulative)
+2026-11-23T09:35:18.982980Z INFO prefix fp=8e395bd6 changed=none prompt=18663 cached=82368(cumulative)
+2026-11-23T09:40:09.478541Z INFO prefix fp=8e395bd6 changed=none prompt=8393 cached=n/a-usage
+2026-11-23T09:40:23.908751Z INFO prefix fp=8e395bd6 changed=none prompt=22588 cached=0(cumulative)
+2026-11-23T09:40:38.940646Z WARN auto_compact=noop reason=nothing_to_drop
+2026-11-23T09:40:38.940678Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-23T09:44:14.766046Z INFO prefix fp=8e395bd6 changed=none prompt=19606 cached=n/a-usage
+2026-11-23T09:44:19.545373Z INFO prefix fp=8e395bd6 changed=none prompt=26163 cached=11776(cumulative)
+2026-11-23T09:44:23.650070Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-23T09:44:23.650049Z WARN auto_compact=noop reason=nothing_to_drop
+2026-11-23T09:48:11.363825Z INFO prefix fp=8e395bd6 changed=none prompt=18644 cached=n/a-usage
+2026-11-23T09:49:11.409275Z INFO prefix fp=8e395bd6 changed=none prompt=26183 cached=11776(cumulative)
+2026-11-23T09:49:16.649643Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-23T09:49:16.649643Z WARN auto_compact=noop reason=nothing_to_drop
+2026-11-23T09:50:41.348201Z INFO prefix fp=8e395bd6 changed=none prompt=18701 cached=n/a-usage
+2026-11-23T09:50:48.857034Z INFO prefix fp=8e395bd6 changed=none prompt=26271 cached=25600(cumulative)
+2026-11-23T09:50:52.842790Z WARN auto_compact=noop reason=nothing_to_drop
+2026-11-23T09:50:52.843286Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-23T09:52:50.902745Z INFO prefix fp=8e395bd6 changed=none prompt=18748 cached=n/a-usage
+2026-11-23T09:52:54.193795Z INFO prefix fp=8e395bd6 changed=none prompt=26737 cached=25600(cumulative)
+2026-11-23T09:53:01.147781Z INFO prefix fp=8e395bd6 changed=none prompt=26839 cached=51200(cumulative)
+2026-11-23T09:53:12.395175Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-23T09:53:12.395778Z WARN auto_compact=noop reason=nothing_to_drop
+2026-11-23T09:59:10.049182Z INFO prefix fp=fba2123b changed=none prompt=1078 cached=n/a-usage
+2026-11-23T09:59:12.315896Z ERROR run failed: request rejected (HTTP 404) [http:rejected]
+2026-11-23T10:01:31.519870Z WARN manual_compress=noop reason=manual compress: nothing to drop

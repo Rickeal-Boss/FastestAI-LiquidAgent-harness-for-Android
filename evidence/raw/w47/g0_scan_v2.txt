@@ -1,4 +1,4 @@
-W47 g0_scan_v2（全扫态重出，参数见 g0_four_states_v2.txt）
+W47 g0_scan_v2（CI checkout 语义态，参数 --ci-semantics；W48 名实订正：原标题「全扫态重出」与内容不符，全扫态原始输出见 g0_scan_full.txt）
 --ci-semantics（CI checkout 语义）:
 w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=0
 OK no sensitive leak in tracked / untracked / ignored sweeps

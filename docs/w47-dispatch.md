@@ -15,7 +15,7 @@
 
 **第 0 车硬前置（先于任何代码）**
 1. **门禁默认全扫**：`scripts/w46-local-secret-gate.sh` 默认不再排除 `_w[0-9]*/` / `local.properties`（排除移到显式 `--ci-semantics`），顶层补 `--local-full` 入口；`g0_scan_v2.txt` 重出全扫态；台账 `W36-01` 的 W46 补录订正「默认入口空过」，修好前不写「组合判据已落地 / CLOSED 收口」。必红：被 ignore 的 `_w47/*.jsonl` 含 serial ⇒ 默认 RED；selftest STATE 逐条注明参数。
-2. **三个脚本接闸门**：`secret-scan.yml` 加一步跑 `w46-ledger-symbol-check.sh`、`build.yml` 加一步跑 `w46-classification-replay.py --w46`（零新 G 编号），各给注入必红；`selftest` 输出作为该 step 判据证据。
+2. **两个判据脚本接 CI + 本地人工闸门保留本机入口**（W48 口径订正：原文「三个脚本接闸门」与实装不符）：`secret-scan.yml` 加一步跑 `w46-ledger-symbol-check.sh`、`build.yml` 加一步跑 `w46-classification-replay.py --w46`（零新 G 编号），各给注入必红；`w46-local-secret-gate.sh` 作为开发者本机人工闸门**不接 CI**（设计合理，本机入口保留）；`selftest` 输出作为该 step 判据证据。
 3. **台账两处失实订正**：`W24-02` 的「现役为 `token && mentionsLengthOverflow && !mentionsRateLimitContext` 三条件合取」改为 W46 分层 + W47 末轮描述；`W12-02` 的「provider message 不再拼接落盘」改为「ASCII+160 形态判据、写点仍拼接 message、短 ASCII 属已知边界」+ W47 收窄；落笔自检补「注记中变量名须能在现役 `.kt` 实现 grep 到（排除 KDoc 历史引述）」。
 4. **收尾契约**：补真 tip `9d05a64b996002b6006a230e4eb3a6ea1525c524` 与第 4 条 run `45014733519` 四字段/链接，统一「实际 4 条 run（代码 2 + 文档 2，tip 文档 run 按 W29 降级仅记录、不作 P0）」，删「不因本段自指再第四次推送」这类会被提交本身证伪的措辞。
 5. **P2 三项**：「五行 W46 注记」改「四行 + `W24-02` 一处就地订正」；符号自检数字写正常态实测值（本环境 20 类 / 59 方法 / 322 `.kt`）；g0 证据注明参数切换、deviceLogTail 补动态正文被拦证据。W40–W46 历史数字作时点记录不回改。

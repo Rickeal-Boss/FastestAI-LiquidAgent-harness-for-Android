@@ -336,6 +336,14 @@ class RunState(
         contextLimitHint = hint
     }
 
+    /**
+     * W48 判序范式：失败的判据证据标签（`http:rate` / `frame:structured-rate` 等固定
+     * 诊断码，见 `OpenAiErrorFrame` W48 段）。只透传、不判断 —— 与 [contextLimitHint]
+     * 同一通道语义，run 收尾时随 `AgentEvent.Failed` 走出内核并附在 `run failed:` 行
+     * 供真机诊断。
+     */
+    var evidenceTag: String = ""
+
     /** 给 `AgentEvent.Finished` 用的用量快照。一个 token 都没记账时返回 null（不伪造 0）。 */
     fun usage(): TokenUsage? {
         if (promptTokens == 0 && completionTokens == 0) return null

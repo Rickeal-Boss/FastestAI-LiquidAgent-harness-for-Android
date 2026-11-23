@@ -125,6 +125,10 @@ sealed interface AgentEvent {
      *
      * 默认 `null` ⇒ 既有构造点与既有归约层（`feature-chat` 的 EventReducer）**无需改动**
      * 就能编译（W6 纪律：新增字段一律给默认值）。
+     *
+     * [evidenceTag]（W48 判序范式）：从 [GenerationEvent.Failed.evidenceTag] 透传的
+     * 判据证据标签（`http:rate` / `frame:structured-rate` 等固定诊断码），供真机诊断
+     * 读出分类依据。默认 `""` 同上纪律。
      */
     data class Failed(
         val message: String,
@@ -132,6 +136,7 @@ sealed interface AgentEvent {
         val report: BottleneckReport? = null,
         val terminatedBy: TerminationReason? = null,
         val contextLimitHint: Int? = null,
+        val evidenceTag: String = "",
     ) : AgentEvent
 
     data class Cancelled(val partialText: String) : AgentEvent

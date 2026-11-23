@@ -130,7 +130,11 @@ class RemoteLlmEngine(
 
         val secret = secrets.secretFor(target.id)
         if (target.requiresApiKey && secret.isNullOrBlank()) {
-            emit(GenerationEvent.Failed(EngineErrorKind.AUTH, "missing API key for endpoint", false))
+            emit(
+                GenerationEvent.Failed(
+                    EngineErrorKind.AUTH, "missing API key for endpoint", false, evidenceTag = "engine:config",
+                ),
+            )
             return@flow
         }
 
@@ -269,6 +273,7 @@ class RemoteLlmEngine(
                         EngineErrorKind.PROTOCOL,
                         "stream ended without any event (endpoint is not SSE?)",
                         retryable = false,
+                        evidenceTag = "engine:no-events",
                     ),
                 )
             }
@@ -287,6 +292,7 @@ class RemoteLlmEngine(
                             message = "stream truncated before completion",
                             retryable = true,
                             truncatedStream = true,
+                            evidenceTag = "engine:truncated",
                         ),
                         retryAfterMillis = null,
                     )
@@ -321,6 +327,7 @@ class RemoteLlmEngine(
                         message = "network error after partial output: " + io.javaClass.simpleName,
                         retryable = true,
                         truncatedStream = true,
+                        evidenceTag = "engine:truncated",
                     ),
                     retryAfterMillis = null,
                 )
@@ -331,6 +338,7 @@ class RemoteLlmEngine(
                     kind = EngineErrorKind.NETWORK,
                     message = "network error: " + io.javaClass.simpleName,
                     retryable = true,
+                    evidenceTag = "engine:network",
                 ),
                 retryAfterMillis = null,
             )
@@ -382,22 +390,32 @@ class RemoteLlmEngine(
     // ------------------------------------------------------------------ 错误分类
 
     private fun configFailure(detail: String): GenerationEvent.Failed =
-        GenerationEvent.Failed(EngineErrorKind.CONFIG, detail, false)
+        GenerationEvent.Failed(EngineErrorKind.CONFIG, detail, false, evidenceTag = "engine:config")
 
     /**
      * HTTP 状态码 → 错误类。分类决定「重试 / 改配置 / 压缩后重发 / 直接报错」。
      *
      * 所有 message 都是英文常量，由 UI 层映射为本地化文案（守卫 N3 基线 0）。
+     *
+     * W48 判序范式：**HTTP status 是唯一权威**（429/401/403/408/5xx 不看正文措辞）；
+     * 只有 400 走 message 词表兜底（`looksLikeContextOverflow`，词表冻结见
+     * `OpenAiErrorFrame` W48 段）。每支携带 `http:*` 证据标签供真机诊断。
      */
     private fun classifyHttpFailure(status: Int, bodyText: String): GenerationEvent.Failed = when {
         status == 401 || status == 403 ->
-            GenerationEvent.Failed(EngineErrorKind.AUTH, "authentication failed (HTTP $status)", false)
+            GenerationEvent.Failed(
+                EngineErrorKind.AUTH, "authentication failed (HTTP $status)", false, evidenceTag = "http:auth",
+            )
 
         status == 429 ->
-            GenerationEvent.Failed(EngineErrorKind.RATE_LIMIT, "rate limited (HTTP $status)", true)
+            GenerationEvent.Failed(
+                EngineErrorKind.RATE_LIMIT, "rate limited (HTTP $status)", true, evidenceTag = "http:rate",
+            )
 
         status == 408 ->
-            GenerationEvent.Failed(EngineErrorKind.NETWORK, "request timeout (HTTP $status)", true)
+            GenerationEvent.Failed(
+                EngineErrorKind.NETWORK, "request timeout (HTTP $status)", true, evidenceTag = "http:timeout",
+            )
 
         status == 400 && looksLikeContextOverflow(bodyText) ->
             // 顺手把服务端回报的真实窗口带出去（W5-02 的学习式写回通道）。
@@ -408,13 +426,18 @@ class RemoteLlmEngine(
                 "context window exceeded",
                 false,
                 contextLimitHint = adapter.contextLimitHint(bodyText),
+                evidenceTag = "http:overflow",
             )
 
         status >= 500 ->
-            GenerationEvent.Failed(EngineErrorKind.SERVER, "server error (HTTP $status)", true)
+            GenerationEvent.Failed(
+                EngineErrorKind.SERVER, "server error (HTTP $status)", true, evidenceTag = "http:server",
+            )
 
         else ->
-            GenerationEvent.Failed(EngineErrorKind.PROTOCOL, "request rejected (HTTP $status)", false)
+            GenerationEvent.Failed(
+                EngineErrorKind.PROTOCOL, "request rejected (HTTP $status)", false, evidenceTag = "http:rejected",
+            )
     }
 
     /**

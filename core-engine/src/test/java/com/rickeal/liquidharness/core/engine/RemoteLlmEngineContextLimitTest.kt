@@ -168,6 +168,31 @@ class RemoteLlmEngineContextLimitTest {
         }
     }
 
+    /**
+     * W48 判序范式必红：HTTP status 是唯一权威 —— 429 + 超窗措辞正文必须判 RATE_LIMIT
+     * （正文 `maximum context length is 1000000 tokens` 不得把状态码裁决改判成
+     * CONTEXT_OVERFLOW），并携带 `http:rate` 证据标签供真机诊断。
+     * 注入「回退到词表优先」（正文措辞压过状态码）⇒ 本条 RED。
+     */
+    @Test
+    fun http429WithOverflowWordingStaysRateLimitWithEvidenceTag() {
+        withServer(429, """{"error":{"message":"maximum context length is 1000000 tokens"}}""") { port ->
+            val endpoint = endpointFor(port)
+            val engine = RemoteLlmEngine(endpoint, OpenAiCompatibleAdapter(), HttpTransport())
+            val events = runBlocking {
+                engine.generate(
+                    GenerationRequest(
+                        messages = listOf(ChatMessage(role = Role.USER, text = "hi")),
+                        endpoint = endpoint,
+                    )
+                ).toList()
+            }
+            val failed = events.filterIsInstance<GenerationEvent.Failed>().single()
+            assertEquals(EngineErrorKind.RATE_LIMIT, failed.kind, "429 状态码是唯一权威，不得被正文措辞改判：$failed")
+            assertEquals("http:rate", failed.evidenceTag, "证据标签必须指到 http:rate：$failed")
+        }
+    }
+
     private fun endpointFor(port: Int): RemoteEndpoint = RemoteEndpoint(
         id = "ep-1m",
         name = "1m",

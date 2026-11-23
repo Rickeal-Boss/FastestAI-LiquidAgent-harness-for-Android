@@ -68,8 +68,45 @@ class OpenAiErrorFrameConfusionTest {
             if (result == null || result.kind != expected) {
                 failed.add("$id: expected=$expected got=${result?.kind} message=$message")
             }
+            // W48 判序范式：message 兜底支的裁决必须带 `frame:*` 证据标签（供真机诊断）。
+            if (result != null && !result.evidenceTag.startsWith("frame:")) {
+                failed.add("$id: evidenceTag missing frame: prefix got=${result.evidenceTag}")
+            }
         }
         assertTrue(failed.isEmpty(), "双向混淆样本判序偏差：\n${failed.joinToString("\n")}")
+    }
+
+    /**
+     * W48 判序范式必红：结构化 `type` 是唯一权威，message 词表只是兜底 ——
+     * 结构化自声明与超窗/限流措辞**冲突**时必须按结构化裁决，并携带 `frame:structured-*`
+     * 证据标签。注入「回退到词表优先」（message 判序提到结构化之前）⇒ 本条 RED
+     * （例：`type=rate_limit_error` + `maximum context length exceeded` 被词表判成
+     * CONTEXT_OVERFLOW）。词表自 W48 冻结，此后反例只改结构化映射与标签。
+     */
+    @Test
+    fun structuredTypeOutranksOverflowWordingWithEvidenceTag() {
+        val cases = listOf(
+            Triple(
+                """{"error":{"type":"rate_limit_error","message":"maximum context length exceeded"}}""",
+                EngineErrorKind.RATE_LIMIT,
+                "frame:structured-rate",
+            ),
+            Triple(
+                """{"error":{"type":"server_error","message":"context length exceeded"}}""",
+                EngineErrorKind.SERVER,
+                "frame:structured-server",
+            ),
+            Triple(
+                """{"error":{"type":"context_length_exceeded","message":"rate limit: too many tokens"}}""",
+                EngineErrorKind.CONTEXT_OVERFLOW,
+                "frame:structured-context",
+            ),
+        )
+        cases.forEach { (payload, expectedKind, expectedTag) ->
+            val result = decodeOpenAiErrorFrame(SseEvent(data = payload)) { null }
+            assertEquals(expectedKind, result?.kind, "结构化权威不得被 message 词表改判：$payload")
+            assertEquals(expectedTag, result?.evidenceTag, "证据标签必须指到结构化支：$payload")
+        }
     }
 
     @Test

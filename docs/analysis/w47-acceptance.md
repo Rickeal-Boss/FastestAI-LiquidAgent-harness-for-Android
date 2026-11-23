@@ -32,7 +32,7 @@
 | 5 | 收尾契约第 7 次（深度审查 P1-3） | 采 **补真 tip + 第 4 条 run 四字段**：公开 API 实取 `45014733519`，删自指措辞、统一「实际 4 条 run」。 |
 | 6 | 台账两处失实（深度审查 P1-1 台账项） | 采 **行内订正 + 去历史变量名反引号**：`W24-02`/`W12-02`/`W36-01` 补 W47 补录，状态不回开。 |
 | 7 | 省钱外审「价格维度」 | 采复核裁决：**方向采纳、清单重写、本波不开**——先还 W47 的两个 P0，价格表不进 `RemoteEndpoint`/`RunnerKey`（会失效缓存命名空间），且 `EXPECTED_TESTS` 等判据冻结下不夹带跨模块新维度。 |
-| 8 | W9-01 连续两波让位 | 采 **带行数预算的真拆分**：两个压缩常量从 core-context 搬入 `AgentPolicy`（唯一真值源），4 消费方改 import；不动 `ContextBudget` 承重文件；G10 触顶时精简 KDoc（不调上限）。 |
+| 8 | W9-01 连续两波让位 | 采 **带行数预算的真拆分**：两个压缩常量从 core-context 搬入 `AgentPolicy`（唯一真值源），4 个文件改 import（其中 2 个运行时消费方）；不动 `ContextBudget` 承重文件；G10 触顶时精简 KDoc（不调上限）。 |
 
 **调度事实**：主理人按纪律串行落代码、闸门、真机与文档（429 前科与高度耦合的「改→编译→真机→再看」链内循环决定的调度形态，不冒充子席产出）。动手前 `git status` 干净、无并发写入方；变异验证用仓外 `cp` 备份精确还原，未用 git 写命令恢复。
 
@@ -55,7 +55,7 @@
 | 样本集 21→25（C11–C14 超窗侧强限流词）| `scripts/fixtures/w46-error-classification-samples.json` + `w46-classification-replay.py` + `OpenAiErrorFrameConfusionTest.kt` | 三处共用同一 JSON；legacy 5 RED / --w46 25 全绿；E5e/h/i/j/k/l/m/n 与 W44/W45/W46 既有必红不回退 |
 | 白名单收窄：ASCII+160 → 固定诊断码白名单正则 | `app/.../DiagnosticLogSink.kt` + `DiagnosticLogSinkTest.kt` | 未修版 `shortAsciiFreeTextIsNotMirrored` 1 failed RED → 修后 4 用例全 GREEN；`evidence/raw/w47/red_p11_short_ascii.txt`、`green_p11_sink.txt` |
 | 测试数对账 | `.github/workflows/build.yml` | `881→882`（app +1；判序只扩 JSON 方法数不变）；`EXPECTED_TESTS: '882'` |
-| W9-01 带预算拆分 | `core-kernel/.../AgentPolicy.kt`、`core-context/.../ContextCompressor.kt`、3 消费方 import | 唯一真值源迁至 AgentPolicy（242/400，core-kernel 总量回 450 内）；G10 触顶时精简 KDoc、不调上限；行为等价（常量值不变） |
+| W9-01 带预算拆分 | `core-kernel/.../AgentPolicy.kt`、`core-context/.../ContextCompressor.kt`、4 个文件改 import（其中 2 个运行时消费方） | 唯一真值源迁至 AgentPolicy（242/400，core-kernel 总量回 450 内）；G10 触顶时精简 KDoc、不调上限；行为等价（常量值不变） |
 
 **判据先行实证**：三处新增/收紧判据均「写 X 未发生前先自证会响」——P0-1 空过 rc=0、P0-2 旧逻辑 4 条 RED、P1-1 短 ASCII 洞 1 failed RED，全部在落代码前实测。既有口径原样沿用，未逐波追加判据编号（G20 仍 141 ID）。
 
@@ -91,9 +91,10 @@
 ## 步 5 · CI（公开 API 四字段实取）
 
 - 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
-- **实际 4 条 run（代码两提交各 2，tip 双绿）**，完整四字段与链接见交接 §七：
+- **代码提交 4 条 run + 文档 tip 1 条（降级）**（W48 注记：「实际 4 条 run」口径易被读成本波全部 run，实取共 5 条，据此订正），完整四字段与链接见交接 §七：
   - 主体 `4fc96e183461503eca94d03b9a0ca33680f069e0`：Build `45124200338` `completed/success`（`2026-11-23T06:30:07Z`）；Secret `45124200326` `completed/failure`（`2026-11-23T06:27:32Z`）——3b-ext 命中 G3 selftest 证据未脱敏的用户目录形态，已由下一提交修正，红态如实记录。
   - 脱敏修正（最终代码 tip）`6e8751f7e200d47007e0c99d032534bfa2d46ace`：Build `45125222158` `completed/success`（`2026-11-23T06:37:30Z`）；Secret `45125222248` `completed/success`（`2026-11-23T06:36:39Z`）。**交付判据 = 最终 tip 双 run 全绿**。
+  - 文档 tip `8e1d986723e200f9ca9854932adf9c04309b86cc`：Secret `45125649179` `completed/success`（`head_sha=8e1d986723e200f9ca9854932adf9c04309b86cc` / `2026-11-23T06:40:07Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45125649179`）；Build 0 run（`paths-ignore` 既定口径）。按 W29 降级仅记录、不作 P0（W48 注记补录）。
 - 本地四闸门不代替 CI；CI 绿以最终 tip 的 run 四字段为准。纯文档 tip 触发的 Secret run 按 W29 降级仅记录、不作 P0。
 
 ---
@@ -143,7 +144,7 @@
 ## 边界声明
 
 - ① 判序最后一轮只改 `context`/`prompt` 让位语义，21→25 样本共用一份 JSON；W48 起改判据范式（结构化字段唯一权威 + message 兜底带证据标签），不再扩自然语言词表。
-- ② 白名单收窄是**形态白名单**（固定诊断码正则），非语义判断：新增 reason 码若漏登记只损失落盘、不损失 ring（方向安全）；动态 provider message 仍在诊断页可见，只是不进设备持久化文件。
+- ② 白名单收窄是**形态白名单**（固定诊断码正则），非语义判断：W47 实态为**两类**动态写点（`run failed` / `reason=`）已收为固定形态正则、其余 10 类前缀与 `prefix` 分支仍 `startsWith`（生产写点均为常量模板+数字，判据不对称已登记，W48 措辞订正：不写成 12 类全覆盖）；新增 reason 码若漏登记只损失落盘、不损失 ring（方向安全）；动态 provider message 仍在诊断页可见，只是不进设备持久化文件。
 - ③ 门禁默认全扫会命中本地历史取证目录（W44 g0 已登记的 MUST-RED 样本），属预期；`--ci-semantics` 才是 CI checkout 语义，两者不可混用。
 - ④ 真机 E6 MCP / E10 Dots3 / E12 applied 分支四态如实 vacuous / ⚠️；E10 本波未取得会话级 404 证据，不写成已复测也不写成可用。
 - ⑤ 1M 档为常规请求（`上下文 1.9K / 995.9K`），非满窗真压；W9-11 双硬限注入未做。
