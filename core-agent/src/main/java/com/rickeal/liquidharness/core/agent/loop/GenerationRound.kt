@@ -102,7 +102,8 @@ class GenerationRound(
                 else RoundOutcome.Terminated
 
             is Attempt.Fatal -> {
-                termination.emitFailed(ctx, result.message, result.cause)
+                // W49：Fatal 自带证据标签与落盘摘要，四处透传（不经 Failed 的 state 写入）。
+                termination.emitFailed(ctx, result.message, result.cause, result.evidenceTag, result.digest)
                 RoundOutcome.Terminated
             }
         }
@@ -235,8 +236,8 @@ class GenerationRound(
                                 // 400 带回的真实窗口，经 RunState 传到 AgentEvent.Failed，
                                 // 由宿主写回端点（AppContainer.recordContextLimit）。
                                 ctx.state.recordContextLimitHint(event.contextLimitHint)
-                                // W48 判序范式：判据证据标签同步透传（只透传、不判断）。
-                                if (event.evidenceTag.isNotEmpty()) ctx.state.evidenceTag = event.evidenceTag
+                                // W49：**无条件覆盖**（含空串）——旧版只在非空时写，会留下陈旧标签。
+                                ctx.state.evidenceTag = event.evidenceTag
                                 failure = event
                             }
                         }
@@ -269,7 +270,7 @@ class GenerationRound(
         } catch (t: Throwable) {
             val message = "stream failed: " + (t.message ?: t::class.simpleName ?: "unknown")
             AgentLogStore.error(message + " (attempt=" + attempt + ")")
-            return Attempt.Fatal(message, t)
+            return Attempt.Fatal(message, t, "engine:stream-failed", "stream failed")
         } finally {
             // 放在 finally 而不是正常收尾之后：中途 IOException 直接跳 catch，那一轮的
             // prompt 就永远进不了账本 —— `maxRunPromptTokens` 门控会系统性低估，熔断迟到。
@@ -278,7 +279,7 @@ class GenerationRound(
 
         failure?.let { failed ->
             return if (failed.retryable) Attempt.Retryable(failed.message, failed.truncatedStream)
-            else Attempt.Fatal(failed.message, null)
+            else Attempt.Fatal(failed.message, null, failed.evidenceTag)
         }
 
         val produced = fragments.snapshot()
@@ -328,7 +329,8 @@ class GenerationRound(
     ): Boolean {
         // ① 预算判断在前：放弃路径**绝不回滚** —— 次数用尽时用户至少要看到已收到的半截回答。
         if (attempt >= maxRetries) {
-            termination.emitFailed(ctx, "giving up after " + attempt + " retries: " + reason)
+            val digest = "giving up after " + attempt + " retries"
+            termination.emitFailed(ctx, digest + ": " + reason, digest = digest)
             return false
         }
         // ② 已吐过正文**或思考**都不许叠加：重发会让模型从头再答一遍，
@@ -337,7 +339,8 @@ class GenerationRound(
         val wroteOutput = ctx.state.textLength() != textBefore ||
             ctx.state.reasoningLength() != reasoningBefore
         if (wroteOutput && !truncatedStream) {
-            termination.emitFailed(ctx, "cannot retry after partial output: " + reason)
+            val digest = "cannot retry after partial output"
+            termination.emitFailed(ctx, digest + ": " + reason, digest = digest)
             return false
         }
         // ③ 截断的整段回滚：先改真值源（RunState 文本缓冲），再通知 UI 清流式缓冲。
@@ -361,8 +364,16 @@ class GenerationRound(
         /** 可重试失败（由 adapter 判定 retryable）。[truncatedStream] = 首字节后被掐断。 */
         data class Retryable(val message: String, val truncatedStream: Boolean = false) : Attempt
 
-        /** 不可重试失败 / 本地异常。 */
-        data class Fatal(val message: String, val cause: Throwable?) : Attempt
+        /**
+         * 不可重试失败 / 本地异常。[evidenceTag]（W49）：不经 `GenerationEvent.Failed` 的路径
+         * （看门狗 / 流异常）必须在这里带上标签；[digest] 是落盘固定摘要，动态正文只进 ring。
+         */
+        data class Fatal(
+            val message: String,
+            val cause: Throwable?,
+            val evidenceTag: String = "",
+            val digest: String? = null,
+        ) : Attempt
     }
 
     private companion object {

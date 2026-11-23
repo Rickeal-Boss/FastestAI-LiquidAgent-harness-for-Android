@@ -153,13 +153,16 @@ class AgentRunner(
                 Step.Done, Step.Terminated -> Unit
                 // 不可达（TurnLoop 的所有分支都返回终态）；写成显式失败而不是静默收尾。
                 Step.Continue, Step.Proceed ->
-                    termination.emitFailed(ctx, "loop exited without a terminal state")
+                    termination.emitFailed(
+                        ctx, "loop exited without a terminal state", evidenceTag = "engine:loop-exit",
+                    )
             }
         } catch (c: CancellationException) {
             ctx.state.markCancelled()
             throw c
         } catch (t: Throwable) {
-            termination.emitFailed(ctx, describe(t), t)
+            // 兜底：异常正文只进 ring，落盘固定摘要 + 固定标签（W49）。
+            termination.emitFailed(ctx, describe(t), t, "engine:uncaught", "uncaught failure")
         }
     }
 

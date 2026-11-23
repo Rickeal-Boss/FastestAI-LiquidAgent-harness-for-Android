@@ -1,0 +1,27 @@
+# W49 设备侧落盘探针行（run-as cat files/harness/logs/agent-0.log，本波时间窗摘录）
+# 用途：证据标签 P1-4 设备复核 + 压缩评估链观察。已剔除时间戳以外的环境信息，无凭据 / 无本机路径 / 无端点完整标识。
+2026-11-23T12:42:46.283190Z INFO prefix fp=34d324ab changed=HISTORY prompt=2414 cached=0(cumulative)
+2026-11-23T12:42:50.091906Z INFO prefix fp=75d69f0b changed=HISTORY prompt=2476 cached=0(cumulative)
+2026-11-23T12:42:52.376763Z WARN auto_compact=noop reason=below_trigger
+2026-11-23T12:42:52.377279Z INFO auto_compact=noop reason=below_trigger
+2026-11-23T12:44:13.832730Z INFO prefix fp=ce781fe1 changed=none prompt=1186 cached=n/a-usage
+2026-11-23T12:44:36.660208Z INFO prefix fp=ce781fe1 changed=none prompt=2579 cached=0(cumulative)
+2026-11-23T12:44:37.722509Z INFO prefix fp=ce781fe1 changed=none prompt=2641 cached=0(cumulative)
+2026-11-23T12:44:40.157997Z WARN auto_compact=noop reason=below_trigger
+2026-11-23T12:44:40.158533Z INFO auto_compact=noop reason=below_trigger
+2026-11-23T12:46:20.765229Z INFO prefix fp=ce781fe1 changed=none prompt=1273 cached=n/a-usage
+2026-11-23T12:46:43.978833Z INFO prefix fp=ce781fe1 changed=none prompt=2743 cached=0(cumulative)
+2026-11-23T12:46:45.353277Z WARN auto_compact=noop reason=below_trigger
+2026-11-23T12:46:45.353250Z INFO auto_compact=noop reason=below_trigger
+2026-11-23T12:49:18.444181Z INFO prefix fp=6f476574 changed=none prompt=2105 cached=n/a-usage
+2026-11-23T12:49:20.761563Z INFO auto_compact=noop reason=below_trigger
+2026-11-23T12:49:20.762080Z WARN auto_compact=noop reason=below_trigger
+2026-11-23T12:50:22.119932Z INFO prefix fp=3644871e changed=none prompt=1084 cached=n/a-usage
+2026-11-23T12:50:23.141003Z INFO prefix fp=fccc5d2a changed=HISTORY prompt=2789 cached=0(cumulative)
+2026-11-23T12:50:27.970589Z INFO auto_compact=noop reason=below_trigger
+2026-11-23T12:50:27.970772Z WARN auto_compact=noop reason=below_trigger
+2026-11-23T12:53:28.583818Z INFO prefix fp=d4b71fbb changed=none prompt=1078 cached=n/a-usage
+2026-11-23T12:53:32.257059Z WARN auto_compact=noop reason=below_trigger
+2026-11-23T12:53:32.257565Z INFO auto_compact=noop reason=below_trigger
+2026-11-23T12:55:17.201300Z INFO prefix fp=3967764e changed=none prompt=1078 cached=n/a-usage
+2026-11-23T12:55:19.622259Z ERROR run failed: request rejected (HTTP 404) [http:rejected]

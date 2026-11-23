@@ -1,0 +1,39 @@
+=== G2 arch-guard ===
+[G20] 挂账不丢失        OK  (141 个 handoff ID 全在台账内，CLOSED 行证据均非空)
+[G21] 空转棘轮           OK  (VACUOUS=1 ≤ 基线 1（G19）)
+[G22] 切换守卫被调用（evaluateSwitch 赋值形态） OK  (feature-settings 内 evaluateSwitch 赋值调用 = 2 处)
+[G23] 会话级自动压缩被调用（唯一调用点 + 事件分流） OK  (.autoCompactOnSettled( = 1 处（唯一）、shouldEvaluate( = 1 处)
+-------------------------------------------------------------------
+OK=27  VACUOUS=1  VIOLATION=0  SELF_FAULT=0
+空转项（VACUOUS，不判红但必须可见）：G19
+[arch-guard] result=PASS ok=27 vacuous=1 violation=0 fault=0
+=== G1 assembleDebug ===
+[localbuild] 成功 (rc=0)
+[localbuild] 产物：./app/build/outputs/apk/debug/app-debug.apk
+[localbuild] 真机安装（applicationId = com.rickeal.liquidharness.debug）：
+[localbuild]   MSYS_NO_PATHCONV=1 adb push "./app/build/outputs/apk/debug/app-debug.apk" /data/local/tmp/app.apk
+[localbuild]   MSYS_NO_PATHCONV=1 adb shell pm install -r /data/local/tmp/app.apk
+[localbuild]   MSYS_NO_PATHCONV=1 adb shell monkey -p com.rickeal.liquidharness.debug -c android.intent.category.LAUNCHER 1
+=== G4 fulltest ===
+284 actionable tasks: 14 executed, 270 up-to-date
+-------------------------------------------------------------------
+[fulltest] 汇总 92 个 TEST-*.xml（真实用例数口径，非 gradle 的「N tests completed」）：
+[fulltest] tests=891 failures=0 errors=0 skipped=0
+[fulltest]   - app: tests=15 failures=0 errors=0
+[fulltest]   - core-agent: tests=266 failures=0 errors=0
+[fulltest]   - core-context: tests=60 failures=0 errors=0
+[fulltest]   - core-data: tests=77 failures=0 errors=0
+[fulltest]   - core-design: tests=33 failures=0 errors=0
+[fulltest]   - core-engine: tests=89 failures=0 errors=0
+[fulltest]   - core-kernel: tests=6 failures=0 errors=0
+[fulltest]   - core-mcp: tests=35 failures=0 errors=0
+[fulltest]   - core-model: tests=99 failures=0 errors=0
+[fulltest]   - core-net: tests=39 failures=0 errors=0
+[fulltest]   - core-skills: tests=31 failures=0 errors=0
+[fulltest]   - feature-chat: tests=104 failures=0 errors=0
+[fulltest]   - feature-settings: tests=29 failures=0 errors=0
+[fulltest]   - feature-tools: tests=8 failures=0 errors=0
+[fulltest] TEST-*.xml mtime 范围：最早 2026-11-23 21:11:08  最晚 2026-11-23 21:11:13
+[fulltest] 覆盖模块数：14（settings include 条目 = 14）
+-------------------------------------------------------------------
+[fulltest] 通过：tests=891 failures=0 errors=0 skipped=0（全部用例绿）

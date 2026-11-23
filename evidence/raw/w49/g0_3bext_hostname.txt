@@ -1,0 +1,22 @@
+# W49 P2-6：3b-ext 新增 hostname 属性形态判据 —— 正控 / 必红实证
+# 判据：hostname 属性引号后首字符非 '<' 即命中；占位符（引号后 '<'）豁免。
+# 模式串在 CI（secret-scan.yml）与本地脚本（w46-local-secret-gate.sh）均分段拼装，防自命中。
+
+[1] 现役树 tracked 全扫（期望 rc=1 = 无命中 = GREEN）：
+rc=1
+
+[2] 注入必红（_w49/hn_probe.txt，被 ignore 的本地文件）：
+1:x hostname="<redacted-value>" y
+rc=0（期望 0 = 命中）
+
+[3] 占位符不命中（期望 rc=1）：
+rc=1
+
+[4] 本地门禁默认态（注入文件在场，期望 RED rc=1）：
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=1 route3(ignored)=ROUTE3_HITS=1
+RED untracked: docs/analysis/w49-acceptance.md
+ROUTE2_HITS=1
+
+[5] 移除注入后默认态（期望 GREEN rc=0）：
+RED untracked: docs/handoff-20261123-wave49.md
+ROUTE2_HITS=2

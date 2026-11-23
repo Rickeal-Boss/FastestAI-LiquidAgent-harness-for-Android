@@ -103,4 +103,4 @@ BUILD SUCCESSFUL in 1m
 [localbuild]   MSYS_NO_PATHCONV=1 adb shell monkey -p com.rickeal.liquidharness.debug -c android.intent.category.LAUNCHER 1
 core_engine_rc=0
 XML counts appended
-tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-23T09:09:35.809Z" hostname="子瀚" time="0.122"
+tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-23T09:09:35.809Z" hostname="<host>" time="0.122"

@@ -25,12 +25,17 @@
 #   - 不在册（新注入 / 被修改）⇒ 照常 RED；tracked 路1 永远不豁免（真泄漏面）。
 # 于是单一默认参数同时满足「不误报历史」与「抓新注入」，--ci-semantics 只剩复刻用途。
 #
+# W49（P1-3 双键）：W48 册只按内容哈希豁免 ⇒「内容在册但位于全新路径」被静默跳过，
+# 是未登记的豁免面。册改 `<sha256>  <relative/path>` 双键，is_legacy_fixture 同时校验
+# 内容与文件身份；--selftest 增至六态（新增「同内容新路径 ⇒ RED」）。
+#
 # 用法：
 #   bash scripts/w46-local-secret-gate.sh                 # 全扫当前工作树（本地提交前默认入口）
 #   bash scripts/w46-local-secret-gate.sh --local-full     # 同默认（保留显式入口，兼容 W46 注释用法）
 #   bash scripts/w46-local-secret-gate.sh --ci-semantics   # 复刻 CI checkout：排除 _w*/ 与 local.properties
-#   bash scripts/w46-local-secret-gate.sh --selftest       # 五态注入/还原（历史在场 GREEN / 新探针 RED /
-#                                                          #   add-f tracked RED / 移除 GREEN / --ci-semantics GREEN）
+#   bash scripts/w46-local-secret-gate.sh --selftest       # 六态注入/还原（历史在场 GREEN / 新探针 RED /
+#                                                          #   add-f tracked RED / 移除 GREEN / --ci-semantics GREEN /
+#                                                          #   同内容新路径 RED）
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT" || exit 2
@@ -45,23 +50,30 @@ U3="/Us""ers/"         # 用户目录形态 3
 U4="/ho""me/"          # 用户目录形态 4
 M1="长度 ""129"        # PAT 长度元信息
 PAT=(-e "$S1" -e "$P1" -e "$P2" -e "$U1" -e "$U2" -e "$U3" -e "$U4" -e "$M1")
+# W49：hostname 属性形态（与 secret-scan.yml 3b-ext 同口径；占位符首字符 `<` 豁免）。
+H1='host'"name=\""
 LEGACY_HASHES="$ROOT/scripts/fixtures/w46-gate-legacy-hashes.txt"
 
 # W48 P1-2：历史 fixture 哈希白名单。在册 ⇒ 已登记的历史样本（跳过）；不在册 ⇒ 新命中（报红）。
-# 只作用于路2/路3 的文件行走；tracked 路1 不豁免。
+# W49 P1-3：册改**双键** `<sha256>  <relative/path>`，必须「内容哈希 AND 相对路径」同时命中
+#   同一行才豁免。W48 单键只校验内容 ⇒ 把在册样本复制到**全新路径**会被静默跳过（未登记的
+#   豁免面，外部审查以临时 git 仓库六态实证）。tracked 路1 仍不豁免。
 is_legacy_fixture() {
-  local h
-  h=$(sha256sum "$1" 2>/dev/null | awk '{print $1}')
-  [ -n "$h" ] && [ -f "$LEGACY_HASHES" ] && grep -qxF "$h" "$LEGACY_HASHES"
+  local rel="$1" h
+  [ -f "$LEGACY_HASHES" ] || return 1
+  h=$(sha256sum "$rel" 2>/dev/null | awk '{print $1}')
+  [ -n "$h" ] || return 1
+  grep -qxF "$h  $rel" "$LEGACY_HASHES"
 }
 
 scan_tracked() {
   git grep -nIF "${PAT[@]}" -- . 2>/dev/null
+  git grep -nIE "$H1[^<]" -- . 2>/dev/null
 }
 scan_untracked() {
   local hits=0 f
   while IFS= read -r f; do
-    grep -qIF "${PAT[@]}" -- "$f" 2>/dev/null || continue
+    { grep -qIF "${PAT[@]}" -- "$f" 2>/dev/null || grep -qIE "$H1[^<]" -- "$f" 2>/dev/null; } || continue
     if is_legacy_fixture "$f"; then continue; fi
     echo "RED untracked: $f"; hits=$((hits+1))
   done < <(git ls-files --others --exclude-standard 2>/dev/null)
@@ -80,7 +92,7 @@ scan_ignored() {
     if [ "$ci_semantics" -eq 1 ]; then
       case "$f" in _w[0-9]*/|_w[0-9]*|local.properties) continue ;; esac
     fi
-    grep -qIF "${PAT[@]}" -- "$f" 2>/dev/null || continue
+    { grep -qIF "${PAT[@]}" -- "$f" 2>/dev/null || grep -qIE "$H1[^<]" -- "$f" 2>/dev/null; } || continue
     # W48 P1-2：历史 fixture 哈希在册 ⇒ 跳过（默认态不再被历史样本恒红）。
     if is_legacy_fixture "$f"; then continue; fi
     echo "RED ignored: $f"; hits=$((hits+1))
@@ -93,7 +105,10 @@ selftest() {
   mkdir -p _w48
   echo "=== STATE 1: 默认全扫 + 历史 fixture 在场（W48 哈希白名单后应三路全 0，GREEN rc=0）==="
   scan_tracked | head -3; echo "ROUTE1_HITS=$(scan_tracked | wc -l | tr -d ' ')"
-  scan_untracked | tail -1; scan_ignored | tail -1
+  scan_untracked | grep "^RED" || true
+  scan_untracked | tail -1
+  scan_ignored | grep "^RED" || true
+  scan_ignored | tail -1
   echo "=== STATE 2a: 被 ignore 的新 .jsonl 含 serial 未 -f + 默认全扫（第三路应 RED，rc=1）==="
   printf 'serial=%s path=%s\n' "$S1" "$P1" > "$probe"
   git check-ignore "$probe" >/dev/null 2>&1 && echo "check-ignore: $probe (ignored ✓)"
@@ -101,7 +116,12 @@ selftest() {
   echo "=== STATE 2b: 同上 + git add -f（第一路 tracked git grep 应 RED，rc=1）==="
   git add -f "$probe" 2>/dev/null
   # 只打文件名列，不打命中行内容 —— 命中行含真实字面量，禁止进证据（W47 g3 前车）。
-  scan_tracked | grep "$probe" | cut -d: -f1 | grep -q "$probe" && echo "RED tracked hit (git grep rc=0): $probe" || echo "WARN: route1 did not see staged probe"
+  # 直接用 `git grep -q` 判（不经过多段管道：管道只反映最后一段的 rc，会把故障吞成 WARN）。
+  if git grep -qIF "${PAT[@]}" -- "$probe" 2>/dev/null; then
+    echo "RED tracked hit (git grep rc=0): $probe"
+  else
+    echo "SELF_FAULT: route1 did not see staged probe"
+  fi
   echo "=== STATE 3: 移除探针回默认 GREEN（历史 fixture 仍在场）==="
   git rm --cached -f "$probe" >/dev/null 2>&1
   rm -f "$probe"
@@ -115,6 +135,19 @@ selftest() {
   scan_ignored | tail -1
   echo "=== STATE 4: --ci-semantics（复刻 CI checkout，应 GREEN rc=0）==="
   scan_ignored --ci-semantics | tail -1
+  # W49 P1-3 第六态：内容哈希在册、路径不在册 ⇒ 双键必须判 RED（W48 单键实态为 GREEN）。
+  local dup="_w49/brand_new_path.jsonl" src="_w12_archguard.log"
+  mkdir -p _w49
+  if [ -f "$src" ]; then
+    cp "$src" "$dup"
+    git check-ignore "$dup" >/dev/null 2>&1 && echo "check-ignore: $dup (ignored ✓)"
+    echo "same-content src=$src hash=$(sha256sum "$src" | awk '{print $1}') ; dup in book(pair)=$(grep -cxF "$(sha256sum "$dup" | awk '{print $1}')  $dup" "$LEGACY_HASHES" || true)"
+    scan_ignored | grep "$dup" && echo "RED same-content new path hit: $dup (double-key OK)" || echo "SELF_FAULT: new path was exempted (double-key broken)"
+    rm -f "$dup"
+    scan_ignored | grep "$dup" >/dev/null && echo "SELF_FAULT: dup still reported after removal" || echo "dup removed: GREEN"
+  else
+    echo "SKIP STATE 5: $src absent (历史样本不在场)"
+  fi
   echo "=== selftest end（探针已还原，工作树与 index 干净）==="
 }
 

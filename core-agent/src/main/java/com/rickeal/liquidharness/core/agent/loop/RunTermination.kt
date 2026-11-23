@@ -108,10 +108,21 @@ class RunTermination {
      * W48 判序范式：`evidenceTag` 同一口径透传，并附在 `run failed:` 行尾
      * （` [http:rate]` 形态，固定诊断码、白名单 FAILURE_DIGEST 允许的可选后缀）——
      * 落盘后真机 `run-as` 可直接读出「这次失败命中了哪条判据」，不用回放词表推理。
+     *
+     * W49 P1-4：`evidenceTag` 由调用点显式传入（看门狗 / 重试放弃 / 兜底路径不经过
+     * `GenerationEvent.Failed` 的 state 写入）；为空时回落 `state.evidenceTag`。
+     * [digest] 是落盘摘要：动态异常 / provider 正文只进 ring，落盘只写固定模板，
+     * 否则 `FAILURE_DIGEST` 白名单必然拦掉整行、标签也就读不到。
      */
-    suspend fun emitFailed(ctx: TurnContext, message: String, cause: Throwable? = null) {
-        val tag = ctx.state.evidenceTag
-        AgentLogStore.error("run failed: " + message + if (tag.isEmpty()) "" else " [$tag]")
+    suspend fun emitFailed(
+        ctx: TurnContext,
+        message: String,
+        cause: Throwable? = null,
+        evidenceTag: String = "",
+        digest: String? = null,
+    ) {
+        val tag = evidenceTag.ifEmpty { ctx.state.evidenceTag }
+        AgentLogStore.error("run failed: " + (digest ?: message) + if (tag.isEmpty()) "" else " [$tag]")
         ctx.emit(
             AgentEvent.Failed(
                 message = message,

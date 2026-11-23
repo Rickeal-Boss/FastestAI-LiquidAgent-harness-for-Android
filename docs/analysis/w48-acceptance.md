@@ -16,7 +16,7 @@
 | # | 分歧 | 裁决 | 四态 |
 |---|---|---|---|
 | 1 | 台账三数：深度审查采 216/39/166/11；「W901 拆分闭环」报告称 816/41/168/13 并指前者陈旧；harness-w47-review 写 216/80/209（自相矛盾） | **回源实测采 216 挂账行 / 39 CLOSED / 166 OPEN / 11 CARRIED**（816 为文件总行数，逐行剥反引号状态列清点，39+166+11=216 自洽）；「41/168/13」与「80/209」均判误（前者疑把行内注记状态字样计入，后者两数之和超总行数） | ✅ |
-| 2 | 三待拍板框架：派单卡三问（W24-01 销否 / W24-02 两边界 / 矩阵收官）vs harness-w47-review 三按钮（W24-01 修\|收官 / journal 开\|弃 / F6） | 采派单卡三问为对账口径；用户 kickoff「继续按照计划执行、全面推进」⇒ 矩阵继续全面推进；`W24-01`/`W24-02` 按派单卡推荐路径维持（台账注记已注明依用户指令执行、非主理人代裁） | ✅ |
+| 2 | 三待拍板框架：派单卡三问（W24-01 销否 / W24-02 两边界 / 矩阵收官）vs harness-w47-review 三按钮（W24-01 修\|收官 / journal 开\|弃 / F6） | 采派单卡三问为对账口径；**连续第七波未获用户字面裁决**，矩阵按长期规约全面推进、`W24-01`/`W24-02` 按推荐路径维持，主理人不代裁（W49 订正：原「kickoff 即基准」措辞失实） | ⚠️ 措辞已订正 |
 | 3 | W9-01 同尺化余项排期：「W901 拆分闭环」列 P0 本波正面做 vs 派单卡排在用户裁决后 | 采派单卡：core-kernel 449/450 贴线，`W20-02`/450 处理须先获用户一字裁决，本波不动 core-kernel、不调 `LINE_CAPS` | ✅ |
 | 4 | 三脚本接闸门口径（P2-3）与消费方数量 3/4 不一致 | 采「两个判据脚本接 CI + 本机闸门保留本机入口」；「4 个文件改 import（其中 2 个运行时消费方）」，三处文档已统一 | ✅ |
 | 5 | 白名单 W47 声明「形态白名单」易读成 12 类全覆盖（P1-1 措辞） | 采订正：W47 实态两类约束、其余 startsWith；W48 本波真修至全覆盖后仍按写点实态记账 | ✅ |
@@ -34,7 +34,7 @@
 | P2-3 口径 | 派单卡「三个脚本接闸门」改「两判据脚本接 CI + 本机闸门保留本机入口」；消费方数量统一「4 个文件改 import（其中 2 个运行时消费方）」 | ✅ | `docs/w47-dispatch.md` / W47 交接 §五 / W47 验收物 / 台账 W47 段 |
 | P2-4 输入同步 | 仓内无「勾选状态以 02-roadmap 为准」残留（grep 0 命中，README:32 已是现役口径）；GitHub About 原为空、推送时置台账口径（见步 5）；用户侧旧快照按 `AGENTS.md:10` 不作真值源 | ✅ | 本表 + 步 5 About 变更记录 |
 | P1-1 措辞 | W47 交接边界② / W47 验收物边界② 改「两类动态写点已收为固定形态正则、其余 startsWith（判据不对称已登记）」 | ✅ | 同上两文件 |
-| 台账注记 | 5 条老号行内注记落笔（`W36-01`/`W12-02`/`W9-01`/`W24-02`/`W24-01`），逐行 pipe=7 自检 + W48 段声明「本波销账集合 = 0 行」 | ✅ | `docs/06-deferred-ledger.md` |
+| 台账注记 | **W49 订正**：W48 实落 **1 条**（`W36-01` 门禁去噪补录），`W12-02`/`W9-01`/`W24-02`/`W24-01` 四条 W48 未落、由 W49 回补；四条逐行 pipe=7、状态原样、不回开 + W48 段标题收敛为「本波销账集合 = 0 行」 | ⚠️ W48 实落 1 条（W49 回补 4 条） | `docs/06-deferred-ledger.md` |
 
 ## 步 3 · 第 1 车（代码 + 判据先行）
 
@@ -73,7 +73,7 @@
 - **代码提交 2 条 run，tip `8d545577ff6a6818910d01795f74e4528e7499ba` 双绿**（公开 API 四字段实取）：
   - Build `45153831020`（`head_sha=8d545577ff6a6818910d01795f74e4528e7499ba` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T10:14:12Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45153831020`）。
   - Secret scan `45153830812`（`head_sha=8d545577ff6a6818910d01795f74e4528e7499ba` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T10:11:59Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45153830812`）。**交付判据 = 最终 tip 双 run 全绿。**
-- 本验收物所在文档提交为纯文档 tip：Build 0 run（`paths-ignore` 既定口径），其 Secret run 按 W29 降级仅记录、不作 P0（回填后不再触发进一步回填）。
+- **文档 tip 1 条（降级）**：代码提交 `8d545577ff6a6818910d01795f74e4528e7499ba` 的 Build/Secret 双绿见上；文档提交 `94bbc53da168b5031f37d8d72dc0a3a11a0fb369` 的 Secret scan `45154919970`（`head_sha=94bbc53da168b5031f37d8d72dc0a3a11a0fb369` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T10:18:43Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45154919970`），Build 0 run（`paths-ignore` 既定口径）。按 W29 降级仅记录、不作 P0。**本波口径 = 代码提交 2 条 + 文档 tip 1 条（降级）**。
 - 本地四闸门：G1 `assembleDebug` rc=0；G2 `OK=27 VACUOUS=1 VIOLATION=0`（G20 141 ID 不变）；G3 `30/30 PASS（323s）`；G4 `tests=886 failures=0 errors=0 skipped=0`（14 模块）。
 - GitHub About 同步（P2-4）：description 已置「API-first Android Agent Harness（模型是可插拔后端）。勾选状态以 `docs/06-deferred-ledger.md` 为准；`docs/02-roadmap.md` 仅历史参照。」（公开 API PATCH 实取确认）。
 
@@ -100,12 +100,12 @@
 
 ## 边界声明
 
-① 判序范式只动映射与标签、词表冻结；25 样本判级零变化，「回退到词表优先」变异必红已实证。② 白名单是形态白名单非语义判断：新写点漏登记只损失落盘不损失 ring；`context limit writeback` 为测试钉形态（生产写点为 `context_limit_writeback_failed`，不落盘口径维持）。③ 门禁哈希白名单只豁免 **注册基线 140 件**；新文件/被修改文件照常 RED，tracked 永不豁免；新长期取证样本须登记哈希入册。④ E3 Lightning 终答未逐字回引（模型行为 + 轮次上限/熔断），不写成通过；E5 North 404 为设备真相不写成可用；E9/E11 如实 vacuous/⚠️。⑤ 1M 档为常规请求非满窗真压。⑥ 三待拍板依用户 kickoff「按计划执行、全面推进」执行：矩阵全面推进、两老号按推荐路径维持，台账注记已注明非代裁。⑦ CI 绿以 run 四字段为准，tip 文档 run 按 W29 降级只记录不作 P0。⑧ E4 Dots3 会话级成功为本波设备真相；历史 W42–W47 404 记录维持历史事实不回改。
+① 判序范式只动映射与标签、词表冻结；25 样本判级零变化，「回退到词表优先」变异必红已实证。② 白名单是形态白名单非语义判断：新写点漏登记只损失落盘不损失 ring；`context limit writeback` 为测试钉形态（生产写点为 `context_limit_writeback_failed`，不落盘口径维持）。③ 门禁哈希白名单只豁免 **注册基线 140 件**；新文件/被修改文件照常 RED，tracked 永不豁免；新长期取证样本须登记哈希入册。④ E3 Lightning 终答未逐字回引（模型行为 + 轮次上限/熔断），不写成通过；E5 North 404 为设备真相不写成可用；E9/E11 如实 vacuous/⚠️。⑤ 1M 档为常规请求非满窗真压。⑥ 三待拍板未获用户字面裁决（连续第七波）：矩阵按长期规约全面推进、两老号按推荐路径维持，主理人不代裁。⑦ CI 绿以 run 四字段为准，tip 文档 run 按 W29 降级只记录不作 P0。⑧ E4 Dots3 会话级成功为本波设备真相；历史 W42–W47 404 记录维持历史事实不回改。
 
 > 本波止于交接，交由外部团队审查。
 
 ## 交给外部审查团队的制品
 
-`docs/analysis/w48-acceptance.md`（本文件）、`docs/handoff-20261123-wave48.md`、`docs/w48-dispatch.md`、`docs/06-deferred-ledger.md`（五处 W48 注记 + W48 段）、`docs/handoff-20261123-wave47.md` 与 `docs/analysis/w47-acceptance.md`（收尾订正）、`evidence/raw/w48/`（G1–G4 原始输出 + 判据先行 RED/GREEN 四件 + 门禁五态 + 8 张脱敏判据截图 + deviceLogTail）、`evidence/raw/w47/g0_scan_full.txt` 与 `g0_scan_v2.txt`（名实订正）、代码主体逐文件 diff（DiagnosticLogSink / OpenAiErrorFrame / RemoteLlmEngine / GenerationEvent / AgentEvent / RunState / GenerationRound / RunTermination / 三个测试类 / build.yml）、`scripts/w46-local-secret-gate.sh`（哈希白名单）+ `scripts/fixtures/w46-gate-legacy-hashes.txt`。
+`docs/analysis/w48-acceptance.md`（本文件）、`docs/handoff-20261123-wave48.md`、`docs/w48-dispatch.md`、`docs/06-deferred-ledger.md`（W48 段 + `W36-01` 一条注记；另四条由 W49 回补）、`docs/handoff-20261123-wave47.md` 与 `docs/analysis/w47-acceptance.md`（收尾订正）、`evidence/raw/w48/`（G1–G4 原始输出 + 判据先行 RED/GREEN 四件 + 门禁五态 + 8 张脱敏判据截图 + deviceLogTail）、`evidence/raw/w47/g0_scan_full.txt` 与 `g0_scan_v2.txt`（名实订正）、代码主体逐文件 diff（DiagnosticLogSink / OpenAiErrorFrame / RemoteLlmEngine / GenerationEvent / AgentEvent / RunState / GenerationRound / RunTermination / 三个测试类 / build.yml）、`scripts/w46-local-secret-gate.sh`（哈希白名单）+ `scripts/fixtures/w46-gate-legacy-hashes.txt`。
 
 **不含**：会话历史 / 凭据 / 端点完整标识与密钥 / 未打码账号字段 / 设备序列号 / SSID / 本机路径 / 用户私人图片 / uiautomator 噪声 /「建议下一链做什么」。

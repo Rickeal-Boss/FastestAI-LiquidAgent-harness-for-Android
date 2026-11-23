@@ -45,9 +45,48 @@ class DiagnosticLogSinkTest {
         assertTrue(DiagnosticLogSink.isProbeLine("context compressed: 30 -> 12 messages (budget=20928 target=12556)"))
         assertTrue(DiagnosticLogSink.isProbeLine("summary truncated: max=1024"))
         assertTrue(DiagnosticLogSink.isProbeLine("layered compress: mode=L1_FALLBACK reason=over-hard-budget"))
-        assertTrue(DiagnosticLogSink.isProbeLine("context limit writeback: 131072 -> 65536"))
+        // W49 P2-8：改生产真实写点形态（ContextLimitWriteback:66），原「A -> B」只存在于测试。
+        assertTrue(DiagnosticLogSink.isProbeLine("context_limit_writeback_failed endpoint=nv-super-vl verified=131072"))
         // 前后空白不影响前缀判据（写点侧无空白，防御性断言）。
         assertTrue(DiagnosticLogSink.isProbeLine("  cached=4096(cumulative)  "))
+    }
+
+    /**
+     * W49 P1-4：失败摘要主体从 2 类扩到 13 类固定模板。
+     *
+     * 动因：W48 的 `evidenceTag` 只在 `request rejected` / `protocol error` 两种主体上
+     * 能落盘，限流 / 鉴权 / 服务端 / 超时 / 看门狗 / 重试放弃这些「判序最想诊断」的
+     * 失败行被白名单整行拦掉 —— 标签写进了 ring，文件里读不到。
+     *
+     * 反向断言同样重要：动态正文（异常 message、provider 原文）与「固定主体 + 尾巴」
+     * 仍必须拦住。白名单放宽的是**主体枚举**，不是长度或字符集。
+     */
+    @Test
+    fun failureDigestCoversAllFixedDiagnosticBodies() {
+        val bodies = listOf(
+            "request rejected (HTTP 400)",
+            "authentication failed (HTTP 401)",
+            "rate limited (HTTP 429)",
+            "request timeout (HTTP 408)",
+            "server error (HTTP 503)",
+            "context window exceeded",
+            "timeout: no response from provider within 120000ms",
+            "protocol error",
+            "giving up after 1 retries",
+            "cannot retry after partial output",
+            "loop exited without a terminal state",
+            "stream failed",
+            "uncaught failure",
+        )
+        bodies.forEach { assertTrue(DiagnosticLogSink.isProbeLine("run failed: $it"), "固定主体应落盘：$it") }
+        assertTrue(DiagnosticLogSink.isProbeLine("run failed: rate limited (HTTP 429) [http:rate]"))
+        assertTrue(DiagnosticLogSink.isProbeLine("run failed: uncaught failure [engine:uncaught]"))
+        assertTrue(DiagnosticLogSink.isProbeLine("run failed: timeout: no response from provider within 60000ms [engine:watchdog]"))
+        // 动态正文 / 未登记主体 / 固定主体后缀多余内容 ⇒ 一律拦下。
+        assertFalse(DiagnosticLogSink.isProbeLine("run failed: boom at /sdcard/private.log"))
+        assertFalse(DiagnosticLogSink.isProbeLine("run failed: giving up after 2 retries: provider said secret"))
+        assertFalse(DiagnosticLogSink.isProbeLine("run failed: rate limited (HTTP 429) [http:rate] extra"))
+        assertFalse(DiagnosticLogSink.isProbeLine("run failed: stream failed: java.io.IOException: /data/x"))
     }
 
     @Test
@@ -158,7 +197,7 @@ class DiagnosticLogSinkTest {
         assertFalse(DiagnosticLogSink.isProbeLine("compress_align=skipped 用户内容 hello"))
         assertFalse(DiagnosticLogSink.isProbeLine("context_overflow_prevented: 用户原始prompt片段"))
         assertFalse(DiagnosticLogSink.isProbeLine("compress=disabled_by_policy 用户原始prompt片段"))
-        assertFalse(DiagnosticLogSink.isProbeLine("context limit writeback: user echoed hunter2 email a@b.com"))
+        assertFalse(DiagnosticLogSink.isProbeLine("context_limit_writeback_failed endpoint=user echoed hunter2 email a@b.com verified=1"))
         assertFalse(DiagnosticLogSink.isProbeLine("prefix fp=ab12 changed=none prompt=1234 cached=用户echo内容"))
     }
 

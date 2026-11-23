@@ -1,0 +1,22 @@
+=== STATE 1: 默认全扫 + 历史 fixture 在场（W48 哈希白名单后应三路全 0，GREEN rc=0）===
+ROUTE1_HITS=0
+ROUTE2_HITS=0
+ROUTE3_HITS=0
+=== STATE 2a: 被 ignore 的新 .jsonl 含 serial 未 -f + 默认全扫（第三路应 RED，rc=1）===
+check-ignore: _w48/forceadd_probe.jsonl (ignored ✓)
+RED ignored: _w48/forceadd_probe.jsonl
+RED ignored hit: _w48/forceadd_probe.jsonl
+=== STATE 2b: 同上 + git add -f（第一路 tracked git grep 应 RED，rc=1）===
+RED tracked hit (git grep rc=0): _w48/forceadd_probe.jsonl
+=== STATE 3: 移除探针回默认 GREEN（历史 fixture 仍在场）===
+ROUTE1_HITS=0 ; probe file exists=no ; in-index=no
+probe literal hits after removal=0 (expect 0)
+ROUTE3_HITS=0
+=== STATE 4: --ci-semantics（复刻 CI checkout，应 GREEN rc=0）===
+ROUTE3_HITS=0
+check-ignore: _w49/brand_new_path.jsonl (ignored ✓)
+same-content src=_w12_archguard.log hash=236204b42d5939732762644bac643dcc3f0ecbe85730359260a52d8244526737 ; dup in book(pair)=0
+RED ignored: _w49/brand_new_path.jsonl
+RED same-content new path hit: _w49/brand_new_path.jsonl (double-key OK)
+dup removed: GREEN
+=== selftest end（探针已还原，工作树与 index 干净）===

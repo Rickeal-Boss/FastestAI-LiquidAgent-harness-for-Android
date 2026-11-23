@@ -95,7 +95,8 @@ class DiagnosticLogSink(private val store: AgentLogFileStore) {
          *   与 `AgentRunner:192`（动态 provider 正文不落盘，只进 ring）；
          * - `context compressed` 双写点 ← `ContextCompressor:109` / `ContextBudget:190`；
          * - `summary truncated` ← `LayeredContextCompressor:211`；
-         * - `context limit writeback` ← 测试钉形态（`A -> B`）；
+         * - `context_limit_writeback_failed` ← `ContextLimitWriteback:66`（真实生产写点；
+         *   W49 P2-8 替换掉此前只存在于测试里的 `context limit writeback: A -> B` 空转形态）；
          * - `prefix fp=…` 账行 ← `ContextBudget:278`（fp 为 hex、changed 为段名或 none、cached 为标签值域）。
          */
         /** `cached=` 标签值域（与 `ContextBudget.cachedLabel` 同源；改一处须同步另一处）。 */
@@ -105,17 +106,37 @@ class DiagnosticLogSink(private val store: AgentLogFileStore) {
         private const val MAX_DIGEST_CHARS = 160
 
         /**
-         * 固定失败摘要：`run failed: request rejected (HTTP 400)` / `run failed: protocol error`，
-         * 可选 ` [证据标签]` 后缀（W48 判序范式：`Failed.evidenceTag` 随失败行落盘供真机诊断，
-         * 标签为 `[a-z0-9:_.-]+` 诊断码形态，不含自由文本）。
+         * 固定失败摘要：`run failed: <固定诊断主体>`，可选 ` [证据标签]` 后缀（W48 判序范式：
+         * `Failed.evidenceTag` 随失败行落盘供真机诊断，标签为 `[a-z0-9:_.-]+` 诊断码形态，
+         * 不含自由文本）。
          *
          * W46 只判「ASCII + ≤160 字符」，任何 ≤160 的 ASCII 自由文本（英文 prompt 回显、
          * 邮箱、密码）都能穿透 —— 外审 P1-1 的短 ASCII 洞。W47 改为**固定形态整行匹配**；
          * 动态 provider message 仍在进程内 ring（诊断页可见），只是不进 `run-as` 可取的
          * 持久化文件。
+         *
+         * W49 P1-4：主体从 2 类扩到 **12 类固定模板** —— 原版只放行 `request rejected` 与
+         * `protocol error`，导致限流 / 鉴权 / 服务端 / 超时这几种「判序最想诊断」的失败行
+         * 连标签一起被拦在文件外（标签写进去了、行没落盘）。新增主体全部是写死的模板串或
+         * `Attempt.Fatal.digest` 的固定摘要（`giving up after N retries` 等），不含动态正文；
+         * 动态部分（provider 原文、异常 message）仍只进 ring。
          */
         private val FAILURE_DIGEST = Regex(
-            """^run failed: (request rejected \(HTTP \d{3}\)|protocol error)( \[[a-z0-9:_.-]+\])?$"""
+            "^run failed: (" +
+                "request rejected \\(HTTP \\d{3}\\)|" +
+                "authentication failed \\(HTTP \\d{3}\\)|" +
+                "rate limited \\(HTTP \\d{3}\\)|" +
+                "request timeout \\(HTTP \\d{3}\\)|" +
+                "server error \\(HTTP \\d{3}\\)|" +
+                "context window exceeded|" +
+                "timeout: no response from provider within \\d+ms|" +
+                "protocol error|" +
+                "giving up after \\d+ retries|" +
+                "cannot retry after partial output|" +
+                "loop exited without a terminal state|" +
+                "stream failed|" +
+                "uncaught failure" +
+                ")( \\[[a-z0-9:_.-]+\\])?$"
         )
         /** `auto_compact=noop reason=<固定码>` / `manual_compress=noop reason=<固定码>`。 */
         private val REASON_LINE = Regex(
@@ -154,9 +175,9 @@ class DiagnosticLogSink(private val store: AgentLogFileStore) {
             // context compressed 双写点（ContextCompressor 带 tokens/dropped 尾巴、ContextBudget 无）。
             Regex("""^context compressed: \d+ -> \d+ messages \(budget=\d+ target=\d+(?: tokens, dropped=\d+)?\)$"""),
             Regex("""^context compressed before round \d+: \d+ -> \d+ messages \(estimated \d+ > budget \d+\)$"""),
-            // summary truncated / context limit writeback。
+            // summary truncated / context limit writeback 失败行（W49：改生产真实形态）。
             Regex("""^summary truncated: max=\d+$"""),
-            Regex("""^context limit writeback: \d+ -> \d+$"""),
+            Regex("""^context_limit_writeback_failed endpoint=[A-Za-z0-9_.:-]+ verified=\d+$"""),
             // prefix 账行（fp hex、changed 段名或 none、cached 标签值域；prompt 段可缺省）。
             Regex("""^prefix fp=[0-9a-f]+ changed=[A-Za-z_,]+ prompt=\d+ cached=$CACHED_LABEL$"""),
             Regex("""^prefix fp=[0-9a-f]+ changed=[A-Za-z_,]+ cached=$CACHED_LABEL$"""),
