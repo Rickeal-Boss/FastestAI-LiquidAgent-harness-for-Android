@@ -147,7 +147,7 @@
 
 - 红态如实记录：首提交 Secret 判红 → 证据脱敏 fix（`4b2be94`）→ 重推 → 最终 tip 双绿。**交付判据 = 最终 tip 双 run 全绿**。
 - 链接：Build `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45185252002`；Secret `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45185251937`。
-- 本验收物所在文档提交为纯文档 tip：Build 0 run（`paths-ignore` 既定口径），Secret run 按 W29 降级仅记录。
+- **文档 tip 1 条（降级）**：`e9516ca14f043c16d0685951c98360fc8ce996d3` 的 Secret scan `45185935245`（completed / success / 2026-11-23T13:38:47Z），Build 0 run（`paths-ignore` 既定口径）。按 W29 降级仅记录、不作 P0；本条之后不再回填。
 
 ---
 
