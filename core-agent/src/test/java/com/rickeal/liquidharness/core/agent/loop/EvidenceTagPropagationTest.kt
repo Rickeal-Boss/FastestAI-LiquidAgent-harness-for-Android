@@ -168,8 +168,77 @@ class EvidenceTagPropagationTest {
             runBlocking { GenerationRound(backoff = {}).run(ctx, "sys") }
 
             val line = failureLines().single()
-            assertEquals("run failed: giving up after 1 retries [http:rate]", line)
+            assertEquals("run failed: giving up after 1 retries [engine:give-up]", line)
             assertFalse("provider 正文不得进落盘摘要：$line", line.contains("429"))
+            assertFalse("放弃原因不得沿用上一轮限流标签：$line", line.contains("http:rate"))
+        } finally {
+            restore()
+        }
+    }
+
+    /**
+     * W50 P2-1：半截输出不重试的**真实原因**是「已吐过正文」，不能沿用导致重试的
+     * 上一轮标签（`[http:rate]`）。旧实现 `prepareRetry` 不传标签，回落
+     * `ctx.state.evidenceTag` ⇒ 500 / 限流语义漂移。
+     */
+    @Test
+    fun partialOutputFailureCarriesExplicitTag() {
+        val restore = captureSink()
+        try {
+            val engine = FakeEngine(
+                scripts = listOf(
+                    listOf(
+                        GenerationEvent.TextDelta("partial answer"),
+                        GenerationEvent.Failed(
+                            EngineErrorKind.RATE_LIMIT, "rate limited (HTTP 429)", retryable = true,
+                            evidenceTag = "http:rate",
+                        ),
+                    ),
+                ),
+            )
+            val events = mutableListOf<AgentEvent>()
+            val ctx = context(engine, events)
+
+            runBlocking { GenerationRound(backoff = {}).run(ctx, "sys") }
+
+            val line = failureLines().single()
+            assertEquals("run failed: cannot retry after partial output [engine:partial-output]", line)
+            assertFalse("半截输出路径不得沿用限流标签：$line", line.contains("http:rate"))
+        } finally {
+            restore()
+        }
+    }
+
+    /**
+     * W50 P2-3：`GenerationEvent.Failed` 的 message 兜底支可能带 provider 自由文本
+     * （含用户内容 / 路径）。旧实现 `Attempt.Fatal(failed.message, null, failed.evidenceTag)`
+     * 不传摘要 ⇒ `emitFailed` 用原文落盘，白名单整行拦掉，标签随之读不到。
+     */
+    @Test
+    fun providerRawMessageUsesFixedDigestAndKeepsTag() {
+        val restore = captureSink()
+        try {
+            val engine = FakeEngine(
+                scripts = listOf(
+                    listOf(
+                        GenerationEvent.Failed(
+                            EngineErrorKind.PROTOCOL,
+                            "provider says: hunter2 at /data/local/tmp/private.log",
+                            retryable = false,
+                            evidenceTag = "frame:protocol-fallback",
+                        ),
+                    ),
+                ),
+            )
+            val events = mutableListOf<AgentEvent>()
+            val ctx = context(engine, events)
+
+            runBlocking { GenerationRound(backoff = {}).run(ctx, "sys") }
+
+            val line = failureLines().single()
+            assertEquals("run failed: provider error [frame:protocol-fallback]", line)
+            assertFalse("provider 原文不得进落盘行：$line", line.contains("hunter2"))
+            assertFalse("provider 原文路径不得进落盘行：$line", line.contains("/data/local/tmp"))
         } finally {
             restore()
         }

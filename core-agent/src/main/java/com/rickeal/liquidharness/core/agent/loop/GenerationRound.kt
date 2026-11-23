@@ -102,7 +102,7 @@ class GenerationRound(
                 else RoundOutcome.Terminated
 
             is Attempt.Fatal -> {
-                // W49：Fatal 自带证据标签与落盘摘要，四处透传（不经 Failed 的 state 写入）。
+                // W49/W50：Fatal 自带标签与落盘摘要；仅 frame: 支（provider 原文）走固定摘要 `provider error`，固定模板支保留原摘要。
                 termination.emitFailed(ctx, result.message, result.cause, result.evidenceTag, result.digest)
                 RoundOutcome.Terminated
             }
@@ -279,7 +279,7 @@ class GenerationRound(
 
         failure?.let { failed ->
             return if (failed.retryable) Attempt.Retryable(failed.message, failed.truncatedStream)
-            else Attempt.Fatal(failed.message, null, failed.evidenceTag)
+            else Attempt.Fatal(failed.message, null, failed.evidenceTag, if (failed.evidenceTag.startsWith("frame:")) "provider error" else null)
         }
 
         val produced = fragments.snapshot()
@@ -330,7 +330,7 @@ class GenerationRound(
         // ① 预算判断在前：放弃路径**绝不回滚** —— 次数用尽时用户至少要看到已收到的半截回答。
         if (attempt >= maxRetries) {
             val digest = "giving up after " + attempt + " retries"
-            termination.emitFailed(ctx, digest + ": " + reason, digest = digest)
+            termination.emitFailed(ctx, digest + ": " + reason, digest = digest, evidenceTag = "engine:give-up")
             return false
         }
         // ② 已吐过正文**或思考**都不许叠加：重发会让模型从头再答一遍，
@@ -340,7 +340,7 @@ class GenerationRound(
             ctx.state.reasoningLength() != reasoningBefore
         if (wroteOutput && !truncatedStream) {
             val digest = "cannot retry after partial output"
-            termination.emitFailed(ctx, digest + ": " + reason, digest = digest)
+            termination.emitFailed(ctx, digest + ": " + reason, digest = digest, evidenceTag = "engine:partial-output")
             return false
         }
         // ③ 截断的整段回滚：先改真值源（RunState 文本缓冲），再通知 UI 清流式缓冲。

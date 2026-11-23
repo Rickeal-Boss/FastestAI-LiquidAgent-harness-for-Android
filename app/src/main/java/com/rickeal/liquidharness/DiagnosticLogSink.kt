@@ -115,11 +115,12 @@ class DiagnosticLogSink(private val store: AgentLogFileStore) {
          * 动态 provider message 仍在进程内 ring（诊断页可见），只是不进 `run-as` 可取的
          * 持久化文件。
          *
-         * W49 P1-4：主体从 2 类扩到 **12 类固定模板** —— 原版只放行 `request rejected` 与
-         * `protocol error`，导致限流 / 鉴权 / 服务端 / 超时这几种「判序最想诊断」的失败行
-         * 连标签一起被拦在文件外（标签写进去了、行没落盘）。新增主体全部是写死的模板串或
-         * `Attempt.Fatal.digest` 的固定摘要（`giving up after N retries` 等），不含动态正文；
-         * 动态部分（provider 原文、异常 message）仍只进 ring。
+         * W49 P1-4：主体从 2 类扩到固定模板（旧文档写「12 类」为笔误，正则实为 **13 类**）——
+         * 原版只放行 `request rejected` 与 `protocol error`，导致限流 / 鉴权 / 服务端 / 超时
+         * 这几种「判序最想诊断」的失败行连标签一起被拦在文件外（标签写进去了、行没落盘）。
+         * W50 P2-3 为 message-only 兜底支补**第 14 类** `provider error`：provider 自由文本
+         * （含用户内容 / 路径）改走固定摘要，正文仍只进 ring。新增主体全部是写死的模板串或
+         * `Attempt.Fatal.digest` 的固定摘要，不含动态正文。
          */
         private val FAILURE_DIGEST = Regex(
             "^run failed: (" +
@@ -135,7 +136,8 @@ class DiagnosticLogSink(private val store: AgentLogFileStore) {
                 "cannot retry after partial output|" +
                 "loop exited without a terminal state|" +
                 "stream failed|" +
-                "uncaught failure" +
+                "uncaught failure|" +
+                "provider error" +
                 ")( \\[[a-z0-9:_.-]+\\])?$"
         )
         /** `auto_compact=noop reason=<固定码>` / `manual_compress=noop reason=<固定码>`。 */

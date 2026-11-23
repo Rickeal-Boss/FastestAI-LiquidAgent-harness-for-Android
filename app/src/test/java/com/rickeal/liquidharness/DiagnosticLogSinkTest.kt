@@ -77,8 +77,13 @@ class DiagnosticLogSinkTest {
             "loop exited without a terminal state",
             "stream failed",
             "uncaught failure",
+            "provider error",
         )
         bodies.forEach { assertTrue(DiagnosticLogSink.isProbeLine("run failed: $it"), "固定主体应落盘：$it") }
+        assertTrue(DiagnosticLogSink.isProbeLine("run failed: provider error [frame:protocol-fallback]"))
+        assertTrue(DiagnosticLogSink.isProbeLine("run failed: giving up after 1 retries [engine:give-up]"))
+        assertTrue(DiagnosticLogSink.isProbeLine("run failed: cannot retry after partial output [engine:partial-output]"))
+        assertFalse(DiagnosticLogSink.isProbeLine("run failed: provider error user said hunter2"))
         assertTrue(DiagnosticLogSink.isProbeLine("run failed: rate limited (HTTP 429) [http:rate]"))
         assertTrue(DiagnosticLogSink.isProbeLine("run failed: uncaught failure [engine:uncaught]"))
         assertTrue(DiagnosticLogSink.isProbeLine("run failed: timeout: no response from provider within 60000ms [engine:watchdog]"))

@@ -50,8 +50,12 @@ U3="/Us""ers/"         # 用户目录形态 3
 U4="/ho""me/"          # 用户目录形态 4
 M1="长度 ""129"        # PAT 长度元信息
 PAT=(-e "$S1" -e "$P1" -e "$P2" -e "$U1" -e "$U2" -e "$U3" -e "$U4" -e "$M1")
-# W49：hostname 属性形态（与 secret-scan.yml 3b-ext 同口径；占位符首字符 `<` 豁免）。
+# W49：hostname 属性形态；W50（P2-2）改整值占位符白名单（与 secret-scan.yml 3b-ext 同口径）。
+# 只有两个登记占位符豁免；闭合标签后拼正文 / 空值等形态一律命中。分段拼装避免脚本自命中。
 H1='host'"name=\""
+HV1='ho'"st"
+HV2='redacted-'"value"
+HOST_RE="${H1}"'(?!<(?:'"${HV1}"'|'"${HV2}"')>")'
 LEGACY_HASHES="$ROOT/scripts/fixtures/w46-gate-legacy-hashes.txt"
 
 # W48 P1-2：历史 fixture 哈希白名单。在册 ⇒ 已登记的历史样本（跳过）；不在册 ⇒ 新命中（报红）。
@@ -68,12 +72,12 @@ is_legacy_fixture() {
 
 scan_tracked() {
   git grep -nIF "${PAT[@]}" -- . 2>/dev/null
-  git grep -nIE "$H1[^<]" -- . 2>/dev/null
+  git grep -nIP "$HOST_RE" -- . 2>/dev/null
 }
 scan_untracked() {
   local hits=0 f
   while IFS= read -r f; do
-    { grep -qIF "${PAT[@]}" -- "$f" 2>/dev/null || grep -qIE "$H1[^<]" -- "$f" 2>/dev/null; } || continue
+    { grep -qIF "${PAT[@]}" -- "$f" 2>/dev/null || grep -qIP "$HOST_RE" -- "$f" 2>/dev/null; } || continue
     if is_legacy_fixture "$f"; then continue; fi
     echo "RED untracked: $f"; hits=$((hits+1))
   done < <(git ls-files --others --exclude-standard 2>/dev/null)
@@ -92,7 +96,7 @@ scan_ignored() {
     if [ "$ci_semantics" -eq 1 ]; then
       case "$f" in _w[0-9]*/|_w[0-9]*|local.properties) continue ;; esac
     fi
-    { grep -qIF "${PAT[@]}" -- "$f" 2>/dev/null || grep -qIE "$H1[^<]" -- "$f" 2>/dev/null; } || continue
+    { grep -qIF "${PAT[@]}" -- "$f" 2>/dev/null || grep -qIP "$HOST_RE" -- "$f" 2>/dev/null; } || continue
     # W48 P1-2：历史 fixture 哈希在册 ⇒ 跳过（默认态不再被历史样本恒红）。
     if is_legacy_fixture "$f"; then continue; fi
     echo "RED ignored: $f"; hits=$((hits+1))
@@ -148,6 +152,20 @@ selftest() {
   else
     echo "SKIP STATE 5: $src absent (历史样本不在场)"
   fi
+  # W50（P2-2）第七态：hostname 整值白名单两条注入必红（闭合标签尾随正文 / 空值）。
+  # 旧判据「引号后首字符非 `<` 即命中」对第一条空过（`<` 开头），对第二条误报但无 rc 对照；
+  # 新判据两条都 RED，两个登记占位符仍 GREEN。
+  local hp1="_w50/hn_bypass_probe.txt" hp2="_w50/hn_empty_probe.txt" gate_out gate_rc
+  mkdir -p _w50
+  printf '%s\n' "${H1}</host> anything" > "$hp1"
+  printf '%s\n' "${H1}\"" > "$hp2"
+  grep -qIP "$HOST_RE" -- "$hp1" && echo "RED hostname bypass (grep rc=0): $hp1" || echo "SELF_FAULT bypass probe not seen"
+  grep -qIP "$HOST_RE" -- "$hp2" && echo "RED hostname empty value (grep rc=0): $hp2" || echo "SELF_FAULT empty probe not seen"
+  gate_out=$(bash "$0" 2>&1); gate_rc=$?
+  echo "gate default with hostname probes rc=$gate_rc (expect 1); $(echo "$gate_out" | head -2)"
+  rm -f "$hp1" "$hp2"
+  gate_out=$(bash "$0" 2>&1); gate_rc=$?
+  echo "gate default after removal rc=$gate_rc (expect 0); $(echo "$gate_out" | tail -1)"
   echo "=== selftest end（探针已还原，工作树与 index 干净）==="
 }
 
