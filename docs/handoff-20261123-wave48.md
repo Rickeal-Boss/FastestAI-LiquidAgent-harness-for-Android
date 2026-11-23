@@ -77,7 +77,10 @@
 ## 七、CI（公开 API 四字段实取）
 
 - 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
-- （回填处：代码提交 run 四字段 + 链接；文档 tip run 按降级规则仅记录、不作 P0。）
+- **代码提交 2 条 run，tip `8d545577ff6a6818910d01795f74e4528e7499ba` 双绿**：
+  - Build `45153831020`（`head_sha=8d545577ff6a6818910d01795f74e4528e7499ba` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T10:14:12Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45153831020`）。
+  - Secret scan `45153830812`（`head_sha=8d545577ff6a6818910d01795f74e4528e7499ba` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T10:11:59Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45153830812`）。**交付判据 = 最终 tip 双 run 全绿。**
+- 本交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按降级规则仅记录、不作 P0；本句不再触发进一步回填。
 - 本地四闸门不代替 CI；CI 绿以最终 tip 的 run 四字段为准。
 
 ## 八、明确未做（逐条带中文段位，编号见验收物）

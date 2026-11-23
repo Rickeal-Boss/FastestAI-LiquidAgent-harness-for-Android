@@ -70,9 +70,12 @@
 ## 步 5 · CI（公开 API 四字段实取，推送后回填）
 
 - 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
-- （回填处：代码提交 run 四字段 + 链接；文档 tip run 按 W29 降级仅记录。）
-- GitHub About 同步：description 置「勾选状态以 `docs/06-deferred-ledger.md` 为准（`02-roadmap.md` 仅历史参照）」口径（P2-4）。
+- **代码提交 2 条 run，tip `8d545577ff6a6818910d01795f74e4528e7499ba` 双绿**（公开 API 四字段实取）：
+  - Build `45153831020`（`head_sha=8d545577ff6a6818910d01795f74e4528e7499ba` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T10:14:12Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45153831020`）。
+  - Secret scan `45153830812`（`head_sha=8d545577ff6a6818910d01795f74e4528e7499ba` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T10:11:59Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45153830812`）。**交付判据 = 最终 tip 双 run 全绿。**
+- 本验收物所在文档提交为纯文档 tip：Build 0 run（`paths-ignore` 既定口径），其 Secret run 按 W29 降级仅记录、不作 P0（回填后不再触发进一步回填）。
 - 本地四闸门：G1 `assembleDebug` rc=0；G2 `OK=27 VACUOUS=1 VIOLATION=0`（G20 141 ID 不变）；G3 `30/30 PASS（323s）`；G4 `tests=886 failures=0 errors=0 skipped=0`（14 模块）。
+- GitHub About 同步（P2-4）：description 已置「API-first Android Agent Harness（模型是可插拔后端）。勾选状态以 `docs/06-deferred-ledger.md` 为准；`docs/02-roadmap.md` 仅历史参照。」（公开 API PATCH 实取确认）。
 
 ---
 
