@@ -1,0 +1,16 @@
+=== STATE 1: tracked 全扫，现役树（期望 GREEN rc=1）===
+tracked_grep_rc=1 (1=GREEN)
+=== STATE 2: 闭合标签 + 尾随正文绕过注入（期望 RED rc=0；门禁 RED rc=1）===
+bypass_grep_rc=0 (0=RED)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=1
+RED ignored: _w50/hn_bypass_probe.txt
+gate_bypass_rc=1 (1=RED)
+=== STATE 3: 空值注入（期望 RED rc=0；门禁 RED rc=1）===
+empty_grep_rc=0 (0=RED)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=1
+RED ignored: _w50/hn_empty_probe.txt
+gate_empty_rc=1 (1=RED)
+=== STATE 4: 两个登记占位符（期望 GREEN rc=1）===
+allowed_hit_count=0 ; grep_rc=1 (1=GREEN)
+=== STATE 5: 移除全部探针后门禁默认全扫（期望 GREEN rc=0）===
+gate_clean_rc=0 (0=GREEN)

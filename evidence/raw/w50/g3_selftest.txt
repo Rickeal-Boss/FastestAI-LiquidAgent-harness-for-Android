@@ -1,0 +1,39 @@
+================ arch-guard-selftest（28 个变异自证 case） ================
+repo = <workspace-root>/
+mode = batch   work = <user-home>/
+-------------------------------------------------------------------
+[selftest] 注入变异（batch：全部落在同一棵树，各变异落在不同判据域）
+[selftest] arch-guard 退出码 = 1（预期非 0：注入了 20+ 处违规）
+PASS  G1    网络栈收口：core-model 里 import okhttp3（只许在 core-net）
+PASS  G1b   传输层不认识供应商：core-net 引用 core.engine
+PASS  G2    禁进程执行：core-model 里 Runtime.getRuntime()
+PASS  G3    禁动态代码加载：core-model 里 DexClassLoader
+PASS  G4a   禁依赖黑名单(.kts)：core-model 加 retrofit 依赖
+PASS  G4b   禁依赖黑名单(toml)：版本目录加 retrofit 条目
+PASS  G5a   禁 jitpack：settings 里加 jitpack 仓库
+PASS  G5b   仓库收口声明：删掉 repositoriesMode.FAIL_ON_PROJECT_REPOS
+PASS  G6    模块边界：core-model 依赖 :core-net（禁止边）
+PASS  G7    设计系统零业务：core-design 引用 core.model
+PASS  G8    契约层纯 Kotlin：core-model 里 import android.content
+PASS  G9    模块数一致：settings 多一个 include(:ghost-module)
+PASS  G10   行数闸门：core-model 放一个 400 行文件（上限 300）
+PASS  G11   方法体积：core-model 放一个 130 行方法（上限 120）
+PASS  G12   AgentRunner 门面：把 AgentRunner.kt 撑到 210 行（上限 200）
+PASS  G13   测试方法形态：@Test 方法带返回类型 Int
+PASS  G14   lint baseline 只缩：baseline 里再加一条 issue
+PASS  G15a  INTERNET 权限：从 manifest 删掉该权限
+PASS  G15b  禁明文流量：从 manifest 删掉 usesCleartextTraffic=false
+PASS  G15c  禁备份：把 manifest 的 allowBackup=false 改成 true
+PASS  G15c  禁备份排除面：从 manifest 删掉 dataExtractionRules 属性
+PASS  G16   中文硬编码棘轮：core-model 里写死一句中文文案
+PASS  G17   禁密钥字段：@Serializable 类里加 val apiKey
+PASS  G18   引擎调用点收口：core-model 里调 engine.generate(
+PASS  G19   日志不得拼接凭据：core-engine 里 log("Authorization=" + secret)
+PASS  G20   挂账不丢失：从台账副本删掉 W3-05 那一行
+PASS  G22   切换守卫被调用：删掉 SettingsViewModel 里全部 evaluateSwitch 调用行
+PASS  G23   自动压缩被调用：删掉 ChatViewModel 里 .autoCompactOnSettled( 调用行
+[selftest] VACUOUS 机制自证（独立一棵树：清空一个扫描目标）
+PASS  VAC-G1b 清空扫描目标 ⇒ G1b 报 VACUOUS（不是 OK）
+PASS  VAC-G21 空转条数超基线 ⇒ G21 棘轮判红
+-------------------------------------------------------------------
+selftest: 30/30 PASS  （296s）

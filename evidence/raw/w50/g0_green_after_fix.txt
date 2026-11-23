@@ -1,0 +1,21 @@
+W50 判据先行 — 修复后同一批断言复跑（四态：通过）
+
+[1] core-agent / EvidenceTagPropagationTest
+cmd: bash scripts/localbuild.sh :core-agent:testDebugUnitTest --tests '*EvidenceTagPropagationTest'
+rc=0
+6 tests completed, 0 failed
+BUILD SUCCESSFUL
+覆盖：taglessFailureDoesNotCarryPreviousRoundTag / watchdogFailureCarriesEngineWatchdogTag /
+retryGiveUpDigestKeepsTagWithoutProviderText / partialOutputFailureCarriesExplicitTag /
+providerRawMessageUsesFixedDigestAndKeepsTag / uncaughtFailureDigestStripsDynamicText
+
+[2] app / DiagnosticLogSinkTest
+cmd: bash scripts/localbuild.sh :app:testDebugUnitTest --tests '*DiagnosticLogSinkTest'
+rc=0
+BUILD SUCCESSFUL
+覆盖：FAILURE_DIGEST 14 类固定主体（含 provider error）与自由文本反向断言
+
+[3] 范围限定
+修复使「frame: 前缀（provider 原文）」走固定摘要 provider error；
+HTTP / 看门狗 / stream failed 固定模板支保留原摘要（由同批既有断言钉住）。
+生成行长度维持 400/400，未调行数上限。

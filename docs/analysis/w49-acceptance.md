@@ -48,7 +48,7 @@
 | 三文档措辞订正 | 交接 §二#2 / §三 / §九 / 边界⑥、验收物步 1#2 / 步 2 / 边界⑥、派单卡裁决基准段 | ✅ | 四处「五处/5 条」→「W48 实落 1 条、W49 回补 4 条」；kickoff 措辞撤销 |
 | P1-5 收尾契约 | W48 交接 §七 / 验收物步 5 补文档 tip `45154919970` 四字段 + 链接，口径「代码提交 2 条 + 文档 tip 1 条（降级）」 | ✅ | 两份文档同段 |
 | P2-9 格数 | 交接 §六 加「本波 13 格，锚验收物 E1–E13；W47 12 格为时点记录」 | ✅ | 交接 §六 |
-| P2-6 脱敏 | `green_p02_paradigm.txt:106` → `hostname="<host>"`；3b-ext 加属性形态判据（tracked + 未 tracked 两路同口径）；本地门禁同步 | ✅ | `evidence/raw/w49/g0_3bext_hostname.txt`（正控 rc=1 / 注入 rc=0 / 占位符豁免 / 门禁 RED→GREEN） |
+| P2-6 脱敏 | `green_p02_paradigm.txt:106` → `hostname="<host>"`；3b-ext 加属性形态判据（tracked + 未 tracked 两路同口径）；本地门禁同步 | ✅（限定） | `evidence/raw/w49/g0_3bext_hostname.txt` [1]–[3] 自洽；[4][5] 为还原中间态、标题名实不符（标 GREEN 却输出 RED 且无 rc 行），**不作「门禁 RED→GREEN」判据**。现役 tracked 路干净由 CI 最终 tip 双绿 + 全树 0 命中支撑；W50 重出五态带 rc |
 | 闸门证据脱敏（本波自捕） | `g2_archguard.txt` / `g3_selftest.txt` 含本机工作区绝对路径与用户临时目录形态 ⇒ CI 3b-ext 判红；已改 `<workspace-root>` / `<user-home>` / `<rand>`，本地门禁 tracked 路复扫 0 命中 | ✅ | 首次推送 Secret scan `45182694954` failure → 修正后复跑 GREEN |
 
 **台账守恒**：挂账行 216 / `CLOSED` 39 / `OPEN` 166 / `CARRIED` 11（与 W44–W48 逐值相等）；零 `W49-` 挂账行；G20 `141` ID 不变。
@@ -147,7 +147,8 @@
 
 - 红态如实记录：首提交 Secret 判红 → 证据脱敏 fix（`4b2be94`）→ 重推 → 最终 tip 双绿。**交付判据 = 最终 tip 双 run 全绿**。
 - 链接：Build `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45185252002`；Secret `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45185251937`。
-- **文档 tip 1 条（降级）**：`e9516ca14f043c16d0685951c98360fc8ce996d3` 的 Secret scan `45185935245`（completed / success / 2026-11-23T13:38:47Z），Build 0 run（`paths-ignore` 既定口径）。按 W29 降级仅记录、不作 P0；本条之后不再回填。
+- **文档 tip 1 条（降级）**：`e9516ca14f043c16d0685951c98360fc8ce996d3` 的 Secret scan `45185935245`（completed / success / 2026-11-23T13:38:47Z），Build 0 run（`paths-ignore` 既定口径）。按 W29 降级仅记录、不作 P0。
+- **W50 口径订正（收尾契约改根）**：外部审查实取本波 **6 条 run** —— `45182694362` Build✅（首提交）/ `45182694954` Secret failure / `45185252002` Build✅ / `45185251937` Secret✅ / `45185935245` Secret✅ / `45186420015` Secret✅（第 4 提交）；一次性事实记录，不逐条补链。交付判据 = 最终 tip 双 run 全绿；文档 tip 触发的 Secret run 按 W29 降级、不逐条列号，只声明存在。原文「本条之后不再回填」自指循环作废，不为补链新建提交。
 
 ---
 

@@ -1,0 +1,10 @@
+设备侧落盘日志探针行 — W50 时间窗（run-as 直读，非整段 logcat）
+路径：files/harness/logs/agent-0.log；取回方式：run-as com.rickeal.liquidharness.debug tail
+时间窗：2026-11-23T15:14:52Z ~ 15:14:55Z（对应真机回声请求）
+
+2026-11-23T15:14:52.254187Z INFO prefix fp=581c8cb8 changed=none prompt=1077 cached=n/a-usage
+2026-11-23T15:14:54.989506Z WARN auto_compact=noop reason=below_trigger
+2026-11-23T15:14:54.990060Z INFO auto_compact=noop reason=below_trigger
+
+判定：本波取回的 3 行全部命中固定形态白名单（prefix / reason 码），零形态外行、零自由文本回显。
+边界：放弃 / 半截输出两条路径本波真机未触发（无 429 / 无半截输出），其标签语义仅由 g0_mustred_before_fix.txt / g0_green_after_fix.txt 的 JVM 必红覆盖，不写成设备侧已验证。

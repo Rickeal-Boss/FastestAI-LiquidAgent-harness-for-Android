@@ -1,0 +1,28 @@
+W50 判据先行 — 未修版本先跑新增/改写断言（四态：必红）
+口径：写 X 未发生前先自证判据会响；断言字面量中的 provider 原文与设备路径以占位符记录。
+
+[1] core-agent / EvidenceTagPropagationTest（修复前 rc=1）
+EvidenceTagPropagationTest > providerRawMessageUsesFixedDigestAndKeepsTag FAILED
+  expected: run failed: provider error [frame:protocol-fallback]
+  actual:   run failed: <provider-free-text> [<provider-path>] [frame:protocol-fallback]
+  => message-only 支用 provider 原文落盘，整行被白名单拦掉，标签读不到（P2-3）
+
+EvidenceTagPropagationTest > partialOutputFailureCarriesExplicitTag FAILED
+  expected: run failed: cannot retry after partial output [engine:partial-output]
+  actual:   run failed: cannot retry after partial output [http:rate]
+  => 半截输出路径沿用上一轮限流标签，语义漂移（P2-1）
+
+EvidenceTagPropagationTest > retryGiveUpDigestKeepsTagWithoutProviderText FAILED
+  expected: run failed: giving up after 1 retries [engine:give-up]
+  actual:   run failed: giving up after 1 retries [http:rate]
+  => 放弃路径沿用上一轮限流标签（P2-1，改写既有断言）
+
+[2] app / DiagnosticLogSinkTest（修复前 rc=1）
+DiagnosticLogSinkTest > failureDigestCoversAllFixedDiagnosticBodies FAILED
+  java.lang.AssertionError at DiagnosticLogSinkTest.kt:82
+  固定主体应落盘：provider error
+  => FAILURE_DIGEST 无 message-only 固定摘要形态，新增主体断言必红（P2-3）
+
+[3] 判定
+三条内核 + 一条白名单断言在未修版本全部 RED，判据被真实行使，非空转。
+修复后同批用例见 g0_green_after_fix.txt。

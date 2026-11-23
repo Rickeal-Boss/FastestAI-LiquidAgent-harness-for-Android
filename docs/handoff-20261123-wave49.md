@@ -90,7 +90,7 @@ P0-1（注记 1/5 账实不符）、P1-2（裁决措辞失实）、P1-3（白名
 - **最终 tip `4b2be946a9f46651202e86794e42b7cff7bfa9fb` 双绿**：
   - Build `45185252002`（`head_sha=4b2be946a9f46651202e86794e42b7cff7bfa9fb` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T13:35:38Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45185252002`）。
   - Secret scan `45185251937`（`head_sha=4b2be946a9f46651202e86794e42b7cff7bfa9fb` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T13:34:41Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45185251937`）。**交付判据 = 最终 tip 双 run 全绿。**
-- **文档 tip 1 条（降级）**：`e9516ca14f043c16d0685951c98360fc8ce996d3` 的 Secret scan `45185935245`（`head_sha=e9516ca14f043c16d0685951c98360fc8ce996d3` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T13:38:47Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45185935245`）；Build 0 run（既定 `paths-ignore` 口径）。按 W29 降级仅记录、不作 P0。**本波口径 = 代码提交 2 条 + 文档 tip 1 条（降级）**；本条之后不再回填。
+- **文档 tip 1 条（降级）**：`e9516ca14f043c16d0685951c98360fc8ce996d3` 的 Secret scan `45185935245`（`head_sha=e9516ca14f043c16d0685951c98360fc8ce996d3` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T13:38:47Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45185935245`）；Build 0 run（既定 `paths-ignore` 口径）。按 W29 降级仅记录、不作 P0。**W50 口径订正**：交付判据 = 最终 tip 双 run 全绿；文档 tip 触发的 Secret run 按 W29 降级、不逐条列号，只声明存在。W49 实取 6 条 run（含首提交 Build `45182694362` 与第 4 提交 Secret `45186420015`）一次性事实记录，见验收物步 5；不再为补链新建提交。
 - 本地四闸门不代替 CI；CI 绿以最终 tip 的 run 四字段为准。
 
 ## 八、明确未做（逐条带中文段位）
