@@ -85,7 +85,13 @@ P0-1（注记 1/5 账实不符）、P1-2（裁决措辞失实）、P1-3（白名
 
 ## 七、CI（公开 API 四字段实取）
 
-推送后回填（见验收物步 5）。
+- 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
+- **本波代码 2 提交**：`3d9766df0f3dc5635f6adc65693dd067a0a06782`（feat）→ `4b2be946a9f46651202e86794e42b7cff7bfa9fb`（fix：闸门证据脱敏）。首提交的 Secret scan `45182694954` **failure**（3b-ext 抓到闸门日志里的本机路径 / 用户临时目录形态）—— 红态如实记录，不隐藏；fix 后重推。
+- **最终 tip `4b2be946a9f46651202e86794e42b7cff7bfa9fb` 双绿**：
+  - Build `45185252002`（`head_sha=4b2be946a9f46651202e86794e42b7cff7bfa9fb` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T13:35:38Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45185252002`）。
+  - Secret scan `45185251937`（`head_sha=4b2be946a9f46651202e86794e42b7cff7bfa9fb` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T13:34:41Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45185251937`）。**交付判据 = 最终 tip 双 run 全绿。**
+- 本交接所在文档提交为纯文档 tip：Build 0 run（既定 `paths-ignore` 口径），其 Secret run 按 W29 降级仅记录、不作 P0。
+- 本地四闸门不代替 CI；CI 绿以最终 tip 的 run 四字段为准。
 
 ## 八、明确未做（逐条带中文段位）
 

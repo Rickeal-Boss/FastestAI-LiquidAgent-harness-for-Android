@@ -139,7 +139,15 @@
 
 ## 步 5 · CI（公开 API 四字段实取）
 
-见交接 §七（推送后回填）。
+| run | 对象 | head_sha | status | conclusion | updated_at |
+|---|---|---|---|---|---|
+| `45182694954` | Secret scan（首提交，3b-ext 抓到闸门日志的本机路径形态） | `3d9766df…` | completed | **failure** | 2026-11-23T13:19:12Z |
+| `45185252002` | Build（最终 tip） | `4b2be946a9f46651202e86794e42b7cff7bfa9fb` | completed | success | 2026-11-23T13:35:38Z |
+| `45185251937` | Secret scan（最终 tip） | `4b2be946a9f46651202e86794e42b7cff7bfa9fb` | completed | success | 2026-11-23T13:34:41Z |
+
+- 红态如实记录：首提交 Secret 判红 → 证据脱敏 fix（`4b2be94`）→ 重推 → 最终 tip 双绿。**交付判据 = 最终 tip 双 run 全绿**。
+- 链接：Build `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45185252002`；Secret `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45185251937`。
+- 本验收物所在文档提交为纯文档 tip：Build 0 run（`paths-ignore` 既定口径），Secret run 按 W29 降级仅记录。
 
 ---
 
