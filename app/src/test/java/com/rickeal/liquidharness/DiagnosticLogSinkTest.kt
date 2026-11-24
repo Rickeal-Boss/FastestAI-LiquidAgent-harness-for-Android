@@ -78,8 +78,15 @@ class DiagnosticLogSinkTest {
             "stream failed",
             "uncaught failure",
             "provider error",
+            "engine failure",
         )
         bodies.forEach { assertTrue(DiagnosticLogSink.isProbeLine("run failed: $it"), "固定主体应落盘：$it") }
+        // W51 P1-2 白侧钉死：第 15 类 engine failure 及其两支证据标签必须落盘可读；
+        // 动态 verdict.reason / 原始 message 仍须被拦（此前两支 message 不在主体内 ⇒ 整行被拦、标签读不到）。
+        assertTrue(DiagnosticLogSink.isProbeLine("run failed: engine failure [engine:config]"))
+        assertTrue(DiagnosticLogSink.isProbeLine("run failed: engine failure [engine:no-events]"))
+        assertFalse(DiagnosticLogSink.isProbeLine("run failed: missing API key for endpoint [engine:config]"))
+        assertFalse(DiagnosticLogSink.isProbeLine("run failed: endpoint URL rejected: bad scheme [engine:config]"))
         assertTrue(DiagnosticLogSink.isProbeLine("run failed: provider error [frame:protocol-fallback]"))
         assertTrue(DiagnosticLogSink.isProbeLine("run failed: giving up after 1 retries [engine:give-up]"))
         assertTrue(DiagnosticLogSink.isProbeLine("run failed: cannot retry after partial output [engine:partial-output]"))

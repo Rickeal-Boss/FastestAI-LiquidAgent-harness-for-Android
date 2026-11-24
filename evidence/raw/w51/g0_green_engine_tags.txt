@@ -1,0 +1,41 @@
+W51 判据先行 — 修复后同一批断言复跑（四态：通过）
+
+[1] core-agent / EvidenceTagPropagationTest（修复后 rc=0）
+cmd: bash scripts/localbuild.sh :core-agent:testDebugUnitTest --tests '*EvidenceTagPropagationTest'
+rc=0
+BUILD SUCCESSFUL in 44s
+XML: tests="8" skipped="0" failures="0" errors="0"（8 tests completed, 0 failed）
+新增 2 条覆盖：
+  engineConfigFailureUsesFixedDigestAndKeepsTag     → run failed: engine failure [engine:config]
+  engineNoEventsFailureUsesFixedDigestAndKeepsTag   → run failed: engine failure [engine:no-events]
+既有 6 条（tagless / watchdog / give-up / partial / provider / uncaught）仍绿。
+
+[2] app / DiagnosticLogSinkTest（修复后 rc=0）
+cmd: bash scripts/localbuild.sh :app:testDebugUnitTest --tests '*DiagnosticLogSinkTest'
+rc=0
+BUILD SUCCESSFUL in 30s
+XML: tests="8" skipped="0" failures="0" errors="0"
+FAILURE_DIGEST 主体由 14 类增至 15 类（新增 engine failure），正向固定主体放行 /
+反向自由文本（prompt 回显、路径、未登记主体、多余后缀）拦截断言全部保持绿。
+〔W51 收尾补强：本段为开发席复绿输出，当时 failureDigestCoversAllFixedDiagnosticBodies 的
+bodies 仍停在 14 类、删掉正则第 15 类 CI 亦全绿；主理人据审查缺口把该既有用例扩为 15 类
++ 两支标签正控 + 动态正文反向，并做变异必红（删第 15 类 ⇒ RED → 还原 GREEN），见
+g0_white_mutant_red.txt。白侧第 15 类现有 committed 判据，不再依赖本段的 Python 复刻。〕
+
+[3] 正则对接核验（Python 复刻 FAILURE_DIGEST，非仓库文件）
+BODIES=15
+POS run failed: engine failure [engine:config]                                  -> allow
+POS run failed: engine failure [engine:no-events]                               -> allow
+POS run failed: provider error [frame:protocol-fallback]                        -> allow
+NEG run failed: missing API key for endpoint [engine:config]                    -> block
+NEG run failed: stream ended without any event (endpoint is not SSE?) [... ]    -> block
+NEG run failed: engine failure user said hunter2                                -> block
+=> 两支 engine:* 固定摘要可被 run-as 落盘读出；动态正文（含 verdict.reason）不落盘。
+
+[4] 静态自检 / 范围限定
+GenerationRound.kt:282 保持单行表达式写法，文件仍 400/400（未增行、未调上限）。
+FAILURE_DIGEST 主体数实为 15（数 `|` 分隔），KDoc 同步标注「14 类 → 15 类 / W51 补 engine:* 两支」。
+frame: 前缀支仍用 provider error（既有断言钉住）；其余已知固定模板支（http:*/engine:watchdog/
+engine:stream-failed 等）message 已在 14 类主体内，digest=null 原样保留。
+实测 @Test 总数 = 895（grep -rnE '^\s*@Test\b'），EXPECTED_TESTS=895 双向对齐。
+core-kernel 零改动；本轮仅触及白名单内 5 文件 + 2 证据文件。

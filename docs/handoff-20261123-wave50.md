@@ -75,6 +75,7 @@
   - Build `45203888349`（`head_sha=3e01131bd3795fd4e2b3e1170ae9d980fe1e7b44` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T15:21:27Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45203888349`）。
   - Secret scan `45203889043`（`head_sha=3e01131bd3795fd4e2b3e1170ae9d980fe1e7b44` / `status=completed` / `conclusion=success` / `updated_at=2026-11-23T15:19:33Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45203889043`）。**交付判据 = 最终代码 tip 双 run 全绿。**
 - 文档 tip（本交接所在提交）触发的 Secret scan 按既有降级口径只声明存在、不逐条列号；Build 0 run 为 `paths-ignore` 既定口径。不为补链新建提交。
+- 首提交（`98ec440c`）的 run 按同分支连续 push 并发合并口径不单列；Actions 实取本波共 3 条 run（最终代码 tip 双绿 + 文档 tip 降级 Secret），交付判据 = 最终代码 tip 双 run 全绿，不要求逐条列。
 - 本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
 ## 八、明确未做（逐条带中文段位）

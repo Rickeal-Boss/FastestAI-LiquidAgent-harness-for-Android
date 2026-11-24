@@ -279,7 +279,7 @@ class GenerationRound(
 
         failure?.let { failed ->
             return if (failed.retryable) Attempt.Retryable(failed.message, failed.truncatedStream)
-            else Attempt.Fatal(failed.message, null, failed.evidenceTag, if (failed.evidenceTag.startsWith("frame:")) "provider error" else null)
+            else Attempt.Fatal(failed.message, null, failed.evidenceTag, if (failed.evidenceTag.startsWith("frame:")) "provider error" else if (failed.evidenceTag == "engine:config" || failed.evidenceTag == "engine:no-events") "engine failure" else null)
         }
 
         val produced = fragments.snapshot()

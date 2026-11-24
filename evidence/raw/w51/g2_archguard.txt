@@ -1,0 +1,36 @@
+================ arch-guard（28 条） ================
+root = <workspace-root>/harness-v2
+-------------------------------------------------------------------
+[G1] 网络栈收口        OK  (命中仅在 core-net/ 与注释内)
+[G1b] 传输层不认识供应商 OK
+[G2] 禁进程执行        OK
+[G3] 禁动态代码加载  OK
+[G4a] 禁依赖黑名单(.kts) OK
+[G4b] 禁依赖黑名单(toml) OK
+[G5a] 禁 jitpack 仓库     OK
+[G5b] 仓库收口声明     OK  (19:    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT)
+[G6] 模块边界           OK  (14 个模块的禁止边均未命中)
+[G7] 设计系统零业务  OK
+[G8] 契约层纯 Kotlin    OK
+[G9] 模块数一致        OK  (include=14 == 数组=14 == 目录=14)
+[G10] 行数闸门           OK  (已登记例外 1 条，见 EXCEPTIONS 表)
+[G11] 方法体积           OK  (已登记例外 1 条，见 EXCEPTIONS 表)
+[G12] AgentRunner 门面     OK  (197 行 ≤ 200)
+[G13] 测试方法形态     OK  (94 个测试文件)
+[G14] lint baseline 只缩   OK  (1 条 ≤ 冻结值 1)
+[G15a] INTERNET 权限        OK  (6:    <uses-permission android:name="android.permission.INTE)
+[G15b] 禁明文流量        OK  (25:        android:usesCleartextTraffic="false">)
+[G15c] 禁备份              OK  (19:        android:allowBackup="false")
+[G16] 中文硬编码棘轮  OK  (0 处 ≤ 基线 0)
+[G17] 禁密钥字段        OK
+[G18] 引擎调用点收口  OK  (已登记例外 2 条，见 EXCEPTIONS 表)
+[G19] 日志不拼凭据     VACUOUS  (扫描目标集为空；0 个日志调用点，0 处拼接凭据)
+[G20] 挂账不丢失        OK  (141 个 handoff ID 全在台账内，CLOSED 行证据均非空)
+[G21] 空转棘轮           OK  (VACUOUS=1 ≤ 基线 1（G19）)
+[G22] 切换守卫被调用（evaluateSwitch 赋值形态） OK  (feature-settings 内 evaluateSwitch 赋值调用 = 2 处)
+[G23] 会话级自动压缩被调用（唯一调用点 + 事件分流） OK  (.autoCompactOnSettled( = 1 处（唯一）、shouldEvaluate( = 1 处)
+-------------------------------------------------------------------
+OK=27  VACUOUS=1  VIOLATION=0  SELF_FAULT=0
+空转项（VACUOUS，不判红但必须可见）：G19
+[arch-guard] result=PASS ok=27 vacuous=1 violation=0 fault=0
+G2_RC=0

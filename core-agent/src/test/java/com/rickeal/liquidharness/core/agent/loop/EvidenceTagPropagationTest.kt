@@ -278,4 +278,72 @@ class EvidenceTagPropagationTest {
             restore()
         }
     }
+
+    /**
+     * W51 P1-2：`engine:config` 不可重试失败（缺 API key / URL 被 UrlGuard 拒绝）的 message
+     * 是动态串（`missing API key for endpoint` 或含 verdict.reason 的 `endpoint URL rejected: …`）。
+     * 旧实现 digest=null ⇒ `emitFailed` 拿原文落盘，整行被 `FAILURE_DIGEST` 白名单拦掉，
+     * 真机 run-as 既看不到失败也看不到 `[engine:config]` 标签。修复后两支统一走写死固定摘要
+     * `engine failure`，动态正文只进 ring。
+     */
+    @Test
+    fun engineConfigFailureUsesFixedDigestAndKeepsTag() {
+        val restore = captureSink()
+        try {
+            val engine = FakeEngine(
+                scripts = listOf(
+                    listOf(
+                        GenerationEvent.Failed(
+                            EngineErrorKind.CONFIG, "missing API key for endpoint", retryable = false,
+                            evidenceTag = "engine:config",
+                        ),
+                    ),
+                ),
+            )
+            val events = mutableListOf<AgentEvent>()
+            val ctx = context(engine, events)
+
+            runBlocking { GenerationRound(backoff = {}).run(ctx, "sys") }
+
+            val line = failureLines().single()
+            assertEquals("run failed: engine failure [engine:config]", line)
+            assertFalse("动态 message 不得进落盘行：$line", line.contains("missing API key"))
+        } finally {
+            restore()
+        }
+    }
+
+    /**
+     * W51 P1-2：`engine:no-events`（SSE 无事件）失败的 message 同样是动态串。旧实现
+     * digest=null ⇒ 整行被白名单拦掉、标签读不到。修复后与 `engine:config` 共用固定摘要
+     * `engine failure`，动态正文不得进落盘。
+     */
+    @Test
+    fun engineNoEventsFailureUsesFixedDigestAndKeepsTag() {
+        val restore = captureSink()
+        try {
+            val engine = FakeEngine(
+                scripts = listOf(
+                    listOf(
+                        GenerationEvent.Failed(
+                            EngineErrorKind.PROTOCOL,
+                            "stream ended without any event (endpoint is not SSE?)",
+                            retryable = false,
+                            evidenceTag = "engine:no-events",
+                        ),
+                    ),
+                ),
+            )
+            val events = mutableListOf<AgentEvent>()
+            val ctx = context(engine, events)
+
+            runBlocking { GenerationRound(backoff = {}).run(ctx, "sys") }
+
+            val line = failureLines().single()
+            assertEquals("run failed: engine failure [engine:no-events]", line)
+            assertFalse("动态正文不得进落盘行：$line", line.contains("stream ended without any event"))
+        } finally {
+            restore()
+        }
+    }
 }

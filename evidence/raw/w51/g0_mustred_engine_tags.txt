@@ -1,0 +1,36 @@
+W51 判据先行 — 未修版本先跑新增 2 条 engine:* 落盘摘要断言（四态：必红）
+口径：先写 X 未发生前自证判据会响；生产代码（GenerationRound / DiagnosticLogSink）此刻零改动。
+
+[0] 变更前置状态
+HEAD = e274e5cfb4b28bc9ddf36903a1b40ff0c7d64b92 (main)
+GenerationRound.kt = 400 行（满额，本轮改动不增行）
+仅在 EvidenceTagPropagationTest.kt 追加 2 条 @Test（引用 captureSink()/failureLines() harness）。
+
+[1] core-agent / EvidenceTagPropagationTest（修复前 rc=1）
+cmd: bash scripts/localbuild.sh :core-agent:testDebugUnitTest --tests '*EvidenceTagPropagationTest'
+rc=1
+8 tests completed, 2 failed
+BUILD FAILED
+
+EvidenceTagPropagationTest > engineConfigFailureUsesFixedDigestAndKeepsTag FAILED
+  org.junit.ComparisonFailure at EvidenceTagPropagationTest.kt:309
+  expected: run failed: engine failure [engine:config]
+  actual:   run failed: missing API key for endpoint [engine:config]
+  => digest=null ⇒ emitFailed 用动态 message 落盘；该正文不在 FAILURE_DIGEST 14 类主体内，
+     整行被 isProbeLine 拦掉 ⇒ 真机 run-as 看不到失败、也看不到 [engine:config] 标签。
+
+EvidenceTagPropagationTest > engineNoEventsFailureUsesFixedDigestAndKeepsTag FAILED
+  org.junit.ComparisonFailure at EvidenceTagPropagationTest.kt:343
+  expected: run failed: engine failure [engine:no-events]
+  actual:   run failed: stream ended without any event (endpoint is not SSE?) [engine:no-events]
+  => 同上：动态正文进落盘摘要，整行被白名单拦掉，标签随之读不到。
+
+gradle 堆栈锚点（What went wrong）：
+  Execution failed for task ':core-agent:testDebugUnitTest'.
+  > There were failing tests.
+  org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':core-agent:testDebugUnitTest'.
+
+[2] 判定
+两条新增断言在未修版本全部 RED（expected 固定摘要 / actual 动态正文），判据被真实行使，非空转。
+方向安全：动态正文（含 endpoint URL rejected 的 verdict.reason）本就不应进落盘，缺口是"固定摘要缺失"。
+修复后同批用例见 g0_green_engine_tags.txt。

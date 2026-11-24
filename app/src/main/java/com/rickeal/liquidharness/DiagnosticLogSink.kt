@@ -121,6 +121,12 @@ class DiagnosticLogSink(private val store: AgentLogFileStore) {
          * W50 P2-3 为 message-only 兜底支补**第 14 类** `provider error`：provider 自由文本
          * （含用户内容 / 路径）改走固定摘要，正文仍只进 ring。新增主体全部是写死的模板串或
          * `Attempt.Fatal.digest` 的固定摘要，不含动态正文。
+         *
+         * W51 P1-4（外审 P1-2 诊断缺口）补**第 15 类** `engine failure`，主体由 14 类增至
+         * **15 类**：`engine:config`
+         * （缺 key / URL 被拒，含动态 `verdict.reason`）与 `engine:no-events`（无 SSE 事件）
+         * 两支不可重试失败的 message 由 `GenerationRound` 改写为写死固定摘要，动态正文只进
+         * ring。此前两支 digest=null ⇒ 用原文落盘、被本白名单整行拦掉，真机连标签都读不到。
          */
         private val FAILURE_DIGEST = Regex(
             "^run failed: (" +
@@ -137,7 +143,8 @@ class DiagnosticLogSink(private val store: AgentLogFileStore) {
                 "loop exited without a terminal state|" +
                 "stream failed|" +
                 "uncaught failure|" +
-                "provider error" +
+                "provider error|" +
+                "engine failure" +
                 ")( \\[[a-z0-9:_.-]+\\])?$"
         )
         /** `auto_compact=noop reason=<固定码>` / `manual_compress=noop reason=<固定码>`。 */

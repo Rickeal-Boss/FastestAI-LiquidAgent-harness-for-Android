@@ -1,0 +1,16 @@
+W51 白侧判据先行 — FAILURE_DIGEST 第 15 类 engine failure 的 committed 判据变异自证（四态：必红）
+背景：审查席发现 DiagnosticLogSinkTest.failureDigestCoversAllFixedDiagnosticBodies 的 bodies 停在 14 类（provider error），删掉正则第 15 类 CI 也全绿 ⇒ 白侧无判据。本波扩该既有用例（不新增 @Test、不动 EXPECTED_TESTS=895）：bodies 补 engine failure + 2 条带标签正控 + 2 条动态正文反向。
+
+[1] 正向（正则含第 15 类）
+cmd: bash scripts/localbuild.sh :app:testDebugUnitTest --tests '*DiagnosticLogSinkTest'
+结果：BUILD SUCCESSFUL（8 tests / 0 failed）
+
+[2] 变异必红（临时删正则第 15 类 engine failure，仓库外 cp 备份还原、不碰 git）
+cmd: 同上
+结果：DiagnosticLogSinkTest > failureDigestCoversAllFixedDiagnosticBodies FAILED；8 tests completed, 1 failed；BUILD FAILED
+判据确实会响 —— 白侧第 15 类不再是无判据的空壳。
+
+[3] 还原
+用仓外备份 cp 还原 DiagnosticLogSink.kt，正则第 15 类恢复，git diff 只剩开发席净增。
+
+结论：白侧第 15 类 committed 判据 ✅ 非空转（变异 RED → 还原 GREEN）。

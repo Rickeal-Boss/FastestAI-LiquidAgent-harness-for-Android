@@ -1,0 +1,17 @@
+W51 设备侧落盘探针行复核（run-as 取回 files/harness/logs/agent-0.log 末段）
+回灌级别：只含本仓固定形态探针行 + deviceLogTail；不含端点标识 / 密钥 / SSID / 序列号 / 本机路径 / 整段 logcat / 用户正文。
+判据：零形态外行、固定摘要与证据标签可读、动态正文不落盘。
+
+[本波时间窗（UTC 02:13 = 本地 10:13）取回 3 行]
+2026-11-24T02:13:20.940520Z INFO prefix fp=0958fb40 changed=none prompt=1075 cached=n/a-usage
+2026-11-24T02:13:23.567823Z INFO prefix fp=0958fb40 changed=none prompt=1075 cached=n/a-usage
+2026-11-24T02:13:25.860744Z ERROR run failed: giving up after 1 retries [engine:give-up]
+
+[四态结论]
+- 落盘白名单设备侧复核：✅ 3 行全为固定形态（prefix 账行 ×2 + 固定摘要 run failed ×1），零形态外行、零自由文本回显。
+- 放弃路径证据标签 `[engine:give-up]`：✅ 本波首次在真机落盘可读（此前多波标 vacuous）；由网络失败触发，非本波 P1-2 目标路径。
+- 本波 P1-2 目标 `engine:config` / `engine:no-events` 两支：⛔vacuous —— 真机本波未触发这两类失败，判据只由 JVM 必红覆盖（见 g0_mustred_engine_tags.txt / g0_green_engine_tags.txt），不写成设备侧已验证。
+- 多模型回声 / 多上下文 / 多模态 / 文件读写 / skill / 压缩：⛔vacuous —— 设备 Wi-Fi 断开（Supplicant state DISCONNECTED、ping 223.5.5.5 = Network is unreachable、扫描 0 AP），端点请求返回 `network error: UnknownHostException`，联网判据未行使；按既有纪律记 vacuous，不伪造通过。属用户侧网络环境，仓内无法闭环。
+
+[证据路径]
+设备原始日志 pull 到仓外临时路径（未入仓，避免整段 logcat 回灌）；本文件只回灌固定形态探针行与四态结论。
