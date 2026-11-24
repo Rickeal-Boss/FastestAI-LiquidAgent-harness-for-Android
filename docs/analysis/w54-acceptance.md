@@ -38,7 +38,7 @@
 |---|---|---|---|
 | **P0-1a** 读失败不再补种：`loadOrSeed()` 先判 `files.exists()`；存在但解析失败 ⇒ 原文件一字节不动 + 另存 `.corrupt` 备份 + 返回内存镜像或空清单，**绝不写** | `core-data/.../EndpointStore.kt`、`JsonFileStore.kt`（新增 `backup()`） | 新用例 `unreadableFileIsKeptAndNotReseeded`：坏 JSON ⇒ 返回空清单、原文件逐字节保留、`.corrupt` 备份同内容 | ✅ |
 | **P0-1b** 写失败必须上抛：`persist()` 判 `write()` 返回值，false ⇒ `EndpointSaveException(SAVE_FAILED)`（继承 `IOException`，`SettingsViewModel` 既有两条 catch 都能接住）；`McpServerStore` / `FileMemoryStore` 同型改抛 `IOException` | 同上 + `McpServerStore.kt` / `FileMemoryStore.kt` | 新用例 `writeFailureSurfacesAsSaveFailed`：基目录指向普通文件（跨平台确定失败）⇒ `upsert` 抛 `SAVE_FAILED` | ✅ |
-| **P0-2** 压缩与硬闸同尺：`ContextCompressor.compress` 增加 `charBudget` 维，`WindowContextCompressor` 同时按 token 与字符贪心落刀（字符目标 = 水位线，装得下最新一条是硬底线）；`LayeredContextCompressor` 透传；内核 L1 用 `promptCharCap`（与 `PreStepBudget` 同一 `effectiveCharsPerToken`），UI 手动 / 自动压缩用 `compressTargets`（floor cap × 0.6） | `core-context/.../ContextCompressor.kt`、`LayeredContextCompressor.kt`、`BudgetFormula.kt`；`core-agent/.../loop/ContextBudget.kt`；`feature-chat/.../ManualCompress.kt`、`ConversationOps.kt` | 新用例 `charBudgetCutsEvenWhenTokenBudgetIsGenerous`（token 宽松 + 字符严格 ⇒ 必须按字符丢历史且保留后缀）、`charBudgetForcesCompressionWithoutTokenPressure`（1M token 预算 + 20k 字符 ⇒ `applied`）；真机同会话对照见步 4 | ✅ |
+| **P0-2** 压缩与硬闸同尺：`ContextCompressor.compress` 增加 `charBudget` 维，`WindowContextCompressor` 同时按 token 与字符两个量纲贪心落刀（字符目标取水位线，装得下最新一条是硬底线）；`LayeredContextCompressor` 透传；内核 L1 用 `promptCharCap`（与 `PreStepBudget` 同一 `effectiveCharsPerToken`），UI 手动 / 自动压缩用 `compressTargets`（floor cap × 0.6） | `core-context/.../ContextCompressor.kt`、`LayeredContextCompressor.kt`、`BudgetFormula.kt`；`core-agent/.../loop/ContextBudget.kt`；`feature-chat/.../ManualCompress.kt`、`ConversationOps.kt` | 新用例 `charBudgetCutsEvenWhenTokenBudgetIsGenerous`（token 宽松 + 字符严格 ⇒ 必须按字符丢历史且保留后缀）、`charBudgetForcesCompressionWithoutTokenPressure`（1M token 预算 + 20k 字符 ⇒ `applied`）；真机同会话对照见步 4 | ✅ |
 
 **量纲设计要点（避免「两把尺」再次分裂）**：`charBudget` 的语义是**目标**而不是硬上限；水位线只由调用方决定 —— 内核 L1 传硬 cap（它自己已有 token 水位线），UI 传 `0.6 × cap`（给 system 段与 sanitize 补丁留余量）。在压缩器内部再乘一次 0.6 会让 UI 路径压到 0.36×cap（本波实测到并已改掉）。
 
@@ -117,11 +117,11 @@
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote 保持干净。
 
-**结构（推送前声明，实际执行后如实回填）**：原计划 2 个提交；实际为 **3 个** —— ① 内容提交 `bba8dcf1dc70460a693b007e142833ae28d70c10`；② **误报修复提交** `89ac2353bb4e631d7c27c5a56bfa2689015b0d2b`（首个提交的 Secret scan 在 gitleaks 步骤判红，见下）；③ 本回填提交（纯文档）。
+**结构（推送前声明，实际执行后如实回填）**：原计划 2 个提交；实际为 **4 个** —— ① 内容提交 `bba8dcf1dc70460a693b007e142833ae28d70c10`；② **误报修复提交** `89ac2353bb4e631d7c27c5a56bfa2689015b0d2b`（首个提交的 Secret scan 在 gitleaks 步骤判红，见下）；③ CI 四字段回填提交 `a1b111e7d3287880960e2418882652934b02cdbd`；④ 文档字面量修正提交（回填提交的 Secret scan 又被**同一误报字面量**触发：文档引用根因时把该字面量原样抄进了 Markdown）。
 
 **首个提交 `bba8dcf` 的 CI 结果（如实记录）**：Build `45449971703` 与 Secret scan `45449971272` 均 `failure`；逐 job 实取：Assemble Debug / Unit tests / Lint / Arch guard **全部 success**，唯一失败项是 Secret scan 的 **gitleaks** 步骤（trufflehog / 3b-ext / 台账符号自检未执行）。
 
-**根因（gitleaks 原始输出）**：`generic-api-key` 命中 `core-context/.../ContextCompressor.kt:136` 的日志拼接 —— `" tokens, char_budget=" + charBudget + ...`，`token` 与 `=` 的距离落在规则窗口内，被当成 api key。属**误报**，但按纪律**改形状而不是加 allowlist**（不新增全局放行）：字符维字段前置、token 计数移到句尾且不带 `=`，信息量不减。修复提交后本地四闸门与脱敏门禁重跑通过。
+**根因（gitleaks 原始输出）**：`generic-api-key` 命中 `core-context/.../ContextCompressor.kt:136` 的日志拼接 —— 字面量 `tokens` 之后紧跟字符预算字段的赋值拼接，`token` 与等号的距离落在规则窗口内，被当成 api key。属**误报**，但按纪律**改形状而不是加 allowlist**（不新增全局放行）：字符维字段前置、token 计数移到句尾且不带等号，信息量不减。修复提交后本地四闸门与脱敏门禁重跑通过。
 
 **交付判据 = 修复提交 `89ac235` 双 run 全绿（公开 API 四字段实取）**：
 
