@@ -1,0 +1,121 @@
+# W52 门禁回归实证：W49 双键 + W50 hostname 整值白名单未退化
+#
+# 结论：七态全数符合预期。GREEN 态 gate rc=0，RED 态 gate rc=1；
+#       双键（sha256 AND 相对路径）在「同内容新路径」态确实判 RED，W48 单键时代的
+#       静默豁免面已闭合。未发现退化。
+#
+# ── 环境与口径 ──────────────────────────────────────────────────────────
+# 现役仓：harness-v2，tip 590cdaf（main）。本实证全程未对现役仓工作树做任何
+#   git checkout/restore/stash/reset/clean/add/commit/push，也未改动任何源码、
+#   docs、台账、workflow 或门禁脚本本身。
+# 实测环境：仓外临时 git 仓库（绝对路径已脱敏，下文记 <TMP_REPO>），复用现役仓的
+#   .gitignore、scripts/w46-local-secret-gate.sh、
+#   scripts/fixtures/w46-gate-legacy-hashes.txt（三份文件与现役仓 sha256 逐一核对一致）。
+# 驱动脚本置于 <TMP_REPO> 之外，避免自身被门禁路2 命中；探针内容由分段变量拼装，
+#   驱动文件经 grep -qIP 自检无字面敏感形态（PASS）。
+# 门禁判据回源：w46-local-secret-gate.sh 三路 = route1 tracked(git grep) /
+#   route2 untracked / route3 ignored；route2/route3 命中后查历史 fixture 册，
+#   册格式 <sha256>  <relative/path>，双键同时命中才豁免（tracked 路永不豁免）。
+# hostname 判据（W50）：整值占位符白名单，仅 <host> 与 <redacted-value> 两值豁免，
+#   闭合标签后拼正文、空值、任意非占位值一律命中（PCRE 负向先行断言，grep -P）。
+#
+# 脱敏记号（重要，防止本证据文件自身触发门禁）：
+#   HP  = hostname 属性名 + 引号前缀（不逐字写出，避免本文件被路2 判红）
+#   <host> / <redacted-value> = 两个已登记占位符（逐字写出，本就不触发判据）
+#   <synthetic-host> = 合成的非占位主机值（.invalid 域，非真实主机）
+#   所有路径均为临时仓库内相对路径；无本机绝对路径 / 序列号 / 凭据 / 真实 hostname。
+#
+# rc 口径：
+#   GATE_RC（门禁进程）: 0=GREEN（三路全 0） / 1=RED（任一路命中） / 2=SELF_FAULT
+#   HN_GREP_RC（单探针 grep -qIP）: 1=无命中=GREEN / 0=命中=RED
+#
+# ── 七态 rc 汇总 ────────────────────────────────────────────────────────
+# 态  场景                                  GATE_RC  预期  结果
+# 1   现役 tree（占位符 tracked）             0       0     OK
+# 2   <host> 占位探针                         0       0     OK
+# 3   闭合标签 + 尾随正文                      1       1     OK
+# 4   空值                                    1       1     OK
+# 5   真实形态 hostname 值（合成）             1       1     OK
+# 6   移除全部探针                             0       0     OK
+# 7a  双键：hash+path 同册（登记路径）          0       0     OK
+# 7b  双键：同 sha256 全新 path（W49 修复点）   1       1     OK
+#
+# ── 逐态原始输出（脱敏后逐字转录） ───────────────────────────────────────
+# baseline git commit (临时仓库内): b0f0eb2
+
+=== STATE 1 现役 tree GREEN (placeholders tracked) ===
+GATE_RC=0 (expect=0)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=0
+OK no sensitive leak in tracked / untracked / ignored sweeps
+HN_GREP_RC=1 (1=no-match=GREEN)
+说明：基线 tracked 文件仅含 HP+<host> 与 HP+<redacted-value> 两处占位，三路全 0。
+
+=== STATE 2 <host> placeholder GREEN ===
+GATE_RC=0 (expect=0)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=0
+OK no sensitive leak in tracked / untracked / ignored sweeps
+HN_GREP_RC=1 (1=no-match=GREEN)
+说明：注入 _w52/hn_host_placeholder.txt（内容 HP+<host>），W50 整值白名单豁免，route3=0。
+
+=== STATE 3 closed-tag+trailing RED ===
+GATE_RC=1 (expect=1)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=1
+RED ignored: _w52/hn_bypass.txt
+HN_GREP_RC=0 (0=match=RED)
+说明：注入 HP+</host>+尾随正文；旧「引号后首字符非 < 即命中」判据对 </host> 空过，
+     W50 整值白名单下必红，route3=1。
+
+=== STATE 4 empty-value RED ===
+GATE_RC=1 (expect=1)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=1
+RED ignored: _w52/hn_empty.txt
+HN_GREP_RC=0 (0=match=RED)
+说明：注入 HP+空值，非登记占位符 ⇒ 命中，route3=1。
+
+=== STATE 5 real-shape hostname RED (synthetic .invalid) ===
+GATE_RC=1 (expect=1)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=1
+RED ignored: _w52/hn_realvalue.txt
+说明：注入 HP+<synthetic-host>（合成非占位值，.invalid 域，非真实主机）⇒ 命中，route3=1。
+
+=== STATE 6 after removal GREEN ===
+GATE_RC=0 (expect=0)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=0
+OK no sensitive leak in tracked / untracked / ignored sweeps
+说明：移除全部 hostname 探针后回到默认 GREEN，三路全 0。
+
+STATE7_HASH_PREFIX=7f5840c6e4c7 (sha256 of synthetic fixture)
+STATE7_REGISTERED_ENTRY_COUNT=1
+=== STATE 7a double-key registered path GREEN ===
+GATE_RC=0 (expect=0)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=0
+OK no sensitive leak in tracked / untracked / ignored sweeps
+说明：合成 fixture 以 <hash>+相对路径 _w52/registered_fixture.log 双键入临时册 ⇒ 历史样本豁免，GREEN。
+
+STATE7_DUP_HASH_SAME=yes
+STATE7_NEWPATH_ENTRY_COUNT=0
+=== STATE 7b same-sha256 new-path RED (W49 fix) ===
+GATE_RC=1 (expect=1)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=1
+RED ignored: _w52/brand_new_path.log
+说明：同一 sha256 内容复制到全新路径 _w52/brand_new_path.log，该 path 不在册
+     （NEWPATH_ENTRY_COUNT=0）⇒ 双键校验失败、不被静默豁免 ⇒ RED。
+     若为 W48 单键（仅 hash），此态会被豁免成 GREEN；此处 RED 即双键生效的直接证据。
+=== driver end ===
+# ── 双键结论 ────────────────────────────────────────────────────────────
+# 1. W49 双键未退化：is_legacy_fixture 以 `grep -qxF "$h  $rel"` 同时校验内容哈希与
+#    相对路径；7a（hash+path 同册）GREEN、7b（同 hash 新 path）RED，两态配对证明
+#    「内容在册但位于全新路径」的未登记豁免面已闭合。
+# 2. W50 整值白名单未退化：占位 <host>/<redacted-value> GREEN（态1/2），闭合标签+正文、
+#    空值、非占位真实形态值全部 RED（态3/4/5），移除后回 GREEN（态6）。
+# 3. 三路路由行为一致：RED 均落在 route3(ignored)（本地取证文件语义），
+#    route1(tracked)=0、route2(untracked)=0 全程稳定，无误报/漏报。
+# 4. 未触达 SELF_FAULT(rc=2)：未知参数与脚本故障路径本次未涉及，参数均为默认全扫。
+#
+# ── 复现步骤 ────────────────────────────────────────────────────────────
+# a) 仓外建最小 git 仓库，cp 现役仓 .gitignore + w46-local-secret-gate.sh +
+#    w46-gate-legacy-hashes.txt（保持 scripts/ 目录结构）。
+# b) 驱动脚本置于仓库之外；按上表逐态写探针到 _w52/（被 .gitignore 的 _w[0-9]*/ 命中），
+#    每态执行 `bash scripts/w46-local-secret-gate.sh` 记录 rc 与关键行。
+# c) 7b 用 cp 复制 7a 的合成 fixture 到新路径；册内只登记 7a 路径。
+# d) 本文件写入后经门禁 PAT(固定形态) + hostname PCRE 自检：两路均无命中（不自命中）。

@@ -22,7 +22,7 @@ bodies 仍停在 14 类、删掉正则第 15 类 CI 亦全绿；主理人据审�
 + 两支标签正控 + 动态正文反向，并做变异必红（删第 15 类 ⇒ RED → 还原 GREEN），见
 g0_white_mutant_red.txt。白侧第 15 类现有 committed 判据，不再依赖本段的 Python 复刻。〕
 
-[3] 正则对接核验（Python 复刻 FAILURE_DIGEST，非仓库文件）
+[3] 旁证（非判据）：正则对接核验（Python 复刻 FAILURE_DIGEST，非仓库文件）
 BODIES=15
 POS run failed: engine failure [engine:config]                                  -> allow
 POS run failed: engine failure [engine:no-events]                               -> allow

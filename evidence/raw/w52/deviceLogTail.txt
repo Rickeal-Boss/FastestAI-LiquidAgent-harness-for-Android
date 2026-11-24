@@ -1,0 +1,21 @@
+W52 设备侧落盘探针行复核（run-as com.rickeal.liquidharness.debug 读取 files/harness/logs/agent-0.log）
+回灌级别：只含本仓固定形态探针行 + 四态结论；不含端点标识 / 密钥 / SSID / 序列号 / 本机路径 / 整段 logcat / 用户正文。
+本波时间窗：UTC 2026-11-24T04:58（基线 324 行）→ 05:02（330 行）；设备 mWakefulness=Awake，非黑主屏。
+
+[本波时间窗取回 6 行，全部固定形态]
+2026-11-24T05:01:16.249564Z INFO prefix fp=a1217ad8 changed=none prompt=1078 cached=n/a-usage
+2026-11-24T05:01:19.733832Z WARN auto_compact=noop reason=below_trigger
+2026-11-24T05:01:19.734285Z INFO auto_compact=noop reason=below_trigger
+2026-11-24T05:02:14.456857Z INFO prefix fp=228b5742 changed=none prompt=1075 cached=n/a-usage
+2026-11-24T05:02:17.723399Z INFO auto_compact=noop reason=below_trigger
+2026-11-24T05:02:17.724348Z WARN auto_compact=noop reason=below_trigger
+
+判据：零形态外行、零自由文本回显。
+- 形态外行：0（6 行均为 prefix 账行或 auto_compact=noop 固定摘要）。
+- 自由文本回显：0（回声 token W52ECHOK / W52CLEANECHO 及模型回复正文均未落盘，仅进 ring）。
+- 放弃路径 [engine:give-up] / http:rejected 等失败标签：本波时间窗未出现（网络已恢复），历史行 02:13 的 [engine:give-up] 属 W51 窗口，不并入本波。
+
+[四态结论]
+- 落盘白名单设备侧复核：✅ 6 行全固定形态，零形态外行、零自由文本回显。
+- auto_compact=noop reason=below_trigger：✅ 字符闸未越线时的正确 no-op 行为（非缺陷），本波 prefix 账行与 noop 摘要同时可读。
+- 关键端点回声：✅（见 p0_echo_clean_lightning30b.png）W52CLEANECHO 逐字回引 + 思考块 + 上下文 1.9K / 127K；127K 档常规请求，非满窗真压。
