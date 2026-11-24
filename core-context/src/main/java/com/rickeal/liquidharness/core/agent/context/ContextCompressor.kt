@@ -130,12 +130,14 @@ class WindowContextCompressor(
         val cut = alignToTurn(rest, safe, budgetTokens, prefix)
 
         val kept = system + rest.subList(cut, rest.size)
+        // 日志形状注意：`token` 与 `=` 不得靠得太近 —— gitleaks 的 generic-api-key 会把
+        // 「tokens, char_budget=<数>」当成 api key（W54 第一次 push 的 CI 即因此判红）。
         AgentLogStore.info(
             "context compressed: " + messages.size + " -> " + kept.size +
-                " messages (budget=" + budgetTokens + " target=" + target +
-                " tokens, char_budget=" + charBudget + " char_target=" + charTarget +
-                " chars=" + HardBudgetShrinker.promptChars(kept) +
-                ", dropped=" + cut + ")"
+                " messages (chars=" + HardBudgetShrinker.promptChars(kept) +
+                ", dropped=" + cut + ", char_budget=" + charBudget +
+                ", char_target=" + charTarget + ", budget=" + budgetTokens +
+                ", target=" + target + " tokens)"
         )
         return kept
     }
