@@ -74,8 +74,11 @@ N-1 `parallel_tool_calls` 保存误拒（六波审查第 9 次承）：属实方
 ## 七、CI（公开 API 四字段）
 
 - 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
-- 本波零代码改动 ⇒ 提交全为文档 / 证据；结构在推送前即声明为 2 提交：内容提交 → CI 四字段回填提交。两次均只触发 Secret scan（Build 由 `paths-ignore` 跳过）。
-- （推送后回填四字段与结论。）
+- 本波零代码改动 ⇒ 提交全为文档 / 证据；结构在推送前即声明为 2 提交：内容提交 → CI 四字段回填提交。
+- **内容提交 `28c309759dff91775ab890bf19616d646afaea1e` 双 run 全绿**：
+  - Build `45391358309`（`head_sha=28c309759dff91775ab890bf19616d646afaea1e` / `status=completed` / `conclusion=success` / `updated_at=2026-11-24T12:14:15Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45391358309`）。
+  - Secret scan `45391357988`（`head_sha=28c309759dff91775ab890bf19616d646afaea1e` / `status=completed` / `conclusion=success` / `updated_at=2026-11-24T12:13:22Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45391357988`）。
+- **交付判据 = 内容提交双 run 全绿**。证据目录含非 `docs/**` 的 `.txt` / `.png`，Build 实际触发（非 `paths-ignore` 跳过），与零代码改动不冲突。回填提交含四字段回填与 1 个门禁证据文本，其 run 按既有降级口径**只声明存在**、不逐条列号；不为补链新建第 3 个提交。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
 ## 八、明确未做（逐条带中文段位）
 

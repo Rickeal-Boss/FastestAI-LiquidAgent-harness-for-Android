@@ -59,7 +59,7 @@
 | G2 架构守卫 | `result=PASS ok=27 vacuous=1 violation=0 fault=0`；G20 `141 个 handoff ID 全在台账内` | ✅ | `evidence/raw/w53/g2_archguard.txt` |
 | G3 守卫自测 | `30/30 PASS（331s）` | ✅ | `evidence/raw/w53/g3_selftest.txt` |
 | G4 全量单测 | `tests=895 failures=0 errors=0 skipped=0`（14 模块） | ✅ | `evidence/raw/w53/g4_fulltest.txt` |
-| 脱敏门禁 | 三路（tracked / untracked / ignored）0 命中；本波新增文本与 PNG 入仓前逐件复核 | ✅ | 本地 gate rc=0；`g2_archguard.txt` 内 3b 结果 |
+| 脱敏门禁 | 三路（tracked / untracked / ignored）0 命中；本波新增文本与 PNG 入仓前逐件复核 | ✅ | `evidence/raw/w53/g0_secret_gate.txt` |
 
 ---
 
@@ -90,9 +90,14 @@
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
 
-**本波结构（推送前声明，避免 W52 同型口径问题）**：W53 零代码改动 ⇒ 本波提交全为文档 / 证据；**2 个提交**：① 内容提交（台账 + 验收物 + 交接 + 证据）→ ② CI 四字段回填提交（纯文档）。两次提交各自触发 Secret scan（`secret-scan.yml` 无 `paths-ignore`），Build 由 `paths-ignore`（`docs/**`、`**/*.md`）跳过。交付判据 = 内容提交的 Secret run 绿 + 最近代码 tip（W52 `eecec22`）双 run 历史全绿；回填提交的 Secret run 按既有降级口径**只声明存在**、不逐条列号。
+**本波结构（推送前声明，避免 W52 同型口径问题）**：W53 零代码改动 ⇒ 本波提交全为文档 / 证据；**2 个提交**：① 内容提交（台账 + 验收物 + 交接 + 证据）→ ② CI 四字段回填提交（纯文档）。
 
-（四字段在推送后回填。）
+**内容提交 `28c309759dff91775ab890bf19616d646afaea1e` 双 run 全绿**（公开 API 四字段实取）：
+
+- Build `45391358309`（`head_sha=28c309759dff91775ab890bf19616d646afaea1e` / `status=completed` / `conclusion=success` / `updated_at=2026-11-24T12:14:15Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45391358309`）。
+- Secret scan `45391357988`（`head_sha=28c309759dff91775ab890bf19616d646afaea1e` / `status=completed` / `conclusion=success` / `updated_at=2026-11-24T12:13:22Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45391357988`）。
+
+**交付判据 = 内容提交双 run 全绿，成立 ✅**。说明：本波证据目录含非 `docs/**` 的 `.txt` / `.png`，故 Build 实际触发（并非 `paths-ignore` 跳过），与「零代码改动」不冲突。回填提交含四字段回填与 1 个门禁证据文本（同样触发双 run），其 run 按既有降级口径**只声明存在**、不逐条列号；不为补链新建第 3 个提交。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
 ---
 
