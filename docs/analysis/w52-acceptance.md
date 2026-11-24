@@ -88,7 +88,14 @@
 
 ## 步 6 · CI 校验
 
-> 待提交推送后填四字段。交付判据 = 最终代码 tip 双 run 全绿；文档 tip 的 run 按降级口径只声明存在、不逐条列号。
+提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘；无红态 fix 循环（一次提交直推）。
+
+**最终代码 tip `eecec22fff297f06527857d409e5e303a6d766d7` 双 run 全绿**（公开 API 四字段实取）：
+
+- Build `45334558217`（`head_sha=eecec22fff297f06527857d409e5e303a6d766d7` / `status=completed` / `conclusion=success` / `updated_at=2026-11-24T05:38:08Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45334558217`）。
+- Secret scan `45334557236`（`head_sha=eecec22fff297f06527857d409e5e303a6d766d7` / `status=completed` / `conclusion=success` / `updated_at=2026-11-24T05:37:13Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45334557236`）。
+
+**交付判据 = 最终代码 tip 双 run 全绿，成立 ✅**。本波为单提交（代码 + 文档同提交），无独立文档 tip；若后续有纯文档补链提交，其 Secret run 按既有降级口径只声明存在、不逐条列号、Build 0 run 为 `paths-ignore` 既定口径，不为补链新建提交。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
 ---
 
