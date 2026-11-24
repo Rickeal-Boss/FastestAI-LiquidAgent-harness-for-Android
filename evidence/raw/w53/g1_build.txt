@@ -362,3 +362,8 @@ BUILD SUCCESSFUL in 1m 23s
 [localbuild]   MSYS_NO_PATHCONV=1 adb shell pm install -r /data/local/tmp/app.apk
 [localbuild]   MSYS_NO_PATHCONV=1 adb shell monkey -p com.rickeal.liquidharness.debug -c android.intent.category.LAUNCHER 1
 rc=0
+
+# ── W54 注记（不改原始输出）────────────────────────────────────────────
+# 上面那行 `assertion "bc_ctl.arg_max >= LINE_MAX" failed: file "xargs.c"` 是 MSYS/Git-Bash
+# 自带 xargs 的环境告警，与 Gradle / Kotlin 编译无关；本次构建 rc=0、BUILD SUCCESSFUL，
+# 不是构建失败。外审可从本文件的 `BUILD SUCCESSFUL` 与 rc 行复核。

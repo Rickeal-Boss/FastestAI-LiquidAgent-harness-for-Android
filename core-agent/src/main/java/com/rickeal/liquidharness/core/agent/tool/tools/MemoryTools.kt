@@ -7,6 +7,7 @@ import com.rickeal.liquidharness.core.model.ToolParameter
 import com.rickeal.liquidharness.core.model.ToolParamType
 import com.rickeal.liquidharness.core.model.ToolResult
 import com.rickeal.liquidharness.core.model.ToolSpec
+import kotlinx.coroutines.CancellationException
 
 /**
  * 长期记忆三件套：`memory_write` / `memory_search` / `memory_delete`。
@@ -61,6 +62,8 @@ class MemoryWriteTool(private val store: MemoryStore) : Tool {
                 ok = true,
                 output = "saved memory: " + entry.title + " (" + capped.length + " chars)",
             )
+        } catch (c: CancellationException) {
+            throw c
         } catch (t: Throwable) {
             failure(t.message ?: "memory write failed")
         }
@@ -102,6 +105,8 @@ class MemorySearchTool(private val store: MemoryStore) : Tool {
                     output = hits.joinToString("\n") { it.toPromptLine() },
                 )
             }
+        } catch (c: CancellationException) {
+            throw c
         } catch (t: Throwable) {
             ToolResult(name = spec.name, ok = false, errorMessage = t.message ?: "memory search failed")
         }
@@ -138,6 +143,8 @@ class MemoryDeleteTool(private val store: MemoryStore) : Tool {
             } else {
                 ToolResult(name = spec.name, ok = false, errorMessage = "no memory titled: " + title)
             }
+        } catch (c: CancellationException) {
+            throw c
         } catch (t: Throwable) {
             ToolResult(name = spec.name, ok = false, errorMessage = t.message ?: "memory delete failed")
         }

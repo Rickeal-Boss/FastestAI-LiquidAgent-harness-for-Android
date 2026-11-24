@@ -5,11 +5,14 @@ import com.rickeal.liquidharness.core.agent.tool.ToolSource
 import com.rickeal.liquidharness.core.agent.tool.ToolSourceSnapshot
 import com.rickeal.liquidharness.core.model.ToolSpec
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
 /** 一次握手的结果。失败必须带 ASCII 原因码（`http_401` / `timeout` / `malformed` / `rpc_-32602`）。 */
 sealed interface ConnectResult {
@@ -55,19 +58,26 @@ class McpClient(
     var sessionId: String? = null
         private set
 
+    /** 握手 / 降级必须串行：并发 `connect()` 会打两轮握手、把 era 与 sessionId 写乱（W54 · P1-4）。 */
+    private val connectMutex = Mutex()
+
+    /** `@Volatile`：连接状态被多个工具协程读，写只发生在握手完成时。 */
+    @Volatile
     private var connected: Boolean = false
-    private var requestId: Long = 0L
+
+    /** 原子自增：并行工具批共享同一个 client，`++` 会给出重复 id ⇒ 响应按 id 配错。 */
+    private val requestId = AtomicLong(0L)
 
     /** 命名空间名 → 远端原名。远端名可能含 `.` / 空格，反推会失真，必须记原值。 */
     private val remoteNames = ConcurrentHashMap<String, String>()
 
     // ---------------------------------------------------------------- 握手
 
-    suspend fun connect(): ConnectResult {
-        if (connected) return ConnectResult.Ok(era)
+    suspend fun connect(): ConnectResult = connectMutex.withLock {
+        if (connected) return@withLock ConnectResult.Ok(era)
         val result = if (config.protocolEra == McpProtocol.ERA_LEGACY) initialize() else discover()
         if (result is ConnectResult.Ok) connected = true
-        return result
+        result
     }
 
     private suspend fun discover(): ConnectResult =
@@ -219,7 +229,7 @@ class McpClient(
      * 「server 先发一条 log 通知」时误判成空响应。
      */
     private suspend fun invoke(method: String, paramsJson: String?): Call {
-        val id = ++requestId
+        val id = requestId.incrementAndGet()
         // 传输端口可能被替换成任意实现（测试替身 / 未来别的 HTTP 栈），
         // 因此这里必须兜住「实现不守约、直接抛异常」的形态。
         val response = try {

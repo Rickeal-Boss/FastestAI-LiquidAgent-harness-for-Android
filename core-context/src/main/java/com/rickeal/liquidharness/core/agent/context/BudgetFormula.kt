@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.core.agent.context
 
 import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
+import com.rickeal.liquidharness.core.agent.policy.DEFAULT_COMPRESS_TARGET_RATIO
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
 
 // W6 从 ContextCompressor.kt 拆出（该文件已触 G10 单文件上限 400 的边）：拆的是「预算算式」
@@ -114,3 +115,24 @@ fun contextLimitOf(endpoint: RemoteEndpoint?, maxContextTokens: Int): Int =
     } else {
         hardContextBudgetTokens(endpoint, AgentPolicy(maxContextTokens = maxContextTokens))
     }
+
+/**
+ * 生效的字符上限（**与 `PreStepBudget` 逐字同源**）：`hard × effectiveCharsPerToken`。
+ *
+ * W54 · P0-2：压缩器与硬闸必须吃同一个数，否则「压缩 applied」与「下一轮仍熔断」并存。
+ * `measured <= 0`（首轮 / 刚压缩过）⇒ 回落 floor，与 `PreStepBudget` 完全一致。
+ */
+fun promptCharCap(endpoint: RemoteEndpoint, policy: AgentPolicy, measured: Float): Int =
+    charCapOf(hardContextBudgetTokens(endpoint, policy), effectiveCharsPerToken(policy, measured))
+
+/**
+ * UI 侧（手动 / 自动压缩）的两个量纲预算：token 软预算 + 字符**水位线**。
+ *
+ * UI 拿不到内核的 `measuredCharsPerToken`，所以字符侧用 **floor** —— 那不是近似，
+ * 而正是「压缩后 `measured` 置 0」那一刻 `PreStepBudget` 会采用的 cap。
+ * 再乘 [DEFAULT_COMPRESS_TARGET_RATIO] 得到水位线：压缩目标与 token 侧（`× 0.6`）同构，
+ * 同时给 system 段与 sanitize 补丁留出余量（W53 现场「压完仍超 3415 字符」的成因）。
+ */
+fun compressTargets(endpoint: RemoteEndpoint, policy: AgentPolicy): Pair<Int, Int> =
+    contextBudgetTokens(endpoint, policy) to
+        (hardCharCap(endpoint, policy) * DEFAULT_COMPRESS_TARGET_RATIO).toInt().coerceAtLeast(1)

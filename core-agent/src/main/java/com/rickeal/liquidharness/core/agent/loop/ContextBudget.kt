@@ -11,6 +11,7 @@ import com.rickeal.liquidharness.core.agent.policy.DEFAULT_COMPRESS_TARGET_RATIO
 import com.rickeal.liquidharness.core.agent.context.contextBudgetTokens
 import com.rickeal.liquidharness.core.agent.context.fingerprintOf
 import com.rickeal.liquidharness.core.agent.context.historySegment
+import com.rickeal.liquidharness.core.agent.context.promptCharCap
 import com.rickeal.liquidharness.core.agent.context.sanitizeForProvider
 import com.rickeal.liquidharness.core.agent.context.skillsSegment
 import com.rickeal.liquidharness.core.agent.context.systemSegment
@@ -169,7 +170,9 @@ class ContextBudget(
         // 工具声明也占窗口，而压缩器只看 messages ⇒ 先把工具那一段从预算里扣掉，
         // 否则「工具面几千 token」时压缩器会以为还很宽松、一条都不丢（假压缩）。
         val messageBudget = (budget - toolTokens).coerceAtLeast(1)
-        val compressed = activeCompressor(ctx).compress(listOf(system) + body, messageBudget)
+        // W54 · P0-2：与 `PreStepBudget` 共用同一字符 cap（只按 token 压缩会「压完仍熔断」）。
+        val charCap = promptCharCap(ctx.request.endpoint, ctx.policy, ctx.state.measuredCharsPerToken)
+        val compressed = activeCompressor(ctx).compress(listOf(system) + body, messageBudget, charCap)
         val keptBody = compressed.filter { it.role != Role.SYSTEM }
         if (keptBody.size >= body.size) {
             // 无损放弃：压缩器没能安全丢掉任何一条 ⇒ 不改写历史（见类头最后一段）。

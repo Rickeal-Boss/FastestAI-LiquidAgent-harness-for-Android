@@ -59,7 +59,7 @@
 | G2 架构守卫 | `result=PASS ok=27 vacuous=1 violation=0 fault=0`；G20 `141 个 handoff ID 全在台账内` | ✅ | `evidence/raw/w53/g2_archguard.txt` |
 | G3 守卫自测 | `30/30 PASS（331s）` | ✅ | `evidence/raw/w53/g3_selftest.txt` |
 | G4 全量单测 | `tests=895 failures=0 errors=0 skipped=0`（14 模块） | ✅ | `evidence/raw/w53/g4_fulltest.txt` |
-| 脱敏门禁 | 三路（tracked / untracked / ignored）0 命中；本波新增文本与 PNG 入仓前逐件复核 | ✅ | `evidence/raw/w53/g0_secret_gate.txt` |
+| 脱敏门禁 | 三路（tracked / untracked / ignored）0 命中；本波新增文本与 PNG 入仓前逐件复核（`g0_secret_gate.txt` 由回填提交补入，W54 承接订正） | ✅ | `evidence/raw/w53/g0_secret_gate.txt` |
 
 ---
 
@@ -80,7 +80,7 @@
 | **skill** | 技能页列出内置 `notes-organizer` / `pdf-toolkit`；Dots3 按 notes 流程产出 `Decisions / Open questions / Action items` 结构 | ✅ | `p2_skill_list.png`、`p2_skill_dots3_512k.png` |
 | **MCP** | 「还没有 MCP 服务器」⇒ 判据未行使 | ⛔vacuous | `p2_mcp_empty.png` |
 | **多端点矩阵** | Lightning 30B / Nano Omni 30B / Bolt E4B / Dots3 / SuperVL 1M 均完成会话轮；North Mini Code 返回 `request rejected (HTTP 404)` | ✅ / ⛔ | `p2_nano_text.png`、`p2_north_404.png` |
-| **落盘白名单** | 本波时间窗 89 行逐行按白名单正则复核：形态外行 0、自由文本回显 0 | ✅ | `deviceLogTail.txt` |
+| **落盘白名单** | 本波时间窗 **89 行**按白名单正则复核，入仓 **24 行**判据样本（`deviceLogTail.txt` 共 41 行）：形态外行 0、自由文本回显 0（W54 承接订正：原写「89 行逐行」超出仓内可复算范围） | ✅ | `deviceLogTail.txt` |
 
 **回灌级别**：只写脱敏判据结论、`deviceLogTail` 固定形态探针行与截图判据；不回灌整段 logcat / 凭据 / 端点完整标识 / 账号字段 / 序列号 / SSID / 本机路径 / 用户私人图片。图片选择器含私人目录名的截图未入仓。
 
@@ -90,7 +90,7 @@
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
 
-**本波结构（推送前声明，避免 W52 同型口径问题）**：W53 零代码改动 ⇒ 本波提交全为文档 / 证据；**2 个提交**：① 内容提交（台账 + 验收物 + 交接 + 证据）→ ② CI 四字段回填提交（纯文档）。
+**本波结构（推送前声明，避免 W52 同型口径问题）**：W53 零代码改动 ⇒ 本波提交全为文档 / 证据；**2 个提交**：① 内容提交（台账 + 验收物 + 交接 + 证据）→ ② CI 四字段回填提交（纯文档 + 1 个门禁证据文本；W54 承接订正）。
 
 **内容提交 `28c309759dff91775ab890bf19616d646afaea1e` 双 run 全绿**（公开 API 四字段实取）：
 
@@ -133,8 +133,8 @@
 
 ## 交给外部审查团队的制品清单（边界声明）
 
-**制品**：本验收物、W53 交接、`docs/w53-dispatch.md`、台账（`### W53 段` + 6 条老号行内注记 + W52 段措辞订正）、`evidence/raw/w53/`（g1–g4 原始输出、门禁七态、`deviceLogTail.txt`、15 张脱敏截图）、W52 修复件（重存 PNG + 两处 §七 订正 + 披露段）。代码逐文件 diff：无 `.kt` 改动。
+**制品**：本验收物、W53 交接、`docs/w53-dispatch.md`、台账（`### W53 段` + **13 条**老号行内注记 + W52 段措辞订正；W54 承接订正：原写 6 条）、`evidence/raw/w53/`（g1–g4 原始输出、门禁七态、`deviceLogTail.txt`、15 张脱敏截图）、W52 修复件（重存 PNG + 两处 §七 订正 + 披露段）。代码逐文件 diff：无 `.kt` 改动。
 
 **不含**：会话历史 / 凭据 / 端点完整标识与密钥 / 账号字段 / 设备序列号 / SSID / 本机路径 / 用户私人图片 / 整段 logcat /「建议下一链做什么」。
 
-**边界**：① W53 零代码改动，交付判据落在文档提交 Secret run + 最近代码 tip 历史双绿；② 回声为补跑、不回改 W52 四态；③ 截断 PNG 已重存并替换，历史四态不变；④ 手动压缩取得 applied 账行，自动压缩仅 noop；⑤ 压缩后仍触发 L3 字符熔断，量纲不一致现场复现、不新开行；⑥ MCP 0 服务器 vacuous；⑦ North 404 为设备真相，不写成已修复。
+**边界**：① W53 零代码改动，交付判据落在**内容提交双 run 全绿**（W54 承接订正，与步 6 同步）；② 回声为补跑、不回改 W52 四态；③ 截断 PNG 已重存并替换，历史四态不变；④ 手动压缩取得 applied 账行，自动压缩仅 noop；⑤ 压缩后仍触发 L3 字符熔断，量纲不一致现场复现、不新开行；⑥ MCP 0 服务器 vacuous；⑦ North 404 为设备真相，不写成已修复。

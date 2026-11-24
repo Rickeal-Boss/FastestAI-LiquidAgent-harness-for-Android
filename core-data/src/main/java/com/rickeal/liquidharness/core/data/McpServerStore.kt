@@ -61,7 +61,11 @@ class McpServerStore(private val files: JsonFileStore) {
         files.read(FILE_NAME, ListSerializer(McpServerConfig.serializer())).orEmpty()
 
     private suspend fun persist(servers: List<McpServerConfig>) {
-        files.write(FILE_NAME, ListSerializer(McpServerConfig.serializer()), servers)
+        // W54 · P0-1 同型：写失败曾被丢弃 ⇒ UI 显示保存成功、重启后配置消失。
+        // 抛 IOException 由调用方（ExtrasViewModel 的 suspendResultOf）转为可见失败。
+        if (!files.write(FILE_NAME, ListSerializer(McpServerConfig.serializer()), servers)) {
+            throw java.io.IOException("mcp server list write failed: " + FILE_NAME)
+        }
     }
 
     private fun redactHeaders(headers: Map<String, String>): Map<String, String> =

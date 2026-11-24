@@ -10,7 +10,20 @@ import com.rickeal.liquidharness.core.model.ToolResult
 
 /** 上下文压缩器端口。实现方只允许「无损放弃」，不允许「尽力而为删一半」（理由见下）。 */
 interface ContextCompressor {
-    suspend fun compress(messages: List<ChatMessage>, budgetTokens: Int): List<ChatMessage>
+    /**
+     * @param budgetTokens 估算量纲的预算（软预算 / 压缩目标）。
+     * @param charBudget **字符**量纲的硬上限，默认 `Int.MAX_VALUE` = 不判。
+     *
+     * 🔴 为什么要第二个量纲（W54 · P0-2，W53 现场 `chars=226442 cap=223027`）：
+     * 压缩器按 token 估算落刀、`PreStepBudget` 按字符裁决，两把尺子在中文 / 代码会话里
+     * 相差 2 倍以上 ⇒ 「压缩成功（dropped=80）」之后下一次请求仍被熔断，
+     * 用户点完压缩还是发不出去。两个量纲必须由**同一个压缩动作**同时满足。
+     */
+    suspend fun compress(
+        messages: List<ChatMessage>,
+        budgetTokens: Int,
+        charBudget: Int = Int.MAX_VALUE,
+    ): List<ChatMessage>
 }
 
 // 预算算式（软 / 硬两条）已搬到 `BudgetFormula.kt`：本文件已触 G10 单文件上限，
@@ -68,9 +81,15 @@ class WindowContextCompressor(
     private val alignMaxExtraDropRatio: Float = DEFAULT_COMPRESS_ALIGN_MAX_EXTRA_DROP_RATIO,
 ) : ContextCompressor {
 
-    override suspend fun compress(messages: List<ChatMessage>, budgetTokens: Int): List<ChatMessage> {
+    override suspend fun compress(
+        messages: List<ChatMessage>,
+        budgetTokens: Int,
+        charBudget: Int,
+    ): List<ChatMessage> {
         if (messages.isEmpty()) return messages
-        if (TokenEstimator.estimateMessages(messages) <= budgetTokens) return messages
+        val overTokens = TokenEstimator.estimateMessages(messages) > budgetTokens
+        val overChars = charBudget != Int.MAX_VALUE && HardBudgetShrinker.promptChars(messages) > charBudget
+        if (!overTokens && !overChars) return messages
 
         val system = messages.filter { it.role == Role.SYSTEM }
         val rest = messages.filter { it.role != Role.SYSTEM }
@@ -80,19 +99,25 @@ class WindowContextCompressor(
         // 每条 cost 先算一次并存起来：在贪心循环里逐条 estimate 等于把整段历史全量字符
         // 遍历两遍（O(n²)），长会话时用户感知为「卡住」（旧仓实测）。
         val costs = IntArray(rest.size) { TokenEstimator.estimateMessages(listOf(rest[it])) }
+        val charCosts = IntArray(rest.size) { HardBudgetShrinker.promptChars(listOf(rest[it])) }
         // 前缀和：`sum(costs[from until to])` 就是 `estimateMessages(rest[from until to])`
         // 的精确值（每条消息的开销可加），对齐上限判定因此是 O(1)。
         val prefix = IntArray(rest.size + 1)
         for (index in rest.indices) prefix[index + 1] = prefix[index] + costs[index]
 
         val usedBySystem = TokenEstimator.estimateMessages(system)
+        val systemChars = HardBudgetShrinker.promptChars(system)
         val target = targetTokens(budgetTokens, usedBySystem, prefix[rest.size] - prefix[rest.size - 1])
+        val charTarget = targetChars(charBudget, systemChars, charCosts.last())
         var used = usedBySystem
+        var usedChars = systemChars
         var candidate = rest.size
         for (index in rest.indices.reversed()) {
             val cost = costs[index]
             if (used + cost > target) break
+            if (usedChars + charCosts[index] > charTarget) break
             used += cost
+            usedChars += charCosts[index]
             candidate = index
         }
         // 连最近一条都装不下：没有任何可保留的东西，无损放弃
@@ -108,9 +133,23 @@ class WindowContextCompressor(
         AgentLogStore.info(
             "context compressed: " + messages.size + " -> " + kept.size +
                 " messages (budget=" + budgetTokens + " target=" + target +
-                " tokens, dropped=" + cut + ")"
+                " tokens, char_budget=" + charBudget + " char_target=" + charTarget +
+                " chars=" + HardBudgetShrinker.promptChars(kept) +
+                ", dropped=" + cut + ")"
         )
         return kept
+    }
+
+    /**
+     * 字符维的目标。**`charBudget` 就是目标本身**（不是硬上限）：装得下最新一条是硬底线。
+     *
+     * 水位线放在调用方（`compressTargets` 传 `hardCap × DEFAULT_COMPRESS_TARGET_RATIO`），
+     * 而不是在这里再乘一次 —— 内核算的 L1 传的是**硬 cap**（它自己已有 token 水位线），
+     * UI 的自动 / 手动压缩传的是**水位线**。在这里重复相乘会让 UI 路径压到 0.36×cap。
+     */
+    private fun targetChars(charBudget: Int, systemChars: Int, newestChars: Int): Int {
+        if (charBudget == Int.MAX_VALUE) return Int.MAX_VALUE
+        return maxOf(charBudget, systemChars + newestChars)
     }
 
     /**

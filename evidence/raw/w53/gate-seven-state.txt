@@ -3,6 +3,10 @@
 # 结论：七态全数符合预期。GREEN 态 gate rc=0，RED 态 gate rc=1；
 #       双键（sha256 AND 相对路径）在「同内容新路径」态判 RED，静默豁免面保持闭合。
 
+# 方法学披露（W54 承接补位，与 W52 同型）：首版 driver 曾置于仓内、被 route2 untracked
+#   自匹配污染成 GREEN；移出扫描面后重跑，本文件为**移出后**的结果。
+#   `HN_GREP_RC` 是单探针辅助量、不是交付判据（交付看 `GATE_RC`）；STATE 2 的
+#   `HN_GREP_RC=0` 与 GREEN 标题并存属辅助量口径，已在 W54 交接如实登记。
 # ── 环境与口径 ─────────────────────────────────────────────────────────
 # 现役仓：harness-v2（main）。本实证未对现役仓工作树做 checkout/restore/stash/reset/clean/
 #   add/commit/push，未改源码、docs、台账、workflow 或门禁脚本。

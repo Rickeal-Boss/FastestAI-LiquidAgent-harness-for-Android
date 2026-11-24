@@ -11,6 +11,7 @@ import com.rickeal.liquidharness.core.model.ToolParameter
 import com.rickeal.liquidharness.core.model.ToolParamType
 import com.rickeal.liquidharness.core.model.ToolResult
 import com.rickeal.liquidharness.core.model.ToolSpec
+import kotlinx.coroutines.CancellationException
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -92,6 +93,8 @@ class SpeakTool internal constructor(
                 is SpeakOutcome.EnqueueFailed ->
                     ToolResult(name = spec.name, ok = false, errorMessage = "tts_enqueue_failed(" + outcome.code + ")")
             }
+        } catch (c: CancellationException) {
+            throw c
         } catch (t: Throwable) {
             ToolResult(name = spec.name, ok = false, errorMessage = t.message ?: "tts_failed")
         }
@@ -168,6 +171,8 @@ internal class AndroidSpeechEngine(private val appContext: Context) : SpeechEngi
             outcome = try {
                 speakOnLooper(text)
             } catch (t: Throwable) {
+                // 不是挂起点（HandlerThread 回调）：这里没有「协程被取消」语义，
+                // 重抛 CancellationException 只会打崩 TTS 线程。
                 SpeakOutcome.EnqueueFailed(ERROR_CODE)
             } finally {
                 latch.countDown()

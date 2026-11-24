@@ -141,20 +141,33 @@ class LayeredContextCompressor(
 ) : ContextCompressor {
 
     /** 端口实现：只返回消息，丢掉 mode 等诊断信息。需要诊断走 [compressDetailed]。 */
-    override suspend fun compress(messages: List<ChatMessage>, budgetTokens: Int): List<ChatMessage> =
-        compressDetailed(messages, budgetTokens).messages
+    override suspend fun compress(
+        messages: List<ChatMessage>,
+        budgetTokens: Int,
+        charBudget: Int,
+    ): List<ChatMessage> = compressDetailed(messages, budgetTokens, charBudget).messages
 
-    /** 带诊断信息的压缩。`ContextBudget` 用这个（要 emit `ContextCompressed` 与写 WARN）。 */
+    /**
+     * 带诊断信息的压缩。`ContextBudget` 用这个（要 emit `ContextCompressed` 与写 WARN）。
+     *
+     * @param charBudget 字符维上限，透传给 L1（切点权威）。L2 只追加一条摘要，
+     *   其体积由 `summarizeMaxTokens` 兜住，且 L1 已按水位线留出余量。
+     */
     suspend fun compressDetailed(
         messages: List<ChatMessage>,
         budgetTokens: Int,
+        charBudget: Int = Int.MAX_VALUE,
     ): CompressionOutcome {
         if (messages.isEmpty()) return CompressionOutcome(messages, CompressionMode.NONE)
 
         val estimated = TokenEstimator.estimateMessages(messages)
-        if (estimated <= budgetTokens) return CompressionOutcome(messages, CompressionMode.NONE)
+        val overChars = charBudget != Int.MAX_VALUE &&
+            HardBudgetShrinker.promptChars(messages) > charBudget
+        if (estimated <= budgetTokens && !overChars) {
+            return CompressionOutcome(messages, CompressionMode.NONE)
+        }
 
-        val l1 = delegate.compress(messages, budgetTokens)
+        val l1 = delegate.compress(messages, budgetTokens, charBudget)
         if (l1.size >= messages.size) {
             // L1 压不动（装不下 / 找不到安全切点）⇒ 不试 L2：L2 的插入点也来自 L1 的切点。
             AgentLogStore.warn(

@@ -134,8 +134,13 @@ class HttpTransport(
         body: String,
         allowPrivateNetwork: Boolean = false,
     ): SseStream {
+        // 🔴 W54 · P1-1：字面量闸**下沉到本层**，不依赖每个调用方记得先 check。
+        // `GuardedDns` 对字面量 IP 是**早退放行**的（前提「已被 UrlGuard.check 裁决」），
+        // 而 MCP 通道此前完全没有这道闸 ⇒ https 私网 / userinfo URL 可直连。
+        // 这里再判一次对 LLM 链路是幂等的（它本来就在更早处判过）。
+        val safeUrl = UrlGuard.requireAllowed(url, allowPrivateNetwork)
         val builder = Request.Builder()
-            .url(url)
+            .url(safeUrl)
             .post(body.toRequestBody(JSON_MEDIA_TYPE))
         for ((name, value) in headers) builder.addHeader(name, value)
         val call = streamingClient(allowPrivateNetwork).newCall(builder.build())

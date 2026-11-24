@@ -315,4 +315,25 @@ class ContextCompressorTest {
         assertEquals(Role.MODEL, result.first().role)
         assertTrue(AgentLogStore.recent().none { it.message.contains("compress_align") })
     }
+
+    /**
+     * W54 · P0-2：字符维与 token 维**同时**裁决。
+     *
+     * token 预算宽松（100k）而字符上限严格（10k）⇒ 必须按字符丢历史。旧行为只判 token，
+     * 会原样返回 —— 那正是 W53 现场「压缩 applied 之后下一次请求仍熔断」的一半成因。
+     * 保留区必须是入参的**后缀**（无损形态不变）。
+     */
+    @Test
+    fun charBudgetCutsEvenWhenTokenBudgetIsGenerous() {
+        val messages = (0 until 8).map { user("y".repeat(3_000)) }
+
+        val withoutCharBudget = runBlocking { compressor.compress(messages, 100_000) }
+        assertSame(messages, withoutCharBudget)
+
+        val kept = runBlocking { compressor.compress(messages, 100_000, 10_000) }
+
+        assertTrue(kept.size < messages.size, "char budget must cut, kept=" + kept.size)
+        assertTrue(HardBudgetShrinker.promptChars(kept) <= 10_000)
+        assertEquals(messages.takeLast(kept.size), kept)
+    }
 }

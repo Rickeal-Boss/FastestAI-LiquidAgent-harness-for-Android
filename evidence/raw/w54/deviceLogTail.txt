@@ -1,0 +1,41 @@
+# W54 真机日志尾部（判据样本）
+# 时间窗：2026-11-24T16:50Z — 17:20Z（设备本地 00:50 — 01:20）
+# 来源：应用侧落盘日志 files/harness/logs/agent-0.log（已按 DiagnosticLogSink 探针白名单落盘，
+#       非整段 logcat；环形缓冲与文件 sink 的双写已去重）。
+# 脱敏：只保留固定形态探针行（prefix / auto_compact / manual_compress / context_overflow_prevented /
+#       run failed）；不含凭据、端点完整标识、账号字段、设备序列号、SSID、本机路径、用户正文。
+# 场景顺序：回声(Lightning) → 文件读写(Bolt) → 手动压缩+发送 → 未压缩对照熔断 → 自动压缩 →
+#           1M(SuperVL) → North 404 → Dots3 404 → Nano 文本。
+
+2026-11-24T16:51:09Z INFO prefix fp=0def7598 changed=none prompt=1086 cached=n/a-usage
+2026-11-24T16:51:14Z ERROR run failed: giving up after 1 retries [engine:give-up]
+2026-11-24T16:52:41Z INFO prefix fp=0def7598 changed=none prompt=1086 cached=n/a-usage
+2026-11-24T16:52:43Z WARN auto_compact=noop reason=below_trigger
+2026-11-24T16:52:43Z INFO auto_compact=noop reason=below_trigger
+2026-11-24T16:55:11Z INFO prefix fp=7a2fd39e changed=none prompt=2110 cached=n/a-usage
+2026-11-24T16:55:12Z INFO auto_compact=noop reason=below_trigger
+2026-11-24T16:55:12Z WARN auto_compact=noop reason=below_trigger
+2026-11-24T16:56:12Z INFO prefix fp=0ca1e392 changed=none prompt=1107 cached=n/a-usage
+2026-11-24T16:56:39Z INFO prefix fp=8617a506 changed=HISTORY prompt=1950 cached=1376(cumulative)
+2026-11-24T16:56:40Z INFO prefix fp=106d8eb7 changed=HISTORY prompt=1993 cached=2816(cumulative)
+2026-11-24T16:56:40Z WARN auto_compact=noop reason=below_trigger
+2026-11-24T16:56:40Z INFO auto_compact=noop reason=below_trigger
+2026-11-24T17:01:30Z INFO manual_compress dropped=70 kept=77 cache_invalidated=false
+2026-11-24T17:02:17Z INFO prefix fp=360a249d changed=none prompt=35338 cached=n/a-usage
+2026-11-24T17:02:19Z INFO auto_compact=noop reason=already_compressed
+2026-11-24T17:02:19Z WARN auto_compact=noop reason=already_compressed
+2026-11-24T17:04:17Z ERROR context_overflow_prevented: chars=262626 cap=228556
+2026-11-24T17:05:31Z INFO prefix fp=38b4ec85 changed=none prompt=48888 cached=n/a-usage
+2026-11-24T17:05:35Z INFO auto_compact dropped=30 kept=83 cache_invalidated=false
+2026-11-24T17:08:58Z INFO prefix fp=61d877f6 changed=none prompt=1086 cached=n/a-usage
+2026-11-24T17:09:18Z INFO auto_compact=noop reason=below_trigger
+2026-11-24T17:09:18Z WARN auto_compact=noop reason=below_trigger
+2026-11-24T17:11:52Z INFO prefix fp=49736eaf changed=none prompt=1077 cached=n/a-usage
+2026-11-24T17:11:54Z ERROR run failed: request rejected (HTTP 404) [http:rejected]
+2026-11-24T17:14:31Z INFO prefix fp=fd7c45aa changed=none prompt=1077 cached=n/a-usage
+2026-11-24T17:14:34Z ERROR run failed: request rejected (HTTP 404) [http:rejected]
+2026-11-24T17:17:10Z INFO prefix fp=50bf1a2a changed=none prompt=1077 cached=n/a-usage
+2026-11-24T17:17:14Z INFO auto_compact=noop reason=below_trigger
+2026-11-24T17:17:14Z WARN auto_compact=noop reason=below_trigger
+
+# 自检：本文件行数 = 30；形态外行 = 0。

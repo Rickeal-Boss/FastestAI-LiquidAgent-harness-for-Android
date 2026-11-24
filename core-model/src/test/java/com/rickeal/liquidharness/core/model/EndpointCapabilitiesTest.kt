@@ -235,6 +235,26 @@ class EndpointCapabilitiesTest {
         )
     }
 
+    /**
+     * W54 · N-1 **定谳**：`parallel_tool_calls=false` 走「解析 + 校验」这条保存链应能通过。
+     *
+     * 台账没有对应行，这条主张被六波审查承载了九次却从未被执行过。现役代码实读结论：
+     * 键在 `ALLOWED_EXTRA_BODY_KEYS` 内、不在保留键表内、`false` 不命中凭据值形态。
+     * 一条断言即可定谳：绿 ⇒ 「保存误拒」与现役代码不符（真机上若仍失败，根因在 UI 层丢值）；
+     * 红 ⇒ 根因就在这两张表里。
+     */
+    @Test
+    fun parallelToolCallsPassesCombinedSaveChain() {
+        val parsed = parseExtraBody("parallel_tool_calls=false")
+        assertEquals(mapOf("parallel_tool_calls" to "false"), parsed)
+        assertTrue(
+            validateAdvanced(
+                RemoteEndpoint(customProtocol = CustomProtocol(enabled = true, extraBody = parsed)),
+            ).isEmpty(),
+            "parallel_tool_calls=false 必须通过保存链校验",
+        )
+    }
+
     // ------------------------------------------------------------ W9-00 防线接线
 
     @Test

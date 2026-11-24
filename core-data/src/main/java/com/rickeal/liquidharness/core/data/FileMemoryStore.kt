@@ -77,7 +77,10 @@ class FileMemoryStore(
         files.read(FILE_NAME, ListSerializer(MemoryEntry.serializer())).orEmpty()
 
     private suspend fun persist(entries: List<MemoryEntry>) {
-        files.write(FILE_NAME, ListSerializer(MemoryEntry.serializer()), entries)
+        // W54 · P0-1 同型：旧实现丢弃 write() 的返回值 ⇒ 工具回「已记住」而盘上没有。
+        if (!files.write(FILE_NAME, ListSerializer(MemoryEntry.serializer()), entries)) {
+            throw java.io.IOException("memory store write failed: " + FILE_NAME)
+        }
     }
 
     private companion object {

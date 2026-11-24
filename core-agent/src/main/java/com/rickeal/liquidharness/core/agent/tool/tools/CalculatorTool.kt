@@ -6,6 +6,7 @@ import com.rickeal.liquidharness.core.model.ToolParameter
 import com.rickeal.liquidharness.core.model.ToolParamType
 import com.rickeal.liquidharness.core.model.ToolResult
 import com.rickeal.liquidharness.core.model.ToolSpec
+import kotlinx.coroutines.CancellationException
 import java.util.Locale
 
 /**
@@ -33,6 +34,8 @@ class CalculatorTool : Tool {
         }
         return try {
             ToolResult(name = spec.name, ok = true, output = formatNumber(ExpressionEvaluator.evaluate(expression)))
+        } catch (c: CancellationException) {
+            throw c
         } catch (t: Throwable) {
             ToolResult(name = spec.name, ok = false, errorMessage = "cannot evaluate: " + t.message)
         }

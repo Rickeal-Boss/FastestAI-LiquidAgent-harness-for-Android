@@ -63,4 +63,47 @@ class EndpointStoreTest {
         assertNull(written)
         assertNull(runBlocking { store.get("no-such-endpoint") })
     }
+
+    /**
+     * 文件在但解析不出来 ⇒ **只读不种**（W54 · P0-1）。
+     *
+     * 旧实现的判据是 `read() != null`，而 `read()` 对「不存在」和「坏 JSON」都返回 null
+     * ⇒ 一次解析失败就把用户全部端点覆盖成预置。这里钉三条：不返回预置、原文件逐字节保留、
+     * 另存一份 `.corrupt` 备份。
+     */
+    @Test
+    fun unreadableFileIsKeptAndNotReseeded() {
+        val dir = Files.createTempDirectory("endpoint-store").toFile()
+        val target = java.io.File(dir, EndpointStore.FILE_NAME)
+        val garbage = "{ not a json array"
+        target.writeText(garbage)
+
+        val listed = runBlocking { newStore(dir).list() }
+
+        assertEquals(emptyList(), listed)
+        assertEquals(garbage, target.readText())
+        assertEquals(garbage, java.io.File(dir, EndpointStore.FILE_NAME + ".corrupt").readText())
+    }
+
+    /**
+     * 写盘失败必须变成可见失败（W54 · P0-1 第二条）。
+     *
+     * 构造手法：把 store 的基目录指向一个**普通文件**，`mkdirs` 与 `writeText` 都会失败 ——
+     * 不依赖 chmod / 只读目录，Windows 与 Linux 行为一致。
+     */
+    @Test
+    fun writeFailureSurfacesAsSaveFailed() {
+        val dir = Files.createTempDirectory("endpoint-store").toFile()
+        val blocker = java.io.File(dir, "blocker").apply { writeText("x") }
+        val store = EndpointStore(JsonFileStore(blocker))
+
+        var caught: EndpointSaveException? = null
+        try {
+            runBlocking { store.upsert(EndpointStore.defaultSeeds().first()) }
+        } catch (e: EndpointSaveException) {
+            caught = e
+        }
+
+        assertEquals(EndpointSaveError.SAVE_FAILED, caught?.error)
+    }
 }

@@ -4,6 +4,7 @@ import com.rickeal.liquidharness.core.mcp.McpProtocol
 import com.rickeal.liquidharness.core.mcp.McpTransport
 import com.rickeal.liquidharness.core.mcp.TransportResponse
 import com.rickeal.liquidharness.core.net.HttpTransport
+import com.rickeal.liquidharness.core.net.UnsafeUrlException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -50,6 +51,11 @@ class NetMcpTransport(
             }
         } catch (c: CancellationException) {
             throw c
+        } catch (e: UnsafeUrlException) {
+            // W54 · P1-1：`HttpTransport.post` 的字面量闸拒了这次请求。
+            // 必须与真正的传输错误分开：旧实现一律折成 `transport_error`，
+            // 用户看到的是「网络不好」，而真相是「这个 URL 被安全策略拒绝」。
+            TransportResponse(status = 0, body = "blocked_unsafe_url:" + e.reason.name)
         } catch (e: Exception) {
             // status=0 = 没拿到 HTTP 响应。超时与其它传输错误分开，UI 才能给出可行动的提示。
             TransportResponse(

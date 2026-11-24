@@ -7,6 +7,7 @@ import com.rickeal.liquidharness.core.model.ToolParameter
 import com.rickeal.liquidharness.core.model.ToolParamType
 import com.rickeal.liquidharness.core.model.ToolResult
 import com.rickeal.liquidharness.core.model.ToolSpec
+import kotlinx.coroutines.CancellationException
 import java.io.File
 
 /**
@@ -60,6 +61,8 @@ class FileListTool internal constructor(private val sandboxDir: File) : Tool {
                 ""
             }
             ToolResult(name = spec.name, ok = true, output = (listing + suffix).ifBlank { "(empty directory)" })
+        } catch (c: CancellationException) {
+            throw c
         } catch (t: Throwable) {
             failure(t.message ?: "list failed")
         }

@@ -72,6 +72,28 @@ class JsonFileStore(
             }
         }
 
+    /**
+     * 把 [fileName] 原样复制到 `<fileName>.<suffix>`，用于「文件在但读不出来」时保住现场。
+     *
+     * 为什么是**复制**而不是改名：调用方随后并**不**覆盖原文件（W54 的端点清单就是只读不种），
+     * 复制让「原文件仍在原位」与「现场另存一份」同时成立；重复触发也只是覆盖同一份备份。
+     *
+     * @return false = 备份失败（原文件不可读 / 磁盘满）；调用方不得据此认为数据已保底。
+     */
+    suspend fun backup(fileName: String, suffix: String = "corrupt"): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                val source = file(fileName)
+                if (!source.exists()) return@withContext false
+                source.copyTo(File(baseDir, fileName + "." + suffix), overwrite = true)
+                true
+            } catch (c: CancellationException) {
+                throw c
+            } catch (t: Throwable) {
+                false
+            }
+        }
+
     suspend fun delete(fileName: String): Boolean = withContext(Dispatchers.IO) {
         try {
             val target = file(fileName)

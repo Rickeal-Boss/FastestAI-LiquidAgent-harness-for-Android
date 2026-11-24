@@ -8,6 +8,7 @@ import com.rickeal.liquidharness.core.model.ToolParameter
 import com.rickeal.liquidharness.core.model.ToolParamType
 import com.rickeal.liquidharness.core.model.ToolResult
 import com.rickeal.liquidharness.core.model.ToolSpec
+import kotlinx.coroutines.CancellationException
 import java.io.File
 
 /**
@@ -54,6 +55,8 @@ class FileReadTool internal constructor(private val sandboxDir: File) : Tool {
             val offset = FileReadPager.normalizeOffset(intArg(argumentsJson, "offset", 0))
             val limit = FileReadPager.normalizeLimit(intArg(argumentsJson, "limit", FileReadPager.DEFAULT_LIMIT))
             ToolResult(name = spec.name, ok = true, output = FileReadPager.readRange(file, offset, limit))
+        } catch (c: CancellationException) {
+            throw c
         } catch (t: Throwable) {
             failure(t.message ?: "read failed")
         }

@@ -98,6 +98,10 @@ class SandboxFilesViewModel(private val root: File) : ViewModel() {
 
     fun onPreview(entry: SandboxEntry) = viewModelScope.launch {
         val file = resolve(_state.value.path, entry.name)
+        if (file == null) {
+            _state.update { it.copy(error = SandboxError.READ) }
+            return@launch
+        }
         val preview = ioOrNull { readPreview(file, entry) }
         _state.update { it.copy(preview = preview) }
     }
@@ -107,12 +111,28 @@ class SandboxFilesViewModel(private val root: File) : ViewModel() {
     }
 
     fun delete(entry: SandboxEntry) = viewModelScope.launch {
-        val removed = ioOrNull { resolve(_state.value.path, entry.name).delete() } == true
+        val removed = ioOrNull { resolve(_state.value.path, entry.name)?.delete() } == true
         load(_state.value.path, deleteFailed = !removed)
     }
 
-    private fun resolve(path: List<String>, name: String): File =
-        File(path.fold(root) { dir, segment -> File(dir, segment) }, name)
+    /**
+     * 解析并**做 canonical 越界判定**；不在沙箱根之下返回 null。
+     *
+     * 🔴 W54 · P1-2：旧实现只做字符串拼路径，而 `listDir` 已有 canonical 校验 ⇒
+     * 同一份沙箱，工具侧封死、浏览 / 预览侧开旁路（`adb push` 一个符号链接就能把
+     * 应用私有文件读上屏）。判定必须与 `SandboxPath` 工具侧同型：
+     * `canonicalFile` + `base + File.separator` 边界（裸 `startsWith` 会让
+     * `/sandbox-evil` 通过）。
+     */
+    private fun resolve(path: List<String>, name: String): File? {
+        val base = root.canonicalFile
+        val target = File(path.fold(root) { dir, segment -> File(dir, segment) }, name).canonicalFile
+        return if (target.path == base.path || target.path.startsWith(base.path + File.separator)) {
+            target
+        } else {
+            null
+        }
+    }
 
     private suspend fun load(path: List<String>, deleteFailed: Boolean = false) {
         _state.update { it.copy(path = path, loading = true, error = null) }
@@ -147,7 +167,11 @@ class SandboxFilesViewModel(private val root: File) : ViewModel() {
  */
 private fun listDir(root: File, dir: File): List<SandboxEntry> {
     val canonical = dir.canonicalFile
-    if (!canonical.path.startsWith(root.canonicalFile.path)) return emptyList()
+    val rootPath = root.canonicalFile.path
+    // 裸 startsWith 会让 /sandbox-evil 这类兄弟目录前缀通过（工具侧 SandboxPath 的注释同款）。
+    if (canonical.path != rootPath && !canonical.path.startsWith(rootPath + File.separator)) {
+        return emptyList()
+    }
     return canonical.listFiles().orEmpty()
         .filterNot { it.name.startsWith(".") }
         .map {

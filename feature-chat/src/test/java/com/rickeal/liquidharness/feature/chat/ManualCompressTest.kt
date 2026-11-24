@@ -1,5 +1,6 @@
 package com.rickeal.liquidharness.feature.chat
 
+import com.rickeal.liquidharness.core.agent.context.HardBudgetShrinker
 import com.rickeal.liquidharness.core.agent.context.renderHistoryHead
 import com.rickeal.liquidharness.core.agent.context.sanitizeForProvider
 import com.rickeal.liquidharness.core.model.Role
@@ -229,5 +230,35 @@ class ManualCompressTest {
         val outcome = runBlocking { compressBubbles(emptyList(), budgetTokens = 10) }
         assertNull(outcome.compression)
         assertTrue(outcome.keptMessages.isEmpty())
+    }
+
+    /**
+     * W54 · P0-2：字符预算能单独驱动压缩。
+     *
+     * token 预算给到 1M（永不越线）但字符上限 20k ⇒ 必须压。旧行为只按 token 落刀，
+     * 这里会 `applied=false`，于是「压缩成功」与「下一轮仍熔断」同时成立（W53 现场）。
+     */
+    @Test
+    fun charBudgetForcesCompressionWithoutTokenPressure() {
+        val bubbles = (0 until 20).map { index ->
+            ChatBubble(
+                id = "c" + index,
+                role = if (index % 2 == 0) Role.USER else Role.MODEL,
+                text = "z".repeat(2_000),
+            )
+        }
+
+        val tokenOnly = runBlocking { compressBubbles(bubbles, budgetTokens = 1_000_000) }
+        assertFalse(tokenOnly.applied)
+
+        val charBounded = runBlocking {
+            compressBubbles(bubbles, budgetTokens = 1_000_000, charBudget = 20_000)
+        }
+
+        assertTrue("expected char-driven compression, got " + charBounded.reason, charBounded.applied)
+        // `TURN_ALIGNED` 允许切点往回多保留一个 turn（这里 ≤ 1 条 2000 字符气泡）——
+        // 字符预算因此是「水位线 + 一个 turn」的软目标，硬 cap 仍由 PreStepBudget 裁决。
+        val keptChars = HardBudgetShrinker.promptChars(charBounded.keptMessages)
+        assertTrue("kept chars=" + keptChars, keptChars <= 20_000 + 2_000)
     }
 }

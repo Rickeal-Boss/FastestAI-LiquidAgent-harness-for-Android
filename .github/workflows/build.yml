@@ -162,8 +162,11 @@ env:
   #   陈旧标签覆盖 / 看门狗透传 / 重试放弃固定摘要 / 兜底摘要剥离动态正文）= 891。
   # W50：+2（core-agent 2：半截输出显式标签 / provider 原文固定摘要）= 893。
   # W51：+2（core-agent 2：engine:config / engine:no-events 落盘摘要必红）= 895。
+  # W54：+5（core-data 2：坏 JSON 不重种 / 写失败抛 SAVE_FAILED；core-context 1：
+  #   字符预算单独驱动压缩；feature-chat 1：字符预算驱动手动压缩；core-model 1：
+  #   N-1 parallel_tool_calls 保存链定谳）= 900。
   # ---------------------------------------------------------------------------
-  EXPECTED_TESTS: '895'
+  EXPECTED_TESTS: '900'
 
 jobs:
   # ===========================================================================

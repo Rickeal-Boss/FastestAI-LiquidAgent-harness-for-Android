@@ -7,6 +7,7 @@ import com.rickeal.liquidharness.core.model.ToolParameter
 import com.rickeal.liquidharness.core.model.ToolParamType
 import com.rickeal.liquidharness.core.model.ToolResult
 import com.rickeal.liquidharness.core.model.ToolSpec
+import kotlinx.coroutines.CancellationException
 import java.io.File
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
@@ -77,6 +78,8 @@ class FileWriteTool internal constructor(private val sandboxDir: File) : Tool {
                 output = "wrote " + content.length + " chars to " + path,
                 indeterminate = false,
             )
+        } catch (c: CancellationException) {
+            throw c
         } catch (t: Throwable) {
             failure(t.message ?: "write failed")
         }

@@ -7,6 +7,7 @@ import com.rickeal.liquidharness.core.model.ToolParameter
 import com.rickeal.liquidharness.core.model.ToolParamType
 import com.rickeal.liquidharness.core.model.ToolResult
 import com.rickeal.liquidharness.core.model.ToolSpec
+import kotlinx.coroutines.CancellationException
 
 /**
  * 技能二级披露：`skill_list` / `skill_load`。
@@ -53,6 +54,8 @@ class SkillListTool(private val catalog: SkillCatalog) : Tool {
                 },
             )
         }
+    } catch (c: CancellationException) {
+        throw c
     } catch (t: Throwable) {
         ToolResult(name = spec.name, ok = false, errorMessage = t.message ?: "skill list failed")
     }
@@ -95,6 +98,8 @@ class SkillLoadTool(private val catalog: SkillCatalog) : Tool {
                 ok = true,
                 output = BOUNDARY_NOTICE + "\n\n[SKILL " + body.meta.name + "]\n" + text,
             )
+        } catch (c: CancellationException) {
+            throw c
         } catch (t: Throwable) {
             ToolResult(name = spec.name, ok = false, errorMessage = t.message ?: "skill load failed")
         }

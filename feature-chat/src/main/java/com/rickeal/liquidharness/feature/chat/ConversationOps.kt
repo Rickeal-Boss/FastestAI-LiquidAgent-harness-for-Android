@@ -1,7 +1,7 @@
 package com.rickeal.liquidharness.feature.chat
 
 import com.rickeal.liquidharness.core.agent.context.COMPACT_TRIGGER_CHARS
-import com.rickeal.liquidharness.core.agent.context.contextBudgetTokens
+import com.rickeal.liquidharness.core.agent.context.compressTargets
 import com.rickeal.liquidharness.core.agent.context.contextLimitOf
 import com.rickeal.liquidharness.core.agent.context.shouldApply
 import com.rickeal.liquidharness.core.agent.log.AgentLogStore
@@ -168,10 +168,11 @@ internal class ConversationOps(
             if (!container.settings.compressContext.first()) return@launch
             val endpoint = container.activeEndpoint() ?: return@launch
             val windowCap = contextWindowCap(container)
-            val budget = contextBudgetTokens(endpoint, AgentPolicy(maxContextTokens = windowCap))
+            // W54 · P0-2：token 软预算 + 字符硬上限同车给（与内核 PreStepBudget 同尺）。
+            val (budget, charCap) = compressTargets(endpoint, AgentPolicy(maxContextTokens = windowCap))
             // 试算：compressBubbles 是纯 suspend 函数，不改 state；只有 shouldApply 判
             // applied=true 才把产物落到 compression（未压轮次保留严格前缀 ⇒ 缓存可能命中）。
-            val outcome = compressBubbles(snapshot.bubbles, budget)
+            val outcome = compressBubbles(snapshot.bubbles, budget, charBudget = charCap)
             val committedChars = committedCharsOf(snapshot.bubbles, snapshot.compression)
             // 空转（越线且试算没压动任何东西）单独归因：`insufficient_savings` 只留给
             // 「已产出压缩区但净收益不足」；未越线仍由 shouldApply 给 below_trigger，
@@ -250,8 +251,9 @@ internal class ConversationOps(
             // 工具声明由内核每轮现算，UI 侧复制一份就是第二个真值源。少扣一点 = 多留一点
             // 历史，方向是保守的（真超了还有内核的自动压缩兜底）。
             val windowCap = contextWindowCap(container)
-            val budget = contextBudgetTokens(endpoint, AgentPolicy(maxContextTokens = windowCap))
-            val outcome = compressBubbles(snapshot.bubbles, budget)
+            // W54 · P0-2：与 PreStepBudget 同一字符 cap，压完不再「立刻熔断」。
+            val (budget, charCap) = compressTargets(endpoint, AgentPolicy(maxContextTokens = windowCap))
+            val outcome = compressBubbles(snapshot.bubbles, budget, charBudget = charCap)
             if (!outcome.applied) {
                 AgentLogStore.warn("manual_compress=noop reason=" + outcome.reason)
                 state.update { it.copy(errorMessage = MANUAL_COMPRESS_NOOP) }

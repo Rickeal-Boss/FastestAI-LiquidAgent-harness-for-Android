@@ -2,6 +2,7 @@ package com.rickeal.liquidharness.feature.chat
 
 import com.rickeal.liquidharness.core.agent.context.ContextCompressor
 import com.rickeal.liquidharness.core.agent.context.CutPolicy
+import com.rickeal.liquidharness.core.agent.context.HardBudgetShrinker
 import com.rickeal.liquidharness.core.agent.context.WindowContextCompressor
 import com.rickeal.liquidharness.core.agent.policy.DEFAULT_COMPRESS_TARGET_RATIO
 import com.rickeal.liquidharness.core.model.ChatMessage
@@ -121,6 +122,8 @@ internal const val MANUAL_COMPRESS_NOOP = "manual compress: nothing to drop"
  * @param bubbles 当前会话的全部气泡（顺序即时间顺序）。
  * @param budgetTokens 软预算（`contextBudgetTokens` 的返回值）。**不是**硬窗口：
  *   压到软预算以下意味着下一次请求不会立刻再次触发自动压缩。
+ * @param charBudget 字符维硬上限（`hardCharCap` / `charCapOf` 的返回值）。W54 起与 token
+ *   预算**同时**生效：只按 token 落刀会让「压缩成功」与「下一轮仍熔断」同时成立。
  * @param systemText 本轮 system 段文本。**只用于扣预算，绝不参与压缩**：它不在 history 里
  *   （`ContextBudget` 每轮临时拼在最前），把它喂进压缩器等于改写前缀 —— 那是比
  *   「丢几条历史」贵得多的代价。传 `null` 表示调用方拿不到（本仓 `ChatViewModel` 就是
@@ -131,6 +134,7 @@ internal suspend fun compressBubbles(
     bubbles: List<ChatBubble>,
     budgetTokens: Int,
     systemText: String? = null,
+    charBudget: Int = Int.MAX_VALUE,
     compressor: ContextCompressor = manualCompressor(),
 ): ManualCompressOutcome {
     val perBubble = bubbles.map { bubble -> bubble to bubble.toHistoryMessages() }
@@ -147,7 +151,15 @@ internal suspend fun compressBubbles(
     val historyBudget = (budgetTokens - systemTokens(systemText)).coerceAtLeast(1)
     val headTokens = TokenEstimator.estimateMessages(head.flatMap { it.second })
     val candidatesBudget = (historyBudget - headTokens - SUMMARY_TOKENS_RESERVE).coerceAtLeast(1)
-    val compressed = compressor.compress(candidateAll, candidatesBudget)
+    // W54 · P0-2：字符维与 token 维同时落刀（头锚与摘要也占字符，先扣掉）。
+    val headChars = HardBudgetShrinker.promptChars(head.flatMap { it.second })
+    val summaryChars = SUMMARY_TOKENS_RESERVE * 4   // ASCII 上限 4 字符/token，宁可多扣
+    val candidatesCharBudget = if (charBudget == Int.MAX_VALUE) {
+        Int.MAX_VALUE
+    } else {
+        (charBudget - headChars - summaryChars).coerceAtLeast(1)
+    }
+    val compressed = compressor.compress(candidateAll, candidatesBudget, candidatesCharBudget)
     if (compressed.size >= candidateAll.size) return untouched
 
     // 无损校验：保留段必须是候选的**后缀**（WindowContextCompressor 只丢最老一段）。

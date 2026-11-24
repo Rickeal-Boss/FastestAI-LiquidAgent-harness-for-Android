@@ -1,5 +1,6 @@
 package com.rickeal.liquidharness.core.data
 
+import com.rickeal.liquidharness.core.agent.log.AgentLogStore
 import com.rickeal.liquidharness.core.model.ProviderKind
 import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.model.UiPreset
@@ -87,19 +88,58 @@ class EndpointStore(
             next
         }
 
-    /** 读文件；不存在则写入预置并返回预置（只发生一次）。 */
+    /**
+     * 读文件；**只有文件不存在**才写入预置并返回预置（只发生一次）。
+     *
+     * ## 为什么必须 `exists()` 分开判（W54 · P0-1）
+     *
+     * [JsonFileStore.read] 对「文件不存在」与「文件在但解析失败」（坏 JSON / schema 升级 /
+     * 写入半截）**都返回 null**。只判 `read != null` 会把后一种当成首次启动，走
+     * `persist(seeds)` 把用户已有的 `endpoints.json` 覆盖成三组预置 —— 端点、活跃端点 id、
+     * 密钥关联一次全丢，而类头明写「文件一旦存在就绝不补种」。
+     *
+     * 解析失败时的动作是**只读不种**：原文件一字节不动（另存一份 `.corrupt` 备份），
+     * 返回内存镜像或空清单。宁可让用户看到「没有可用端点」，也不替他决定丢掉配置。
+     */
     private suspend fun loadOrSeed(): List<RemoteEndpoint> {
         val stored = files.read(FILE_NAME, ListSerializer(RemoteEndpoint.serializer()))
         if (stored != null) {
             cache.value = stored
             return stored
         }
-        persist(seeds)
+        if (files.exists(FILE_NAME)) {
+            val backedUp = files.backup(FILE_NAME)
+            AgentLogStore.error(
+                "endpoint_store=unreadable file=" + FILE_NAME + " backup=" + backedUp,
+            )
+            val fallback = cache.value.orEmpty()
+            cache.value = fallback
+            return fallback
+        }
+        // 播种失败不该让 `list()` 抛：此时内存里仍有一份可用的预置清单。
+        // 真正的用户写操作（upsert / remove / recordVerified）必须显式失败，见 [persist]。
+        if (!files.write(FILE_NAME, ListSerializer(RemoteEndpoint.serializer()), seeds)) {
+            AgentLogStore.error("endpoint_store=seed_write_failed file=" + FILE_NAME)
+        }
+        cache.value = seeds
         return seeds
     }
 
+    /**
+     * 写盘并把内存镜像推进到新值。
+     *
+     * **写失败必须抛**（W54 · P0-1 第二条）：[JsonFileStore.write] 用返回值表达失败，
+     * 旧实现丢弃返回值 ⇒ UI 显示「保存成功」、重启后配置消失。
+     * [EndpointSaveException] 继承 `IOException`，`SettingsViewModel` 的既有
+     * `catch (EndpointSaveException)` / `catch (IOException)` 两条分支都能接住。
+     */
     private suspend fun persist(endpoints: List<RemoteEndpoint>) {
-        files.write(FILE_NAME, ListSerializer(RemoteEndpoint.serializer()), endpoints)
+        if (!files.write(FILE_NAME, ListSerializer(RemoteEndpoint.serializer()), endpoints)) {
+            throw EndpointSaveException(
+                EndpointSaveError.SAVE_FAILED,
+                "endpoint list write failed: " + FILE_NAME,
+            )
+        }
         cache.value = endpoints
     }
 
