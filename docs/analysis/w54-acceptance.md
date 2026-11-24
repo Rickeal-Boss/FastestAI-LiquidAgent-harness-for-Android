@@ -117,9 +117,18 @@
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote 保持干净。
 
-**结构（推送前声明）**：2 个提交 —— ① 内容提交（代码 + 测试 + 台账 + 三份文档 + 证据）；② CI 四字段回填提交（纯文档）。
+**结构（推送前声明，实际执行后如实回填）**：原计划 2 个提交；实际为 **3 个** —— ① 内容提交 `bba8dcf1dc70460a693b007e142833ae28d70c10`；② **误报修复提交** `89ac2353bb4e631d7c27c5a56bfa2689015b0d2b`（首个提交的 Secret scan 在 gitleaks 步骤判红，见下）；③ 本回填提交（纯文档）。
 
-<!-- CI-FIELDS -->
+**首个提交 `bba8dcf` 的 CI 结果（如实记录）**：Build `45449971703` 与 Secret scan `45449971272` 均 `failure`；逐 job 实取：Assemble Debug / Unit tests / Lint / Arch guard **全部 success**，唯一失败项是 Secret scan 的 **gitleaks** 步骤（trufflehog / 3b-ext / 台账符号自检未执行）。
+
+**根因（gitleaks 原始输出）**：`generic-api-key` 命中 `core-context/.../ContextCompressor.kt:136` 的日志拼接 —— `" tokens, char_budget=" + charBudget + ...`，`token` 与 `=` 的距离落在规则窗口内，被当成 api key。属**误报**，但按纪律**改形状而不是加 allowlist**（不新增全局放行）：字符维字段前置、token 计数移到句尾且不带 `=`，信息量不减。修复提交后本地四闸门与脱敏门禁重跑通过。
+
+**交付判据 = 修复提交 `89ac235` 双 run 全绿（公开 API 四字段实取）**：
+
+- Build `45451754250`（`head_sha=89ac2353bb4e631d7c27c5a56bfa2689015b0d2b` / `status=completed` / `conclusion=success` / `updated_at=2026-11-24T17:46:16Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45451754250`）。
+- Secret scan `45451754200`（`head_sha=89ac2353bb4e631d7c27c5a56bfa2689015b0d2b` / `status=completed` / `conclusion=success` / `updated_at=2026-11-24T17:44:02Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45451754200`）。
+
+回填提交为纯文档，其 run 按既有降级口径**只声明存在**、不逐条列号。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
 本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 

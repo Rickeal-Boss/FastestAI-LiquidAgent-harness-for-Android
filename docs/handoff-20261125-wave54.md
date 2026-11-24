@@ -72,9 +72,11 @@ G19 扫描面扩容（扩面即判红 12 处日志拼接，属守卫重设计）
 ## 六、CI（公开 API 四字段）
 
 - 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
-- 结构在推送前声明为 2 提交：内容提交（代码 + 测试 + 台账 + 三份文档 + 证据）→ CI 四字段回填提交（纯文档）。
-
-<!-- CI-FIELDS -->
+- **实际结构 3 提交**（原计划 2 个）：内容 `bba8dcf` → 误报修复 `89ac235` → CI 四字段回填（本提交）。
+- **首个提交 `bba8dcf` 判红并已定位**：Build `45449971703` / Secret scan `45449971272` 均 failure，逐 job 实取后确认 Assemble / Unit tests / Lint / Arch guard 全 success，唯一失败是 **gitleaks** 命中 `ContextCompressor.kt:136` 的 `" tokens, char_budget=" + …` 拼接（`generic-api-key` 误报）。
+- **修法**：改日志形状（字符维字段前置、token 计数移到句尾且不带 `=`），**不加 allowlist**；修复提交后本地四闸门 + 脱敏门禁重跑通过。
+- **交付判据 = 修复提交 `89ac235` 双 run 全绿**：Build `45451754250`（`head_sha=89ac2353bb4e631d7c27c5a56bfa2689015b0d2b` / `completed` / `success` / `2026-11-24T17:46:16Z`，`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45451754250`）；Secret scan `45451754200`（同 sha / `completed` / `success` / `2026-11-24T17:44:02Z`，`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45451754200`）。
+- 回填提交为纯文档，其 run 按既有降级口径只声明存在、不逐条列号。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
 本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
