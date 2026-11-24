@@ -1,0 +1,41 @@
+W53 设备侧落盘探针行复核（run-as com.rickeal.liquidharness.debug 读取 files/harness/logs/agent-0.log）
+回灌级别：只含本仓固定形态探针行与四态结论；不含端点标识 / 密钥 / SSID / 序列号 / 本机路径 / 整段 logcat / 用户正文。
+本波时间窗：UTC 2026-11-24T11:13–12:04（设备本地 19:13–20:04）；设备 mWakefulness=Awake，非黑主屏；密钥留于真机、未导出。
+
+[本波窗口 89 行，全部固定形态]
+2026-11-24T11:16:14.544783Z INFO prefix fp=eda3f3fd changed=none prompt=1091 cached=n/a-usage
+2026-11-24T11:16:28.584116Z INFO auto_compact=noop reason=below_trigger
+2026-11-24T11:17:41.739451Z INFO prefix fp=d513f10b changed=none prompt=1092 cached=n/a-usage
+2026-11-24T11:20:58.942416Z INFO prefix fp=45fd2c04 changed=none prompt=1093 cached=n/a-usage
+2026-11-24T11:25:44.527777Z INFO prefix fp=97ec07a2 changed=none prompt=1090 cached=n/a-usage
+2026-11-24T11:25:46.715178Z INFO prefix fp=224eff27 changed=HISTORY prompt=2418 cached=0(cumulative)
+2026-11-24T11:26:57.197883Z INFO prefix fp=ed7b3efc changed=none prompt=1162 cached=n/a-usage
+2026-11-24T11:33:54.715666Z WARN manual_compress=noop reason=manual compress: nothing to drop
+2026-11-24T11:41:49.580154Z INFO prefix fp=2849b57d changed=none prompt=27587 cached=n/a-usage
+2026-11-24T11:41:53.203982Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-24T11:47:05.982910Z INFO context compressed: 146 -> 66 messages (budget=89648 target=53788 tokens, dropped=80)
+2026-11-24T11:47:06.000190Z INFO manual_compress dropped=80 kept=71 cache_invalidated=false
+2026-11-24T11:47:06.000276Z INFO manual_compress dropped=80 kept=71 cache_invalidated=false
+2026-11-24T11:47:48.623496Z ERROR context_overflow_prevented: chars=226442 cap=223027
+2026-11-24T11:49:00.711796Z INFO prefix fp=89d949da changed=none prompt=1104 cached=n/a-usage
+2026-11-24T11:49:34.240315Z INFO prefix fp=efc371f6 changed=HISTORY prompt=2427 cached=0(cumulative)
+2026-11-24T11:49:35.646406Z INFO prefix fp=d7c4bf91 changed=HISTORY prompt=2488 cached=0(cumulative)
+2026-11-24T11:50:22.978843Z INFO prefix fp=d7c4bf91 changed=none prompt=2488 cached=0(cumulative)
+2026-11-24T11:55:40.990092Z INFO prefix fp=d176ccde changed=none prompt=2118 cached=n/a-usage
+2026-11-24T11:59:30.468410Z INFO prefix fp=2bea0027 changed=none prompt=1105 cached=n/a-usage
+2026-11-24T11:59:34.224708Z INFO prefix fp=943d12dd changed=HISTORY prompt=2589 cached=0(cumulative)
+2026-11-24T11:59:39.754468Z INFO prefix fp=0ee3a051 changed=HISTORY prompt=2710 cached=1536(cumulative)
+2026-11-24T12:02:02.626621Z INFO prefix fp=d4ebbe65 changed=none prompt=1078 cached=n/a-usage
+2026-11-24T12:03:25.088161Z INFO prefix fp=e945af54 changed=none prompt=1079 cached=n/a-usage
+
+[判据]
+- 形态外行：0（89 行逐行按 DiagnosticLogSink 白名单正则复核；prefix 账行含 changed=HISTORY 合法值）。
+- 自由文本回显：0（模型正文与哨兵串只进 ring，不落盘）。
+- 手动压缩 applied：`context compressed: 146 -> 66 messages (budget=89648 target=53788 tokens, dropped=80)` + `manual_compress dropped=80 kept=71 cache_invalidated=false`（判据级，含实际 dropped 数）。
+- 自动压缩：本波取得 `noop reason=below_trigger` / `noop reason=nothing_to_drop` 两类固定 reason；未取得 applied 行（32K 档 trigger==L3 硬上限、128K 档手工历史无有效截断点），如实标部分。
+- L3 硬闸：`context_overflow_prevented: chars=226442 cap=223027` —— 手动压缩按 token 预算落刀后仍超字符上限，量纲不一致现场复现（压缩量纲老号，不新开行）。
+
+[四态结论]
+- 落盘白名单设备侧复核：✅ 89 行全固定形态，零形态外行、零自由文本回显。
+- 手动压缩：✅ 确认框 + applied 账行（dropped=80 kept=71）；UI 压缩分隔卡未在视口内截图，不写成「已截图」。
+- 自动压缩：⚠️ 仅 noop 两类 reason；applied 未取得。

@@ -13,7 +13,7 @@
 
 | # | 分歧 / 主张 | 裁决 | 四态 | 回源依据 |
 |---|---|---|---|---|
-| 1 | 莫斯线原报告 `ain]` P0 vs 其自身勘误节 | ⛔ 不修（采勘误节） | ✅ | `git grep -n 'branches:' -- .github/workflows/` 实读 build.yml:50 与 secret-scan.yml:19 均 `branches: [main]`，字节完好；pickaxe 正字命中 W1、全史无 `ain]`。`ain]` 为审查侧连续形态输出的渲染幻象；谁修谁改坏真值。只做「勿修声明入档」 |
+| 1 | 莫斯线原报告 `ain]` P0 vs 其自身勘误节 | ⛔ 不修（采勘误节） | ✅ | `git grep -n 'branches:' -- .github/workflows/` 实读 build.yml:50 与 secret-scan.yml:19 均 `branches: [main]`，字节完好；pickaxe 正字命中 W1；workflow 真值字节无损坏串，历史文档仅存被驳回误报引述（W53 措辞订正：原文「全史无 `ain]`」不严谨，`[main]` 含该子串）。`ain]` 为审查侧连续形态输出的渲染幻象；谁修谁改坏真值。只做「勿修声明入档」 |
 | 2 | 第二份「存在性判据补立 test -f（判据 6 修订）」 | ⛔ 不采纳 | ✅ | 用户本轮明令「既有口径固化、不再逐波追加」。新增判据编号属逐波追加，冻结下不采；W43 幻影制品已是审查侧漏检订正的既有口径，不新立判据 |
 | 3 | 第二份「vacuous 改记 blocked 独立态」 | ⛔ 不采纳 | ✅ | 四态定义属判据集，冻结下不改。vacuous 如实标注已是既有纪律，新造第五态属改判据集 |
 | 4 | 莫斯线 W52 建议 1「头号拍板修 ain]」 | ⛔ 不采纳 | ✅ | 与勘误节自相矛盾；回源字节完好（见 #1）。纠偏为「勿修声明入档」 |
@@ -80,6 +80,8 @@
 | 工作空间文件读写 + 工具双通 | `file_write`→`file_read` 哨兵 `W52FILEOK` 逐字一致；「查询时间」工具真实调用 6/6 | ✅ | `p1_file_approval_card.png`、`p1_file_rw.png`、`p1_tier_32k.png` |
 | 手动压缩 / 自动压缩判据级触发 | 已注入大历史（20.1K/27.9K、19456 cached）作正控前置；**未取得手动压缩确认框判据级截图与自动压缩实际 dropped 行**，不伪造 | ⚠️ | `evidence/raw/w52/_debug_state.png` |
 
+**W53 订正（不回改本表四态）**：① 回声格两张图经逐字复核与像素级目视，哨兵串完整呈现、思考块与上下文读数真实，但模型**未执行 echo**（一问澄清「what W52CLEANECHO refers to」），且 `p0_echo_lightning30b.png` 混入上一波残留输入 `echo-W51TES` ⇒ 判据强度不足，已在台账 `W12-02` 行内登记订正；W53 按 W50 口径补跑真回声（见 `docs/analysis/w53-acceptance.md`）。② `p1_file_approval_card.png` 原文件为截断 PNG（336 426 B / 无 `IEND` / 标准解码失败 / 仅前 1380 行可解），已 tolerant 解码重存为有效 PNG（1080×1380）并补 W53 新审批卡截图；同格 `p1_file_rw.png` 完好，本格结论不塌。③ `00_wake_baseline.png` 画面承 W51 网络失败残留态，仅证非黑主屏 / 已唤醒，不作 W52 联网基线。
+
 **真机席行为声明**：真机席运行 36 分钟、落盘 15 个文件，但收口指令后结构化报告未回传即被主理人停止。上表四态由主理人基于已落盘证据逐张核对聚合，非席自述；聚合全文见 `evidence/raw/w52/device-acceptance-summary.md`。未跑到的格如实留痕、不伪造。
 
 **回灌级别**：只写脱敏判据结论、`deviceLogTail` 探针行与裁剪截图判据；不回灌整段 logcat / 凭据 / 端点完整标识 / 序列号 / SSID / 本机路径 / 用户私人图片。
@@ -95,7 +97,7 @@
 - Build `45334558217`（`head_sha=eecec22fff297f06527857d409e5e303a6d766d7` / `status=completed` / `conclusion=success` / `updated_at=2026-11-24T05:38:08Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45334558217`）。
 - Secret scan `45334557236`（`head_sha=eecec22fff297f06527857d409e5e303a6d766d7` / `status=completed` / `conclusion=success` / `updated_at=2026-11-24T05:37:13Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45334557236`）。
 
-**交付判据 = 最终代码 tip 双 run 全绿，成立 ✅**。本波为单提交（代码 + 文档同提交），无独立文档 tip；若后续有纯文档补链提交，其 Secret run 按既有降级口径只声明存在、不逐条列号、Build 0 run 为 `paths-ignore` 既定口径，不为补链新建提交。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
+**交付判据 = 最终代码 tip 双 run 全绿，成立 ✅**。本波 **2 提交**：主体 `eecec22`（代码 + 文档）→ 文档 tip `6de6108`（回填 CI 四字段）。文档 tip 触发的 Secret run 按既有降级口径**只声明存在**、不逐条列号、不为补链新建第 3 提交（W53 订正：原文「单提交、无独立文档 tip / 0 run」与实态不符）。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
 ---
 

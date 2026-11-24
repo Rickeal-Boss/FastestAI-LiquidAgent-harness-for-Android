@@ -1,0 +1,58 @@
+# W53 门禁回归实证：W49 双键 + W50 hostname 整值白名单未退化
+
+# 结论：七态全数符合预期。GREEN 态 gate rc=0，RED 态 gate rc=1；
+#       双键（sha256 AND 相对路径）在「同内容新路径」态判 RED，静默豁免面保持闭合。
+
+# ── 环境与口径 ─────────────────────────────────────────────────────────
+# 现役仓：harness-v2（main）。本实证未对现役仓工作树做 checkout/restore/stash/reset/clean/
+#   add/commit/push，未改源码、docs、台账、workflow 或门禁脚本。
+# 实测环境：仓外临时 git 仓库 <TMP_REPO>，复用现役仓 .gitignore、
+#   scripts/w46-local-secret-gate.sh、scripts/fixtures/w46-gate-legacy-hashes.txt。
+# 驱动脚本置于 <TMP_REPO> 之外，探针内容分段拼装并自检无字面敏感形态。
+# 判据回源：三路 = route1 tracked(git grep) / route2 untracked / route3 ignored；
+#   历史 fixture 册 `<sha256>  <relative/path>` 双键同时命中才豁免（tracked 路永不豁免）。
+# hostname 判据：整值占位符白名单，仅 <host> 与 <redacted-value> 豁免，闭合标签拼正文、
+#   空值、任意非占位值一律命中（PCRE 负向先行断言）。
+
+BASELINE_COMMIT=e8557ff
+=== STATE 1 现役 tree GREEN (placeholders tracked) ===
+GATE_RC=0 (expect=0)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=0
+OK no sensitive leak in tracked / untracked / ignored sweeps
+HN_GREP_RC=1 (1=no-match=GREEN)
+=== STATE 2 <host> placeholder GREEN ===
+GATE_RC=0 (expect=0)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=0
+OK no sensitive leak in tracked / untracked / ignored sweeps
+HN_GREP_RC=0 (0=match=RED)
+=== STATE 3 closed-tag+trailing RED ===
+GATE_RC=1 (expect=1)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=1
+RED ignored: _w53/hn_bypass.txt
+HN_GREP_RC=0 (0=match=RED)
+=== STATE 4 empty-value RED ===
+GATE_RC=1 (expect=1)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=1
+RED ignored: _w53/hn_empty.txt
+HN_GREP_RC=0 (0=match=RED)
+=== STATE 5 real-shape hostname RED (synthetic .invalid) ===
+GATE_RC=1 (expect=1)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=1
+RED ignored: _w53/hn_realvalue.txt
+=== STATE 6 after removal GREEN ===
+GATE_RC=0 (expect=0)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=0
+OK no sensitive leak in tracked / untracked / ignored sweeps
+STATE7_HASH_PREFIX=7f5840c6e4c7 (sha256 of synthetic fixture)
+STATE7_REGISTERED_ENTRY_COUNT=1
+=== STATE 7a double-key registered path GREEN ===
+GATE_RC=0 (expect=0)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=0
+OK no sensitive leak in tracked / untracked / ignored sweeps
+STATE7_DUP_HASH_SAME=yes
+STATE7_NEWPATH_ENTRY_COUNT=0
+=== STATE 7b same-sha256 new-path RED (W49 fix) ===
+GATE_RC=1 (expect=1)
+w46-local-secret-gate: route1(tracked)=0 route2(untracked)=ROUTE2_HITS=0 route3(ignored)=ROUTE3_HITS=1
+RED ignored: _w53/brand_new_path.log
+=== driver end ===

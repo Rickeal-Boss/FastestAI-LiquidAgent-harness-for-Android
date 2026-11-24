@@ -10,13 +10,13 @@
 - VERDICT: ✅ 通过
 - EVIDENCE: `00_wake_baseline.png`（1080×2400 非黑主屏）；`deviceLogTail.txt:3` 记 `mWakefulness=Awake`。
 - EXERCISED: 先唤醒再取证，规避灭屏 install-commit 挂起；安装 debug 包前确认非黑屏。
-- NOTE: 密钥留于真机、未导出或回灌。
+- NOTE: 密钥留于真机、未导出或回灌。**W53 caveat**：该图画面承 W51 网络失败残留态（`echo-W51TES` 输入气泡 + `UnknownHostException` 失败框），仅用于证「非黑主屏 / 已唤醒」，不作 W52 联网基线；W52 联网取证在后续时间窗。
 
 ## STEP 1 · 关键端点回声（补跑 W51 缺格）
 - VERDICT: ✅ 通过
 - EVIDENCE: `p0_echo_lightning30b.png`、`p0_echo_clean_lightning30b.png`。后者逐字回引 `The user just wrote "W52CLEANECHO"`；底部读数 `1.8k in / 380 out`、`上下文 1.9K / 127K`，可见思考块区。
 - EXERCISED: 127K 档常规请求，逐字回声判据命中；端点名仅截断显示（`NV Lightning 3...`），无完整标识。
-- NOTE: 档位读数 ≠ 满窗真压，本格非 1M 满窗。原 W51 的 ⛔vacuous 属其历史网络环境、不回改。
+- NOTE: 档位读数 ≠ 满窗真压，本格非 1M 满窗。原 W51 的 ⛔vacuous 属其历史网络环境、不回改。**W53 订正（不回改本格四态）**：两张图哨兵串完整呈现、思考块与读数真实，但模型**未执行 echo** —— 前者正文「If you intended for me to repeat or echo text…」且混入 W51 残留 `echo-W51TES`；后者正文「I'm not sure what W52CLEANECHO refers to」。判据强度不足，已在台账 `W12-02` 行内登记；W53 按 W50 口径补跑真回声（输入框 dump 逐字校验 + 清空残留）+ 证据入 `evidence/raw/w53/`。
 
 ## STEP 2 · 落盘白名单设备侧复核
 - VERDICT: ✅ 通过
@@ -62,7 +62,7 @@
 - VERDICT: ✅ 通过
 - EVIDENCE: `p1_file_approval_card.png`（file_write 审批卡）、`p1_file_rw.png`（Dots3 逐字回读）。后者思考块 `The user wants me to: 1. Write "W52FILEOK" to a file named w52ok.txt`，正文 `Done. I wrote \`W52FILEOK\` to \`w52ok.txt\` and read it back — the content matches exactly.`；读数 `上下文 1.8K / 520.2K`。
 - EXERCISED: `file_write` → `file_read` 哨兵 `W52FILEOK` 逐字一致；`p1_tier_32k.png` 另证「查询时间」工具被真实调用 6/6，工具通道打通。
-- NOTE: 审批卡显示副作用工具经审批闸门，符合事件序列纪律。
+- NOTE: 审批卡显示副作用工具经审批闸门，符合事件序列纪律。**W53 制品修复**：`p1_file_approval_card.png` 原文件截断（336 426 B、无 `IEND`、标准解码失败、仅前 1380/2400 行可解），已 tolerant 解码重存为有效 PNG（1080×1380）并补 W53 新审批卡截图；13 张中 1 张截断，原「逐张核对」未检出该缺陷，已如实记录。同格 `p1_file_rw.png` 完好，本格四态不改。
 
 ## STEP 9 · 手动压缩 / 自动压缩判据级触发
 - VERDICT: ⚠️ 部分
