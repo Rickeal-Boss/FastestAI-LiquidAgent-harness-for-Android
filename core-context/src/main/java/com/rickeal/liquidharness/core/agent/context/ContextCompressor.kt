@@ -130,8 +130,9 @@ class WindowContextCompressor(
         val cut = alignToTurn(rest, safe, budgetTokens, prefix)
 
         val kept = system + rest.subList(cut, rest.size)
-        // 日志形状注意：`token` 与 `=` 不得靠得太近 —— gitleaks 的 generic-api-key 会把
-        // 「tokens, char_budget=<数>」当成 api key（W54 第一次 push 的 CI 即因此判红）。
+        // 日志形状注意：计数单位词与等号不得紧邻后接数字 —— gitleaks 的 generic-api-key
+        // 会把该形态当成 api key（W54 第一次 push 的 CI 即因此判红）；故字符维字段前置、
+        // token 计数移到句尾不带等号（W55 订正：注释不再原样复现会触发规则的字面量形态）。
         AgentLogStore.info(
             "context compressed: " + messages.size + " -> " + kept.size +
                 " messages (chars=" + HardBudgetShrinker.promptChars(kept) +

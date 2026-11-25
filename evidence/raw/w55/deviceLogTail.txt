@@ -1,0 +1,30 @@
+2026-11-24T16:55:12.341566Z INFO auto_compact=noop reason=below_trigger
+2026-11-24T16:55:12.341940Z WARN auto_compact=noop reason=below_trigger
+2026-11-24T16:56:12.016802Z INFO prefix fp=0ca1e392 changed=none prompt=1107 cached=n/a-usage
+2026-11-24T16:56:39.167873Z INFO prefix fp=8617a506 changed=HISTORY prompt=1950 cached=1376(cumulative)
+2026-11-24T16:56:40.099981Z INFO prefix fp=106d8eb7 changed=HISTORY prompt=1993 cached=2816(cumulative)
+2026-11-24T16:56:40.942120Z WARN auto_compact=noop reason=below_trigger
+2026-11-24T16:56:40.942492Z INFO auto_compact=noop reason=below_trigger
+2026-11-24T17:01:30.513074Z INFO manual_compress dropped=70 kept=77 cache_invalidated=false
+2026-11-24T17:01:30.513680Z INFO manual_compress dropped=70 kept=77 cache_invalidated=false
+2026-11-24T17:02:17.377183Z INFO prefix fp=360a249d changed=none prompt=35338 cached=n/a-usage
+2026-11-24T17:02:19.704343Z INFO auto_compact=noop reason=already_compressed
+2026-11-24T17:02:19.704992Z WARN auto_compact=noop reason=already_compressed
+2026-11-24T17:04:17.978870Z ERROR context_overflow_prevented: chars=262626 cap=228556
+2026-11-24T17:05:31.890588Z INFO prefix fp=38b4ec85 changed=none prompt=48888 cached=n/a-usage
+2026-11-24T17:08:58.659029Z INFO prefix fp=61d877f6 changed=none prompt=1086 cached=n/a-usage
+2026-11-24T17:09:18.878290Z INFO auto_compact=noop reason=below_trigger
+2026-11-24T17:09:18.879040Z WARN auto_compact=noop reason=below_trigger
+2026-11-24T17:11:52.036333Z INFO prefix fp=49736eaf changed=none prompt=1077 cached=n/a-usage
+2026-11-24T17:11:54.375988Z ERROR run failed: request rejected (HTTP 404) [http:rejected]
+2026-11-24T17:14:31.629784Z INFO prefix fp=fd7c45aa changed=none prompt=1077 cached=n/a-usage
+2026-11-24T17:14:34.270476Z ERROR run failed: request rejected (HTTP 404) [http:rejected]
+2026-11-24T17:17:10.849718Z INFO prefix fp=50bf1a2a changed=none prompt=1077 cached=n/a-usage
+2026-11-24T17:17:14.879697Z INFO auto_compact=noop reason=below_trigger
+2026-11-24T17:17:14.880499Z WARN auto_compact=noop reason=below_trigger
+2026-11-25T06:17:11.423095Z INFO prefix fp=b5b32c06 changed=none prompt=1075 cached=n/a-usage
+2026-11-25T06:17:20.100157Z INFO auto_compact=noop reason=below_trigger
+2026-11-25T06:17:20.100157Z WARN auto_compact=noop reason=below_trigger
+2026-11-25T06:18:09.554674Z INFO prefix fp=8b612e0d changed=none prompt=1126 cached=n/a-usage
+2026-11-25T06:18:11.502191Z WARN auto_compact=noop reason=below_trigger
+2026-11-25T06:18:11.503775Z INFO auto_compact=noop reason=below_trigger

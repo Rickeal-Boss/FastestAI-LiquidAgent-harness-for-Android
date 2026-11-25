@@ -98,6 +98,10 @@ class DiagnosticLogSink(private val store: AgentLogFileStore) {
          * - `context_limit_writeback_failed` ← `ContextLimitWriteback:66`（真实生产写点；
          *   W49 P2-8 替换掉此前只存在于测试里的 `context limit writeback: A -> B` 空转形态）；
          * - `prefix fp=…` 账行 ← `ContextBudget:278`（fp 为 hex、changed 为段名或 none、cached 为标签值域）。
+         * - W55 回补 3 条（W54 改生产写点后未同步登记，同型第三次复发）：新版 `context compressed`
+         *   五字段形态 ← `ContextCompressor:135-141`；`endpoint_store=unreadable` ← `EndpointStore:112-114`；
+         *   `endpoint_store=seed_write_failed` ← `EndpointStore:122`（FILE_NAME=endpoints.json）。
+         *   旧 `(budget=.. target=..)` 形态保留不动，兼容 before 变体、与新版字段序不冲突。
          */
         /** `cached=` 标签值域（与 `ContextBudget.cachedLabel` 同源；改一处须同步另一处）。 */
         private const val CACHED_LABEL = """(?:n/a-usage|n/a-fields|\d+\(cumulative\))"""
@@ -184,9 +188,15 @@ class DiagnosticLogSink(private val store: AgentLogFileStore) {
             // context compressed 双写点（ContextCompressor 带 tokens/dropped 尾巴、ContextBudget 无）。
             Regex("""^context compressed: \d+ -> \d+ messages \(budget=\d+ target=\d+(?: tokens, dropped=\d+)?\)$"""),
             Regex("""^context compressed before round \d+: \d+ -> \d+ messages \(estimated \d+ > budget \d+\)$"""),
+            // W55 回补：`ContextCompressor:135-141` 新版五字段形态（chars/dropped/char_budget/
+            //   char_target/budget/target）；token 与等号间留空格规避 gitleaks generic-api-key。
+            Regex("""^context compressed: \d+ -> \d+ messages \(chars=\d+, dropped=\d+, char_budget=\d+, char_target=\d+, budget=\d+, target=\d+ tokens\)$"""),
             // summary truncated / context limit writeback 失败行（W49：改生产真实形态）。
             Regex("""^summary truncated: max=\d+$"""),
             Regex("""^context_limit_writeback_failed endpoint=[A-Za-z0-9_.:-]+ verified=\d+$"""),
+            // W55 回补：`EndpointStore:112-114` / `:122` 落盘失败账行（FILE_NAME=endpoints.json）。
+            Regex("""^endpoint_store=unreadable file=endpoints\.json backup=(?:true|false)$"""),
+            Regex("""^endpoint_store=seed_write_failed file=endpoints\.json$"""),
             // prefix 账行（fp hex、changed 段名或 none、cached 标签值域；prompt 段可缺省）。
             Regex("""^prefix fp=[0-9a-f]+ changed=[A-Za-z_,]+ prompt=\d+ cached=$CACHED_LABEL$"""),
             Regex("""^prefix fp=[0-9a-f]+ changed=[A-Za-z_,]+ cached=$CACHED_LABEL$"""),

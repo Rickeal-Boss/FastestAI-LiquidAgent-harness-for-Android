@@ -3,7 +3,7 @@
 > 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`）。
 > 基线 = W53 tip `033723607c5138be123ff5ac4e465a0449935772`。判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`。
 > 「未触发」≠「已验证通过」；推断带 caveat、不写成事实。本验收物不写复合挂账号，段位用中文描述。
-> 本波**新开 0 / 销账 0**；守恒 216 行 / 39 `CLOSED` / 166 `OPEN` / 11 `CARRIED`（逐值相等）。
+> 守恒 216 行 / 39 `CLOSED` / 166 `OPEN` / 11 `CARRIED`（逐值相等）。两数只写在派单卡抬头一份（W55 订正：删本处复述）。
 
 ---
 
@@ -17,7 +17,7 @@
 | 2 | **P0-2**：压缩按 token 落刀、硬闸按字符裁决 ⇒「压完仍熔断」 | **采信并修** | ✅ | 实读 `ContextCompressor.compress(messages, budgetTokens)` 无字符维；`PreStepBudget` 的 `charCap = hard × effectiveCpt` 是权威判据。W53 现场 `chars=226442 cap=223027` 复现 |
 | 3 | **P1-1**：MCP 路径无 URL 字面量闸（`GuardedDns` 对字面量 IP 早退） | **采信，但改落点** | ✅ | 报告建议「补到 `NetMcpTransport`」；本波按同一报告的 §6.3 采纳**下沉到 `HttpTransport.post()` 兜底**（一处覆盖所有调用方，LLM 链路幂等）。MCP token Keystore 不在本波（涉 W7 待办） |
 | 4 | **P1-2**：`SandboxFiles.resolve()` 无 canonical、`listDir` 裸 `startsWith` | **采信并修** | ✅ | `SandboxPath.kt:50` 工具侧已是 `canonicalFile + separator` 边界并注释警告裸前缀；UI 侧同型补齐 |
-| 5 | **P1-3**：9 处工具 `catch (Throwable)` 吞掉取消与 Error | **采信并修** | ✅ | 逐处实读；`ToolCallExecutor:181` / `AgentRunner:160` 已正确前置重抛，工具层是唯一缺口。`SpeakTool` 的 HandlerThread 回调**不**重抛（非挂起点，重抛只会打崩 TTS 线程） |
+| 5 | **P1-3**：10 处工具取消重抛（11 处 `catch(Throwable)`，`SpeakTool` 1 处例外）吞掉取消与 Error | **采信并修** | ✅ | 逐处实读；`ToolCallExecutor:181` / `AgentRunner:160` 已正确前置重抛，工具层是唯一缺口。`SpeakTool` 的 HandlerThread 回调**不**重抛（非挂起点，重抛只会打崩 TTS 线程） |
 | 6 | **P1-4**：`McpClient` 的 `requestId` / `connected` / `era` 非线程安全 | **采信，窄修** | ✅ | `requestId` 改 `AtomicLong`、`connected` 加 `@Volatile`、`connect()` 加 `Mutex`；`era`/`sessionId` 的读写都在握手临界区内，未再加锁 |
 | 7 | **P1-5**：G19 只扫 `core-engine`（0 个日志调用点）⇒ 恒 `VACUOUS` | **不采（登记）** | ⚠️ | 扩扫描面会立刻把 12 处拼接判红，属「守卫重新设计」而非本轮修复；且 G21 棘轮把 vacuous=1 合法化。本波如实保留 `VACUOUS`，挂到安全收口老号行内 |
 | 8 | **P1-6**：15 张截图完全不进自动脱敏门禁 | **不采（登记）** | ⚠️ | 需要「二进制元数据检查」接进既有门禁 step，非 `.kt` 修复；本波仍以「入仓前逐张 `verify()` + IEND + 像素级目视」兜底 |
@@ -48,7 +48,7 @@
 |---|---|---|---|
 | **P1-1** `UrlGuard.requireAllowed(url, allowPrivateNetwork)` 下沉到 `HttpTransport.post()`；`NetMcpTransport` 单独识别 `UnsafeUrlException` → `blocked_unsafe_url:<reason>` | `core-net/.../HttpTransport.kt`、`core-data/.../NetMcpTransport.kt` | 编译期 + 既有 `UrlGuard` 用例不退化；真机 LLM 链路未受影响（回声明、视觉、1M 全绿）。MCP 通道本身 **0 服务器 ⇒ vacuous** | ✅ / ⛔vacuous |
 | **P1-2** `SandboxFiles.resolve` 改 `canonicalFile` + `base + separator` 边界，越界返回 null；`listDir` 补分隔符边界 | `feature-tools/.../SandboxFiles.kt` | 与工具侧 `SandboxPath` 同型；真机 workspace 浏览未受影响 | ✅ |
-| **P1-3** 7 个工具文件 9 处 `catch (Throwable)` 前置 `catch (c: CancellationException) { throw c }`；`SpeakTool` 的 HandlerThread 回调保持原样并写明理由 | `core-agent/.../tool/tools/*` | 编译期 + 全量单测；契约与 `AGENTS §五.4` 对齐 | ✅ |
+| **P1-3** 7 个工具文件 11 处 `catch (Throwable)`、其中 10 处前置 `catch (c: CancellationException) { throw c }`；`SpeakTool` 的 1 处 HandlerThread 回调按设计不重抛并写明理由（原文「9 处」为笔误，W55 订正） | `core-agent/.../tool/tools/*` | 编译期 + 全量单测；契约与 `AGENTS §五.4` 对齐 | ✅ |
 | **P1-4** `McpClient`：`requestId` → `AtomicLong`、`connected` → `@Volatile`、`connect()` 加 `Mutex` | `core-mcp/.../McpClient.kt` | 编译期 + 既有 MCP 用例全绿 | ✅ |
 | **N-1 定谳** 新增用例 `parallelToolCallsPassesCombinedSaveChain` | `core-model/.../EndpointCapabilitiesTest.kt` | `parseExtraBody("parallel_tool_calls=false")` → `validateAdvanced(...)` 为空 ⇒ **通过**，「保存误拒」与现役代码不符 | ✅ |
 
@@ -85,7 +85,7 @@
 | G2 架构守卫 | `result=PASS ok=27 vacuous=1 violation=0 fault=0`（G19 仍 vacuous，G20 141 ID） | ✅ | `evidence/raw/w54/g2_archguard.txt` |
 | G3 守卫自测 | `30/30 PASS（307s）`（VAC-G1b / VAC-G21 自证 PASS） | ✅ | `evidence/raw/w54/g3_selftest.txt` |
 | G4 全量单测 | `tests=900 failures=0 errors=0 skipped=0`（14 模块） | ✅ | `evidence/raw/w54/g4_fulltest.txt` |
-| 脱敏门禁 | 本波新增文本与 14 张 PNG 入仓前逐件复核；`deviceLogTail` 形态外行 0 | ✅ | `evidence/raw/w54/deviceLogTail.txt` 末尾自检行 |
+| 脱敏门禁 | 本波新增文本与 14 张 PNG 入仓前逐件复核；`deviceLogTail` 形态外行 0 | ✅ | `evidence/raw/w54/deviceLogTail.txt` 末尾自检行（W55 订正 P2-4：本波 `evidence/raw/w54/` 无 `g0_secret_gate.txt`，仓内三路门禁 ≠ 设备侧落盘白名单；此处依据为设备侧自检、非仓内三路门禁） |
 
 ---
 
@@ -100,9 +100,9 @@
 | **文件读写 + 审批闸门** | `file_write` 授权卡 → 允许一次 → `wrote 9 chars to w54.txt` → `file_read` 回读 `W54FILEOK`；设备侧 `cat` 一致（9 B） | ✅ | `p1_file_approval.png`、`p1_file_rw.png` |
 | **skill** | 技能页列出 `notes-organizer` / `pdf-toolkit`（来源 asset，允许工具清单可见） | ✅ | `p1_skills.png` |
 | **MCP** | 「还没有 MCP 服务器」⇒ 判据未行使（P1-1 的 MCP 分支同 vacuous） | ⛔vacuous | `p1_mcp_empty.png` |
-| **手动压缩（判据级）** | 264K 字符历史：确认框 → applied `manual_compress dropped=70 kept=77 cache_invalidated=false`；随后同一历史请求 `prompt=35338` **正常发出、无熔断** | ✅ | `p2_manual_compress_applied.png`、`p2_after_compress_run.png`、`deviceLogTail.txt` |
+| **手动压缩（判据级）** | 264K 字符历史：确认框 → applied `manual_compress dropped=70 kept=77 cache_invalidated=false`；随后同一历史请求 `prompt=35338` **正常发出、无熔断** | ✅ | `p2_after_compress_run.png`（名实相符）、`deviceLogTail.txt`；W55 订正 P2-3：`p2_manual_compress_applied.png` 画面为输入框填充文本，applied 账行只见于 `deviceLogTail`、截图只证会话/读数 |
 | **未压缩对照（判据会响）** | 同一 264K 历史不压缩直接发送 ⇒ `context_overflow_prevented: chars=262626 cap=228556` | ✅ | `p2_control_trip.png`、`deviceLogTail.txt` |
-| **自动压缩（首次 applied）** | 192K 字符历史发送后评估：`auto_compact dropped=30 kept=83 cache_invalidated=false`（W53 只有 `below_trigger` / `nothing_to_drop`） | ✅ | `p2_auto_compact_applied.png`、`deviceLogTail.txt` |
+| **自动压缩（首次 applied）** | 192K 字符历史发送后评估：`auto_compact dropped=30 kept=83 cache_invalidated=false`（W53 只有 `below_trigger` / `nothing_to_drop`） | ✅ | `deviceLogTail.txt`；W55 订正 P2-3：`p2_auto_compact_applied.png` 画面为会话回复，applied 账行只见于 `deviceLogTail` |
 | **1M 档（SuperVL 120B / 1M）** | 回声 `echo-W541M` 逐字；`1.8k in / 36 out`、`上下文 1.9K / 995.9K`（常规读数，非满窗真压） | ✅ | `p3_supervl_1m_echo.png` |
 | **Nano Omni 30B / 128K** | 文本轮 `:W54NANO`；`1.8k in / 148 out` | ✅ | `p3_nano_text.png` |
 | **North Mini Code Free** | `request rejected (HTTP 404)`（与 W53 同；用户声明可用，设备真相仍 404） | ⛔ | `p3_north_404.png` |
@@ -119,7 +119,7 @@
 
 **结构（推送前声明，实际执行后如实回填）**：原计划 2 个提交；实际为 **4 个** —— ① 内容提交 `bba8dcf1dc70460a693b007e142833ae28d70c10`；② **误报修复提交** `89ac2353bb4e631d7c27c5a56bfa2689015b0d2b`（首个提交的 Secret scan 在 gitleaks 步骤判红，见下）；③ CI 四字段回填提交 `a1b111e7d3287880960e2418882652934b02cdbd`；④ 文档字面量修正提交（回填提交的 Secret scan 又被**同一误报字面量**触发：文档引用根因时把该字面量原样抄进了 Markdown）。
 
-**首个提交 `bba8dcf` 的 CI 结果（如实记录）**：Build `45449971703` 与 Secret scan `45449971272` 均 `failure`；逐 job 实取：Assemble Debug / Unit tests / Lint / Arch guard **全部 success**，唯一失败项是 Secret scan 的 **gitleaks** 步骤（trufflehog / 3b-ext / 台账符号自检未执行）。
+**首个提交 `bba8dcf` 的 CI 结果（如实记录）**：Build `45449971703` 与 Secret scan `45449971272` 均 `failure`；逐 job 实取：Assemble Debug / Unit tests / Lint / Arch guard **全部 success**，唯一失败项是两个 workflow **各自运行的 gitleaks** 步骤（`build.yml:786–820` 与 `secret-scan.yml:40–41` 各有一个，故一次误报判红两条 run；trufflehog / 3b-ext / 台账符号自检未执行仅指 Secret scan job）—— W55 订正（P1-3）：补全双 workflow 归因。
 
 **根因（gitleaks 原始输出）**：`generic-api-key` 命中 `core-context/.../ContextCompressor.kt:136` 的日志拼接 —— 字面量 `tokens` 之后紧跟字符预算字段的赋值拼接，`token` 与等号的距离落在规则窗口内，被当成 api key。属**误报**，但按纪律**改形状而不是加 allowlist**（不新增全局放行）：字符维字段前置、token 计数移到句尾且不带等号，信息量不减。修复提交后本地四闸门与脱敏门禁重跑通过。
 
@@ -128,7 +128,9 @@
 - Build `45451754250`（`head_sha=89ac2353bb4e631d7c27c5a56bfa2689015b0d2b` / `status=completed` / `conclusion=success` / `updated_at=2026-11-24T17:46:16Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45451754250`）。
 - Secret scan `45451754200`（`head_sha=89ac2353bb4e631d7c27c5a56bfa2689015b0d2b` / `status=completed` / `conclusion=success` / `updated_at=2026-11-24T17:44:02Z`，链接 `https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45451754200`）。
 
-回填提交为纯文档，其 run 按既有降级口径**只声明存在**、不逐条列号。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
+**回填提交 `a1b111e` 判红号（W55 订正 P1-1）**：Secret scan `45452852010`（`status=completed` / `conclusion=failure` / `updated_at=2026-11-24T17:50:03Z`）——根因说明把误报字面量原样抄进 Markdown 二次触发；Build 按 `docs/**` paths-ignore 未触发。原文「只声明存在、不逐条列号」把该红态一并降级，现逐号如实列出。
+
+**最终 tip `63f3ff94` 的 run（W55 订正 P1-1）**：Secret scan `45453331670`（`status=completed` / `conclusion=success` / `updated_at=2026-11-24T17:52:49Z`）；Build 按 `docs/**` paths-ignore 未触发。代码字节自 `89ac235` 后未变，交付判据仍锚最后代码提交 `89ac235` 双绿。
 
 本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
@@ -166,8 +168,8 @@
 
 ## 交给外部审查团队的制品清单（边界声明）
 
-**制品**：本验收物、W54 交接、`docs/w54-dispatch.md`、台账（`### W54 段` + 两条老号行内注记）、`evidence/raw/w54/`（g1–g4 原始输出、`deviceLogTail.txt`、14 张脱敏截图）、W53 七条口径订正、代码 diff（31 文件 / +406 −40）。
+**制品**：本验收物、W54 交接、`docs/w54-dispatch.md`、台账（`### W54 段` + 两条老号行内注记）、`evidence/raw/w54/`（g1–g4 原始输出、`deviceLogTail.txt`、14 张脱敏截图）、W53 七条口径订正、代码 diff（31 文件 / +406 −40；该组数字专指 ① feat 提交 `bba8dcf` 的 diff，全波唯一差异文件 53 个 —— W55 订正 P1-2）。
 
 **不含**：会话历史 / 凭据 / 端点完整标识与密钥 / 账号字段 / 设备序列号 / SSID / 本机路径 / 用户私人图片 / 整段 logcat /「建议下一链做什么」。
 
-**边界**：① 本波首次开代码，13 个 `.kt` 生产文件有 diff，`core-kernel` 与 `GenerationRound.kt` 零改动、`LINE_CAPS` 未调；② P0-2 的真机证明是**同会话对照**（压缩后通过 / 不压缩熔断），不是满窗真压；③ MCP 与 1M 满窗仍 vacuous / 常规读数；④ North、Dots3 的 404 是设备真相，不写成已修复；⑤ 设备 Wi-Fi 掉线一次，已如实记录并排除在应用缺陷之外；⑥ 本波止于交接，交外部团队审查。
+**边界**：① 本波首次开代码，21 个 `.kt` 生产文件 + 4 个测试文件有 diff（共 25 个，逐成员哈希实测；原文「13 个」为笔误，W55 订正），`core-kernel` 与 `GenerationRound.kt` 零改动、`LINE_CAPS` 未调；② P0-2 的真机证明是**同会话对照**（压缩后通过 / 不压缩熔断），不是满窗真压；③ MCP 与 1M 满窗仍 vacuous / 常规读数；④ North、Dots3 的 404 是设备真相，不写成已修复；⑤ 设备 Wi-Fi 掉线一次，已如实记录并排除在应用缺陷之外；⑥ 本波止于交接，交外部团队审查。

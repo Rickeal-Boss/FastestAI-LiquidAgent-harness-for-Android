@@ -18,7 +18,7 @@ W45–W53 连续九波零代码、零销账；四份外审（`FastestAI-W53整�
 
 - `core-data`：`EndpointStore.kt` / `JsonFileStore.kt` / `McpServerStore.kt` / `FileMemoryStore.kt` / `NetMcpTransport.kt`
 - `core-context`：`ContextCompressor.kt` / `LayeredContextCompressor.kt` / `BudgetFormula.kt`
-- `core-agent`：`loop/ContextBudget.kt` / `tool/tools/*`（9 处 catch）
+- `core-agent`：`loop/ContextBudget.kt` / `tool/tools/*`（10 处取消重抛 catch，`SpeakTool` 1 处例外）
 - `core-net`：`HttpTransport.kt`
 - `core-mcp`：`McpClient.kt`
 - `feature-chat`：`ManualCompress.kt` / `ConversationOps.kt`（模块总量 3985/4000，只许净增 ≤15 行）
@@ -34,4 +34,4 @@ W45–W53 连续九波零代码、零销账；四份外审（`FastestAI-W53整�
 2. `EXPECTED_TESTS` 与严格 `@Test` 双向相等（895 → 900）。
 3. 五条 P0/P1 判据各自有 JVM 用例或真机对照，且**对照组会响**（未压缩时同一历史仍熔断）。
 4. 真机：回声 / 视觉 / 文件读写审批 / skill / MCP（vacuous）/ 手动压缩 / 自动压缩 / 1M 读数。
-5. CI：内容提交双 run 四字段实取。
+5. CI：最后代码提交 `89ac235` 双 run 全绿 + 最终 tip `63f3ff94` Secret 绿（W55 订正：原文「内容提交双 run 四字段实取」锚的是首个提交 `bba8dcf`，其实测为双 FAILURE；交付判据锚最后代码提交）。

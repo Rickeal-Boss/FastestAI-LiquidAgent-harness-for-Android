@@ -211,6 +211,22 @@ class DiagnosticLogSinkTest {
         assertFalse(DiagnosticLogSink.isProbeLine("compress=disabled_by_policy 用户原始prompt片段"))
         assertFalse(DiagnosticLogSink.isProbeLine("context_limit_writeback_failed endpoint=user echoed hunter2 email a@b.com verified=1"))
         assertFalse(DiagnosticLogSink.isProbeLine("prefix fp=ab12 changed=none prompt=1234 cached=用户echo内容"))
+        // W55 回补的三类新形态反向控（方案席复核钉死）：逐字对生产拼接，只放行整行精确形态。
+        // 样本长度均 < MAX_DIGEST_CHARS=160 ⇒ 拦下的原因只能是正则，不是长度闸门。
+        // 新版压缩账行：字段顺序调换 / 多一字段 / 结尾无 tokens / 拼用户自由文本一律拦。
+        assertFalse(DiagnosticLogSink.isProbeLine("context compressed: 2 -> 1 messages (chars=10, dropped=1, char_budget=100, char_target=50, budget=100, target=50 tokens) 用户echo"))
+        assertFalse(DiagnosticLogSink.isProbeLine("context compressed: 2 -> 1 messages (dropped=1, chars=10, char_budget=100, char_target=50, budget=100, target=50 tokens)"))
+        assertFalse(DiagnosticLogSink.isProbeLine("context compressed: 2 -> 1 messages (chars=10, dropped=1, char_budget=100, char_target=50, budget=100, target=50, extra=7 tokens)"))
+        assertFalse(DiagnosticLogSink.isProbeLine("context compressed: 2 -> 1 messages (chars=10, dropped=1, char_budget=100, char_target=50, budget=100, target=50)"))
+        // unreadable：拼尾巴 / file 含斜杠或空格（非 FILE_NAME 字面量）/ backup 非 true|false。
+        assertFalse(DiagnosticLogSink.isProbeLine("endpoint_store=unreadable file=endpoints.json backup=true /sdcard/secret.txt"))
+        assertFalse(DiagnosticLogSink.isProbeLine("endpoint_store=unreadable file=/sdcard/secret/endpoints.json backup=true"))
+        assertFalse(DiagnosticLogSink.isProbeLine("endpoint_store=unreadable file=my endpoints.json backup=true"))
+        assertFalse(DiagnosticLogSink.isProbeLine("endpoint_store=unreadable file=endpoints.json backup=yes"))
+        // seed_write_failed：拼尾巴 / file 含斜杠或空格。
+        assertFalse(DiagnosticLogSink.isProbeLine("endpoint_store=seed_write_failed file=endpoints.json/../../secret"))
+        assertFalse(DiagnosticLogSink.isProbeLine("endpoint_store=seed_write_failed file=/sdcard/secret/endpoints.json"))
+        assertFalse(DiagnosticLogSink.isProbeLine("endpoint_store=seed_write_failed file=my endpoints.json"))
     }
 
     /**
@@ -240,5 +256,90 @@ class DiagnosticLogSinkTest {
         assertTrue(DiagnosticLogSink.isProbeLine("summary truncated: max=1024"))
         assertTrue(DiagnosticLogSink.isProbeLine("run cancelled: chars=120 rounds=3"))
         assertTrue(DiagnosticLogSink.isProbeLine("context_overflow_prevented: chars=59064 cap=50227"))
+    }
+
+    /**
+     * W55 回补（P0 正向）：`ContextCompressor:135-141` 新版压缩账本整行形态必须落盘。
+     *
+     * W54 把写点从 `(budget=.. target=.. tokens, dropped=..)` 改成五字段
+     * `(chars=.., dropped=.., char_budget=.., char_target=.., budget=.., target=.. tokens)`，
+     * W48 登记的旧正则不再命中 ⇒ 真机 `run-as` 里读不到压缩账本（W49/W51/W54 同型第三次复发）。
+     * 本条用生产逐字样本钉白，并覆盖 `char_budget`/`char_target` 取 `Int.MAX_VALUE` 的边界。
+     */
+    @Test
+    fun newContextCompressedShapeIsMirrored() {
+        // 140 字符：token 与等号间的空格是 gitleaks generic-api-key 的规避写法，逐字保留。
+        assertTrue(
+            DiagnosticLogSink.isProbeLine(
+                "context compressed: 264 -> 77 messages (chars=35338, dropped=70, char_budget=228556, char_target=137133, budget=128000, target=76800 tokens)",
+            ),
+            "新版 context compressed 五字段账本行必须落盘",
+        )
+        // 148 字符：targetChars() 在 charBudget==Int.MAX_VALUE 时直接返回，10 位数字须容纳。
+        assertTrue(
+            DiagnosticLogSink.isProbeLine(
+                "context compressed: 264 -> 77 messages (chars=35338, dropped=70, char_budget=2147483647, char_target=2147483647, budget=128000, target=76800 tokens)",
+            ),
+            "char_budget/char_target=2147483647（10 位）必须落盘",
+        )
+    }
+
+    /** W55 回补（P0 正向）：`EndpointStore:112-114` 端点清单不可读账行必须落盘。 */
+    @Test
+    fun endpointStoreUnreadableIsMirrored() {
+        assertTrue(DiagnosticLogSink.isProbeLine("endpoint_store=unreadable file=endpoints.json backup=true"))
+        assertTrue(DiagnosticLogSink.isProbeLine("endpoint_store=unreadable file=endpoints.json backup=false"))
+    }
+
+    /** W55 回补（P0 正向）：`EndpointStore:122` 预置清单播种写失败账行必须落盘。 */
+    @Test
+    fun endpointStoreSeedWriteFailedIsMirrored() {
+        assertTrue(DiagnosticLogSink.isProbeLine("endpoint_store=seed_write_failed file=endpoints.json"))
+    }
+
+    /**
+     * W55 加固（方案席复核）：三类新形态的**端到端落盘**判据 —— 经真实
+     * `AgentLogStore.info/error` → sink 过滤 → `AgentLogFileStore` 写盘 → `recentLines` 读回，
+     * 而非只在 [DiagnosticLogSink.isProbeLine] 纯函数层判定。
+     *
+     * 这是本次 P0 的根因验证：W54 改了生产写点、白名单没跟上 ⇒ 纯函数层永远看不到缺口，
+     * 只有「写点真发一条、文件里真能读回」才堵住同型第三次复发。模式复用
+     * [probeLineSurvivesFloodOfUserContentLines]（已在实际 CI 稳定运行）。
+     */
+    @Test
+    fun newProbeFormsReachDiskEndToEnd() {
+        val tmp = Files.createTempDirectory("w55-sink-e2e").toFile()
+        try {
+            val fileStore = AgentLogFileStore(tmp)
+            val sink = DiagnosticLogSink(fileStore)
+            sink.install()
+            try {
+                AgentLogStore.clear()
+                // 三条生产写点形态：ContextCompressor:136 / EndpointStore:113,122。
+                AgentLogStore.info(
+                    "context compressed: 264 -> 77 messages (chars=35338, dropped=70, char_budget=228556, char_target=137133, budget=128000, target=76800 tokens)",
+                )
+                AgentLogStore.error("endpoint_store=unreadable file=endpoints.json backup=true")
+                AgentLogStore.error("endpoint_store=seed_write_failed file=endpoints.json")
+            } finally {
+                AgentLogStore.installFileSink(null)
+            }
+            runBlocking { delay(600) }
+            val lines = runBlocking { fileStore.recentLines(1_000) }
+            assertTrue(
+                lines.any { it.contains("context compressed: 264 -> 77 messages") },
+                "新版压缩账行须经 sink 落盘、文件可读回",
+            )
+            assertTrue(
+                lines.any { it.contains("endpoint_store=unreadable file=endpoints.json backup=true") },
+                "endpoint unreadable 账行须落盘可读",
+            )
+            assertTrue(
+                lines.any { it.contains("endpoint_store=seed_write_failed file=endpoints.json") },
+                "endpoint seed_write_failed 账行须落盘可读",
+            )
+        } finally {
+            tmp.deleteRecursively()
+        }
     }
 }

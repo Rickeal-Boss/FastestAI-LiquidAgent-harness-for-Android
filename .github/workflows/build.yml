@@ -165,8 +165,11 @@ env:
   # W54：+5（core-data 2：坏 JSON 不重种 / 写失败抛 SAVE_FAILED；core-context 1：
   #   字符预算单独驱动压缩；feature-chat 1：字符预算驱动手动压缩；core-model 1：
   #   N-1 parallel_tool_calls 保存链定谳）= 900。
+  # W55：+4（app 4：新版 context compressed 五字段形态 / endpoint_store unreadable /
+  #   endpoint_store seed_write_failed 三条落盘形态必红，另 1 条端到端落盘加固；
+  #   方案席要求的反向样本并入既有方法不增计）= 904。
   # ---------------------------------------------------------------------------
-  EXPECTED_TESTS: '900'
+  EXPECTED_TESTS: '904'
 
 jobs:
   # ===========================================================================
