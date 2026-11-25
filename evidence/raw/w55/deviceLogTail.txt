@@ -1,3 +1,5 @@
+# W56 时间窗归属：以下 30 行固定形态探针 = W54 时间窗（2026-11-24）留存 24 行 + W55 本波（2026-11-25）新增 6 行；非连续采样。
+# 形态口径：全部按 DiagnosticLogSink.PROBE_FORMS 完整形态集合机械复刻，形态外 0；本波新增仅 prefix / auto_compact=noop 两类，无本波回声或新版压缩账行。
 2026-11-24T16:55:12.341566Z INFO auto_compact=noop reason=below_trigger
 2026-11-24T16:55:12.341940Z WARN auto_compact=noop reason=below_trigger
 2026-11-24T16:56:12.016802Z INFO prefix fp=0ca1e392 changed=none prompt=1107 cached=n/a-usage
@@ -28,3 +30,4 @@
 2026-11-25T06:18:09.554674Z INFO prefix fp=8b612e0d changed=none prompt=1126 cached=n/a-usage
 2026-11-25T06:18:11.502191Z WARN auto_compact=noop reason=below_trigger
 2026-11-25T06:18:11.503775Z INFO auto_compact=noop reason=below_trigger
+# 自检：探针 30 行（W54 留存 24 + W55 新增 6）；形态外行 = 0（按完整形态集合机械复刻；机械判据见 scripts/w55-probe-form-sync.sh）。

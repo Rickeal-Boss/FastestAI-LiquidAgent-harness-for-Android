@@ -1,0 +1,14 @@
+# W56 设备侧日志探针（run-as 取自 files/harness/logs/agent-0.log，2026-11-25 本波时间窗）
+# 全部为 DiagnosticLogSink.PROBE_FORMS 固定形态；无自由文本、无凭据/端点标识/账号字段。
+# 回灌级别：只取探针行；不回灌整段 logcat。形态外行 = 0（逐行对照完整形态集合）。
+2026-11-25T11:47:40.749955Z INFO prefix fp=5606d683 changed=none prompt=1086 cached=n/a-usage
+2026-11-25T11:47:42.491781Z ERROR run failed: request rejected (HTTP 400) [http:rejected]
+2026-11-25T11:52:59.820564Z INFO prefix fp=0e4c28b9 changed=none prompt=1086 cached=n/a-usage
+2026-11-25T11:53:03.032526Z INFO auto_compact=noop reason=below_trigger
+2026-11-25T11:53:03.033270Z WARN auto_compact=noop reason=below_trigger
+2026-11-25T12:07:20.326930Z INFO prefix fp=cb1f02b7 changed=none prompt=46196 cached=n/a-usage
+2026-11-25T12:07:25.536645Z INFO auto_compact dropped=60 kept=193 cache_invalidated=false
+2026-11-25T12:07:25.536648Z INFO auto_compact dropped=60 kept=193 cache_invalidated=false
+2026-11-25T12:13:10.436560Z INFO prefix fp=fb512511 changed=none prompt=1080 cached=n/a-usage
+2026-11-25T12:13:11.636156Z ERROR run failed: request rejected (HTTP 400) [http:rejected]
+# 自检：探针 10 行，全为本波 2026-11-25 新增；形态外行 = 0。本波新增关键形态：auto_compact applied（dropped=60 kept=193）× 2、HTTP 400 固定摘要 × 2（openrouter 两免费端点设备真相）；新版 context compressed 五字段账行未出现（内核每轮压缩未触发，维持 ⛔vacuous）。

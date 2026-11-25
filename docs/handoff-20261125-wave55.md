@@ -63,25 +63,26 @@ N-1「键不同一、误拒仍在」主张——**不采纳**：现役白名单�
 - 手动压缩 UI 路径：确认框逐字弹出、确认后会话回空态 ⇒ 路径行使 ✅。
 - 新版 `context compressed` 账行真机落盘：本次会话仅 1 轮、无丢弃切点 ⇒ 设备日志未出现该行，`⛔vacuous`（判据主力为 JVM 端到端 + 脚本变异，不写成真机已验证、不编造）。
 
-**回灌级别**：只写脱敏判据结论、`deviceLogTail` 30 行固定形态探针与 2 张脱敏截图；不回灌整段 logcat / 凭据 / 端点完整标识与密钥 / 账号字段 / 序列号 / SSID / 本机路径 / 用户私人图片。
+**回灌级别**：只写脱敏判据结论、`deviceLogTail` 30 行固定形态探针（W56 订正：24 行 W54 时间窗留存 + 6 行 W55 本波新增，文件头与末尾自检行已补）与 2 张脱敏截图；不回灌整段 logcat / 凭据 / 端点完整标识与密钥 / 账号字段 / 序列号 / SSID / 本机路径 / 用户私人图片。本波新增探针仅 6 行且无新版压缩账行，该格真机 `⛔vacuous` 维持。
 
 ## 六、CI（公开 API 四字段）
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
 
-**实际 2 提交**：① 内容提交 `8307c7ec4e49a5d56ef13299b9026f5d44ce2990`；② 台账符号自检判红修复 `c8e38fd58f6a3f7805f7d2c3daafdf51c9219a9e`（最终 tip）。
+**实际 3 提交**（W56 波内按 atom / patch / Actions 三方交叉订正）：① 内容提交 `8307c7ec4e49a5d56ef13299b9026f5d44ce2990`；② 台账符号自检判红修复 `c8e38fd58f6a3f7805f7d2c3daafdf51c9219a9e`；③ 纯文档回填 `19e4aa5f426d4ad444393ec8d5e2273cd499089d`（**最终 tip**，按 W50 降级口径不计入交付判据、但计入提交实态）。
 
 | 提交 | run | workflow | status | conclusion | updated_at |
 |---|---|---|---|---|---|
 | ① `8307c7e` | `45561430401` | Build | completed | **success** | 2026-11-25T06:35:17Z |
 | ① `8307c7e` | `45561430501` | Secret scan | completed | **failure** | 2026-11-25T06:33:22Z |
-| ② `c8e38fd`（最终 tip） | `45562594649` | Secret scan | completed | **success** | 2026-11-25T06:42:48Z |
+| ② `c8e38fd` | `45562594649` | Secret scan | completed | **success** | 2026-11-25T06:42:48Z |
+| ③ `19e4aa5f`（最终 tip） | `45563018742` | Secret scan | completed | **success** | 2026-11-25T06:46:14Z |
 
 **判红如实给号 + 根因**：① 的 Secret scan `45561430501` FAILURE —— 台账符号指路自检 `w46-ledger-symbol-check` 把两条 W55 行内注记里带反引号的 `deviceLogTail`（同行含「必红/用例」锚点）误判为测试方法名、全树 `*.kt` grep 不到 ⇒ rc=1；按「不为判据误报加 allowlist、改真值源文本」纪律把两处改为「设备侧日志探针」，修复提交 ② 的 Secret scan `45562594649` success。② 为纯台账文档修复，Build 按 `docs/**` paths-ignore 未触发（既定口径，显式声明）；代码字节自 ① 后未变，Build 绿可继承。
 
-**交付判据 = 最终 tip `c8e38fd` Secret 绿 + 最后代码提交 `8307c7e` Build 绿**：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45562594649`（Secret success）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45561430401`（Build success）。
+**交付判据 = 最后代码提交 `8307c7e` Build 绿（① `45561430401`）+ ① 的 Secret 判红-修复链如实给号（`45561430501` FAILURE → ② `45562594649` success）+ 最终 tip `19e4aa5f` Secret 绿（`45563018742`）**：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45561430401`（Build）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45562594649`（Secret）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45563018742`（Secret）。
 
-本节回填（CI 四字段入档）本身为纯文档改动、不新建提交；按 W50 降级口径其触发的 Secret run 只声明存在、不逐条列号、不作交付判据（显式声明，非漏记）。
+③ 为纯文档回填提交，按 W50 降级口径不计入交付判据、但计入提交实态；其触发的 Secret `45563018742` 已逐号列出（W56 订正：旧文本写「本节回填不新建提交」构成自指，已删）。② 的 Build 按 `docs/**` paths-ignore 未触发（既定口径，显式声明）。
 
 本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。PAT 仅 URL inline 一次性使用、remote 已恢复干净、无凭据落盘。
 

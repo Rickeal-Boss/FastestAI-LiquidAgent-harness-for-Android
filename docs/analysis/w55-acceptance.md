@@ -57,7 +57,7 @@
 | 项 | 实测 | 四态 |
 |---|---|---|
 | `EXPECTED_TESTS` | 900 → **904**（严格行首 `^\s*@Test\b` 实测 904，双向相等） | ✅ |
-| `DiagnosticLogSink.kt` / 测试 | 218 / 288 行（单文件上限 600） | ✅ |
+| `DiagnosticLogSink.kt` / 测试 | 218 / 345 行（单文件上限 600；W56 订正：旧写 288 对不上任何一版） | ✅ |
 | `ContextCompressor.kt`（注释 +1） | 363 行 < 400；core-context 模块 1535 < 1650 | ✅ |
 | `core-kernel` / `GenerationRound.kt` / `LINE_CAPS` | 零改动 | ✅ |
 
@@ -72,7 +72,7 @@
 | G3 守卫自测 | `30/30 PASS（354s）`（VAC-G1b / VAC-G21 自证 PASS） | ✅ | `evidence/raw/w55/g3_selftest.txt` |
 | G4 全量单测 | `tests=904 failures=0 errors=0 skipped=0`（14 模块） | ✅ | `evidence/raw/w55/g4_fulltest.txt` |
 | 落盘形态机械自检 | `提取 18 条整行形态，MAX_DIGEST_CHARS=160` / `OK 7 条必落盘样本全命中，11 条反向哨兵全拦下`，rc=0 | ✅ | 主理人实跑（脚本 `scripts/w55-probe-form-sync.sh`） |
-| 脱敏门禁 | 三路全树 0 命中；新增文本 / 截图脱敏复核；`deviceLogTail` 30 行探针形态外以机械自检口径核对 | ✅ | `evidence/raw/w55/deviceLogTail.txt` |
+| 脱敏门禁 | 三路全树 0 命中；新增文本 / 截图脱敏复核；30 行固定形态探针形态外 0（W56 订正：24 行 W54 留存 + 6 行 W55 新增，已补时间窗头注 + 末尾自检行） | ✅ | `evidence/raw/w55/deviceLogTail.txt`；门禁原始输出依据为本环境 selftest，未单独入仓（脱敏门禁老号挂账，显式声明） |
 
 > 执行纪律：G2 曾因两个进程并发写同一文件被截断，已按写隔离冻结重复进程、串行重跑一次取干净输出（rc=0）。
 
@@ -98,17 +98,18 @@
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote 保持干净。
 
-**实际 2 提交**：① 内容 `8307c7ec4e49a5d56ef13299b9026f5d44ce2990`；② 台账符号自检判红修复 `c8e38fd58f6a3f7805f7d2c3daafdf51c9219a9e`（最终 tip）。
+**实际 3 提交**（W56 波内按 atom / patch / Actions 三方交叉订正）：① 内容 `8307c7ec4e49a5d56ef13299b9026f5d44ce2990`；② 台账符号自检判红修复 `c8e38fd58f6a3f7805f7d2c3daafdf51c9219a9e`；③ 纯文档回填 `19e4aa5f426d4ad444393ec8d5e2273cd499089d`（**最终 tip**，按 W50 降级口径不计入交付判据、但计入提交实态）。
 
 | 提交 | run | workflow | status | conclusion | updated_at |
 |---|---|---|---|---|---|
 | ① `8307c7e` | `45561430401` | Build | completed | **success** | 2026-11-25T06:35:17Z |
 | ① `8307c7e` | `45561430501` | Secret scan | completed | **failure** | 2026-11-25T06:33:22Z |
-| ② `c8e38fd`（最终 tip） | `45562594649` | Secret scan | completed | **success** | 2026-11-25T06:42:48Z |
+| ② `c8e38fd` | `45562594649` | Secret scan | completed | **success** | 2026-11-25T06:42:48Z |
+| ③ `19e4aa5f`（最终 tip） | `45563018742` | Secret scan | completed | **success** | 2026-11-25T06:46:14Z |
 
 **判红如实给号**：① 的 Secret `45561430501` FAILURE —— 台账符号自检把 W55 注记里 `` `deviceLogTail` ``（同行含「必红」锚点）误判为测试方法名 ⇒ rc=1；修复为「设备侧日志探针」后 ② Secret `45562594649` success。② 纯文档，Build 按 `docs/**` paths-ignore 未触发（显式声明）；代码字节自 ① 未变、Build 绿继承。
 
-**交付判据**：最后代码提交 `8307c7e` Build 绿 + 最终 tip `c8e38fd` Secret 绿。链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45561430401`（Build）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45562594649`（Secret）。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
+**交付判据**（W56 订正）：最后代码提交 `8307c7e` Build 绿（`45561430401`）+ ① 的 Secret 判红-修复链如实给号（`45561430501` FAILURE → ② `45562594649` success）+ 最终 tip `19e4aa5f` Secret 绿（`45563018742`）。链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45561430401`（Build）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45562594649`（Secret）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45563018742`（Secret）。③ 为纯文档回填提交，按 W50 降级口径不计入交付判据但计入提交实态（旧文本「本节回填不新建提交」自指已删）。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
 ---
 
