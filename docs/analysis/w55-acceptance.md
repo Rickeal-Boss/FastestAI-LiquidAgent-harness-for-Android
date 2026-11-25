@@ -98,7 +98,17 @@
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote 保持干净。
 
-> 本节待最终推送后回填：最后代码提交双 run 四字段 + 最终 tip Secret 四字段 + run 链接。
+**实际 2 提交**：① 内容 `8307c7ec4e49a5d56ef13299b9026f5d44ce2990`；② 台账符号自检判红修复 `c8e38fd58f6a3f7805f7d2c3daafdf51c9219a9e`（最终 tip）。
+
+| 提交 | run | workflow | status | conclusion | updated_at |
+|---|---|---|---|---|---|
+| ① `8307c7e` | `45561430401` | Build | completed | **success** | 2026-11-25T06:35:17Z |
+| ① `8307c7e` | `45561430501` | Secret scan | completed | **failure** | 2026-11-25T06:33:22Z |
+| ② `c8e38fd`（最终 tip） | `45562594649` | Secret scan | completed | **success** | 2026-11-25T06:42:48Z |
+
+**判红如实给号**：① 的 Secret `45561430501` FAILURE —— 台账符号自检把 W55 注记里 `` `deviceLogTail` ``（同行含「必红」锚点）误判为测试方法名 ⇒ rc=1；修复为「设备侧日志探针」后 ② Secret `45562594649` success。② 纯文档，Build 按 `docs/**` paths-ignore 未触发（显式声明）；代码字节自 ① 未变、Build 绿继承。
+
+**交付判据**：最后代码提交 `8307c7e` Build 绿 + 最终 tip `c8e38fd` Secret 绿。链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45561430401`（Build）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45562594649`（Secret）。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
 ---
 

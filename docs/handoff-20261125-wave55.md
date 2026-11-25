@@ -69,7 +69,21 @@ N-1「键不同一、误拒仍在」主张——**不采纳**：现役白名单�
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
 
-> 本节待最终推送后回填：实际提交数、双 run 四字段、最终 tip run、链接。
+**实际 2 提交**：① 内容提交 `8307c7ec4e49a5d56ef13299b9026f5d44ce2990`；② 台账符号自检判红修复 `c8e38fd58f6a3f7805f7d2c3daafdf51c9219a9e`（最终 tip）。
+
+| 提交 | run | workflow | status | conclusion | updated_at |
+|---|---|---|---|---|---|
+| ① `8307c7e` | `45561430401` | Build | completed | **success** | 2026-11-25T06:35:17Z |
+| ① `8307c7e` | `45561430501` | Secret scan | completed | **failure** | 2026-11-25T06:33:22Z |
+| ② `c8e38fd`（最终 tip） | `45562594649` | Secret scan | completed | **success** | 2026-11-25T06:42:48Z |
+
+**判红如实给号 + 根因**：① 的 Secret scan `45561430501` FAILURE —— 台账符号指路自检 `w46-ledger-symbol-check` 把两条 W55 行内注记里带反引号的 `deviceLogTail`（同行含「必红/用例」锚点）误判为测试方法名、全树 `*.kt` grep 不到 ⇒ rc=1；按「不为判据误报加 allowlist、改真值源文本」纪律把两处改为「设备侧日志探针」，修复提交 ② 的 Secret scan `45562594649` success。② 为纯台账文档修复，Build 按 `docs/**` paths-ignore 未触发（既定口径，显式声明）；代码字节自 ① 后未变，Build 绿可继承。
+
+**交付判据 = 最终 tip `c8e38fd` Secret 绿 + 最后代码提交 `8307c7e` Build 绿**：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45562594649`（Secret success）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45561430401`（Build success）。
+
+本节回填（CI 四字段入档）本身为纯文档改动、不新建提交；按 W50 降级口径其触发的 Secret run 只声明存在、不逐条列号、不作交付判据（显式声明，非漏记）。
+
+本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。PAT 仅 URL inline 一次性使用、remote 已恢复干净、无凭据落盘。
 
 ## 七、明确未做（逐条带中文段位）
 
