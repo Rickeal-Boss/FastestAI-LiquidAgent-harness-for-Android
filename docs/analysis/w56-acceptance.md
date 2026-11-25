@@ -1,7 +1,7 @@
 # W56 验收物 — 收尾契约/机械自检订正 + 多模型真机矩阵
 
 > 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`）。
-> 基线 = W55 最终 tip `19e4aa5f426d4ad444393ec8d5e2273cd499089d`；本波代码提交 `bde9054cc77e1c7ab1536eb3baad67fa05fe568a`。
+> 基线 = W55 最终 tip `19e4aa5f426d4ad444393ec8d5e2273cd499089d`；本波代码提交 `bde9054cc77e1c7ab1536eb3baad67fa05fe568a`、最终 tip `ab02d9b8fe79c939bb07d401d439bef808a0ba8b`（纯文档回填）。
 > 判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；「未触发」≠「已验证通过」；推断带 caveat、不写成事实。本验收物不写复合挂账号，段位用中文描述。
 > 挂账守恒 216 行 / 39 `CLOSED` / 166 `OPEN` / 11 `CARRIED`（逐值相等）。两数只写在派单卡抬头一份。
 
@@ -113,14 +113,15 @@
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote 保持干净。
 
-**代码提交 1 条**：`bde9054cc77e1c7ab1536eb3baad67fa05fe568a`（本波唯一提交）。
+**实际 2 提交 + 5 条运行记录**（按 atom 实取）：① 代码提交 `bde9054cc77e1c7ab1536eb3baad67fa05fe568a`；② 纯文档回填 `ab02d9b8fe79c939bb07d401d439bef808a0ba8b`（**最终 tip**，按既有降级口径不计入交付判据、但计入提交实态）。
 
 | 提交 | run | workflow | status | conclusion | updated_at |
 |---|---|---|---|---|---|
-| `bde9054` | `45614820018` | Secret scan | completed | **success** | 2026-11-25T12:33:25Z |
-| `bde9054` | `45614820314` | Build | completed | **success** | 2026-11-25T12:34:12Z |
+| ① `bde9054` | `45614820018` | Secret scan | completed | **success** | 2026-11-25T12:33:25Z |
+| ① `bde9054` | `45614820314` | Build | completed | **success** | 2026-11-25T12:34:12Z |
+| ② `ab02d9b`（最终 tip） | `45615559262` | Secret scan | completed | **success** | 2026-11-25T12:37:54Z |
 
-**交付判据**：最后代码提交 `bde9054` 双 run 全绿（Build `45614820314` + Secret `45614820018`），公开 API 四字段实取。链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820314`（Build）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820018`（Secret）。本验收物与 W56 交接为回填提交，按既有降级口径其触发的 Secret run 只作事实记录、不作交付判据。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
+② 的 Build 按 `docs/**` paths-ignore 未触发（既定口径，显式声明）；代码字节自 ① 后未变，Build 绿继承。**交付判据 = 最后代码提交 `bde9054` 双 run 全绿**（Build `45614820314` + Secret `45614820018`），公开 API 四字段实取。链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820314`（Build）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820018`（Secret）。② 的 run `45615559262` 只作事实记录、不作交付判据（显式声明，非漏记）。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
 ---
 
@@ -144,7 +145,7 @@
 | 段位 | 触发信号 | 缓解动作 | 本波状态 |
 |---|---|---|---|
 | 落盘最小化老号 | 任一生产写点改形状 / 正则被注释而 `PROBE_FORMS` 未同步 | 机械自检升级为现场渲染 + 三条变异必红；删/注释正则即判红 | OPEN，行内注记 |
-| 收尾契约老号 | 外审按最终 tip 复核运行四字段 / 自指句 | 3 提交 + 4 run 实态订正、判据锚改最后代码提交 + 判红链 + 最终 tip | OPEN，行内注记 |
+| 收尾契约老号 | 外审按最终 tip 复核运行四字段 / 自指句 | W55 3 提交 + 4 run、W56 2 提交 + 5 run 按实态订正；判据锚改最后代码提交 + 判红链 + 最终 tip | OPEN，行内注记 |
 | 压缩量纲老号 | 压缩后仍熔断 / 自动压缩长期只 noop | 本波真机 applied 坐实会话级；触发线档位化等余项等用户单点开波 | OPEN，行内注记 |
 | 安全收口老号 | 真实外部 MCP + 明文解禁 / G19 恒 vacuous / `allowPrivateNetwork` MCP 正向 / 双 workflow gitleaks 归因 | 本波回源厘清正向开关两面；FAILURE_DIGEST 样本扩张转后续载体；MCP token Keystore 等待开波 | OPEN，行内注记 |
 | 台账纪律老号 | 文档声明数与实测哈希不符 / 同批 P1 漏登记 / 冻结书替用户裁决 | 行数账实 288→345、9→11/10 处；冻结书不代落笔、转触发信号 | OPEN，行内注记 |
