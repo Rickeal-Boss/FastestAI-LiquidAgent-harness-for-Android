@@ -1,7 +1,7 @@
 # W56 交接 — 收尾契约/机械自检订正 + 多模型真机矩阵
 
 > 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`）。
-> 基线 `19e4aa5f426d4ad444393ec8d5e2273cd499089d`（W55 最终 tip）；本波代码提交 `bde9054cc77e1c7ab1536eb3baad67fa05fe568a`、最终 tip `ab02d9b8fe79c939bb07d401d439bef808a0ba8b`（纯文档回填）；台账权威版 = `docs/06-deferred-ledger.md`；
+> 基线 `19e4aa5f426d4ad444393ec8d5e2273cd499089d`（W55 最终 tip）；本波代码提交 `bde9054cc77e1c7ab1536eb3baad67fa05fe568a`；**最终 tip 以 atom 实取为准**（详见 §六自洽口径），纯文档回填提交不计入交付判据；台账权威版 = `docs/06-deferred-ledger.md`；
 > 本波验收物 = `docs/analysis/w56-acceptance.md`；派单卡 = `docs/w56-dispatch.md`；判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；
 > 「未触发」≠「已验证通过」；推断带 caveat、不写成事实。本交接不写复合挂账号，段位用中文描述。
 
@@ -74,15 +74,16 @@ W55 收尾契约第 12 次重犯（3 提交写成 2 提交、最终 tip 指错�
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
 
-**实际 2 提交 + 5 条运行记录**（按 atom 实取）：① 代码提交 `bde9054cc77e1c7ab1536eb3baad67fa05fe568a`；② 纯文档回填 `ab02d9b8fe79c939bb07d401d439bef808a0ba8b`（**最终 tip**，按既有降级口径不计入交付判据、但计入提交实态）。
+**提交实态（自洽口径，不再随文档回填递归）**：唯一代码提交 `bde9054cc77e1c7ab1536eb3baad67fa05fe568a`；其后 `ab02d9b`（交接与验收物回填）、`5990e6b`（实态订正）为**纯文档回填提交**，按既有降级口径不计入交付判据、但计入提交实态。**最终 tip 不再在本文档硬写 sha，以 atom 实取为准**；若本文件之后仍有纯文档回填，其最终 tip 与触发的 Secret run 只声明存在、不逐条列号、不作交付判据（W50 口径）。
 
 | 提交 | run | workflow | status | conclusion | updated_at |
 |---|---|---|---|---|---|
-| ① `bde9054` | `45614820314` | Build | completed | **success** | 2026-11-25T12:34:12Z |
-| ① `bde9054` | `45614820018` | Secret scan | completed | **success** | 2026-11-25T12:33:25Z |
-| ② `ab02d9b`（最终 tip） | `45615559262` | Secret scan | completed | **success** | 2026-11-25T12:37:54Z |
+| 代码 `bde9054` | `45614820314` | Build | completed | **success** | 2026-11-25T12:34:12Z |
+| 代码 `bde9054` | `45614820018` | Secret scan | completed | **success** | 2026-11-25T12:33:25Z |
+| 回填 `ab02d9b` | `45615559262` | Secret scan | completed | **success** | 2026-11-25T12:37:54Z |
+| 回填 `5990e6b` | `45616128316` | Secret scan | completed | **success** | 2026-11-25T12:41:25Z |
 
-② 的 Build 按 `docs/**` paths-ignore 未触发（既定口径，显式声明）；代码字节自 ① 后未变，Build 绿继承。**交付判据 = 最后代码提交 `bde9054` 双 run 全绿**：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820314`（Build success）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820018`（Secret success）。② 为纯文档回填提交，其 run `45615559262` 只作事实记录、不作交付判据（显式声明，非漏记）。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
+回填提交的 Build 按 `docs/**` paths-ignore 未触发（既定口径，显式声明）；代码字节自 `bde9054` 后未变，Build 绿继承。**交付判据 = 唯一代码提交 `bde9054` 双 run 全绿**：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820314`（Build success）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820018`（Secret success）。回填提交的运行号逐号给出只作事实记录、不作交付判据（显式声明，非漏记）。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
 ## 七、明确未做（逐条带中文段位）
 
