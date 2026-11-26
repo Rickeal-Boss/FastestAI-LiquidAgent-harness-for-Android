@@ -68,9 +68,16 @@ W57 破了零改动循环（A2 凭据脱敏 + 脚本全库化 + 真机矩阵）�
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
 
-**本波计数（自洽口径）**：本波提交数 / run 数与逐号 run 待推送后由 atom / Actions 实取；本文档不硬写最终 tip sha。**最终 tip 以 atom 实取为准**；交付判据 = 本波唯一含判据/证据改动的提交双 run 全绿，纯文档回填提交不计判据、计入提交实态。不为补链新建第 3 提交。
+**本波计数（自洽口径）**：W58 全波 2 提交（① 代码/证据/文档主体 `1e922fd` + ② 本回填提交）/ 3 条 run 全绿。① 含判据加固 + KDoc + 25 件证据 + 三份核心文档 + 台账订正，双 run 全绿 ⇒ 交付判据锚此提交；② 纯文档回填触发 Secret、Build 按 `docs/**` 未触发。**最终 tip 以 atom 实取为准**；本文档不硬写终态 tip，回填提交不计判据、计入提交实态，不为补链新建第 3 提交。
 
-> run 四字段表待推送后补齐（head_sha / status / conclusion / updated_at）。`head_sha` 过滤对新 push 偶有 0 结果延迟、WebFetch 15 分钟缓存会返回旧快照，四字段以 curl 直连实时数据为准。本地四闸门不代替 CI。
+| 提交 | run | workflow | status | conclusion | updated_at |
+|---|---|---|---|---|---|
+| ① `1e922fd` | `45819327763` | Build | completed | **success** | 2026-11-26T12:25:42Z |
+| ① `1e922fd` | `45819327696` | Secret scan | completed | **success** | 2026-11-26T12:24:42Z |
+| ② 回填 | — | Build | 未触发（`docs/**` paths-ignore） | — | — |
+| ② 回填 | 由 atom/Actions 实取 | Secret scan | 事实记录 | — | — |
+
+**交付判据 = 提交 `1e922fd` 双 run 全绿**：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45819327763`（Build success）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45819327696`（Secret success）。两 run 均 event=push、head_sha=`1e922fdc0e9d…`。`head_sha` 过滤对新 push 偶有 0 结果延迟、WebFetch 15 分钟缓存会返回旧快照，四字段以 curl 直连实时数据为准。本地四闸门不代替 CI。
 
 ## 七、明确未做（逐条带中文段位）
 
@@ -82,7 +89,7 @@ A2 运行时行为级用例 + 真机复测（凭据白名单段位，设备装�
 
 ## 九、交给外部审查团队的制品 + 边界声明
 
-**制品**：本交接、验收物、派单卡、台账（`### W58 段` + 5 条老号行内注记）、W57 三份文档订正、`scripts/w55-probe-form-sync.sh` 加固 diff、`ManualCompress.kt` KDoc diff、**入仓证据 `evidence/raw/w57/` 25 件**（逐件见 `MANIFEST.txt`）。三份核心 W58 文档由回填提交加入、按最终 tip（atom 实取）取全树。
+**制品**：本交接、验收物、派单卡、台账（`### W58 段` + 5 条老号行内注记）、W57 三份文档订正、`scripts/w55-probe-form-sync.sh` 加固 diff、`ManualCompress.kt` KDoc diff、**入仓证据 `evidence/raw/w57/` 25 件**（逐件见 `MANIFEST.txt`）。三份核心 W58 文档已随提交 `1e922fd` 加入（交付判据提交自带完整制品）、按最终 tip（atom 实取）取全树。
 
 **不含**：会话历史 / 凭据（含 key 文件全文、设备侧加密 key）/ 未打码账号字段 / 端点完整 URL / 设备序列号 / SSID / 本机路径 / 用户私人图片 / 整段 logcat /「建议下一链做什么」。截图均已脱敏。
 
