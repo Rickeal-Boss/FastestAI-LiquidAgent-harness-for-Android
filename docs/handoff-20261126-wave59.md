@@ -89,16 +89,18 @@ W58 把 W57 证据补入仓，但外审按 `MANIFEST.txt` 逐件复核时 7/25 �
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
 
-**本波计数（自洽口径）**：W59 全波 2 提交（① 代码/证据/文档主体 + ② 本回填提交）/ 待 CI 实取后逐号补录。① 含判据加固 + MANIFEST 修复 + w59 证据 + 三份核心文档 + 台账订正，双 run 全绿 ⇒ 交付判据锚此提交；② 纯文档回填触发 Secret、Build 按 `docs/**` 未触发。**最终 tip 以 atom 实取为准**；本文档不硬写终态 tip，回填提交不计判据、计入提交实态，不为补链新建第 3 提交。
+**本波计数（自洽口径）**：W59 全波 **2 提交 / 3 条 run**（① 代码/证据/文档主体 `95ed5f9` 双 run 全绿 + ② 本回填提交 Secret run）。① 含判据加固 + MANIFEST 修复 + w59 证据 + 三份核心文档 + 台账订正，双 run 全绿 ⇒ 交付判据锚此提交；② 纯文档回填触发 Secret、Build 按 `docs/**` 未触发。**最终 tip 以 atom 实取为准**；本文档不硬写终态 tip，回填提交不计判据、计入提交实态，不为补链新建第 3 提交。
 
 | 提交 | run | workflow | status | conclusion | updated_at |
 |---|---|---|---|---|---|
-| ① 主体 | 待实取 | Build | — | — | — |
-| ① 主体 | 待实取 | Secret scan | — | — | — |
+| ① `95ed5f9` | `45859584380` | Build | completed | **success** | 2026-11-26T16:32:49Z |
+| ① `95ed5f9` | `45859584293` | Secret scan | completed | **success** | 2026-11-26T16:32:09Z |
 | ② 回填 | — | Build | 未触发（`docs/**` paths-ignore） | — | — |
-| ② 回填 | 待实取 | Secret scan | — | — | — |
+| ② 回填 | 由外审按 head_sha 实取 | Secret scan | 事实记录 | — | — |
 
-**交付判据 = ① 主体提交双 run 全绿**（run 号以回填提交写入的实取值为准）。`head_sha` 过滤对新 push 偶有 0 结果延迟、WebFetch 15 分钟缓存会返回旧快照，四字段以 curl 直连实时数据为准。本地四闸门不代替 CI。
+> ② 回填提交的 Secret run 号按「不为补链新建第 3 提交」口径不回填进文档，由 Actions 公开 API 按 `head_sha` 实取；W58 的同型缺口（`45820023681`）已在 W59 三处补齐。
+
+**交付判据 = ① 主体提交 `95ed5f9` 双 run 全绿**：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45859584380`（Build success）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45859584293`（Secret success），两 run 均 event=push、`head_sha=95ed5f9…`。`head_sha` 过滤对新 push 偶有 0 结果延迟、WebFetch 15 分钟缓存会返回旧快照，四字段以 curl 直连实时数据为准。本地四闸门不代替 CI。
 
 ## 七、明确未做（逐条带中文段位）
 

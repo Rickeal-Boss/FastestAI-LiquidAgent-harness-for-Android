@@ -81,14 +81,16 @@
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote 保持干净、无凭据落盘。
 
-**本波计数：W59 全波 2 提交（① 主体 + ② 本回填提交）/ run 号见回填后实取表**。① 含判据加固 + MANIFEST 修复 + w59 证据 + 三份核心文档 + 台账订正，双 run 全绿 ⇒ 交付判据锚此提交；② 纯文档回填触发 Secret、Build 按 `docs/**` paths-ignore 未触发。**最终 tip 以 atom 实取为准**，回填提交不计判据、计入提交实态，不为补链新建第 3 提交。
+**本波计数：W59 全波 2 提交 / 3 条 run（① 主体 `95ed5f9` 双 run 全绿 + ② 本回填提交 Secret run）**。① 含判据加固 + MANIFEST 修复 + w59 证据 + 三份核心文档 + 台账订正，双 run 全绿 ⇒ 交付判据锚此提交；② 纯文档回填触发 Secret、Build 按 `docs/**` paths-ignore 未触发。**最终 tip 以 atom 实取为准**，回填提交不计判据、计入提交实态，不为补链新建第 3 提交。
 
 | 提交 | run | workflow | status | conclusion | updated_at |
 |---|---|---|---|---|---|
-| ① 主体 | 待实取 | Build | — | — | — |
-| ① 主体 | 待实取 | Secret scan | — | — | — |
+| ① `95ed5f9` | `45859584380` | Build | completed | **success** | 2026-11-26T16:32:49Z |
+| ① `95ed5f9` | `45859584293` | Secret scan | completed | **success** | 2026-11-26T16:32:09Z |
 | ② 回填 | — | Build | 未触发（`docs/**` paths-ignore） | — | — |
-| ② 回填 | 待实取 | Secret scan | — | — | — |
+| ② 回填 | 由外审按 head_sha 实取 | Secret scan | 事实记录 | — | — |
+
+> ② 回填 run 号按「不为补链新建第 3 提交」口径不回填，由公开 API 按 `head_sha` 实取。
 
 **交付判据 = ① 主体提交双 run 全绿**；run 号以回填提交写入的实取值为准，`head_sha` 与提交一致。
 
