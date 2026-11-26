@@ -1,21 +1,24 @@
 W57 证据入仓 MANIFEST（W58 evidence-dev 补录；仓内 evidence/raw/w57/）
-核对口径：sha256 为入仓制品现场实算；内容摘要<=40字；四态按 judgment-criteria.md §4。
+核对口径（W59 订正）：主列 sha256 = git 入仓字节（blob、LF 行尾）现场实算，外审 checkout 后逐件可复核；
+7 件 .txt 生成时为 Windows 工作树 CRLF 行尾，经 .gitattributes(*.txt text eol=lf) 归一为 LF 入仓，
+W58 首版 MANIFEST 误把生成态 CRLF 工作树哈希当入仓哈希 ⇒ 外审 7 件判红（W59 P0 根因：行尾归一、非源/脱敏口径混淆）。
+生成态源哈希保留于备注4（CRLF 字节口径），双列并存、出处分明。内容摘要<=40字；四态按 judgment-criteria.md §4。
 证据源：CI=.w57_ci_tmp（10 日志）；设备=.w57_device_tmp（PNG）+ run-as 现场 grep（agent-0.log）。
 写域声明：仅 evidence/raw/w57/ 与仓外 .w58_evidence_tmp/；未触碰其它仓内文件。
 
 序号 | 文件名 | sha256 | 内容摘要 | 脱敏处理 | 四态判据
 ---- | ------ | ------ | -------- | -------- | -------
-01 | deviceLogTail.txt | 51c451720617b749da202e2e4c95b1a9858c2b4e510b2a1426bc0f9203e1d983 | 设备原始探针8行：本波5+历史3，含压缩账行501→277 | 无凭据/端点/账号；历史行按日期标注 | ✅ 内核每轮压缩账行本波命中（⛔vacuous→✅）；历史对照⛔不作本波
-02 | g1_build.txt | 98c683ecebfbf4310a3c166b4c86651cc6a8b93753fe5497f68694bf1df6371a | 本地 assembleDebug 构建输出与结果 | 路径4处→<workspace>，代理1处→<proxy>，复扫零残留 | ✅ 构建通过
-03 | g1_det_build1.txt | c13180e01a51cb79269d504757bd26eaa653454c53268cbf2b06cc0739029d98 | 独立构建 run1 输出（与 run2 任务序不同） | 路径4处→<workspace>，代理1处→<proxy>，复扫零残留 | ✅ 双 run 之一通过
-04 | g1_det_build2.txt | 94aab80eff946f4b8325997d0317a0655b7d5ffc8ca7ff4067fb428ebf69fcbf | 独立构建 run2 输出（与 run1 任务序不同） | 路径4处→<workspace>，代理1处→<proxy>，复扫零残留 | ✅ 双 run 之二通过
+01 | deviceLogTail.txt | 6a3a9ffd332ac9486dc026533423026abc9448135060810d893dbe057ce0e2c3 | 设备原始探针8行+历史3+缺位标注：压缩账行501→277；PONG/404 探针缺位（W59 标注） | 无凭据/端点/账号；历史行按日期标注 | ✅ 内核每轮压缩账行本波命中（⛔vacuous→✅）；历史对照⛔不作本波
+02 | g1_build.txt | 9f6e38808f493a7842a6570d21d2a5f845cb5216c5d11629109c904853d95ddb | 本地 assembleDebug 构建输出与结果 | 路径4处→<workspace>，代理1处→<proxy>，复扫零残留；源哈希(生成态CRLF字节)=98c683ecebfb…全值见备注4 | ✅ 构建通过
+03 | g1_det_build1.txt | 382dba80cb4a617b5fc8fb1ebf09f27027ca488a852a6c43bafe2564d3dd9bcf | 独立构建 run1 输出（与 run2 任务序不同） | 路径4处→<workspace>，代理1处→<proxy>，复扫零残留；源哈希(生成态CRLF字节)=c13180e01a51…全值见备注4 | ✅ 双 run 之一通过
+04 | g1_det_build2.txt | 3af7873a79abced346c3a7673e194f377ce5a28c064caf9827d715d30012a10e | 独立构建 run2 输出（与 run1 任务序不同） | 路径4处→<workspace>，代理1处→<proxy>，复扫零残留；源哈希(生成态CRLF字节)=94aab80eff94…全值见备注4 | ✅ 双 run 之二通过
 05 | g1_deterministic_build.txt | 5c61ac252085329627a1e391e0e871000ba6ab5d2231cf479590c048ef58ecfa | 双哈希补录：APK全哈希实测+旧包对照 | 无key/账号/序列号/端点；回报截断值如实标注 | ✅ 当前包双哈希可复核；第1轮/旧包 ⚠️ 部分
 06 | g2_arch_guard.txt | 6a8336feeb14ee45202e9ebda6be32cb0df09b25653b4359c89d3abc9bc9a62a | 模块边界/架构守卫扫描输出 | 仓根路径1处→<workspace>，复扫零残留 | ✅ 架构守卫通过
 07 | g3_selftest.txt | 6c50e9211e27cf9fca4a463ae2d31591dca825205e0cbc023218f235a9f9d7b9 | 28 个变异自证 case 批量自检输出 | 仓根→<workspace>，混合分隔符私人临时路径→<private-temp>，复扫零残留 | ✅ 变异自证 case 全通过
-08 | g4_fulltest.txt | ed63f658bef3fb35fd32012a23df2394508e2dcc3dbed21d1ff564e2bea4e63b | 全量单元测试 run1 输出 | 源无敏感模式，未改写；复扫零残留 | ✅ 全量测试 run1 通过
-09 | g4_fulltest_rerun.txt | 34bb40593901a3d5a68cc1c5a66d56b8b923d50697dc902b402e39e5e89bfe6e | 全量单元测试 run2 复跑输出 | 源无敏感模式，未改写；复扫零残留 | ✅ 全量测试 run2 通过
-10 | g5_probe.txt | cd3fa4e42f26476749acbdcb427faa93036a51397564035ef0eab4f56bf2e80b | PROBE_FORMS 锚点/认领/反向哨兵同步输出 | 源无敏感模式，未改写；复扫零残留 | ✅ 形态同步与反向哨兵全通过
-11 | g6_ledger.txt | 0d93db54a86c044d70972886aeaeee8813e569350eb50f01aeb7f819e64bc48d | 台账反引号测试符号可解析性检查输出 | 源无敏感模式，未改写；复扫零残留 | ✅ 台账符号全部可解析
+08 | g4_fulltest.txt | c247486defdaefeedbb265788f4922cf5af47ba935415b6359f7ff2af0ab147f | 全量单元测试 run1 输出 | 源无敏感模式，未改写；复扫零残留；源哈希(生成态CRLF字节)=ed63f658bef3…全值见备注4 | ✅ 全量测试 run1 通过
+09 | g4_fulltest_rerun.txt | d0221258fcb2ea4dfc4ba58ec0544f14f8ead5814252e762343c00e0486bc28f | 全量单元测试 run2 复跑输出 | 源无敏感模式，未改写；复扫零残留；源哈希(生成态CRLF字节)=34bb40593901…全值见备注4 | ✅ 全量测试 run2 通过
+10 | g5_probe.txt | 5b69cd4c4d867f6059d5d11dadfae687ce684841353652020e788e3dc91e23ec | PROBE_FORMS 锚点/认领/反向哨兵同步输出 | 源无敏感模式，未改写；复扫零残留；源哈希(生成态CRLF字节)=cd3fa4e42f26…全值见备注4 | ✅ 形态同步与反向哨兵全通过
+11 | g6_ledger.txt | 11364e7d08c1ac18418cd06ba93a0675ac125c79f0be3d47b948ef6c5e04e4ef | 台账反引号测试符号可解析性检查输出 | 源无敏感模式，未改写；复扫零残留；源哈希(生成态CRLF字节)=0d93db54a86c…全值见备注4 | ✅ 台账符号全部可解析
 12 | g7_secretgate.txt | 6c2484292368c4e6f1789aff1a0f98390f6c1a34489d5502d33ad78a8946c821 | tracked/untracked/ignored 三路秘密扫描输出 | 源无敏感模式，未改写；复扫零残留 | ✅ 三路零命中
 13 | png_nano_final.png | ded260ee33e463f31ec43a01e5063d658ff7dde37651c51be387107bcd6868f7 | NV Nano Omni 回声 PONG-W57-NANOOOMNI | 目视无敏感字段，原样复制 | ✅ Nano Omni 供应商回声
 14 | png_supervl_final.png | 9c51c5c8a60505d812ee9a2b86db1ee44641033eca4f8b344de2519e64bf8b65 | NV SuperVL 回声 PONG-W57-NORTH/SUPERVL | 目视无敏感字段，原样复制 | ✅ SuperVL 供应商回声
@@ -26,7 +29,7 @@ W57 证据入仓 MANIFEST（W58 evidence-dev 补录；仓内 evidence/raw/w57/�
 19 | png_file_write_approval.png | 56c0fa749817a3260d1c4762b5913985a4095d0b8cc89dd415df44f7fe5c52f9 | 写文件请求与等待响应状态 | 目视无敏感字段，原样复制 | ⚠️ 部分：未见明确允许/拒绝审批卡片
 20 | png_file_write_done.png | c248eb8b07dca8141fdec81249b84848114c0cc8899527c0ff386a9cb9aae68f | 写入完成 W57WRITEOK→w57write.txt | 目视无敏感字段（仅沙箱相对路径），原样复制 | ✅ 工具链文件写入判据
 21 | png_skill_final.png | 133edd9426dcc3af29b76c7c965c04aee7a4f40153a7698a79c02b2a2b3e82b1 | 技能化会议纪要整理回复 | 目视无敏感字段，原样复制 | ✅ 技能调度判据
-22 | png_dots3_testconn.png | 3ddb2770888e2cd381311239b942e42e2ad99e8c721f24cb23974ccc5c90fb36 | Dots3 端点测试连接失败 HTTP 404 | Base URL 整框灰块打码（PIL，x35..1045/y635..855），二次目视确认无残字 | ✅ 免费端点 404 负例判据被行使
+22 | png_dots3_testconn.png | 28fef77f4d0918156cd978a19a5b2ee078c412455b03c728566772854b208905 | Dots3 端点测试连接失败 HTTP 404 | Base URL 整框灰块打码（PIL，x35..1045/y635..855；W59 像素复扫发现下缘残留行 y884..904，已补打码 x30..1050/y850..915），复扫暗像素=0 | ✅ 免费端点 404 负例判据被行使
 23 | png_north_result.png | ff56f110e8652a0a753744867e11e5024a4218ad551e4879ae1fe56e6c7fa12e | North Mini 请求失败 request rejected 404 | 目视无敏感字段，原样复制 | ✅ 免费端点 404 负例判据被行使
 24 | png_wake_check.png | 113f4e990364b3c6f896b9e81510a4511d0d82e7a0f45a90d065a84ac53d3aae | 唤醒后非全黑桌面，可见 LiquidHa... 图标 | 缩略预览目视无敏感字段，原样复制 | ✅ 唤醒三步法首步（screencap 非全黑）
 25 | g5_mutation_w58.txt | dbaef22cde370a40ccbc6439a58833421e507144d60df2f65743c29b77bffebd | W58两假绿变异自证K/M/C/F/G+反假绿 | 相对路径无本机绝对/凭据/账号 | ✅ K/M必红rc=1、F不过拟合rc=0、基线rc=0
@@ -48,6 +51,16 @@ png_wake_check.png: sig✓ IEND✓ verify✓ load✓ 1080x2400✓ 缩略目视�
 
 备注1：deviceLogTail 的 2026-11-21/11-24 三行是设备日志中真实存在的历史行，已明确标注为历史对照，不冒充 2026-11-26 本波。
 备注2：双哈希 34be7494… 全值已由 W58 现场 sha256sum 当前 APK 实测确认并落 g1_deterministic_build.txt；源 10 份 CI 日志与仓内 10 份脱敏文本本身仍无该串，第 1 轮产物已被覆盖、其哈希为当轮回报补录；旧包 sha256 仅 8 位截断 ec60a2e3…，全值不可复核、不编造。g1_det_build1/2 源文件 sha256 分别为 4971f48aca94… / 8b6d50ad4c48…，diff 仅 Gradle 任务输出顺序不同。
-备注3：png_dots3_testconn.png 首版打码起点 y=685 漏掉 URL 上半部（文字行 y≈660..690），已按像素定位改为 y=635 重做并二次目视确认；入仓哈希以重做后为准。
+备注3：png_dots3_testconn.png 首版打码起点 y=685 漏掉 URL 上半部（文字行 y≈660..690），已按像素定位改为 y=635 重做；W58 原注「二次目视确认无残字」经 W59 像素级复扫证伪——灰块下缘 y884..904 仍有一行模型 ID 片段残留（外审放大复视指认，W59 像素分析坐实暗像素行），已补打码至输入框底边（x30..1050/y850..915）并重算哈希、复扫暗像素=0。入仓哈希以 W59 补打码后为准。
 备注4：设备当前安装 base.apk 实测 size 与旧包相同（70,613,908）但 sha256 不同（48f4fe1c…），属更旧安装，不与旧包或本轮出包产物混同；详见 g1_deterministic_build.txt [2]。
 备注5：png_supervl_final.png 摘要含两个哨兵并非笔误——目视逐字确认题面为 `Reply with: PONG-W57-SUPERVL`，模型最终答案却同时输出 `PONG-W57-NORTH` 与 `PONG-W57-SUPERVL`（思考段写 "reply with two specific strings"）；属模型过度输出、非 app bug，SuperVL 哨兵逐字命中判据仍成立，NORTH 另格按用户确认不可用停止占格、不据此复活。
+
+备注4（W59 补，源哈希双列口径）：W58 首版 MANIFEST 的 7 件 .txt 哈希（g1_build / g1_det_build1 / g1_det_build2 / g4_fulltest / g4_fulltest_rerun / g5_probe / g6_ledger）实为生成时 Windows 工作树 CRLF 字节实算值；入仓时 .gitattributes 将 *.txt 归一为 LF，故按入仓字节复核 7 件不符。W59 主列全部改按 git blob（LF）实算，生成态源哈希全值留存于此：
+  g1_build.txt 源哈希(CRLF)=98c683ecebfbf4310a3c166b4c86651cc6a8b93753fe5497f68694bf1df6371a
+  g1_det_build1.txt 源哈希(CRLF)=c13180e01a51cb79269d504757bd26eaa653454c53268cbf2b06cc0739029d98
+  g1_det_build2.txt 源哈希(CRLF)=94aab80eff946f4b8325997d0317a0655b7d5ffc8ca7ff4067fb428ebf69fcbf
+  g4_fulltest.txt 源哈希(CRLF)=ed63f658bef3fb35fd32012a23df2394508e2dcc3dbed21d1ff564e2bea4e63b
+  g4_fulltest_rerun.txt 源哈希(CRLF)=34bb40593901a3d5a68cc1c5a66d56b8b923d50697dc902b402e39e5e89bfe6e
+  g5_probe.txt 源哈希(CRLF)=cd3fa4e42f26476749acbdcb427faa93036e51397564035ef0eab4f56bf2e80b
+  g6_ledger.txt 源哈希(CRLF)=0d93db54a86c044d70972886aeaeee8813e569350eb50f01aeb7f819e64bc48d
+两列口径并存：主列=入仓字节（复核用）、备注4=生成态字节（溯源用）；不编造、不删源记录。W59 已把本目录全部 .txt 归一为 LF（与 .gitattributes `*.txt text eol=lf` 一致），故现工作树字节 = 入仓 blob 字节，跨平台 checkout 可逐件复核；备注4 的 CRLF 值为 W58 生成态（加头注前）历史记录，仅溯源、不再对应现文件。

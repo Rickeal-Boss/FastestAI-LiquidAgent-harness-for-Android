@@ -1,0 +1,33 @@
+W59 证据 MANIFEST（仓内 evidence/raw/w59/；入仓字节现场实算）
+核对口径：sha256 = 本目录入仓文件字节（git blob，*.txt eol=lf 归一后 = 工作树字节）；外审 checkout 后逐件可复核。
+清单：21 制品 + 1 MANIFEST = 22 文件。
+写域声明：仅 evidence/raw/w59/ 与仓外 .w59_tmp/；未触碰生产 .kt。
+
+序号 | 文件名 | sha256 | 内容摘要 | 来源 | 四态判据
+---- | ------ | ------ | -------- | ---- | --------
+01 | deviceLogTail_w59.txt | b1835dc7d9a1863ad8df81140ea46559abcfc43b5e1b87afd03d0d9898197b25 | 设备侧 agent 日志本波 40 行 + 落盘复核 | 真机矩阵 | ⚠️ 回声/工具/skill ✅；压缩 noop 如实标注
+02 | g1_build_w59.txt | 82be8b02c085fdf0ee33a6ed5842af380f011ed5f34c4f8d83e224ea205f38cf | 本地 assembleDebug 构建输出（本波零 .kt 改动，脚本/文档改动不影响编译产物） | 本波闸 1 | ✅ rc=0 BUILD SUCCESSFUL
+03 | g2_arch_guard_w59.txt | 473805cbba2327f34227ad18a87cb0713f56b268a9ebfd3f83ab079c34e5d4af | 架构守卫输出 | 本波闸 2 | ✅ result=PASS ok=27 vacuous=1 violation=0
+04 | g3_selftest_w59.txt | 0b47cf1ada15c84ab7c0a56b26d50aa50845eda6d9fbf2390a41f1f1f8b887f6 | 守卫自测 30/30 输出（352s） | 本波闸 3 | ✅ 30/30 PASS
+05 | g4_fulltest_w59.txt | d2d4b961f5f19a683d4483d14f85d9efea800ccd17d0cc8330a90ce20324ba31 | 全量单测输出（14 模块） | 本波闸 4 | ✅ tests=904 failures=0 errors=0 skipped=0
+06 | g5_manifest_w59.txt | c87b92878dd2dd701699abcf8e303498870c5ebfae421fa8b0ebb66db3d0eb17 | W57 MANIFEST 25 件按入仓字节重算校验 | 本波第 0 车 P0 | ✅ 25/25 EQ、0 MISMATCH
+07 | g5_mutation_w59.txt | 9c1b7de28f6377770412cc83ccd95c8542d2d739d3b855459a40761f64ad636e | A2 判据 K/K2/K3 变异自证四退出码 | 本波第 0 车 P1-1 | ✅ K/K2/K3 rc=1、基线 rc=0、还原 filecmp
+08 | g5_probe_w59.txt | 19f22f3a1010e7baa5ae00c353d8d571eb29989a06ff88748733d6c25cd7d10c | 机械自检基线输出（w59-sync 口径） | 本波第 0 车 P1-2 | ✅ rc=0 14+15+11+A2 控制流
+09 | g6_ledger_w59.txt | 6fb60050ac5fa9e310070f7c7a37843e5ef5f56a19805a9e675f467c7408cff4 | 台账符号自检（65 方法现役） | 本波第 0 车 P1-2 | ✅ 21 类 / 65 方法 / 323 kt rc=0
+10 | g7_secretgate_w59.txt | 6c2484292368c4e6f1789aff1a0f98390f6c1a34489d5502d33ad78a8946c821 | 脱敏门禁三路扫描 | 本波门禁 | ✅ 三路 0 命中 rc=0
+11 | g8_ui_truth_w59.txt | a6e90e18becc803f56d28a1b2ef1f8954dc9b86908be3e8c6eb2e91536815097 | 10 格 UI dump 逐字文本判据（端点标识已脱敏为 A–D） | 真机矩阵 | ✅ 逐格读数与答案逐字
+12 | png_echo_1m.png | d766088dbb0777d1357319a5784803d140bcdfec8ad888a1d31f537b7d9d9280 | 端点 A × 1M 档回声 PONG-W59-1M + 上下文 1.9K/995.9K | 真机 cell-4 | ✅ 1M 窗读数
+13 | png_echo_bolt.png | 3749c6bab56a69c9cd2b868e33cedcfe93acddf240acdd3d133b2613a33b14bb | 端点 D（小参数多模态）回声 PONG-W59-BOLT | 真机 cell-10 | ✅
+14 | png_echo_lightning.png | 94801edf5c8f8f8c877829dbeebcd4f4fb05d3e03542548e951078d3fd44c958 | 端点 B（30B 文生文）回声 PONG-W59-LIGHT | 真机 cell-2 | ✅
+15 | png_echo_supervl.png | 638d06770174887b6e797d72655efaad35c1591c63901b4f461d868b70e3c8a6 | 端点 A（1M 档）× 128K 档回声 PONG-W59-SUPER | 真机 cell-1 | ✅ 最终答案逐字
+16 | png_file_write_approval.png | ee568da774c4d32e87f98627fbd6288b6b899694bcadeb1905d5b057797d080e | file_write 审批卡（三按钮 + 授权记忆文案） | 真机 cell-5 | ✅ 审批卡在场
+17 | png_file_write_done.png | 4efe979582f22843890a8f5723398d5b38bc70205d845297ac7ddfb6df642d14 | file_write+file_read 结果 + 设备侧落盘 W59WRITEOK | 真机 cell-6 | ✅
+18 | png_manual_compress_dialog.png | ebd4c4f017157d0904ba91f12f3f316b73f9e232d002f6a8361c25b4df8467b4 | 手动压缩确认框（含撤销说明） | 真机 cell-8 | ✅ UI 路径；执行结果 nothing_to_drop ⚠️
+19 | png_mcp_empty.png | 0a629f72a7b2bb7ab81f22db199f4fa8fe5bf53cb9d655bbee3b191915030adf | MCP 服务器页：还没有 MCP 服务器 | 真机 cell-9 | ⛔vacuous 0 服务器
+20 | png_mm_nano.png | 1e956c59965a9e9438126261562f3f474cd0a4d7ee07fd793fee10d746946eb7 | 端点 C（30B 多模态）480×240 真图语义回读 | 真机 cell-3 | ✅ red square left + blue circle right
+21 | png_skill_load.png | 3536887159afae904a4c5b77d0995dcd3ae172a7dcb068370892d2499bcbf43c | skill_load notes-organizer 调用与答复 | 真机 cell-7 | ✅
+
+备注1：真机 10 格端点标识统一脱敏为「端点 A–D」；截图上缘端点名带（y205..285）已灰块覆盖，像素复扫该带单色=无残字。
+备注2：本会话无视觉通道，UI 判据以 uiautomator dump 逐字文本（g8）+ 像素统计 + 设备日志三源交叉；未做像素级目视，如实标注、不冒充。
+备注3：压缩两格（手动/自动）只行使到「noop + 原因」形态（nothing_to_drop，工具结果单条超长无安全截断点）；applied 形态本波未产生、不冒充，历史 applied 证据见 W54/W57 记录。
+备注4：g1/g2/g3/g4 为本波重跑输出；本机路径已脱敏为 <workspace-root>/<private-temp>，复扫 0 残留。本目录 .txt 全部 LF 行尾（与 .gitattributes 一致），工作树字节 = 入仓 blob 字节。

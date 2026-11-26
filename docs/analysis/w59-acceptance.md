@@ -1,0 +1,114 @@
+# W59 验收物 — MANIFEST 行尾根因 / A2 第三层加固 / 真机多模型矩阵
+
+> 现役仓 `harness-v2/`（`Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android`，`main`）。
+> 基线 = W58 最终 tip `5ce870545676052abfefdde3cf25eb11967706a6`（atom 实取）；本波零生产 `.kt` 改动，唯一代码面改动 = 机械自检脚本 A2 判据加固（767→805 行）。
+> 判定四态 `✅ / ⚠️ / ⛔ / ⛔vacuous`；「未触发」≠「已验证通过」；推断带 caveat、不写成事实。
+> 收尾契约「计数 + atom 委托」：本文档声明本波提交/run 计数，最终 tip 与逐号 run 由 atom / Actions 实取。
+
+## 步 1 · 外审分歧裁决（5 份报告）
+
+| # | 主张 | 回源/实测 | 裁决 | 四态 |
+|---|---|---|---|---|
+| 1 | P0：MANIFEST 7/25 件哈希与入仓字节不符（三线一致） | W59 现场逐件复算：7 件声明哈希 **7/7 等于 Windows 工作树 CRLF 字节实算值**；git blob 因 `*.txt text eol=lf` 归一为 LF ⇒ 外审按入仓字节判红 | 采纳：主列改按入仓字节重算 25/25 + 生成态 CRLF 源哈希双列留备注4；不写「证据造假」，也不照抄外审 A/B 的「脱敏前源哈希」推断 | ⛔ 复核基准失效 → ✅ 修复 |
+| 2 | P1：A2 控制流第三层假绿（K2 注释化 / K3 `also{}`） | 现役脚本对含注释整体查子串；副本注入 K2/K3 实测 rc=0 而脱敏失效 | 采纳：剥 `//` 注释（字符串感知）+ 控制流须为函数体最后返回表达式；K/K2/K3 必红 | ⚠️ 判据缺口 → ✅ |
+| 3 | P1：入仓 `g6_ledger` 写 64 方法，现役 65 | 本环境实跑 21 类 / 65 方法 / 323 kt rc=0 | 采纳：重跑入仓 `g6_ledger_w59.txt`；旧件补来源头注 | ✅ |
+| 4 | P1：收尾契约第 15 次（② 回填 run 未给、台账 W58 段无本波计数） | ② `5ce87054` Secret `45820023681` success（2026-11-26T12:28:51Z）；Build 未触发 | 采纳：三处补齐 + W58 段计数行；② 提交说明账实不符如实标注 | ✅ |
+| 5 | P2 九条（24/25/26 计数、dots3 残字、`file_write_approval` ⚠️、探针缺位、w58 目录 0 件、复用证据无来源头注、W57 注记未收口、KDoc 口径、A2 授权字面） | 逐条回源核实（dots3 下缘 y884..904 暗像素行、W58 目录 0 件等） | 全部采纳：计数统一 25+1=26、补打码重算哈希、caveat、缺位标注、建 `evidence/raw/w59/`、来源头注、注记收口、口径归属、授权字面 | ✅ |
+| 6 | A2 行为级用例升第 0 车硬前置（外审部分建议） | 需新 `@Test`（破 904）+ 夹具载体 | 不采纳升格，维持第 1 车条件触发 | ⛔ 不越执行边界 |
+
+**方向裁决**：本波主线 = ① 把「复核基准坏着」这一断点修成可复核；② 把 A2 判据第三层假绿堵死；③ 按用户指令用真机多模型矩阵覆盖能力面。零功能扩张、零挂账增减。
+
+## 步 2 · 改动
+
+### 2.1 P0：MANIFEST 复核基准修复（`evidence/raw/w57/MANIFEST.txt`）
+- **根因**：7 件 `.txt`（`g1_build` / `g1_det_build1` / `g1_det_build2` / `g4_fulltest` / `g4_fulltest_rerun` / `g5_probe` / `g6_ledger`）在 W58 生成时为 Windows 工作树 CRLF 字节，MANIFEST 按工作树实算即「现场实算」；`git add` 时 `.gitattributes`（`*.txt text eol=lf`）归一为 LF 入 blob，外审 checkout 后按入仓字节复核 ⇒ 7 件不符。
+- **修复**：主列全部改按 git blob（LF，入仓字节）实算，**25/25 相等**（`g5_manifest_w59.txt`）；生成态 CRLF 源哈希以 `源哈希(生成态CRLF字节)=…` 双列留存在「脱敏处理」列 + 备注4 全值；头部口径改写为「主列 = 入仓字节、备注4 = 生成态字节」，双列并存、出处分明。
+- **收口**：`docs/analysis/w57-acceptance.md` 第 82 行格与 `docs/handoff-20261126-wave57.md` 边界⑩的「⚠️ 待 W58 入仓复核」注记改写为「W59 复核全绿、注记收口」，四态不回改。
+- 计数统一：「25 制品 + 1 MANIFEST = 26 文件」（W58 交接 §一/§四、验收物步 2.1）。
+
+### 2.2 dots3 截图补打码 + 重算哈希
+- 外审放大复视指认灰块下缘仍有模型 ID 片段；W59 像素级复扫坐实 y=884..904 有暗像素行（x 80..315），而首版灰块只到 y=855。
+- 补打码 x30..1050 / y850..915，复扫该带暗像素 = 0；PNG sig/IEND/verify/load/1080×2400 全过；MANIFEST #22 哈希重算、备注3 改写为「像素复扫坐实 + 补打码」，不再写「二次目视无残字」。
+
+### 2.3 `deviceLogTail` 缺位标注 + 7 件来源头注
+- `deviceLogTail.txt` 补 W59 标注：本文件不含 `PONG-W57-*` 与 HTTP404 固定摘要行，端点回声/404 由 12 张截图支撑，**文字探针缺位、不补造**。
+- `g1_build` / `g1_det_build1` / `g1_det_build2` / `g4_fulltest` / `g4_fulltest_rerun` / `g5_probe` / `g6_ledger` 补「来源波次 = W57、W58 补入仓、W59 加头注」；MANIFEST 同步重算。
+
+### 2.4 A2 判据第三层加固（`scripts/w55-probe-form-sync.sh` 767→805 行）
+- 先剥 `//` 行注释（字符串感知状态机，字符串内 `//` 不剥）再归一；归一函数体须以 `if(sensitive)redactedelsevalue` **收尾**（`mapValues` lambda 尾表达式即返回值）。
+- 变异自证（`g5_mutation_w59.txt`）：基线 rc=0；K（摘控制流）rc=1；K2（`value // if (sensitive) REDACTED else value`）rc=1；K3（`value.also { … }`）rc=1；还原后 `filecmp` 逐字节 identical、基线复跑 rc=0。
+- 零新 `@Test`、`EXPECTED_TESTS` 维持 904；时点标识 `[w57-sync]` → `[w59-sync]`（提取行 + OK 行两处）。
+
+### 2.5 证据刷新
+- `g6_ledger_w59.txt`：21 类 / 65 方法 / 323 kt rc=0（替换 W57 旧 64 方法证据，旧件保留并加头注）。
+- `evidence/raw/w59/`：本波 21 制品 + 1 MANIFEST = 22 文件（四闸门输出、MANIFEST 校验、变异自证、probe 基线、符号自检、脱敏门禁、设备探针、UI 文本判据、10 张脱敏截图）。
+
+## 步 3 · 四闸门（证据仓内可复核）
+
+| 闸 | 结果 | 四态 | 仓内证据 |
+|---|---|---|---|
+| 闸 1 编译 | rc=0；零 `.kt` 改动，APK 与 W58 同包 `34be7494…`（不重做确定性出包，如实标注） | ✅ | `g1_build_w59.txt` |
+| 闸 2 架构守卫 | `result=PASS ok=27 vacuous=1 violation=0 fault=0` | ✅ | `g2_arch_guard_w59.txt` |
+| 闸 3 守卫自测 | rc=0 `30/30 PASS（352s）` | ✅ | `g3_selftest_w59.txt` |
+| 闸 4 全量单测 | rc=0 `tests=904 failures=0 errors=0 skipped=0`，14 模块 | ✅ | `g4_fulltest_w59.txt` |
+| 机械自检 | rc=0（14 锚点 + 15 认领 + 11 反向哨兵 + A2 控制流收尾） | ✅ | `g5_probe_w59.txt` + `g5_mutation_w59.txt` |
+| 台账符号自检 | rc=0（21 类 / 65 方法 / 323 kt） | ✅ | `g6_ledger_w59.txt` |
+| 脱敏门禁 | rc=0，三路 0 | ✅ | `g7_secretgate_w59.txt` |
+
+`tests=904` 三方对账：strict `^\s*@Test\b` = 904 == `build.yml EXPECTED_TESTS='904'` == G4 XML 汇总 904。
+
+## 步 4 · 真机多模型矩阵（端点 A–D，密钥留设备）
+
+| 格 | 动作 | 判据（dump 逐字 / 设备日志） | 四态 |
+|---|---|---|---|
+| 1 | 端点 A（1M 档）× 128K 档，`PONG-W59-SUPER` | 答案逐字；`1.8k in / 37 out`；`上下文 1.9K / 123.9K` | ✅ |
+| 2 | 端点 B（30B 文生文），`PONG-W59-LIGHT` | 答案逐字；`1.8k in / 44 out` | ✅ |
+| 3 | 端点 C（30B 多模态）+ 480×240 真图 | 「There is a red square on the left and a blue circle on the right.」`2.1k in / 229 out` | ✅ |
+| 4 | 端点 A × 1M 档，`PONG-W59-1M` | 答案逐字；`上下文 1.9K / 995.9K` | ✅ |
+| 5 | `file_write` 审批卡 | 工具名/参数/授权记忆文案 + 允许一次/拒绝/本会话允许相同调用 | ✅ |
+| 6 | `file_write`→`file_read` | `wrote 10 chars to w59write.txt`；读回 `W59WRITEOK`；`run-as cat` 设备侧逐字一致 | ✅ |
+| 7 | `skill_load` notes-organizer | UI 调用格；`prompt 1085 → 2790`（skill 正文进上下文） | ✅ |
+| 8 | 手动压缩 | 确认框（含「撤销能把历史还原」）；结果「没有可压缩的内容…」；`manual_compress=noop reason=manual compress: nothing to drop` | ⚠️ |
+| 9 | 自动压缩 | 历史 80.6K 字符 > 触发线 50227；两次 `auto_compact=noop reason=nothing_to_drop` | ⚠️ |
+| 10 | MCP 服务器页 | 「还没有 MCP 服务器」 | ⛔vacuous |
+| 11 | 端点 D（小参数多模态），`PONG-W59-BOLT` | 答案逐字；`1.4k in / 10 out` | ✅ |
+
+**判读口径**：压缩两格 `nothing_to_drop` 的语义 = 历史里没有安全截断点（工具结果单条超长），属**当前历史的正确行为**，不判缺陷；applied 形态本波未产生、不冒充；「未触发」不等于「通过」。
+
+**采集限制（如实申报）**：本会话无视觉通道，截图判据由 ① uiautomator dump 逐字文本（`g8_ui_truth_w59.txt`）、② 打码带像素单色统计、③ 设备日志三源交叉；**未做像素级目视**，截图仅作版面留证。端点标识在文本与截图中统一脱敏为「端点 A–D」。
+
+## 步 5 · CI（公开 API 四字段，curl 直连实时数据）
+
+提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote 保持干净、无凭据落盘。
+
+**本波计数：W59 全波 2 提交（① 主体 + ② 本回填提交）/ run 号见回填后实取表**。① 含判据加固 + MANIFEST 修复 + w59 证据 + 三份核心文档 + 台账订正，双 run 全绿 ⇒ 交付判据锚此提交；② 纯文档回填触发 Secret、Build 按 `docs/**` paths-ignore 未触发。**最终 tip 以 atom 实取为准**，回填提交不计判据、计入提交实态，不为补链新建第 3 提交。
+
+| 提交 | run | workflow | status | conclusion | updated_at |
+|---|---|---|---|---|---|
+| ① 主体 | 待实取 | Build | — | — | — |
+| ① 主体 | 待实取 | Secret scan | — | — | — |
+| ② 回填 | — | Build | 未触发（`docs/**` paths-ignore） | — | — |
+| ② 回填 | 待实取 | Secret scan | — | — | — |
+
+**交付判据 = ① 主体提交双 run 全绿**；run 号以回填提交写入的实取值为准，`head_sha` 与提交一致。
+
+## 明确未做（逐条带中文段位）
+
+A2 运行时行为级用例（`JsonFileStore` 夹具 + 新 `@Test`，凭据白名单段位）｜压缩 applied 形态（压缩量纲段位）｜灌满 128K+ 满窗真压（满窗真压冻结组）｜MCP 工具调用（0 服务器 vacuous，安全收口段位）｜内核行数 / 同尺化余项 / 安全波整包（冻结组，零触碰）｜W60 段与《W60 派单卡》落笔（用户指定 W60 波内）｜A4/A5/A6（用户单点裁决段位）｜凭据轮换（用户侧）｜历史缺口不补造。
+
+## OPEN 挂账（触发信号 + 缓解动作 + 中文段位；零新开零销账）
+
+- 证据可复算性段位：任一波 `evidence/raw/wXX/` 缺件 / 清单哈希与入仓字节不符 ⇒ 先修复核基准再谈四态升级；行尾口径以「入仓字节」为准。
+- 凭据白名单段位：A2 控制流被摘 / 注释化 / `also{}` 包裹 / 具名头改泛化 ⇒ K/K2/K3 必红。
+- 收尾契约段位：外审按最终 tip 复核四字段 ⇒ 三处数字相等、atom 委托、回填不计判据。
+- 台账纪律段位：段声明照抄计划措辞 ⇒ 本波实态回填；统计数字以状态列正则实跑 + 时点注记为唯一口径（用户 M4 裁决）。
+
+## 交给外部审查团队的制品清单（边界声明）
+
+**制品**：本验收物、`docs/handoff-20261126-wave59.md`、`docs/w59-dispatch.md`、`docs/06-deferred-ledger.md`（`### W59 段` + W58 段计数行 + 6 条老号注记）、`scripts/w55-probe-form-sync.sh` 加固 diff、`evidence/raw/w57/MANIFEST.txt` 重写与 3 件重制/补注、`evidence/raw/w59/` 22 文件（逐件见 `MANIFEST_w59.txt`）。
+
+**不含**：会话历史 / 凭据 / 未打码账号字段 / 端点标识（新证据统一脱敏为端点 A–D）/ 设备序列号 / SSID / 本机路径 / 用户私人图片 / 整段 logcat /「建议下一链做什么」。
+
+**边界**：① 本波是复核基准修复波，不推翻 W58 收口结论；② MANIFEST 7 件不符根因是行尾归一，不是证据造假；③ A2 加固属判据层，运行时行为仍 ⚠️；④ 压缩两格只到 noop + 原因；⑤ 本会话无视觉通道，未做像素级目视、已如实标注；⑥ journal 已获用户字面裁决（做，W60 生效 / W61 独立波号），其余 4 组冻结零解禁；⑦ 本波止于交接，交外部团队审查。
+
+> 本波止于交接，交由外部团队审查。

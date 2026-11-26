@@ -1,3 +1,4 @@
+# [来源波次=W57 生成；W58 补入仓；W59 仅加本头注。内容未改，入仓哈希同步更新]
 [localbuild] repo            = <workspace>/harness-v2
 [localbuild] JAVA_HOME       = <workspace>/_j2env/jdk/jdk-21.0.12.1+1
 [localbuild] ANDROID_HOME    = <workspace>/_j2env/sdk

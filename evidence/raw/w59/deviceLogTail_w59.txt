@@ -1,0 +1,54 @@
+# W59 设备侧日志探针（run-as com.rickeal.liquidharness.debug cat files/harness/logs/agent-0.log）
+# 时间窗：2026-11-26T15:50Z–16:16Z（本波真机矩阵）。全部为 DiagnosticLogSink.PROBE_FORMS 固定形态行，无自由文本、无凭据/端点/账号字段。
+# 本波覆盖：4 个 云端模型回声（端点 A / 端点 B / 端点 C / 端点 D）、多模态、file_write/file_read、skill_load、手动压缩、自动压缩触发评估。
+# ---- 逐字原始行（40 行）----
+2026-11-26T15:50:22.535492Z INFO prefix fp=77b590aa changed=none prompt=1080 cached=n/a-usage
+2026-11-26T15:50:24.319405Z INFO auto_compact=noop reason=below_trigger
+2026-11-26T15:50:24.320012Z WARN auto_compact=noop reason=below_trigger
+2026-11-26T15:52:47.159765Z INFO prefix fp=b31eb198 changed=none prompt=1080 cached=n/a-usage
+2026-11-26T15:52:48.772497Z INFO auto_compact=noop reason=below_trigger
+2026-11-26T15:52:48.773264Z WARN auto_compact=noop reason=below_trigger
+2026-11-26T15:56:27.658863Z INFO prefix fp=da2a8112 changed=none prompt=2103 cached=n/a-usage
+2026-11-26T15:56:32.342221Z WARN auto_compact=noop reason=below_trigger
+2026-11-26T15:56:32.342227Z INFO auto_compact=noop reason=below_trigger
+2026-11-26T15:59:07.707977Z INFO prefix fp=42274078 changed=none prompt=1079 cached=n/a-usage
+2026-11-26T15:59:08.857794Z INFO auto_compact=noop reason=below_trigger
+2026-11-26T15:59:08.857782Z WARN auto_compact=noop reason=below_trigger
+2026-11-26T16:00:06.910221Z INFO prefix fp=75e610a0 changed=none prompt=1109 cached=n/a-usage
+2026-11-26T16:01:00.291909Z INFO prefix fp=c0de598f changed=HISTORY prompt=2451 cached=0(cumulative)
+2026-11-26T16:01:03.407009Z INFO prefix fp=c0de598f changed=none prompt=2513 cached=0(cumulative)
+2026-11-26T16:01:10.785666Z INFO auto_compact=noop reason=below_trigger
+2026-11-26T16:01:10.786295Z WARN auto_compact=noop reason=below_trigger
+2026-11-26T16:02:36.775106Z INFO prefix fp=d6f639ce changed=none prompt=1085 cached=n/a-usage
+2026-11-26T16:02:41.011892Z INFO prefix fp=91c28723 changed=HISTORY prompt=2790 cached=0(cumulative)
+2026-11-26T16:02:43.897126Z INFO auto_compact=noop reason=below_trigger
+2026-11-26T16:02:43.898154Z WARN auto_compact=noop reason=below_trigger
+2026-11-26T16:04:55.468010Z WARN manual_compress=noop reason=manual compress: nothing to drop
+2026-11-26T16:08:44.708679Z INFO prefix fp=09dae26c changed=none prompt=1079 cached=n/a-usage
+2026-11-26T16:08:46.158551Z INFO prefix fp=ee5ce9b7 changed=HISTORY prompt=6388 cached=0(cumulative)
+2026-11-26T16:08:49.284035Z INFO prefix fp=84d6024c changed=HISTORY prompt=16799 cached=0(cumulative)
+2026-11-26T16:08:52.702192Z INFO prefix fp=84d6024c changed=none prompt=27235 cached=0(cumulative)
+2026-11-26T16:08:54.600410Z INFO prefix fp=84d6024c changed=none prompt=36733 cached=21680(cumulative)
+2026-11-26T16:09:03.241077Z WARN auto_compact=noop reason=nothing_to_drop
+2026-11-26T16:09:03.241447Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-26T16:09:31.377820Z INFO prefix fp=9512e373 changed=none prompt=16397 cached=n/a-usage
+2026-11-26T16:09:34.743126Z INFO prefix fp=9512e373 changed=none prompt=45873 cached=0(cumulative)
+2026-11-26T16:09:38.605061Z INFO prefix fp=9512e373 changed=none prompt=63376 cached=39024(cumulative)
+2026-11-26T16:09:47.595526Z WARN auto_compact=noop reason=nothing_to_drop
+2026-11-26T16:09:47.595533Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-26T16:11:27.569071Z INFO prefix fp=9512e373 changed=none prompt=31704 cached=n/a-usage
+2026-11-26T16:11:32.130114Z INFO auto_compact=noop reason=nothing_to_drop
+2026-11-26T16:11:32.130217Z WARN auto_compact=noop reason=nothing_to_drop
+2026-11-26T16:15:10.104816Z INFO prefix fp=c44eabda changed=none prompt=1080 cached=n/a-usage
+2026-11-26T16:15:11.520192Z INFO auto_compact=noop reason=below_trigger
+2026-11-26T16:15:11.520182Z WARN auto_compact=noop reason=below_trigger
+# ---- 设备侧落盘复核（独立于 agent 回答）----
+# run-as cat files/harness/workspace/w59write.txt  =>  W59WRITEOK  (10 bytes)
+# ---- 判读（四态）----
+# 模型回声 4/4：prompt 读数分别为 1080 / 1080 / 2103(多模态) / 1079(1M档) / 1080(端点 D)，均 below_trigger 正常。
+# 工具链：file_write prompt=1109 → 工具结果 2451 → 终轮 2513（批准一次后执行，设备侧落盘 W59WRITEOK 逐字一致）。
+# skill：prompt=1085 → 2790（skill 正文进上下文）；UI 侧 skill_load 调用格可见。
+# 手动压缩：manual_compress=noop reason=manual compress: nothing to drop（小历史，无安全截断点）⚠️。
+# 自动压缩：历史 80.6K 字符 > 触发线 50227 时评估两次均为 auto_compact=noop reason=nothing_to_drop（工具结果单条超长、无安全截断点）⚠️；未出现 applied 形态，不冒充。
+# 内核每轮压缩（context compressed before round）：本波未出现——1M/128K 档预算下未越线，属未触发、非通过。
+# SELF-AUDIT: 40 行逐字取自设备原始日志；形态外 0；无凭据/端点 URL/账号/序列号。

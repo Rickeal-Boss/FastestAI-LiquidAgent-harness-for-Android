@@ -1,3 +1,4 @@
+# [来源波次=W57 生成；W58 补入仓；W59 仅加本头注。内容未改，入仓哈希同步更新]
 [fulltest] launcher=./gradlew  task=test  （固定带 --continue，禁用 fail-fast 残缺口径）
 [fulltest] 期望模块数（settings include 条目）= 14
 assertion "bc_ctl.arg_max >= LINE_MAX" failed: file "xargs.c", line 512, function: main

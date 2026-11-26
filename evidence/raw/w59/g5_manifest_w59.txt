@@ -1,0 +1,32 @@
+# W59 MANIFEST 重算校验输出（g5_manifest_w59.txt）
+# 生成：W59 第 0 车 P0 —— 按入仓字节（git blob LF / binary 原样）逐件实算并与 MANIFEST 主列比对
+# 口径：主列 = git 入仓字节哈希（外审 checkout 后逐件可复核）；7 件 CRLF 源哈希保留于 MANIFEST 备注4
+#
+01 deviceLogTail.txt EQ sha256=6a3a9ffd332ac948… (工作树入仓字节)
+02 g1_build.txt EQ sha256=960360d29b04d345… (LF blob（内容未改，源哈希见 MANIFEST 备注4）)
+03 g1_det_build1.txt EQ sha256=6926e603a7198c12… (LF blob（内容未改，源哈希见 MANIFEST 备注4）)
+04 g1_det_build2.txt EQ sha256=f69a647e0d3648a3… (LF blob（内容未改，源哈希见 MANIFEST 备注4）)
+05 g1_deterministic_build.txt EQ sha256=5c61ac2520853296… (工作树入仓字节)
+06 g2_arch_guard.txt EQ sha256=6a8336feeb14ee45… (工作树入仓字节)
+07 g3_selftest.txt EQ sha256=6c50e9211e27cf9f… (工作树入仓字节)
+08 g4_fulltest.txt EQ sha256=ed74d6b208d36ce8… (LF blob（内容未改，源哈希见 MANIFEST 备注4）)
+09 g4_fulltest_rerun.txt EQ sha256=056ff1573e3506fa… (LF blob（内容未改，源哈希见 MANIFEST 备注4）)
+10 g5_probe.txt EQ sha256=5074b9673d25d8c3… (LF blob（内容未改，源哈希见 MANIFEST 备注4）)
+11 g6_ledger.txt EQ sha256=d30050d429cf4303… (LF blob（内容未改，源哈希见 MANIFEST 备注4）)
+12 g7_secretgate.txt EQ sha256=6c2484292368c4e6… (工作树入仓字节)
+13 png_nano_final.png EQ sha256=ded260ee33e463f3… (工作树入仓字节)
+14 png_supervl_final.png EQ sha256=9c51c5c8a60505d8… (工作树入仓字节)
+15 png_1mfull_result.png EQ sha256=b9db362974854003… (工作树入仓字节)
+16 png_compact128.png EQ sha256=60b841f82e1228b9… (工作树入仓字节)
+17 png_compact500.png EQ sha256=31b91c0747d62011… (工作树入仓字节)
+18 png_mm_result.png EQ sha256=33a09427527d2c34… (工作树入仓字节)
+19 png_file_write_approval.png EQ sha256=56c0fa749817a326… (工作树入仓字节)
+20 png_file_write_done.png EQ sha256=c248eb8b07dca814… (工作树入仓字节)
+21 png_skill_final.png EQ sha256=133edd9426dcc3af… (工作树入仓字节)
+22 png_dots3_testconn.png EQ sha256=28fef77f4d091815… (工作树入仓字节)
+23 png_north_result.png EQ sha256=ff56f110e8652a0a… (工作树入仓字节)
+24 png_wake_check.png EQ sha256=113f4e990364b3c6… (工作树入仓字节)
+25 g5_mutation_w58.txt EQ sha256=dbaef22cde370a40… (工作树入仓字节)
+#
+RESULT: 25/25 EQ，0 MISMATCH
+MANIFEST_RC=0

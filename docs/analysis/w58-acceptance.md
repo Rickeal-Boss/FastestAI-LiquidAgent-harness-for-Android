@@ -23,7 +23,7 @@
 ## 步 2 · 改动（证据入仓 + 两假绿加固 + 账实订正）
 
 ### 2.1 P0：W57 证据入仓 `evidence/raw/w57/`（25 件）
-原目录不存在（W53/54/55/56 分别 7/5/5/10 件）。本波从仓外证据源脱敏补入，**24 件制品 + 1 份 MANIFEST**：
+原目录不存在（W53/54/55/56 分别 7/5/5/10 件）。本波从仓外证据源脱敏补入，**25 件制品 + 1 份 MANIFEST = 26 文件**：
 - **设备原始探针** `deviceLogTail.txt`：逐字取自设备 `run-as ... cat files/harness/logs/agent-0.log`，8 行与现场 grep `diff` 完全一致（本波 5 行 + 历史对照 3 行按日期标注），含 `2026-11-26T06:45:37.959358Z context compressed before round 1: 501 -> 277`、`auto_compact dropped=220 kept=283`、`context_overflow_prevented chars=48365 cap=27904` 正控。头注 + 末尾 SELF-AUDIT + 形态外 0。
 - **闸 1–4 原始输出 + 机械自检 / 台账符号 / 脱敏门禁**：`g1_build` / `g1_det_build1` / `g1_det_build2` / `g2_arch_guard` / `g3_selftest` / `g4_fulltest` / `g4_fulltest_rerun` / `g5_probe` / `g6_ledger` / `g7_secretgate`，路径→`<workspace>`、代理→`<proxy>`、私人临时路径→`<private-temp>`，复扫零残留。
 - **确定性出包** `g1_deterministic_build.txt`：APK sha256 `34be7494b0186001a1409c1eb5694964a08707130cd48e333a11c6f0285ae2fc` 现场实算全值（size 68,473,382 / mtime 14:44:03）；**诚实边界**：第 1 轮产物已被覆盖、其哈希为当轮回报补录，旧包 sha256 仅 8 位截断 `ec60a2e3…` 不可复核、不编造；设备当前安装包 size 同旧包但 hash `48f4fe1c…`（更旧安装），账实分离。
@@ -80,7 +80,7 @@
 | ① `1e922fd` | `45819327763` | Build | completed | **success** | 2026-11-26T12:25:42Z |
 | ① `1e922fd` | `45819327696` | Secret scan | completed | **success** | 2026-11-26T12:24:42Z |
 | ② 回填 | — | Build | 未触发（`docs/**` paths-ignore） | — | — |
-| ② 回填 | 由 atom/Actions 实取 | Secret scan | 事实记录 | — | — |
+| ② 回填 `5ce87054` | `45820023681` | Secret scan | completed | **success**（2026-11-26T12:28:51Z） | — |
 
 **交付判据 = 提交 `1e922fd` 双 run 全绿**：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45819327763`（Build success）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45819327696`（Secret success）。两 run 均 event=push、head_sha=`1e922fdc0e9d…`，与本次提交一致。`head_sha` 过滤对新 push 偶有 0 结果延迟、WebFetch 15 分钟缓存会返回旧快照，四字段以 curl 直连实时数据为准。
 

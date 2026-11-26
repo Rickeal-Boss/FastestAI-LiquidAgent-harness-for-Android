@@ -1,0 +1,29 @@
+# W59 A2 控制流判据第三层加固 —— 变异自证（K / K2 / K3 / 基线 四退出码）
+# 判据形态：A2 段先剥 // 注释（字符串感知状态机）再归一；归一函数体须以 if(sensitive)redactedelsevalue 收尾
+# （mapValues lambda 尾表达式即返回值；控制流须为函数体最后返回表达式）。
+# 变异注入 = 改 redactHeaders 返回表达式；每轮注入前仓外备份、跑完 cp 还原 + filecmp 逐字节核实。
+#
+== 基线（现役未变异）==
+rc=0（14 锚点 + 15 全库认领 + 11 反向哨兵 + A2 两具名头 + 控制流收尾齐备）
+BASELINE_RC=0
+#
+== K 变异：返回表达式改 value（摘控制流、保留具名头字面量）—— W58 判据已拦，W59 复跑确认仍必红 ==
+RED A2 凭据脱敏形态 | redactHeaders 返回表达式缺 if (sensitive) REDACTED else value 脱敏控制流分支（须为函数体最后返回表达式）
+K_RC=1
+#
+== K2 变异：value // if (sensitive) REDACTED else value（控制流串写在 // 注释里）==
+# 旧判据（含注释函数体查子串）假绿 rc=0；W59 剥注释后该串消失 ⇒ 判红
+RED A2 凭据脱敏形态 | redactHeaders 返回表达式缺 if (sensitive) REDACTED else value 脱敏控制流分支（须为函数体最后返回表达式）
+K2_RC=1
+#
+== K3 变异：value.also { if (sensitive) REDACTED else value }（控制流在语法里但被 also 丢弃、非返回值）==
+# 旧判据（子串在场即过）假绿 rc=0；W59 收尾校验（归一 body 以 } 收尾而非控制流）⇒ 判红
+RED A2 凭据脱敏形态 | redactHeaders 返回表达式缺 if (sensitive) REDACTED else value 脱敏控制流分支（须为函数体最后返回表达式）
+K3_RC=1
+#
+== 还原核实 ==
+McpServerStore.kt cp 备份还原后 filecmp 逐字节 identical=True；git diff 该文件零行；基线复跑 rc=0
+RESTORED_BASELINE_RC=0
+#
+SUMMARY: K=1 K2=1 K3=1 BASELINE=0 RESTORED=0 —— 三组变异必红、基线绿、还原净
+MUTATION_RC=PASS

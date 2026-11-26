@@ -1,3 +1,4 @@
+# [来源波次=W57 台账(64方法时点)；W58 补入仓；W59 仅加本头注。65 方法现役输出另存 evidence/raw/w59/g6_ledger_w59.txt]
 w46-ledger-symbol-check: test-class refs=21 test-method refs=64 kt-files=323
 OK all backticked test symbols (with test context) resolvable in *.kt
 LEDGER_RC=0

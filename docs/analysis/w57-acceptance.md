@@ -79,10 +79,10 @@
 |---|---|---|
 | 端点可用性 | NV SuperVL 120B 1M / Nano Omni 30B / Lightning 30B 哨兵逐字命中（`PONG-W57-*`）；OR dots-3 / north 均 HTTP404（**用户 W58 已明确两端点现在都不可用**；north 供给方 11-20 起无 provider，按「停止占格、不计入可用模型数」处理，404→400→无provider 仅作事实记录不推断原因） | 3×✅ / 2×⛔（端点失效，非 app bug） |
 | 上下文至 1M | 生效窗口 = min(全局档位, 端点 contextLength)；SuperVL(1M)+1M 档 → `1.9K/995.9K`、`PONG-W57-1MFULL` 逐字命中；Lightning(128K)+1M 档 → `1.9K/127K`（封顶）。验证档位/容量切换 + 短哨兵，**未灌满 128K 长历史压测稳定性** | ✅（档位切换） |
-| 自动压缩 + 内核账行 | `prefix prompt=100370` → 内核 `context compressed before round 1: 501 -> 277 (estimated 100370 > budget 92928)` → 会话级 `auto_compact dropped=220 kept=283`。原始行带 `2026-11-26T06:45:37.959358Z` 时间戳、相邻行连续、本轮首次出现 ⇒ **内核每轮压缩路径从 ⛔vacuous 升级为 ✅**。正控：32K 档报 `context_overflow_prevented: chars=48365 cap=27904` 熔断未压缩。**⚠️ 待 W58 入仓复核：W57 原始探针仅存设备侧/报告文字转述，`evidence/raw/w57/` 当时 0 件；四态本身不因证据缺位回改，外审按仓内制品复核前维持本注记。W58 已按设备 `run-as` 直读补入仓** | ✅（双写 applied + 正控）/ ⚠️ 待入仓复核 |
+| 自动压缩 + 内核账行 | `prefix prompt=100370` → 内核 `context compressed before round 1: 501 -> 277 (estimated 100370 > budget 92928)` → 会话级 `auto_compact dropped=220 kept=283`。原始行带 `2026-11-26T06:45:37.959358Z` 时间戳、相邻行连续、本轮首次出现 ⇒ **内核每轮压缩路径从 ⛔vacuous 升级为 ✅**。正控：32K 档报 `context_overflow_prevented: chars=48365 cap=27904` 熔断未压缩。**W58 已补入仓（26 文件），W59 完成逐件复核收口：MANIFEST 主列经 W59 按入仓字节重算 25/25 全绿（`g5_manifest_w59.txt`）；W58 首版 7 件哈希不符根因 = 生成态 CRLF 工作树哈希误标为入仓哈希（`.gitattributes` eol=lf 归一），非源/脱敏口径混淆、非证据造假。四态本身不回改，本注记收口** | ✅（双写 applied + 正控）/ ⚠️ 待入仓复核 |
 | 手动压缩 | 确认框逐字（三段文案 + 取消/压缩按钮）与知识库一致；点压缩后未捕获干净的「前→后读数下降」对比（会话刚经自动压缩、可压余量小），未确认撤销入口 | ⚠️ 部分 |
 | 多模态 | 480×240 真图（红圆/绿方/蓝倒三角 + W57），SAF 通道选入，语义逐字回读「red circle / green square / blue downward-pointing triangle」完全一致；`prefix prompt=2109` | ✅ |
-| 工作空间文件读写 | `file_read`→「W42OK」逐字一致（免审批）；`file_write` 审批框逐字（工具名/参数/授权记忆文案 + 三按钮），允许一次后落盘 `files/harness/workspace/workspace/w57write.txt` 实读 10 字节 `W57WRITEOK` | ✅（读免审批/写审批+落盘） |
+| 工作空间文件读写 | `file_read`→「W42OK」逐字一致（免审批）；`file_write` 审批框逐字（工具名/参数/授权记忆文案 + 三按钮）【W59 caveat：入仓 `png_file_write_approval.png` 标 ⚠️「未见明确允许/拒绝审批卡片」，审批框逐字 ✅ 维持但不冒充截图已坐实；四态不回改】，允许一次后落盘 `files/harness/workspace/workspace/w57write.txt` 实读 10 字节 `W57WRITEOK` | ✅（读免审批/写审批+落盘） |
 | skill | `notes-organizer` 触发 `skill_list`（6/6），思考与最终答案正确复述工作流；读数 `8.0k in/402 out (4336 cached, 53.6%)` 前缀缓存命中实证 | ✅ |
 | MCP | 0 服务器（设置页「还没有 MCP 服务器」），工具调用判据未行使 | ⛔vacuous（非失败） |
 

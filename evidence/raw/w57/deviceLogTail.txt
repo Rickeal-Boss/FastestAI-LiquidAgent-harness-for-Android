@@ -12,3 +12,6 @@
 2026-11-26T06:46:02.464353Z INFO auto_compact dropped=220 kept=283 cache_invalidated=false
 2026-11-26T06:46:02.464377Z INFO auto_compact dropped=220 kept=283 cache_invalidated=false
 # SELF-AUDIT: 探针 8 行逐字取自设备 raw grep 输出（本波 2026-11-26 5 行 + 历史对照 3 行，历史行日期已标注）；形态外 0；无自由文本/凭据/端点/账号字段；本波含 context compressed before round 1 五字段账行，内核每轮压缩判据由 ⛔vacuous 升为 ✅。
+# ---- W59 缺位标注（P2 订正，不补造）----
+# 本文件不含 W57 端点回声（PONG-W57-*）与免费端点 HTTP404 固定摘要行：W57 会话的设备原始探针只抓了压缩/正控形态行。
+# 端点回声与 404 判据由同目录 12 张截图支撑（png_nano_final / png_supervl_final / png_dots3_testconn / png_north_result）；文字探针缺位、如实标注「截图支撑、探针缺位」，不以截图冒充文字探针。

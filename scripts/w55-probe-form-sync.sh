@@ -44,6 +44,10 @@
 #      contains 泛化形态以免掩盖删名变异），且返回表达式必须是
 #      `if (sensitive) REDACTED else value` 脱敏控制流分支；删具名头、摘控制流或
 #      函数体抽空均 rc=1，不以 0 命中冒充绿。
+#   ⑦ W59 A2 第三层加固（K2/K3 假绿，外审 §3.2 坐实）：A2 判据先剥 // 注释再归一，
+#      且要求 if(sensitive)redactedelsevalue 是函数体归一后的**收尾**（最后返回表达式）——
+#      K2（控制流串写在注释里）/K3（also{} 包裹、返回值被丢弃）均 rc=1。
+#
 #   ⑥ W58 认领逃逸堵漏（P0-1）：全库固定形态写点首字面量失配不再静默 continue ——
 #      除 CLAIM_EXEMPT 一次性显式豁免外一律判红；认领数对 EXPECTED_CLAIMS 基线，
 #      波动即判红并要求归因。
@@ -171,7 +175,7 @@ for f in all_forms:
 
 m_cap = re.search(r'MAX_DIGEST_CHARS\s*=\s*(\d+)', sink_src)
 cap = int(m_cap.group(1)) if m_cap else 160
-print(f"[w57-sync] PROBE_FORMS 区域提取 {len(raw_forms)} 条 raw 整行形态（已字符串感知跳注释）"
+print(f"[w59-sync] PROBE_FORMS 区域提取 {len(raw_forms)} 条 raw 整行形态（已字符串感知跳注释）"
       f" + {len(named_forms)} 条命名常量形态，MAX_DIGEST_CHARS={cap}")
 
 # ---------- ② 现场渲染工具（保留 render_call；新增通用 render_body / render_at） ----------
@@ -728,7 +732,39 @@ else:
         if not body.strip():
             a2_bad.append("redactHeaders 函数体抽取为空")
         else:
-            low = body.lower()
+            # W59 第三层加固（K2/K3 假绿）：先剥 // 行注释再归一。
+            # K2 把控制流串写在 `value // if (sensitive) REDACTED else value` 注释里
+            #   ⇒ 旧版对含注释的函数体查子串仍命中 ⇒ rc=0 假绿。
+            # K3 把控制流包进 `value.also { if (sensitive) REDACTED else value }`
+            #   ⇒ 控制流在语法里但不是 mapValues lambda 的返回值（被 also 丢弃）⇒ 同样假绿。
+            # 修法（外审 §3.2 处方，零新 @Test）：
+            #   ① 剥注释用与 PROBE_FORMS 提取同款的字符串感知状态机（字符串内 // 不剥）；
+            #   ② 归一函数体去空白后，要求以 `if(sensitive)redactedelsevalue` **收尾**
+            #      —— mapValues 的 lambda 尾表达式即返回值，控制流必须是函数体最后一个
+            #      返回表达式；串写在注释里（剥后消失）或被 also{} 包裹（收尾变成
+            #      `}`）都判红。
+            stripped_lines = []
+            for bl in body.split('\n'):
+                j, in_s, esc2 = 0, False, False
+                out_seg = ''
+                while j < len(bl):
+                    ch = bl[j]
+                    if in_s:
+                        if esc2: esc2 = False
+                        elif ch == '\\': esc2 = True
+                        elif ch == '"': in_s = False
+                        out_seg += ch
+                    else:
+                        if ch == '"':
+                            in_s = True; out_seg += ch
+                        elif ch == '/' and j + 1 < len(bl) and bl[j + 1] == '/':
+                            break  # 行注释起点：截断本行
+                        else:
+                            out_seg += ch
+                    j += 1
+                stripped_lines.append(out_seg)
+            body_nocomment = '\n'.join(stripped_lines)
+            low = body_nocomment.lower()
             # 认领具名头「equals("Cookie") / equals("X-Auth-Token")」形态，而非泛化的
             # contains("cookie") —— 后者会掩盖具名头被删的变异（假绿）。两类都必在。
             for lit in ('equals("cookie"', 'equals("x-auth-token"'):
@@ -741,8 +777,10 @@ else:
             # 出现且构成 if/else 条件 branches（忽略空白/换行，容忍常量名大小写不敏感）。
             # 仍只认控制流形态：泛化 contains("cookie") 冒充具名头不予放行（防假绿不变）。
             cf = re.sub(r'\s+', '', low)
-            if 'if(sensitive)redactedelse' not in cf:
-                a2_bad.append("redactHeaders 返回表达式缺 if (sensitive) REDACTED else value 脱敏控制流分支")
+            # W59：控制流必须是函数体最后一个返回表达式（归一 body 以
+            # if(sensitive)redactedelsevalue 收尾）。仅「子串在场」挡不住 K2（注释里）/K3（also 丢弃）。
+            if not cf.endswith('if(sensitive)redactedelsevalue'):
+                a2_bad.append("redactHeaders 返回表达式缺 if (sensitive) REDACTED else value 脱敏控制流分支（须为函数体最后返回表达式）")
 
 bad = []
 for name, line in POSITIVE:
@@ -760,8 +798,8 @@ if bad:
     print(f"::error::PROBE_FORMS 同步自检判红：{len(bad)} 条失配")
     sys.exit(1)
 
-print(f"[w57-sync] OK {len(POSITIVE)} 条锚点现场渲染样本命中，"
+print(f"[w59-sync] OK {len(POSITIVE)} 条锚点现场渲染样本命中，"
       f"{len(discovered)} 条全库认领写点命中，{len(NEGATIVE)} 条反向哨兵全拦下，"
-      f"A2 脱敏形态 equals(Cookie)/equals(X-Auth-Token) 两类齐备")
+      f"A2 脱敏形态 equals(Cookie)/equals(X-Auth-Token) 两类齐备 + 控制流为最后返回表达式")
 PY
 exit $?
