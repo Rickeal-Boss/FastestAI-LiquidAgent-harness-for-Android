@@ -38,10 +38,15 @@
 #   ② 长度闸门、CACHED_LABEL、FILE_NAME 同样现场提取，避免与生产漂移。
 #   ③ 反向哨兵：自由文本 / 字段错序 / 多字段 / 缺尾 / 用户路径 / 非 bool 不得穿透。
 #   ④ 正控先行：锚点写点 + 全库认领写点必渲染出命中样本；任一失配即 rc=1。
-#   ⑤ A2 静态形态判据（W57，零新 @Test）：redactHeaders（private、无 JVM 用例）
-#      按花括号配平抽函数体，体内必须同时含 equals("Cookie") / equals("X-Auth-Token")
-#      两个具名头形态（ignoreCase；不认 contains 泛化形态以免掩盖删名变异）；删任一即
-#      rc=1。空命中语义：函数体抽空判红，不以 0 命中冒充绿。
+#   ⑤ A2 静态形态判据（W57 立、W58 补控制流，零新 @Test）：redactHeaders
+#      （private、无 JVM 用例）按花括号配平抽函数体，体内必须同时含
+#      equals("Cookie") / equals("X-Auth-Token") 两个具名头形态（ignoreCase；不认
+#      contains 泛化形态以免掩盖删名变异），且返回表达式必须是
+#      `if (sensitive) REDACTED else value` 脱敏控制流分支；删具名头、摘控制流或
+#      函数体抽空均 rc=1，不以 0 命中冒充绿。
+#   ⑥ W58 认领逃逸堵漏（P0-1）：全库固定形态写点首字面量失配不再静默 continue ——
+#      除 CLAIM_EXEMPT 一次性显式豁免外一律判红；认领数对 EXPECTED_CLAIMS 基线，
+#      波动即判红并要求归因。
 #
 # 不覆盖（诚实边界，写全而非只举一例）：
 #   - FAILURE_DIGEST 是拼接式常量、无单一 raw-string 字面量，不在 raw 形态样本内；
@@ -506,6 +511,45 @@ CLAIM_ANCHORS = set()
 for f in all_forms:
     CLAIM_ANCHORS |= leading_runs(f.lstrip('^'))
 
+# ---------- W58 认领逃逸堵漏（P0-1）：显式基线 + 认领失败必红 ----------
+# 认领基线与 EXPECTED_TESTS 同型：写成常数，波动即判红并要求归因，不允许认领数
+# 只藏在 OK 行文本里被静默吞掉（外审 M 型：首字面量改名 15→14 一度 rc=0 假绿）。
+EXPECTED_CLAIMS = 15
+
+# 一次性豁免清单：这些写点当前不是 PROBE_FORMS 账行（自由文本诊断日志 / 不入落盘
+# 白名单的固定形态），首字面量失配不算认领逃逸。按「写点首个字符串字面量」逐条显式
+# 登记；任何写点首字面量改动（含新增写点）都会使豁免失配 ⇒ 判红，须重新登记并归因。
+# 新增豁免必须在此显式登记，禁止把失配当「自由文本」静默 continue。
+CLAIM_EXEMPT = {
+    # 固定形态但不入 PROBE_FORMS 白名单（诊断/非取证账行，当前设计即不落盘）
+    "compress_skipped=not_compressible prompt=",
+    "prefix changed segments=",
+    "hard_budget chars=",
+    "hard_budget_shrunk dimension=",
+    "context_limit_learned endpoint=",
+    # 自由文本诊断日志（动态正文 / 工具名 / 路径，天然不可整行固定形态匹配）
+    "first byte timeout: no event within ",
+    " (attempt=",
+    "stream ended without finish_reason; treating as truncated (chars=",
+    "wall clock soft limit reached: elapsed=",
+    "run failed: ",
+    "approval satisfied by session cache: ",
+    "approval card suppressed after ",
+    "approval card could not be delivered within ",
+    "approval timed out after ",
+    "tool call refused without approval channel: ",
+    "unknown tool requested: ",
+    "tool blocked by policy: ",
+    "tool ",
+    "aggregated tool message capped: ",
+    "provider reported no usage; estimated prompt tokens: ",
+    "builtin tool overwrote a tool from another source: ",
+    "refused to register contributed tool ",
+    "tool output truncated: ",
+    "missing tool results patched: ",
+    "session import: ",
+}
+
 def candidates_for(tail):
     t = tail[-56:]
     pri = []
@@ -590,13 +634,25 @@ for root, dirs, files in os.walk(repo):
             def prefix_claim(a, b, n=6):
                 return len(a) >= n and len(b) >= n and (a.startswith(b) or b.startswith(a))
             if not any(prefix_claim(first_lit, run) for run in CLAIM_ANCHORS):
-                continue  # 自由文本诊断日志，不是账行写点
+                # W58：不再静默 continue。首字面量失配 = 该固定形态写点掉出认领集，
+                # 除非它已在 CLAIM_EXEMPT 一次性豁免清单里显式登记，否则一律判红。
+                if first_lit in CLAIM_EXEMPT:
+                    continue
+                print(f"RED  全库写点首字面量失配、未在豁免清单登记 | {os.path.relpath(path, repo)} | {first_lit!r}")
+                print("::error::全库 AgentLogStore 固定形态写点首字面量不被 PROBE_FORMS 认领且未显式豁免（认领逃逸）。")
+                sys.exit(1)
             sample = fill_parts(parts)
             if sample is None:
                 print(f"RED  全库写点无法渲染命中样本 | {os.path.relpath(path, repo)} | {first_lit!r}")
                 print("::error::全库 AgentLogStore 固定形态写点未被 PROBE_FORMS 认领（写点形状漂移）。")
                 sys.exit(1)
             discovered.append((os.path.relpath(path, repo), sample))
+
+# W58：认领基数显式基线判据。任一首字面量改名/写点增删导致认领数波动即判红并要求归因。
+if len(discovered) != EXPECTED_CLAIMS:
+    print(f"RED  全库认领写点数 {len(discovered)} != 基线 {EXPECTED_CLAIMS}（波动须归因：新增写点登记豁免/基线，或首字面量漂移）")
+    print("::error::全库 AgentLogStore 认领写点数与显式基线不符。")
+    sys.exit(1)
 
 # ---------- ⑤ 反向哨兵（W55 既有 11 条，保持不动） ----------
 NEGATIVE = [
@@ -678,6 +734,15 @@ else:
             for lit in ('equals("cookie"', 'equals("x-auth-token"'):
                 if lit not in low:
                     a2_bad.append(f"redactHeaders 体内缺 {lit} 具名头形态")
+            # W58 A2 控制流必红（P1-2，外审变异 K 坐实）：仅凭 val sensitive 里的两个
+            # 具名头字面量在场还不够。外审把返回表达式 `if (sensitive) REDACTED else value`
+            # 改成 `value // 控制流被摘除`（字面量段原地保留）⇒ 凭据明文落盘，旧判据
+            # rc=0 误报「A2 两类齐备」。故要求：返回表达式中 sensitive 与 REDACTED 同时
+            # 出现且构成 if/else 条件 branches（忽略空白/换行，容忍常量名大小写不敏感）。
+            # 仍只认控制流形态：泛化 contains("cookie") 冒充具名头不予放行（防假绿不变）。
+            cf = re.sub(r'\s+', '', low)
+            if 'if(sensitive)redactedelse' not in cf:
+                a2_bad.append("redactHeaders 返回表达式缺 if (sensitive) REDACTED else value 脱敏控制流分支")
 
 bad = []
 for name, line in POSITIVE:

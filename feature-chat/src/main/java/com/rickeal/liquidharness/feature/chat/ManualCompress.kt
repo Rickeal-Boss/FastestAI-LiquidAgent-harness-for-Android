@@ -122,7 +122,7 @@ internal const val MANUAL_COMPRESS_NOOP = "manual compress: nothing to drop"
  * @param bubbles 当前会话的全部气泡（顺序即时间顺序）。
  * @param budgetTokens 软预算（`contextBudgetTokens` 的返回值）。**不是**硬窗口：
  *   压到软预算以下意味着下一次请求不会立刻再次触发自动压缩。
- * @param charBudget 字符维硬上限（`hardCharCap` / `charCapOf` 的返回值）。W54 起与 token
+ * @param charBudget 字符维压缩目标（`hardCharCap × DEFAULT_COMPRESS_TARGET_RATIO`，见 BudgetFormula）。W54 起与 token
  *   预算**同时**生效：只按 token 落刀会让「压缩成功」与「下一轮仍熔断」同时成立。
  * @param systemText 本轮 system 段文本。**只用于扣预算，绝不参与压缩**：它不在 history 里
  *   （`ContextBudget` 每轮临时拼在最前），把它喂进压缩器等于改写前缀 —— 那是比

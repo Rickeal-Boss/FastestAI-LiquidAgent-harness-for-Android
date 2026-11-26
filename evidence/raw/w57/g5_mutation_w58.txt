@@ -1,0 +1,64 @@
+# W58 机械自检两假绿加固变异自证（基线 + K/M/C/F/G + 反假绿；仓外现场跑、脱敏后入仓）
+# 判据源：scripts/w55-probe-form-sync.sh（767 行）。变异在仓外备份上精确字符串替换，还原后 5 个生产 .kt 与备份逐字节 IDENTICAL（git diff 仅 ManualCompress KDoc 一处授权改动）。
+# 脱敏：仅相对仓库路径，无本机绝对路径 / 凭据 / 账号 / 端点标识；每条变异先确认 hits=1 再采信 rc。
+
+# ---- 变异自证主日志 ----
+===== BASELINE rc=0 =====
+[w57-sync] PROBE_FORMS 区域提取 18 条 raw 整行形态（已字符串感知跳注释） + 3 条命名常量形态，MAX_DIGEST_CHARS=160
+[w57-sync] OK 14 条锚点现场渲染样本命中，15 条全库认领写点命中，11 条反向哨兵全拦下，A2 脱敏形态 equals(Cookie)/equals(X-Auth-Token) 两类齐备
+
+===== CASE K-A2-control-flow-removed (expect rc=1) =====
+  mutation applied [mcp]: 'if (sensitive) REDACTED else value' -> 'value // 控制流被摘除' (hits=1)
+[w57-sync] PROBE_FORMS 区域提取 18 条 raw 整行形态（已字符串感知跳注释） + 3 条命名常量形态，MAX_DIGEST_CHARS=160
+RED  A2 凭据脱敏形态 | redactHeaders 返回表达式缺 if (sensitive) REDACTED else value 脱敏控制流分支 | 
+::error::PROBE_FORMS 同步自检判红：1 条失配
+CASE K-A2-control-flow-removed: rc=1 -> PASS
+
+===== CASE M-first-literal-rename (expect rc=1) =====
+  mutation applied [budget]: 'compress=disabled_by_policy prompt=' -> 'char_cap=' (hits=1)
+[w57-sync] PROBE_FORMS 区域提取 18 条 raw 整行形态（已字符串感知跳注释） + 3 条命名常量形态，MAX_DIGEST_CHARS=160
+RED  全库写点首字面量失配、未在豁免清单登记 | core-agent\src\main\java\com\rickeal\liquidharness\core\agent\loop\ContextBudget.kt | 'char_cap='
+::error::全库 AgentLogStore 固定形态写点首字面量不被 PROBE_FORMS 认领且未显式豁免（认领逃逸）。
+CASE M-first-literal-rename: rc=1 -> PASS
+
+===== CASE C-reason-to-why-write-point-only (expect rc=1) =====
+  mutation applied [conv]: 'manual_compress=noop reason=' -> 'manual_compress=noop why=' (hits=1)
+[w57-sync] PROBE_FORMS 区域提取 18 条 raw 整行形态（已字符串感知跳注释） + 3 条命名常量形态，MAX_DIGEST_CHARS=160
+RED  全库写点首字面量失配、未在豁免清单登记 | feature-chat\src\main\java\com\rickeal\liquidharness\feature\chat\ConversationOps.kt | 'manual_compress=noop why='
+::error::全库 AgentLogStore 固定形态写点首字面量不被 PROBE_FORMS 认领且未显式豁免（认领逃逸）。
+CASE C-reason-to-why-write-point-only: rc=1 -> PASS
+
+===== CASE F-sync-rename-char-cap (expect rc=0) =====
+  mutation applied [comp]: ', char_budget=' -> ', char_cap=' (hits=1)
+  mutation applied [sink]: 'char_budget=\\d+' -> 'char_cap=\\d+' (hits=1)
+[w57-sync] PROBE_FORMS 区域提取 18 条 raw 整行形态（已字符串感知跳注释） + 3 条命名常量形态，MAX_DIGEST_CHARS=160
+[w57-sync] OK 14 条锚点现场渲染样本命中，15 条全库认领写点命中，11 条反向哨兵全拦下，A2 脱敏形态 equals(Cookie)/equals(X-Auth-Token) 两类齐备
+CASE F-sync-rename-char-cap: rc=0 -> PASS
+
+===== CASE G-loosen-regex (expect rc=1) =====
+  mutation applied [sink] line 193: '            Regex("""^context compressed: \\d+ -> \\d+ messages \\(chars=\\d+, dropped=\\d+, char_budget=\\d+, char_target=\\d+, budget=\\d+, target=\\d+ tokens\\)$"""),' -> '            Regex("""^context compressed.*$"""),'
+RED  自由文本却穿透落盘 | 压缩形态字段顺序调换 | context compressed: 2 -> 1 messages (dropped=1, chars=10, char_budget=100, char_target=50, budget=100, target=50 tokens)
+RED  自由文本却穿透落盘 | 压缩形态多一字段 | context compressed: 2 -> 1 messages (chars=10, dropped=1, char_budget=100, char_target=50, budget=100, target=50, extra=7 tokens)
+RED  自由文本却穿透落盘 | 压缩形态结尾无 tokens | context compressed: 2 -> 1 messages (chars=10, dropped=1, char_budget=100, char_target=50, budget=100, target=50)
+::error::PROBE_FORMS 同步自检判红：4 条失配
+CASE G-loosen-regex: rc=1 -> PASS
+
+===== FINAL RESTORED BASELINE rc=0 =====
+[w57-sync] PROBE_FORMS 区域提取 18 条 raw 整行形态（已字符串感知跳注释） + 3 条命名常量形态，MAX_DIGEST_CHARS=160
+[w57-sync] OK 14 条锚点现场渲染样本命中，15 条全库认领写点命中，11 条反向哨兵全拦下，A2 脱敏形态 equals(Cookie)/equals(X-Auth-Token) 两类齐备
+
+===== SUMMARY =====
+  BASELINE: PASS
+  K: PASS
+  M: PASS
+  C: PASS
+  F: PASS
+  G: PASS
+  RESTORED: PASS
+
+# ---- 反假绿补测（equals→contains 冒充具名头） ----
+[w57-sync] PROBE_FORMS 区域提取 18 条 raw 整行形态（已字符串感知跳注释） + 3 条命名常量形态，MAX_DIGEST_CHARS=160
+RED  A2 凭据脱敏形态 | redactHeaders 体内缺 equals("cookie" 具名头形态 | 
+::error::PROBE_FORMS 同步自检判红：1 条失配
+
+# SELF-AUDIT: 基线 rc=0；K（摘 A2 控制流）rc=1；M（首字面量改名）rc=1；C（非锚点 reason→why）rc=1；F（同步改名）rc=0 不过拟合；G（放宽正则）rc=1；反假绿（equals→contains）rc=1；形态外 0；还原 5 文件逐字节相同。

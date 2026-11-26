@@ -1,0 +1,53 @@
+W57 证据入仓 MANIFEST（W58 evidence-dev 补录；仓内 evidence/raw/w57/）
+核对口径：sha256 为入仓制品现场实算；内容摘要<=40字；四态按 judgment-criteria.md §4。
+证据源：CI=.w57_ci_tmp（10 日志）；设备=.w57_device_tmp（PNG）+ run-as 现场 grep（agent-0.log）。
+写域声明：仅 evidence/raw/w57/ 与仓外 .w58_evidence_tmp/；未触碰其它仓内文件。
+
+序号 | 文件名 | sha256 | 内容摘要 | 脱敏处理 | 四态判据
+---- | ------ | ------ | -------- | -------- | -------
+01 | deviceLogTail.txt | 51c451720617b749da202e2e4c95b1a9858c2b4e510b2a1426bc0f9203e1d983 | 设备原始探针8行：本波5+历史3，含压缩账行501→277 | 无凭据/端点/账号；历史行按日期标注 | ✅ 内核每轮压缩账行本波命中（⛔vacuous→✅）；历史对照⛔不作本波
+02 | g1_build.txt | 98c683ecebfbf4310a3c166b4c86651cc6a8b93753fe5497f68694bf1df6371a | 本地 assembleDebug 构建输出与结果 | 路径4处→<workspace>，代理1处→<proxy>，复扫零残留 | ✅ 构建通过
+03 | g1_det_build1.txt | c13180e01a51cb79269d504757bd26eaa653454c53268cbf2b06cc0739029d98 | 独立构建 run1 输出（与 run2 任务序不同） | 路径4处→<workspace>，代理1处→<proxy>，复扫零残留 | ✅ 双 run 之一通过
+04 | g1_det_build2.txt | 94aab80eff946f4b8325997d0317a0655b7d5ffc8ca7ff4067fb428ebf69fcbf | 独立构建 run2 输出（与 run1 任务序不同） | 路径4处→<workspace>，代理1处→<proxy>，复扫零残留 | ✅ 双 run 之二通过
+05 | g1_deterministic_build.txt | 5c61ac252085329627a1e391e0e871000ba6ab5d2231cf479590c048ef58ecfa | 双哈希补录：APK全哈希实测+旧包对照 | 无key/账号/序列号/端点；回报截断值如实标注 | ✅ 当前包双哈希可复核；第1轮/旧包 ⚠️ 部分
+06 | g2_arch_guard.txt | 6a8336feeb14ee45202e9ebda6be32cb0df09b25653b4359c89d3abc9bc9a62a | 模块边界/架构守卫扫描输出 | 仓根路径1处→<workspace>，复扫零残留 | ✅ 架构守卫通过
+07 | g3_selftest.txt | 6c50e9211e27cf9fca4a463ae2d31591dca825205e0cbc023218f235a9f9d7b9 | 28 个变异自证 case 批量自检输出 | 仓根→<workspace>，混合分隔符私人临时路径→<private-temp>，复扫零残留 | ✅ 变异自证 case 全通过
+08 | g4_fulltest.txt | ed63f658bef3fb35fd32012a23df2394508e2dcc3dbed21d1ff564e2bea4e63b | 全量单元测试 run1 输出 | 源无敏感模式，未改写；复扫零残留 | ✅ 全量测试 run1 通过
+09 | g4_fulltest_rerun.txt | 34bb40593901a3d5a68cc1c5a66d56b8b923d50697dc902b402e39e5e89bfe6e | 全量单元测试 run2 复跑输出 | 源无敏感模式，未改写；复扫零残留 | ✅ 全量测试 run2 通过
+10 | g5_probe.txt | cd3fa4e42f26476749acbdcb427faa93036a51397564035ef0eab4f56bf2e80b | PROBE_FORMS 锚点/认领/反向哨兵同步输出 | 源无敏感模式，未改写；复扫零残留 | ✅ 形态同步与反向哨兵全通过
+11 | g6_ledger.txt | 0d93db54a86c044d70972886aeaeee8813e569350eb50f01aeb7f819e64bc48d | 台账反引号测试符号可解析性检查输出 | 源无敏感模式，未改写；复扫零残留 | ✅ 台账符号全部可解析
+12 | g7_secretgate.txt | 6c2484292368c4e6f1789aff1a0f98390f6c1a34489d5502d33ad78a8946c821 | tracked/untracked/ignored 三路秘密扫描输出 | 源无敏感模式，未改写；复扫零残留 | ✅ 三路零命中
+13 | png_nano_final.png | ded260ee33e463f31ec43a01e5063d658ff7dde37651c51be387107bcd6868f7 | NV Nano Omni 回声 PONG-W57-NANOOOMNI | 目视无敏感字段，原样复制 | ✅ Nano Omni 供应商回声
+14 | png_supervl_final.png | 9c51c5c8a60505d812ee9a2b86db1ee44641033eca4f8b344de2519e64bf8b65 | NV SuperVL 回声 PONG-W57-NORTH/SUPERVL | 目视无敏感字段，原样复制 | ✅ SuperVL 供应商回声
+15 | png_1mfull_result.png | b9db362974854003d0121a6ef38079a222d42535b36670f9703d76aa0182daa3 | 1M 上下文回声，上下文窗 995.9K | 目视无敏感字段，原样复制 | ✅ 长上下文窗口判据
+16 | png_compact128.png | 60b841f82e1228b999e900b9f6212ab50b56bd934739c451e0f9e6e26aa16eab | 128 轮压缩问答，显示上下文 49.9K | 目视无敏感字段，原样复制 | ⚠️ 部分：仅 UI 侧上下文增长，账行见 deviceLogTail
+17 | png_compact500.png | 31b91c0747d6201163b9fd0c47950a97b4389663ce2873a9919f541aa40423f5 | 500 轮触发标记回显，生成中 | 目视无敏感字段，原样复制 | ⚠️ 部分：仅触发标记回显，账行见 deviceLogTail
+18 | png_mm_result.png | 33a09427527d2c34406ad8ae11b8a6970232918460d2f8db42a1752985604f29 | 识图回答：红圆/绿方/蓝下三角 | 目视无敏感字段，原样复制 | ✅ 多模态图像输入判据
+19 | png_file_write_approval.png | 56c0fa749817a3260d1c4762b5913985a4095d0b8cc89dd415df44f7fe5c52f9 | 写文件请求与等待响应状态 | 目视无敏感字段，原样复制 | ⚠️ 部分：未见明确允许/拒绝审批卡片
+20 | png_file_write_done.png | c248eb8b07dca8141fdec81249b84848114c0cc8899527c0ff386a9cb9aae68f | 写入完成 W57WRITEOK→w57write.txt | 目视无敏感字段（仅沙箱相对路径），原样复制 | ✅ 工具链文件写入判据
+21 | png_skill_final.png | 133edd9426dcc3af29b76c7c965c04aee7a4f40153a7698a79c02b2a2b3e82b1 | 技能化会议纪要整理回复 | 目视无敏感字段，原样复制 | ✅ 技能调度判据
+22 | png_dots3_testconn.png | 3ddb2770888e2cd381311239b942e42e2ad99e8c721f24cb23974ccc5c90fb36 | Dots3 端点测试连接失败 HTTP 404 | Base URL 整框灰块打码（PIL，x35..1045/y635..855），二次目视确认无残字 | ✅ 免费端点 404 负例判据被行使
+23 | png_north_result.png | ff56f110e8652a0a753744867e11e5024a4218ad551e4879ae1fe56e6c7fa12e | North Mini 请求失败 request rejected 404 | 目视无敏感字段，原样复制 | ✅ 免费端点 404 负例判据被行使
+24 | png_wake_check.png | 113f4e990364b3c6f896b9e81510a4511d0d82e7a0f45a90d065a84ac53d3aae | 唤醒后非全黑桌面，可见 LiquidHa... 图标 | 缩略预览目视无敏感字段，原样复制 | ✅ 唤醒三步法首步（screencap 非全黑）
+25 | g5_mutation_w58.txt | dbaef22cde370a40ccbc6439a58833421e507144d60df2f65743c29b77bffebd | W58两假绿变异自证K/M/C/F/G+反假绿 | 相对路径无本机绝对/凭据/账号 | ✅ K/M必红rc=1、F不过拟合rc=0、基线rc=0
+
+逐张截图 5 项校验（二进制完整性与目视）
+----
+png_nano_final.png: sig✓ IEND✓ verify✓ load✓ 1080x2400✓ 目视✓ 无敏感，原样
+png_supervl_final.png: sig✓ IEND✓ verify✓ load✓ 1080x2400✓ 目视✓ 无敏感，原样
+png_1mfull_result.png: sig✓ IEND✓ verify✓ load✓ 1080x2400✓ 目视✓ 无敏感，原样
+png_compact128.png: sig✓ IEND✓ verify✓ load✓ 1080x2400✓ 目视✓ 无敏感，原样
+png_compact500.png: sig✓ IEND✓ verify✓ load✓ 1080x2400✓ 目视✓ 无敏感，原样
+png_mm_result.png: sig✓ IEND✓ verify✓ load✓ 1080x2400✓ 目视✓ 无敏感，原样
+png_file_write_approval.png: sig✓ IEND✓ verify✓ load✓ 1080x2400✓ 目视✓ 无敏感，原样
+png_file_write_done.png: sig✓ IEND✓ verify✓ load✓ 1080x2400✓ 目视✓ 无敏感，原样
+png_skill_final.png: sig✓ IEND✓ verify✓ load✓ 1080x2400✓ 目视✓ 无敏感，原样
+png_dots3_testconn.png: sig✓ IEND✓ verify✓ load✓ 1080x2400✓ 目视✓×2 发现BaseURL→打码→复视无残字
+png_north_result.png: sig✓ IEND✓ verify✓ load✓ 1080x2400✓ 目视✓ 无敏感，原样
+png_wake_check.png: sig✓ IEND✓ verify✓ load✓ 1080x2400✓ 缩略目视✓ 无敏感，原样
+
+备注1：deviceLogTail 的 2026-11-21/11-24 三行是设备日志中真实存在的历史行，已明确标注为历史对照，不冒充 2026-11-26 本波。
+备注2：双哈希 34be7494… 全值已由 W58 现场 sha256sum 当前 APK 实测确认并落 g1_deterministic_build.txt；源 10 份 CI 日志与仓内 10 份脱敏文本本身仍无该串，第 1 轮产物已被覆盖、其哈希为当轮回报补录；旧包 sha256 仅 8 位截断 ec60a2e3…，全值不可复核、不编造。g1_det_build1/2 源文件 sha256 分别为 4971f48aca94… / 8b6d50ad4c48…，diff 仅 Gradle 任务输出顺序不同。
+备注3：png_dots3_testconn.png 首版打码起点 y=685 漏掉 URL 上半部（文字行 y≈660..690），已按像素定位改为 y=635 重做并二次目视确认；入仓哈希以重做后为准。
+备注4：设备当前安装 base.apk 实测 size 与旧包相同（70,613,908）但 sha256 不同（48f4fe1c…），属更旧安装，不与旧包或本轮出包产物混同；详见 g1_deterministic_build.txt [2]。
+备注5：png_supervl_final.png 摘要含两个哨兵并非笔误——目视逐字确认题面为 `Reply with: PONG-W57-SUPERVL`，模型最终答案却同时输出 `PONG-W57-NORTH` 与 `PONG-W57-SUPERVL`（思考段写 "reply with two specific strings"）；属模型过度输出、非 app bug，SuperVL 哨兵逐字命中判据仍成立，NORTH 另格按用户确认不可用停止占格、不据此复活。

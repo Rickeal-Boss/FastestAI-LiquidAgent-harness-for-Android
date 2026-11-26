@@ -1,0 +1,27 @@
+# W57 确定性出包双哈希补录（W58 evidence-dev 现场实测回灌，2026-11-26）
+# 缺口：W57 闸 1「两次 sha256 相等坐实 A2 入包」当时只在 CI 席回报消息中、未落盘；g1_det_build1.txt / g1_det_build2.txt 只有 rc=0 与产物路径，无 APK sha256。本文件补哈希文本；68MB APK 二进制不入仓。
+# 口径：现场实算与交付回报分栏；回报截断值如实标注不可复核，不补全、不编造；本轮不跑编译、不改动 APK。
+
+[1] 两轮独立出包（原始事实）
+  - 仓内原始输出：g1_det_build1.txt 末行 BUILD1_RC=0 / BUILD SUCCESSFUL in 46s；g1_det_build2.txt 末行 BUILD2_RC=0 / BUILD SUCCESSFUL in 47s。两轮均为 270 actionable tasks: 1 executed, 269 up-to-date，产物路径 ./app/build/outputs/apk/debug/app-debug.apk。
+  - 仓外源日志 mtime（两轮独立调用的旁证，已现场 stat）：.w57_ci_tmp/g1_det_build1.log = 2026-11-26 14:43:09 +0800；g1_det_build2.log = 2026-11-26 14:44:08 +0800。
+  - 交付回报记录（W57 当轮 CI 席回报，本文件补录）：第 1 轮 APK mtime 14:43:03 / 第 2 轮 APK mtime 14:44:03；两轮 size 均 68,473,382；两轮 sha256 均 34be7494b0186001a1409c1eb5694964a08707130cd48e333a11c6f0285ae2fc。
+  - 可复核性边界（如实留痕）：第 1 轮 APK 已被第 2 轮覆盖，其产物本体不可再取；仓外 10 份源日志与仓内 10 份脱敏文本中均无 34be7494 字样，该串出自当轮回报而非日志原文。第 2 轮产物仍在，size/hash/mtime 与上述回报全值一致（见 [3]）。故「双哈希相等」中当前包一侧可独立复核，第 1 轮一侧为回报补录 + BUILD1_RC=0 原始输出，不等同于对第 1 轮产物再算一次哈希。
+
+[2] 旧包对照（A2 源码前）
+  - 旧包（交付回报）：size 70,613,908 / sha256 ec60a2e3…（回报仅给前 8 位；仓外源、本机 APK 副本均不可得，全值不可复核，不编造补全）/ mtime 14:31:23 +0800。
+  - A2 源码时间点：14:32:50 +0800（据 W57 验收物记载）；旧包 mtime 早于该时刻。
+  - 新旧差异：新包 size 68,473,382 ≠ 旧包 70,613,908；新包 sha256 34be7494… ≠ 旧包 ec60a2e3…（前 8 位即不同）⇒ 旧包不含 A2、当前确定性出包产物含 A2。此为形态层/出包层结论，A2 运行时行为维持 ⚠️，不因此升级。
+  - 账实分离：设备当前安装 base.apk 现场实测 size 70,613,908（与旧包同 size 但 sha256 为 48f4fe1cff1a8d020b0f96fc87797f29809bd5359f90e39bed4374410443073b，mtime 2026-11-25 00:50:11 +0800），属更旧安装，不是本轮确定性出包产物；仓内 APK 与设备安装包不相混同。
+
+[3] 本轮现场复核（W58 evidence-dev 实跑，未编译）
+  $ sha256sum app/build/outputs/apk/debug/app-debug.apk
+  34be7494b0186001a1409c1eb5694964a08707130cd48e333a11c6f0285ae2fc  app/build/outputs/apk/debug/app-debug.apk
+  $ stat -c 'size=%s mtime=%y' app/build/outputs/apk/debug/app-debug.apk
+  size=68473382 mtime=2026-11-26 14:44:03.546575500 +0800
+  DETERMINISTIC=YES  （当前产物 hash/size/mtime 与回报第 2 轮值一致；两轮 BUILD SUCCESSFUL + rc=0 原始输出齐备）
+
+[4] 四态与边界
+  ✅ 当前 APK 双哈希全值可复核（34be7494… 现场实算，与 W57 双哈希回报一致）；✅ A2 入包形态层坐实；⚠️ 部分：第 1 轮产物已被覆盖、其哈希仅回报补录；旧包 sha256 仅 8 位截断、全值不可复核；A2 运行时行为 ⚠️（设备装更旧包，未真机复测）。
+
+# SELF-AUDIT: 本文件仅哈希文本、无 APK 二进制；无 key / 账号字段 / 设备序列号 / 私人路径 / 端点 URL；形态外 0。现场实测共 2 组（仓内 APK 的 sha256+stat、设备已装包的 size+sha256+mtime）；回报值逐项标注来源，未把截断值补造为全值、未把第 1 轮覆盖产物冒充可复核。

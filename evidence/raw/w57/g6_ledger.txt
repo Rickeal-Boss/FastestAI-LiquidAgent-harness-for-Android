@@ -1,0 +1,3 @@
+w46-ledger-symbol-check: test-class refs=21 test-method refs=64 kt-files=323
+OK all backticked test symbols (with test context) resolvable in *.kt
+LEDGER_RC=0
