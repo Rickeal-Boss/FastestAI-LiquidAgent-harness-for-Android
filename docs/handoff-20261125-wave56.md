@@ -20,7 +20,7 @@ W55 收尾契约第 12 次重犯（3 提交写成 2 提交、最终 tip 指错�
 ### 2.2 不据此改仓（登记到老号行内 / 条件触发）
 
 - 冻结项长远裁决书（元裁决 M1–M4、分项 R1–R5、长期条款 L1–L6）——**不代用户落笔**：文件自述「落笔前不生效」，R5 journal 二选一须用户字面值，M1–M4/L1–L6 多处替用户做方向裁决；用户本轮未逐字面裁决。转派单卡条件触发专题波，不改状态列。
-- `allowPrivateNetwork` 正向透传缺口——**回源证伪部分主张**：LLM 侧第四参已透传（`RemoteLlmEngine:147/205/212`），MCP 侧 `allowPrivateNetwork` 字段在 `McpModels.kt:25` 但未接进 `McpTransport.post`；0 服务器 vacuous，转安全收口老号第 1 车。
+- `allowPrivateNetwork` 正向透传缺口——**口径厘清两面 + 登记待修（⚠️）**：一面 LLM 侧第四参已透传（`RemoteLlmEngine:147/205/212`），另一面 MCP 侧字段 `McpModels.kt:25` 未接进 `McpTransport.post`（默认 false、fail-closed，非漏洞，但用户勾「允许内网」不生效）；两面不是同一个「未透传」主张，不能合并写成全缺。0 服务器 vacuous，转安全收口老号第 1 车，本波不写码。
 - FAILURE_DIGEST 固定主体扩样本——**不并入本波**：W52 已登记「枚举为当前全集、未来新增须同步」已知边界，15 类当前完备；拼接式常量不是 raw-string 形态，转后续载体。
 - 跨文件契约表落 AGENTS.md——**不采纳**：`DiagnosticLogSink.kt:87-105` KDoc 已是写点对照表，重复条款违反「冻结的冻结」。
 - W35-02「README 已销」——**回源证伪**：权威台账 `:671` 状态 `OPEN`，README 全文无该表述，报告查的是它那一版树。
@@ -34,7 +34,7 @@ W55 收尾契约第 12 次重犯（3 提交写成 2 提交、最终 tip 指错�
 ## 三、账本与守恒
 
 - 同段内落 `### W56 段`（内容指路 + 计数指路），不补上一波。
-- 五条老号行内注记（落盘最小化 / 收尾契约 / 台账纪律 / 脱敏门禁 / 压缩量纲 + 安全收口回归），状态原样、pipe=7、零回开。
+- 老号行内注记：5 条补录（落盘最小化 / 收尾契约 / 台账纪律 / 脱敏门禁 / 压缩量纲）+ 1 条口径同步（安全收口，9→11 处捕获 / 10 处重抛）= 所列 6 个段位名；状态原样、pipe=7、零回开。
 - 挂账行 216 / 已关 39 / 开放 166 / 结转 11，与历波逐值相等；零本波新挂账行；G20 141 ID 不变。
 - 本波销账集合 = 0 行；两数只写派单卡抬头。
 
@@ -74,7 +74,7 @@ W55 收尾契约第 12 次重犯（3 提交写成 2 提交、最终 tip 指错�
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
 
-**提交实态（自洽口径，不再随文档回填递归）**：唯一代码提交 `bde9054cc77e1c7ab1536eb3baad67fa05fe568a`；其后 `ab02d9b`（交接与验收物回填）、`5990e6b`（实态订正）为**纯文档回填提交**，按既有降级口径不计入交付判据、但计入提交实态。**最终 tip 不再在本文档硬写 sha，以 atom 实取为准**；若本文件之后仍有纯文档回填，其最终 tip 与触发的 Secret run 只声明存在、不逐条列号、不作交付判据（W50 口径）。
+**提交实态（自洽口径，不再随文档回填递归）**：4 提交 = ① 唯一代码提交 `bde9054cc77e1c7ab1536eb3baad67fa05fe568a` + 3 条纯文档回填提交 `ab02d9b`（交接与验收物回填）/ `5990e6b`（实态订正）/ `1685ec3`（最终 tip，自洽口径订正）；5 条 run 全绿。回填提交按既有降级口径不计入交付判据、但计入提交实态。**每波交接只声明本波提交/run 计数，最终 tip 与逐号 run 由 atom / Actions 实取**，不在本文档硬写 sha、不为补链新建提交（W50 口径）。③ `5990e6b` 的历史标题「2 提交 + 5 run、最终 tip ab02d9b」为中间时点口径，按既有纪律不回改，以本节实态为准。
 
 | 提交 | run | workflow | status | conclusion | updated_at |
 |---|---|---|---|---|---|
@@ -82,8 +82,9 @@ W55 收尾契约第 12 次重犯（3 提交写成 2 提交、最终 tip 指错�
 | 代码 `bde9054` | `45614820018` | Secret scan | completed | **success** | 2026-11-25T12:33:25Z |
 | 回填 `ab02d9b` | `45615559262` | Secret scan | completed | **success** | 2026-11-25T12:37:54Z |
 | 回填 `5990e6b` | `45616128316` | Secret scan | completed | **success** | 2026-11-25T12:41:25Z |
+| 回填 `1685ec3` | `45616685625` | Secret scan | completed | **success** | 2026-11-25T12:44:54Z |
 
-回填提交的 Build 按 `docs/**` paths-ignore 未触发（既定口径，显式声明）；代码字节自 `bde9054` 后未变，Build 绿继承。**交付判据 = 唯一代码提交 `bde9054` 双 run 全绿**：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820314`（Build success）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820018`（Secret success）。回填提交的运行号逐号给出只作事实记录、不作交付判据（显式声明，非漏记）。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
+②③④ 回填提交的 Build 按 `docs/**` paths-ignore 未触发（既定口径，显式声明）；代码字节自 `bde9054` 后未变，Build 绿继承。**交付判据 = 唯一代码提交 `bde9054` 双 run 全绿**：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820314`（Build success）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820018`（Secret success）。回填提交的运行号逐号给出只作事实记录、不作交付判据（显式声明，非漏记）。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
 ## 七、明确未做（逐条带中文段位）
 

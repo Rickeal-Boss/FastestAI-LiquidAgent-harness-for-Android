@@ -70,11 +70,17 @@ class McpServerStore(private val files: JsonFileStore) {
 
     private fun redactHeaders(headers: Map<String, String>): Map<String, String> =
         headers.mapValues { (name, value) ->
-            if (name.equals("Authorization", ignoreCase = true) || name.contains("key", ignoreCase = true)) {
-                REDACTED
-            } else {
-                value
-            }
+            // A2（W57）：脱敏面单调收窄。原仅 Authorization / 含 key；补 Cookie、
+            // X-Auth-Token 两个具名头与含 token/secret/cookie 的头名（ignoreCase）。
+            // 只扩大脱敏面、不放宽：任何命中一律 REDACTED，不改常量、不动 upsert/list。
+            val sensitive = name.equals("Authorization", ignoreCase = true) ||
+                name.equals("Cookie", ignoreCase = true) ||
+                name.equals("X-Auth-Token", ignoreCase = true) ||
+                name.contains("key", ignoreCase = true) ||
+                name.contains("token", ignoreCase = true) ||
+                name.contains("secret", ignoreCase = true) ||
+                name.contains("cookie", ignoreCase = true)
+            if (sensitive) REDACTED else value
         }
 
     private companion object {

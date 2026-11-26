@@ -14,7 +14,7 @@
 | # | 分歧 / 主张 | 裁决 | 四态 | 依据 |
 |---|---|---|---|---|
 | 1 | 冻结项长远裁决书（元裁决 M1–M4 + R1–R5 + L1–L6）要求本波落笔 | **不代用户落笔，转触发信号登记** | ⚠️ | 该文件自述「落笔前不生效」，且 R5 journal 二选一须用户给字面值、M1–M4/L1–L6 多处替用户做方向裁决；用户本轮未逐字面裁决。按「不代用户裁决」写入派单卡条件触发专题波，不新开挂账号、不改状态列 |
-| 2 | `allowPrivateNetwork` 正向透传缺口（上一波报告 P1-1，本波未修未登记） | **降级为口径订正：回源证伪「未透传」主张** | ✅ | 现役树回源：`HttpTransport.post(url, headers, body, allowPrivateNetwork=false)` 第四参存在（`:124/131/135`），`RemoteLlmEngine:147/205/212` 已透传；MCP 侧 `McpTransport.post` 端口（`:25-31`）刻意只有四参、`NetMcpTransport:42` 调 `http.post(url, headers, body)` 走 fail-closed 默认 false，MCP server 配置虽有 `allowPrivateNetwork` 字段（`McpModels.kt:25`）但未接进传输调用——即「LLM 端点正向开关有效、MCP 端正向开关未接」两个不同面，报告把前者漏读成全缺；因 MCP 0 服务器 vacuous，修法转安全收口老号第 1 车，本波登记不写码 |
+| 2 | `allowPrivateNetwork` 正向透传缺口（上一波报告 P1-1，本波未修未登记） | **口径厘清 + 登记待修**（不合并写成「回源证伪全缺」） | ⚠️ | 事实陈述两面：① LLM 侧第四参已透传 —— `HttpTransport.post(url, headers, body, allowPrivateNetwork=false)` 第四参存在（`:124/131/135`），`RemoteLlmEngine:147/205/212` 已透传；② MCP 侧字段未接 —— `McpTransport.post` 端口（`:25-31`）刻意只有四参、`NetMcpTransport:42` 调 `http.post(url, headers, body)` 走 fail-closed 默认 false，MCP server 配置的 `allowPrivateNetwork` 字段（`McpModels.kt:25`）未接进传输调用。非漏洞（默认 false、fail-closed），但用户勾「允许内网」在 MCP 侧不生效；「LLM 已透传」与「MCP 未接」是两个不同面，不能合并成「未透传」单一主张证伪。判据四态 ⚠️（口径已厘清、缺口待修）；处置 = 转安全收口老号第 1 车，本波不写码；因 MCP 0 服务器 vacuous，真机侧维持 ⛔vacuous |
 | 3 | probe-form-sync 样本集扩到 FAILURE_DIGEST 固定主体 | **采纳收窄版，不并入本波** | ⚠️ | W52 已把「枚举覆盖为当前全集、未来新增 tag 须同步」登记为已知边界，15 类主体当前全在正则里、无已知漏登记；且 FAILURE_DIGEST 是拼接式常量不是 raw-string 形态。本波升级的渲染架构可作为后续载体，但不扩样本范围（冻结零追加），转安全收口老号行内注记 |
 | 4 | 跨文件契约表落 AGENTS.md | **不采纳，降级为已有注记** | ✅ | `DiagnosticLogSink.kt:87-105` KDoc「形态与生产写点一一对应」已是一张逐写点对照表，再加 AGENTS.md 表是重复条款、违反「冻结的冻结」 |
 | 5 | W35-02「README 已销 vs 权威台账 OPEN」 | **回源证伪 README 侧主张** | ✅ | 现役台账 `06-deferred-ledger.md:671` W35-02 状态列 `OPEN`，README 全文无「W35-02 已销」表述（`grep` 0 命中）；四波连审报告引用的「README 线订正」在其那一版树，本波树不存在，不据此改台账 |
@@ -59,7 +59,7 @@
 | 4 | 步 2.3「218 / 288 行」→「218 / 345 行」（实测 218/345） | `w55-acceptance.md` | ✅ |
 | 5 | 台账安全收口老号行「9 处工具捕获」→「11 处 / 10 处重抛（另 1 处回调例外）」 | `06-deferred-ledger.md` | ✅ |
 | 6 | 30 行探针头注明「24 上一波留存 + 6 本波新增」+ 末尾自检行 | `evidence/raw/w55/deviceLogTail.txt` | ✅ |
-| 7 | g0 脱敏门禁三路原始输出入仓（补 W54/W55 已登记的证据缺位） | `evidence/raw/w56/g0_secret_gate.txt` | ✅ |
+| 7 | g0 脱敏门禁三路 selftest 汇总入仓（补 W54/W55 已登记的证据缺位；入仓为 2 行汇总、非三路逐路原始输出） | `evidence/raw/w56/g0_secret_gate.txt` | ✅ |
 
 全部内容订正 + 一个脚本升级，**零 `.kt` 逻辑改动、零新挂账号、不回改历史四态、无补链提交**。
 
@@ -71,6 +71,17 @@
 | `scripts/w55-probe-form-sync.sh` | 128→263 行（脚本无 G10 行数闸门） | ✅ |
 | `DiagnosticLogSink.kt` / 测试 | 218 / 345 行（单文件上限 600） | ✅ |
 | `feature-chat` / `core-kernel` / `GenerationRound.kt` | 3999 / 449 / 400（本波零触碰） | ✅ |
+
+> **gitleaks 规则升级触发信号（登记，不改字面量）**：`char_budget=` 形态共 11 处（`DiagnosticLogSinkTest.kt` 7 处 + 自检脚本 NEGATIVE 4 处），当前最终 tip `1685ec3` Secret scan 绿。本波不动这些字面量（保持 Secret 绿）；若未来 gitleaks `generic-api-key` 规则升级再次命中该形态，**改形状、不加 allowlist / `--exclude`**（W54 误报先例）。登记为脱敏门禁老号的触发信号，不为补链新建提交。
+
+### 2.4 A2 凭据白名单扩展（本波唯一冻结组外实质修复）
+
+| 项 | 实现 | 判据 / 自证 | 四态 |
+|---|---|---|---|
+| `redactHeaders` 脱敏面单调收窄 | `core-data/.../McpServerStore.kt:71-79`（84→90 行，cap 400；core-data 2656/4500）。原仅拦 `Authorization` / 含 `key`；新增 `Cookie`、`X-Auth-Token` 两个具名头 + 含 `token`/`secret`/`cookie`（ignoreCase），命中一律 `REDACTED`。不改常量、不动 `upsert`/`list`、不碰 G15b/G19 | fail-closed 单调扩大、零行为放宽；仅此一个 `.kt` 入白名单 | ✅ |
+| 静态形态判据（零新 @Test） | `w55-probe-form-sync.sh` 新增⑥：花括号配平（跳字符串/注释）抽 `redactHeaders` 体，必须同时含 `equals("Cookie")` / `equals("X-Auth-Token")` 具名头形态（ignoreCase；不认 `contains` 泛化形态以免掩盖删名变异）。空命中语义：函数体抽空判红 | 三退出码：基线 rc=0；删 `equals("Cookie")` ⇒ rc=1；删 `equals("X-Auth-Token")` ⇒ rc=1；cp 还原 ⇒ rc=0（仓库外备份 + 精确替换，零 git 写命令） | ✅ |
+
+**A2 caveat（方案席 + 主理人回源确认，诚实边界）**：全仓无 `McpServerStoreTest`、`redactHeaders` 为 private ⇒ **不走 JVM 新测试**（零新 `@Test`，`EXPECTED_TESTS` 天然维持 904）。判据载体为脚本静态形态检查；该检查只坐实「两类具名脱敏头字面量在场、删任一必红」的**形态**层，**不证明运行时 header 映射行为**（无行为级用例）。若形态检查不覆盖这两类 ⇒ A2 不得判 ✅；本波实测覆盖（三退出码齐），故上述形态判据判 ✅，但整体运行时行为证据为 ⚠️（无 JVM 行为级用例，条件触发专题波可补）。G1 编译验证 `localbuild.sh :app:assembleDebug` 见 §步 3。
 
 ---
 
@@ -99,7 +110,7 @@
 | **回声（Nano Omni 30B / 128K）** | 输入框 dump 逐字 `Repeat this token exactly and nothing else: ECHO-W56NANO`；最终答案逐字 `ECHO-W56NANO`；`1.8k in / 77 out`、`上下文 1.9K / 127K`。三件套（dump + 答案 + 像素目视）全过 | ✅ | `p0_echo_nano.png` |
 | **skill** | 技能页列出 `notes-organizer` / `pdf-toolkit`（来源 asset） | ✅ | `p1_skills.png` |
 | **手动压缩 UI 路径** | 「更多操作 → 压缩上下文」确认框逐字弹出（含缓存重建提示），路径行使；本次为验证 UI 未确认压缩 | ✅ | `p2_compress_dialog.png` |
-| **自动压缩 applied（长历史）** | 导入 183,905 字符 / 250 条 JSONL，发消息触发正常结束 ⇒ 设备侧落盘 `auto_compact dropped=60 kept=193 cache_invalidated=false` ×2、`prefix prompt=46196`，最终读数 `39.2k in / 188 out`、`上下文 39.3K / 123.9K`。丢弃切点真实行使、非 noop | ✅ | `deviceLogTail.txt`、`agent-0.log` 探针 |
+| **自动压缩 applied（长历史）** | 导入 183,905 字符 / 250 条 JSONL，发消息触发正常结束 ⇒ 设备侧落盘 `auto_compact dropped=60 kept=193 cache_invalidated=false` ×2、`prefix prompt=46196`，最终读数 `39.2k in / 188 out`、`上下文 39.3K / 123.9K`。丢弃切点真实行使、非 noop | ✅ | 原始日志按回灌级别不入仓，入仓探针见 `deviceLogTail.txt`；附带读数为设备侧 adb dump、未入仓（外审不可复核，结论本身由入仓探针坐实） |
 | **openrouter 两免费端点** | Dots3 与 North 均返回 `本次请求失败：request rejected (HTTP 400)`，设备侧落盘 `run failed: request rejected (HTTP 400) [http:rejected]`。W54 时两者 404，本波 400——端点在用但请求被拒；用户声明「可用、工具+视觉双通」未被本次设备真相证实，记设备真相、不推断供给方原因 | ⚠️ | `deviceLogTail.txt`、UI dump |
 | **多模态真图输入** | 320×180 双色测试图（左红方 + 右蓝圆 + W56VIS）已生成并 push 设备；SAF 图片通道本环境「本周」tab 报「暂时无法加载内容」、下载 tab 未索引新图 ⇒ 未成行；W53/W54 已验证过 Bolt 视觉，本波不编造 ✅ | ⚠️ | 工作区测试图（不入仓）；设备 SAF 现象 |
 | **MCP 服务器** | 0 服务器 ⇒ 判据 vacuous，不推断「MCP 不可用」 | ⛔vacuous | 端点池未配置 MCP server |
@@ -113,7 +124,7 @@
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote 保持干净。
 
-**提交实态（自洽口径，不再随文档回填递归）**：唯一代码提交 `bde9054cc77e1c7ab1536eb3baad67fa05fe568a`；其后 `ab02d9b`（交接与验收物回填）、`5990e6b`（实态订正）为**纯文档回填提交**，按既有降级口径不计入交付判据、但计入提交实态。**最终 tip 不在本文档硬写 sha，以 atom 实取为准**；其后任何纯文档回填的 run 只声明存在、不逐条列号、不作交付判据（W50 口径）。
+**提交实态（自洽口径，不再随文档回填递归）**：4 提交 = ① 唯一代码提交 `bde9054cc77e1c7ab1536eb3baad67fa05fe568a` + 3 条纯文档回填提交 `ab02d9b`（交接与验收物回填）/ `5990e6b`（实态订正）/ `1685ec3`（最终 tip，自洽口径订正）；5 条 run 全绿。回填提交按既有降级口径不计入交付判据、但计入提交实态。**每波交接只声明本波提交/run 计数，最终 tip 与逐号 run 由 atom / Actions 实取**，不在本文档硬写 sha、不为补链新建提交（W50 口径）。③ `5990e6b` 的历史标题「2 提交 + 5 run、最终 tip ab02d9b」为中间时点口径，按既有纪律不回改，以本节实态为准。
 
 | 提交 | run | workflow | status | conclusion | updated_at |
 |---|---|---|---|---|---|
@@ -121,8 +132,9 @@
 | 代码 `bde9054` | `45614820314` | Build | completed | **success** | 2026-11-25T12:34:12Z |
 | 回填 `ab02d9b` | `45615559262` | Secret scan | completed | **success** | 2026-11-25T12:37:54Z |
 | 回填 `5990e6b` | `45616128316` | Secret scan | completed | **success** | 2026-11-25T12:41:25Z |
+| 回填 `1685ec3` | `45616685625` | Secret scan | completed | **success** | 2026-11-25T12:44:54Z |
 
-回填提交 Build 按 `docs/**` paths-ignore 未触发（既定口径，显式声明）；代码字节自 `bde9054` 后未变，Build 绿继承。**交付判据 = 唯一代码提交 `bde9054` 双 run 全绿**（Build `45614820314` + Secret `45614820018`），公开 API 四字段实取。链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820314`（Build）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820018`（Secret）。回填运行号只作事实记录、不作交付判据（显式声明，非漏记）。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
+②③④ 回填提交 Build 按 `docs/**` paths-ignore 未触发（既定口径，显式声明）；代码字节自 `bde9054` 后未变，Build 绿继承。**交付判据 = 唯一代码提交 `bde9054` 双 run 全绿**（Build `45614820314` + Secret `45614820018`），公开 API 四字段实取。链接：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820314`（Build）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45614820018`（Secret）。回填运行号只作事实记录、不作交付判据（显式声明，非漏记）。本地四闸门不代替 CI；CI 绿以公开 API 四字段为准。
 
 ---
 
@@ -146,11 +158,11 @@
 | 段位 | 触发信号 | 缓解动作 | 本波状态 |
 |---|---|---|---|
 | 落盘最小化老号 | 任一生产写点改形状 / 正则被注释而 `PROBE_FORMS` 未同步 | 机械自检升级为现场渲染 + 三条变异必红；删/注释正则即判红 | OPEN，行内注记 |
-| 收尾契约老号 | 外审按最终 tip 复核运行四字段 / 自指句 | W55 3 提交 + 4 run、W56 1 代码提交 + 2 回填提交 + 6 run 按实态订正；最终 tip 交 atom 实取、不硬写 sha，判据锚唯一代码提交双 run | OPEN，行内注记 |
+| 收尾契约老号 | 外审按最终 tip 复核运行四字段 / 自指句 | W55 3 提交 + 4 run、W56 4 提交（1 代码 + 3 回填）/ 5 条 run 全绿按实态订正；每波只声明本波提交/run 计数、最终 tip 与逐号 run 交 atom 实取、不硬写 sha，判据锚唯一代码提交双 run | OPEN，行内注记 |
 | 压缩量纲老号 | 压缩后仍熔断 / 自动压缩长期只 noop | 本波真机 applied 坐实会话级；触发线档位化等余项等用户单点开波 | OPEN，行内注记 |
 | 安全收口老号 | 真实外部 MCP + 明文解禁 / G19 恒 vacuous / `allowPrivateNetwork` MCP 正向 / 双 workflow gitleaks 归因 | 本波回源厘清正向开关两面；FAILURE_DIGEST 样本扩张转后续载体；MCP token Keystore 等待开波 | OPEN，行内注记 |
 | 台账纪律老号 | 文档声明数与实测哈希不符 / 同批 P1 漏登记 / 冻结书替用户裁决 | 行数账实 288→345、9→11/10 处；冻结书不代落笔、转触发信号 | OPEN，行内注记 |
-| 脱敏门禁老号 | 新增二进制证据入仓 / 证据回显本机路径 | 逐张 verify + IEND + 目视；g0 三路原始输出入仓；入仓前门禁复扫 | OPEN，行内注记 |
+| 脱敏门禁老号 | 新增二进制证据入仓 / 证据回显本机路径 | 逐张 verify + IEND + 目视；g0 三路 selftest 汇总入仓（非逐路原始输出）；入仓前门禁复扫 | OPEN，行内注记 |
 | 真压两条 / 明文三条 / journal 两条 / 拆分三方 / 拥堵断流老号 | 各自触发信号见台账权威版 | 不代裁、不合并销账 | OPEN |
 
 ## 交给外部审查团队的制品清单（边界声明）
