@@ -17,4 +17,9 @@
     <string name="drawer_current_subtitle">仅本次运行</string>
     <string name="drawer_empty_title">还没有会话</string>
     <string name="drawer_persistence_note">会话尚未持久化：重启应用后不会保留。</string>
+    <!-- W61 / R5：杀进程恢复卡。会话正文不落盘，故「继续」只清未结算标记、不承诺还原正文。 -->
+    <string name="recovery_title">上次运行被中断</string>
+    <string name="recovery_body">检测到上一次运行没有正常结束。会话正文尚未持久化，「继续」会清掉中断标记并回到新对话；「丢弃」会清空运行记录。</string>
+    <string name="recovery_continue">继续</string>
+    <string name="recovery_discard">丢弃</string>
 </resources>

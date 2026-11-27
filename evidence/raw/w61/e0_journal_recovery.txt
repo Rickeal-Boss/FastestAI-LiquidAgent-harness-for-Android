@@ -1,0 +1,43 @@
+# W61 证据（R5 journal v1 代码波）
+# 脱敏声明：端点标识一律「端点 A」占位；runId 为内核随机 hex 非账号；无凭据/URL/账号/序列号/本机路径/SSID/MAC。
+# 四态纪律：未触发 ≠ 通过；条件未满足如实标 ⚠️/⛔vacuous，不冒充。
+
+=== 判据 R5-journal：杀进程恢复卡两路（真机 OPPO PDRM00 / Android 13）===
+来源：device run-as files/harness/run-journal.jsonl 逐字 + uiautomator dump UI 文本逐字。
+时间窗：2026-11-27 UTC 12:52–13:01（本波真机）。
+
+[step-1] 冷启动无 journal 文件，无恢复卡（符合「无未结算 run 不弹卡」）。
+  run-as ls files/harness/run-journal.jsonl -> No such file or directory
+  UI: 开始一段对话 / 对话 / 设置（无恢复卡）
+
+[step-2] 真机发消息「W61 test ping」-> run_started 落盘：
+  run_started runId=110eda96406c4f71a928a0967a8dc8d6 inputChars=13 at=1795783954214
+  UI：3/12 轮，请求在途（未结算）。
+
+[step-3] am force-stop（模拟进程被杀）-> journal 仍只有 run_started（无 settled）：
+  run_started runId=110eda96406c4f71a928a0967a8dc8d6 inputChars=13 at=1795783954214
+
+[step-4] 重启 App -> 恢复卡弹出（判据关键：读盘配对，非内存 buffer）：
+  UI text="上次运行被中断"
+  UI text="检测到上一次运行没有正常结束。会话正文尚未持久化，「继续」会清掉中断标记并回到新对话；「丢弃」会清空运行记录。"
+  按钮：丢弃 / 继续
+  => ✅ 未结算 run 被正确发现并弹卡
+
+[step-5] 点「继续」-> 补 run_settled，卡消失：
+  run_started runId=110eda96406c4f71a928a0967a8dc8d6 inputChars=13 at=1795783954214
+  run_settled runId=110eda96406c4f71a928a0967a8dc8d6 activeMs=0 frozenMs=0 tools=0 cancelled=false at=1795784049741
+  UI: 回到「开始一段对话」，无恢复卡
+  => ✅ 继续 = 补 settled 标记 + 回到新对话（正文未持久化，如实标注，不冒充还原）
+
+[step-6] 注入未结算行（模拟上次恢复也没结算）-> 重启 -> 再次弹卡：
+  注入：run_started runId=w61discardprobe0000000000000000 inputChars=0 at=1795784100000
+  UI text="上次运行被中断"（同 step-4）
+  => ✅ 最新未结算 run 被发现
+
+[step-7] 点「丢弃」-> 清盘 + 卡消失：
+  run-as ls files/harness/run-journal.jsonl -> No such file or directory
+  UI: 回到「开始一段对话」，无恢复卡
+  => ✅ 丢弃 = 清内存 + 清落盘，下次启动不再弹
+
+四态结论：恢复卡两路 ✅✅（发现未结算 + 继续补 settled + 丢弃清盘）；
+「继续能接上被中断的正文」= ⚠️ 不适用（会话正文本就不落盘，既有架构事实，卡面已如实告知）。

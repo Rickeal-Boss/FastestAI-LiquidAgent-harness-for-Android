@@ -3,6 +3,8 @@ package com.rickeal.liquidharness.core.data
 import android.content.ClipboardManager
 import android.content.Context
 import com.rickeal.liquidharness.core.agent.AgentRunner
+import com.rickeal.liquidharness.core.agent.journal.AgentRunJournal
+import com.rickeal.liquidharness.core.agent.journal.FreezeClock
 import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.agent.tool.ToolContext
 import com.rickeal.liquidharness.core.agent.tool.ToolRegistry
@@ -77,6 +79,20 @@ class AppContainer(context: Context) {
     val sessionFootprint: SessionFootprintStore = SessionFootprintStore()
 
     val logs: AgentLogFileStore = AgentLogFileStore(File(dataDir, "logs"))
+
+    /** run journal（R5/W61）：run 边界事件溯源，单一实例跨 runner 共享；落盘失败被吞。 */
+    val runJournalFiles: FileRunJournalStore = FileRunJournalStore(File(dataDir, FileRunJournalStore.FILE_NAME))
+    val runJournal: AgentRunJournal = AgentRunJournal(sink = { line -> runJournalFiles.append(line) })
+
+
+    val runRecovery: RunRecoveryStore = RunRecoveryStore(runJournalFiles, runJournal)
+
+    /** 冻结源：elapsedRealtime 含深度睡眠、uptime 不含 ⇒ 差值是冻结累计；每次 run 新建。 */
+    private val frozenNanos: () -> Long = {
+        // 两者均为开机累计量，FreezeClock 在 run 起点采样后相减即本 run 冻结增量。
+        android.os.SystemClock.elapsedRealtimeNanos() -
+            android.os.SystemClock.uptimeMillis() * com.rickeal.liquidharness.core.agent.journal.FreezeClock.NANOS_PER_MILLI
+    }
 
     private val transport: HttpTransport = HttpTransport()
 
@@ -254,6 +270,8 @@ class AppContainer(context: Context) {
                 engine = RemoteEngineBridge(engineFor(endpoint)),
                 tools = if (endpoint.supportsTools) tools else ToolRegistry(),
                 policy = AgentPolicy(maxContextTokens = windowCap, compressContext = compress),
+                journal = runJournal,
+                newFreezeClock = { FreezeClock(frozenNanos = frozenNanos) },
             )
         }
     }

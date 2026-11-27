@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.core.agent.loop
 
 import com.rickeal.liquidharness.core.agent.AgentRequest
+import com.rickeal.liquidharness.core.agent.journal.FreezeClock
 import com.rickeal.liquidharness.core.model.ChatMessage
 import com.rickeal.liquidharness.core.model.FinishReason
 import com.rickeal.liquidharness.core.model.TokenUsage
@@ -19,6 +20,12 @@ class RunState(
     working: List<ChatMessage> = emptyList(),
     /** 时间源注入点：单测要能冻结墙钟，不能让 [elapsedMillis] 直连 `System.nanoTime()`。 */
     private val nowNanos: () -> Long = System::nanoTime,
+    /**
+     * 冻结感知时钟（R5 / W61）。`null` = 维持原单调墙钟口径 —— 既有 904 个用例与
+     * 无宿主装配零改动；宿主在真机装配时注入，使墙钟 SOFT/HARD 不再把设备冻结
+     * 误判成「模型超时」。见 [FreezeClock] 类头。
+     */
+    private val freezeClock: FreezeClock? = null,
 ) {
 
     /** 工作副本。**只增不减，除压缩外**（`01-architecture.md` §五 不变量 1）。 */
@@ -114,16 +121,10 @@ class RunState(
         private set
 
     /**
-     * **实测** chars/token：上一次请求的 `发送字符数 ÷ provider 回报的 prompt_tokens`。
-     *
-     * `0f` = 本 run 还没有真值（首轮 / 刚压缩过）⇒ 硬预算回落
-     * `policy.hardCharsPerToken`（floor 1.8）。
-     *
-     * ## 为什么这个比值必须被测量，而不是写死一个常数
-     *
-     * chars/token 是**内容相关**的：英文散文实测 5.73～5.75，代码 / JSON ≈2.0。
-     * 固定 1.8 在散文会话里会把可用字符空间砍到 1/3（可感知的信息损失），
-     * 固定 5.75 又会在代码会话里超窗。所以只能按**本 run 的真实内容**标定。
+     * **实测** chars/token：上次请求的 `发送字符数 ÷ provider 回报的 prompt_tokens`。
+     * `0f` = 本 run 无真值（首轮 / 刚压缩过）⇒ 硬预算回落 `policy.hardCharsPerToken`（floor 1.8）。
+     * 比值内容相关（英文散文 ≈5.75、代码/JSON ≈2.0），写死任一常数都会一边砍空间一边超窗，
+     * 故只能按**本 run 真实内容**标定。
      *
      * ## 为什么它偏小（方向安全）
      *
@@ -360,19 +361,27 @@ class RunState(
     /**
      * 可运行时长（毫秒）。
      *
-     * ⚠️ 用**单调时钟**，不扣冻结时间。`FreezeClock`（设备 cgroup 冻结感知时钟）
-     * **尚未落地**，挂账 W3-05 —— 全仓零实现，别在别处引用它当成已接机制。
-     * 落地之前，墙钟 HARD（`wallClockHardMillis`）在设备被系统冻结时有**误杀风险**：
-     * 冻结期间单调时钟照走，解冻后一算就是「超时」，而模型其实什么都没做。
-     * 这里如实按单调时钟算，不假装已经做了冻结剔除。
+     * [freezeClock] 非空时返回**扣除设备冻结后**的活跃时长（R5 / W61 落地）；
+     * 为空时维持原单调墙钟口径 —— 单测 / 无宿主装配的行为与 W60 及之前逐字节一致。
+     *
+     * 冻结感知时钟解决的是「墙钟 HARD 误杀」：设备 cgroup 冻结期间单调时钟照走，
+     * 解冻后一算就是「超时」，而模型其实什么都没做。真机装配注入 [FreezeClock] 后
+     * 该段时间被剔除；`GenerationRound` 的首字节看门狗**刻意不接**本时钟（它防的是
+     * 远端不响应，扣冻结会漏判 provider 真的 120s 不吐字节），理由见 FreezeClock 类头。
      */
-    fun elapsedMillis(): Long = (nowNanos() - startedAtNanos) / 1_000_000L
+    fun elapsedMillis(): Long =
+        freezeClock?.activeElapsedMillis() ?: ((nowNanos() - startedAtNanos) / 1_000_000L)
+
+
+    /** 本 run 至今的冻结时长（毫秒），供 journal settled 行取证；未注入冻结时钟时 0。 */
+    fun frozenMillis(): Long = freezeClock?.frozenMillis() ?: 0L
 
     companion object {
         /** 从请求构造：历史 + 本次用户输入（用户输入永远追加在尾部）。 */
         fun forRequest(
             request: AgentRequest,
             nowNanos: () -> Long = System::nanoTime,
+            freezeClock: FreezeClock? = null,
         ): RunState {
             val initial = ArrayList<ChatMessage>(request.history.size + 1)
             initial.addAll(request.history)
@@ -385,7 +394,7 @@ class RunState(
                     )
                 )
             }
-            return RunState(initial, nowNanos)
+            return RunState(initial, nowNanos, freezeClock)
         }
     }
 }

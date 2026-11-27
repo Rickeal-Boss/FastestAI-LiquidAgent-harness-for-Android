@@ -12,6 +12,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -19,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -26,6 +30,7 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.rickeal.liquidharness.R
 import com.rickeal.liquidharness.core.data.AppContainer
 import com.rickeal.liquidharness.core.design.liquid.backdrops.LayerBackdrop
 import com.rickeal.liquidharness.core.design.liquid.backdrops.layerBackdrop
@@ -40,15 +45,10 @@ import com.rickeal.liquidharness.feature.tools.ToolsRoute
 import com.rickeal.liquidharness.feature.tools.toolsGraph
 
 /**
- * 导航宿主。
- *
- * 只注册两个一级目的地（对话 / 设置）+ 设置模块自己的子路由图（[settingsGraph]）。
- * 旧仓的 modelsGraph / toolsGraph / memoryGraph 随功能整块删除 —— **不保留空路由**：
- * 一条指向空屏的路由比没有路由更糟（用户点了会看到白屏，而不是"这个入口不存在"）。
- *
- * @param recordBackdrop 非 null 时把整张 NavHost 录进该 LayerBackdrop，供悬浮页签条
- *   做真实背景模糊 / 折射（各屏自己的壁纸与滚动内容都在其中）。竖栏形态没有悬浮条，
- *   传 null 即不录制 —— 录制是逐帧开销，没人消费就不该挂。
+ * 导航宿主：两个一级目的地（对话 / 设置）+ 设置子路由图（[settingsGraph]）。
+ * 旧仓空路由整块删除 —— 指向空屏的路由比没有路由更糟（用户看到白屏而非「入口不存在」）。
+ * @param recordBackdrop 非 null 时录进该 LayerBackdrop 供悬浮页签做背景模糊；竖栏传 null
+ *   （录制是逐帧开销，没人消费就不挂）。
  */
 @Composable
 internal fun AppNavHost(
@@ -61,12 +61,12 @@ internal fun AppNavHost(
 ) {
     val context = LocalContext.current
     val appVersion = rememberAppVersion(context)
-    // 会话导入的一次性信箱（W6）。**刻意不放进 AppContainer**：
-    // - 它是「一次 UI 动作的载荷」，不是长生命周期依赖 —— 放进容器会让最多 8 MiB 的
-    //   解析结果挂在容器上，直到进程结束；
-    // - 它只在两个目的地之间传递一次，消费即清空（见 ChatRoute 的 LaunchedEffect）。
-    // 提升到 NavHost 之上是必须的：设置页发布时对话页还没组合，值必须活得比它久。
+    // 会话导入一次性信箱（W6）：UI 载荷不放容器（否则 8 MiB 挂到进程结束）；提升到 NavHost 之上。
     val pendingImport = remember { mutableStateOf<List<ChatMessage>?>(null) }
+    // W61/R5 恢复卡：读落盘 journal 找未结算 run（内存 buffer 重启即空）；正文不落盘，
+    // 「继续」只清标记，不冒充还原（诚实四态）。
+    val pendingRecovery = remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) { pendingRecovery.value = container.runRecovery.findUnsettled() }
     val importEnabled = remember(context) { isDebuggable(context) }
 
     NavHost(
@@ -118,12 +118,29 @@ internal fun AppNavHost(
         )
         toolsGraph(
             navController = navController,
-            // lambda 而非实例：container.toolRegistry() 首次求值会 mkdirs + getSystemService，
-            // 必须由 ToolsViewModel 在 IO 段内触发（见其 KDoc）。
             registryProvider = container::toolRegistry,
-            // 沙箱根 = AppContainer 的 dataDir（filesDir/harness）下的 workspace/，
-            // 与 ToolContext.sandboxDir 同源。本模块有 core-data，故这一句留在这里。
             sandboxRoot = container.jsonFiles.file("workspace"),
+        )
+    }
+    if (pendingRecovery.value != null) {
+        AlertDialog(
+            onDismissRequest = { pendingRecovery.value = null },
+            title = { Text(stringResource(R.string.recovery_title)) },
+            text = { Text(stringResource(R.string.recovery_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingRecovery.value?.let { container.runRecovery.continueRun(it) }
+                    pendingRecovery.value = null
+                }) {
+                    Text(stringResource(R.string.recovery_continue))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    container.runRecovery.discard()
+                    pendingRecovery.value = null
+                }) { Text(stringResource(R.string.recovery_discard)) }
+            },
         )
     }
 }

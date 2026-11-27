@@ -1,0 +1,26 @@
+# W61 证据（R5 journal v1 代码波）
+# 脱敏声明：端点标识一律「端点 A」占位；runId 为内核随机 hex 非账号；无凭据/URL/账号/序列号/本机路径/SSID/MAC。
+# 四态纪律：未触发 ≠ 通过；条件未满足如实标 ⚠️/⛔vacuous，不冒充。
+
+=== 判据 R5-FreezeClock：冻结感知时钟（真机 灭屏 60s）===
+来源：device run-as files/harness/run-journal.jsonl settled 行 + dumpsys power 状态。
+时间窗：2026-11-27 UTC 12:59–13:01。
+
+[step-1] 发长文请求（端点 A，1M 档）-> run_started：
+  run_started runId=8b78279e3e704c6a8c98e39cca06dcf8 inputChars=155 at=1795784376964
+
+[step-2] 立即灭屏（KEYCODE 26）-> dumpsys power: mWakefulness=Dozing
+
+[step-3] 等待 60s -> 唤醒（三步法）-> App 继续显示 1/12 轮（请求在途）
+
+[step-4] run 自然结算 -> settled 行：
+  run_settled runId=8b78279e3e704c6a8c98e39cca06dcf8 activeMs=113638 frozenMs=0 tools=0 cancelled=false at=1795784490603
+
+判据分解：
+- ✅ 不误熔：113s 长请求正常完成（UI 显示 1.9k in / 3.4k out），未被墙钟 HARD 误熔断。
+- ⚠️ 冻结扣时链未触发：frozenMs=0。原因是前台活跃网络请求期间设备未真正 cgroup 冻结
+  （灭屏但网络请求持有唤醒锁，elapsedRealtime 与 uptime 差值为 0）。
+  按 R4「条件未触发不写成通过」纪律：本波**不声称**冻结扣时已被真机验证，
+  仅坐实「扣时逻辑已接线（activeElapsedMillis = wall - frozen）+ 不误熔」。
+  真机制造 cgroup 冻结需系统级条件（后台 doze + 无唤醒锁），非 App 可控，登记为条件触发。
+- 诊断出口：settled 行 frozenMs=activeElapsed 的冻结分量，与 activeMs 同尺（毫秒），可外审复核。

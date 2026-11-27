@@ -1,0 +1,25 @@
+# W61 证据（R5 journal v1 代码波）
+# 脱敏声明：端点标识一律「端点 A」占位；runId 为内核随机 hex 非账号；无凭据/URL/账号/序列号/本机路径/SSID/MAC。
+# 四态纪律：未触发 ≠ 通过；条件未满足如实标 ⚠️/⛔vacuous，不冒充。
+
+
+清单：13 件制品 + 1 MANIFEST + 1 manifest_check = 15 文件。
+写域声明：仅 evidence/raw/w61/；未触碰源码/文档/脚本/台账/handoff/派单卡/其它 evidence 目录。
+核对口径：sha256 = 本目录入仓文件字节（git blob；*.txt 已统一 LF 行尾，工作树字节 = 入仓 blob 字节），外审 checkout 后逐件可复核。
+脱敏声明：端点标识一律脱敏为「端点 A」；runId 为内核随机 hex 非账号；无凭据/URL/账号/序列号/本机路径/SSID/MAC 回灌；截图上缘打码。
+
+序号 | 文件名 | sha256 | 内容摘要 | 来源 | 四态判据
+---- | ------ | ------ | -------- | ---- | --------
+01 | e0_journal_recovery.txt | bde56d5fa1a050694badb91a49c9fd25709e4737dc6ffb773b41bc88508fb537 | journal 恢复卡两路：启动读盘/继续补 settled/丢弃清盘，真机逐字 | 主理人真机 | ✅ 两路
+02 | e1_freeze_clock.txt | c7c0493f6fbf2e19cc9eaf7f8abcd88f82df232e308c114edaff4aaa8c607e18 | FreezeClock 灭屏 60s：113s 长请求不误熔 + frozenMs=0 未触发 | 主理人真机 | ✅ 不误熔 / ⚠️ 扣时未触发
+03 | e2_endpoint_echo.txt | c5372eecda8ede6350073dacdceac9d4ab3d2e8e7b01b300ebead788159ce98e | 端点 A 1M 档长文回声回归 1.9k in / 3.4k out | 主理人真机 | ✅（非满窗真压）
+04 | deviceLogTail_w61.txt | 82fe9b98e4b5745a3cc42a4b6114093a796ef0908970cf39d500da5b10027489 | W61 时段 DiagnosticLogSink 固定形态行 10 条（不回灌整段 logcat） | 真机矩阵 | ✅
+05 | g1_build_w61.txt | 62171759cacc29688002d4a11fd9ce681edd53589958d57174c50bdd7f32aceb | 本地 assembleDebug 构建输出（本机路径已占位） | 本地闸 1 | ✅ RC=0
+06 | g2_arch_guard_w61.txt | 97e61b57c63338f597c60557491555804ff38003b9b11f695f5ca63552c95fe9 | 架构守卫 27/1 vacuous/0 violation（本机路径已占位） | 本地闸 2 | ✅ PASS
+07 | g3_selftest_w61.txt | 7891259b3067c42429a2ee01e0b8ed29c983b98e589517559d336660afbf2326 | arch-guard 变异自测 30/30 PASS（313s） | 本地闸 3 | ✅
+08 | g4_fulltest_w61.txt | 4c608f3a3a4039a70fc0de4c738765fb79a66f6398dbad979e06d57a66e53cdb | fulltest tests=904 failures=0 errors=0 skipped=0 | 本地闸 4 | ✅
+09 | g5_probe_w61.txt | 19d42dababc93ea986cd1d5217125929721d9ef1cf63abac2f3e8b7654fa473b | 探针形态一致：14 锚点/15 认领/11 反哨兵 | 本地闸 5 | ✅ rc=0
+10 | g6_ledger_w61.txt | 416950538b860510fbdb3dd3c7523c2155ac8ca631a816dc319f26242d056f8f | 台账符号自检 kt-files=327，test refs 全可解析 | 本地闸 6 | ✅ rc=0
+11 | g7_secretgate_w61.txt | f0129440c57404453ac321ca9daae5fe60a29ab326437e0b78b215dcde4e4db7 | 提交前隐私门禁三路全 0 + 补扫三类全 0 | 本地闸 7 | ✅ rc=0
+12 | png_e0_journal_recovery.png | 8c55583542afb74ee381c695d833f7af9dfc3846d75c67b5e62eac9ae3372e86 | 真机截图（上缘 y205..285 打码端点标识） | 主理人真机 | ✅
+13 | png_check_w61.txt | af3c6fbcbbcfa80aef6fee602247bf982108eda3224010f35cb9a111056b7f4a | PNG 签名/IEND/verify/load/尺寸/打码带单色复核 | 本地闸 8 | ✅

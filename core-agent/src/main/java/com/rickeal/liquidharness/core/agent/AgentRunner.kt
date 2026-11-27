@@ -3,6 +3,8 @@ package com.rickeal.liquidharness.core.agent
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalCache
 import com.rickeal.liquidharness.core.agent.approval.ToolApprovalHandler
 import com.rickeal.liquidharness.core.agent.engine.LlmEngine
+import com.rickeal.liquidharness.core.agent.journal.AgentRunJournal
+import com.rickeal.liquidharness.core.agent.journal.FreezeClock
 import com.rickeal.liquidharness.core.agent.loop.RunState
 import com.rickeal.liquidharness.core.agent.loop.RunTermination
 import com.rickeal.liquidharness.core.agent.loop.Step
@@ -29,41 +31,19 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * 内核门面。**硬指标：本文件 ≤ 200 行**（`00-brief.md` A3）。
  *
- * 旧仓 `AgentRunner.kt` 实测 **2838 行**，守卫上限 2900 —— 接一个新能力就踩线。
- * 本类只做四件事，任何第五件事都应该落到 `loop/` 下：
+ * 旧仓同类 2838 行（守卫 2900），接一个能力就踩线。本类只做四件事，第五件落 `loop/`：
+ * 串行化（[runMutex]）、装配 [TurnContext]、取消收尾、状态广播（[isBusy]）。
  *
- * 1. **串行化**：一条会话的 run 用 [runMutex] 互斥；
- * 2. **装配** [TurnContext] 并交给 [TurnLoop]；
- * 3. **取消收尾**：用户取消后补发 `Cancelled(partialText)`；
- * 4. **状态广播**：[isBusy] 供 UI 禁用发送按钮。
- *
- * ## 为什么是 `channelFlow` 而不是 `flow`（这是单测逼出来的，别改回去）
- *
- * 两个硬约束同时存在：
- *
- * 1. **取消必须在子协程里跑**。若 run 直接跑在收集方协程里，`cancel()` 取消的就是
- *    收集方本身 —— 而 `Cancelled(partialText)` 恰恰要发给这个收集方。取消订阅者
- *    再给它发消息是自相矛盾的。所以循环跑在 `launch { }` 的子 job 里，`cancel()`
- *    只取消子 job，生产者协程仍然活着。
- * 2. **`SafeCollector` 禁止跨协程 emit**。普通 `flow { }` 的收集器带「发射必须在
- *    同一协程」的不变量：子 job 里 `emit` 会直接抛
- *    `IllegalStateException: Flow invariant is violated`；`withContext(NonCancellable)`
- *    也不行（NonCancellable 的 Job 既不是收集协程本身也不是它的子）。实测在
- *    `AgentRunnerTest.cancelEmitsCancelledWithPartialText` 上炸过。
- *
- * `channelFlow` 的 `send` 天生允许从任意子协程发（它内部就是一个 Channel），
- * 两个约束同时满足。旧仓那段「取消后必须 `withContext(NonCancellable)` 收尾」的
- * 教训依然有效，但适用面变了：**emit 走生产者协程，NonCancellable 只留给不 emit 的
- * 副作用**（journal 落 settled 行，W3 接入时用）。
+ * ## 为什么是 `channelFlow`（单测逼出来的，别改回去）
+ * ① 取消必须在子协程里跑：否则 `cancel()` 取消的是收集方本身，而 `Cancelled` 正要发给它。
+ * ② `SafeCollector` 禁止跨协程 emit：子 job 里 emit 会抛 Flow invariant is violated。
+ * `channelFlow` 的 `send` 内部是 Channel，天然允许任意子协程发，两条同时满足。
+ * NonCancellable 只留给不 emit 的副作用（journal settled 行，W61 接入）。
  *
  * ## 为什么需要 runMutex（理由与旧仓不同）
- *
- * 旧仓的约束来自「native 引擎 use-after-free」—— 远程没有引擎生命周期，那条理由失效。
- * 但约束**保留**，理由换成数据竞争：两条 run 并发写同一份 `working` 与 journal 会交错，
- * 而 `RunState` 明确是「单协程访问、不加锁」（`01-architecture.md` §6.3）。
- *
- * 用 `tryLock` 而不是 `withLock`：并发请求应当**立刻**得到 `GateRejected` 的明确失败，
- * 而不是排队等待 —— 排队会让用户点两次发送后看到一个「迟到的回答」。
+ * 远程无 native 引擎生命周期，旧理由失效；保留它改为防数据竞争：两条 run 并发写
+ * `working` / journal 会交错（`RunState` 明确单协程访问、不加锁，§6.3）。
+ * 用 `tryLock` 让并发请求立刻得到 `GateRejected`，不排队、不吐迟到的回答。
  */
 class AgentRunner(
     private val engine: LlmEngine,
@@ -71,6 +51,8 @@ class AgentRunner(
     private val policy: AgentPolicy = AgentPolicy(),
     private val loop: TurnLoop = TurnLoop(),
     private val termination: RunTermination = RunTermination(),
+    private val journal: AgentRunJournal? = null,
+    private val newFreezeClock: (() -> FreezeClock)? = null,
 ) {
 
     private val runMutex = Mutex()
@@ -113,7 +95,8 @@ class AgentRunner(
             return@channelFlow
         }
 
-        val state = RunState.forRequest(request)
+        val state = RunState.forRequest(request, freezeClock = newFreezeClock?.invoke())
+        journal?.runStarted(state.runId, request.userInput.length)
         val ctx = TurnContext(
             request = request,
             policy = policy,
@@ -135,6 +118,7 @@ class AgentRunner(
             // 子 job 已结束且**生产者协程仍活跃**（收集方没走），此处发 Cancelled 合法。
             if (state.cancelled) termination.emitCancelled(ctx)
         } finally {
+            journal?.runSettled(state.runId, state.elapsedMillis(), state.executedToolCount, state.cancelled, state.frozenMillis())
             activeRun.set(null)
             busyState.value = false
             runMutex.unlock()
