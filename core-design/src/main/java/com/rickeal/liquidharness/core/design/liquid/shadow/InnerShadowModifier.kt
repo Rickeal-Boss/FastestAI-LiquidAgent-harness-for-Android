@@ -19,6 +19,7 @@ import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.node.requireGraphicsContext
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Density
+import com.rickeal.liquidharness.core.design.liquid.GlassLayerBudget
 import com.rickeal.liquidharness.core.design.liquid.internal.ShapeProvider
 import com.rickeal.liquidharness.core.design.liquid.internal.clipOutline
 import com.rickeal.liquidharness.core.design.liquid.platform.isRenderEffectSupported
@@ -84,6 +85,10 @@ internal class InnerShadowNode(
         if (!isRenderEffectSupported()) return
 
         val shadow = shadow() ?: return
+
+        // 超预算节点不建内阴影图层（Offscreen + RenderEffect 按全高申请纹理会失败，
+        // 真机整块纯黑，见 GlassLayerBudget）。
+        if (!GlassLayerBudget.allows(size.width, size.height)) return
 
         val shadowLayer = shadowLayer
         if (shadowLayer != null) {

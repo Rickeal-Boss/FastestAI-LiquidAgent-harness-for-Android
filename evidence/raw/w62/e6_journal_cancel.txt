@@ -1,0 +1,16 @@
+# W62 e6 — run journal：取消路径 settled + 互斥锁释放（真机）
+# W62 改动的 AgentRunner 把 runStarted 移进 try，finally 覆盖 :100-114 窗口（W61 外审 P1-3）
+# 判据：取消后必须有 run_settled（cancelled=true），且下一次 run 能被接受（不 GateRejected）
+
+## 设备侧 files/harness/run-journal.jsonl（末 6 行，runId 为内核随机 hex）
+run_started runId=663659ba4e904b13a862fb35a7996679 inputChars=47 at=1795791254287
+run_settled runId=663659ba4e904b13a862fb35a7996679 activeMs=36367 frozenMs=0 tools=0 cancelled=false at=1795791290655
+run_started runId=18997fe22dff4e2b93c57c57210c498a inputChars=66 at=1795791335398
+run_settled runId=18997fe22dff4e2b93c57c57210c498a activeMs=10303 frozenMs=0 tools=0 cancelled=true at=1795791345701
+run_started runId=9828b09c838b4cc4ba142f3df81df01f inputChars=2 at=1795791387033
+run_settled runId=9828b09c838b4cc4ba142f3df81df01f activeMs=36791 frozenMs=0 tools=0 cancelled=false at=1795791423825
+
+## 读法
+- 第 2 行 cancelled=true：停止按钮路径落盘 settled（activeMs=10303）
+- 第 3 行 run_started：取消后再发消息被接受 ⇒ runMutex 已 unlock（无死锁、无 GateRejected）
+- frozenMs=0：冻结扣时链未触发（FreezeClock 语义 W62 已订正为「对 cgroup 冻结无效」，不写成通过）

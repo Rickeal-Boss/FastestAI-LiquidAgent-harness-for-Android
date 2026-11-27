@@ -1,32 +1,41 @@
 package com.rickeal.liquidharness.core.agent.journal
 
 /**
- * 冻结感知时钟（FreezeClock，R5 / W61）：把**设备被系统冻结**的时间从墙钟里扣掉。
+ * 冻结感知时钟（FreezeClock，R5 / W61）：把**设备冻结**的时间从墙钟里扣掉。
  *
  * ## 要解决的真实缺陷
  *
- * `RunState.elapsedMillis()` 用单调时钟（`System.nanoTime`）。Android 在 doze / cgroup
- * 冻结期间**单调时钟照走**，但 run 的协程整体停摆、模型什么都没做。解冻后一算，
- * 「墙钟 HARD（`wallClockHardMillis`）」就会把一次正常的长请求误熔断 —— 用户灭屏 60s
- * 回来看到一条「超时」，而 provider 其实一个字节都还没回。
+ * `RunState.elapsedMillis()` 用单调时钟（`System.nanoTime`）。进程被系统挂起期间
+ * run 的协程整体停摆、模型什么都没做，但计时仍在走；解冻后一算，「墙钟 HARD
+ * （`wallClockHardMillis`）」可能把一次正常的长请求误熔断 —— 用户回来看到一条
+ * 「超时」，而 provider 其实一个字节都还没回。
  *
- * ## 判据：两个时间源之差
- *
- * - [wallNanos]：单调墙钟，冻结期间照走（`System::nanoTime`）。
- * - [frozenNanos]：**设备冻结累计时长**，冻结期间才增长。Android 侧由宿主注入
- *   `SystemClock.elapsedRealtimeNanos()` 与 `uptimeMillis()` 的差在 run 起止的采样值
- *   （`elapsedRealtime` 含深度睡眠、`uptimeMillis` 不含 ⇒ 差值单调不减）。JVM 单测注入
- *   可控 lambda 直接给冻结时长。
+ * ## 判据：两个时间源之差（**W62 订正：源与目标场景的语义边界**）
  *
  * `activeElapsed = (wallNow - wallStart) - (frozenNow - frozenStart)`，下限截到 0。
  *
+ * - [wallNanos]：`System::nanoTime`（`CLOCK_MONOTONIC`）。
+ * - [frozenNanos]：Android 侧由宿主注入 `elapsedRealtimeNanos() - uptimeMillis()×1e6`
+ *   （`CLOCK_BOOTTIME - CLOCK_MONOTONIC`）。JVM 单测注入可控 lambda。
+ *
+ * ⚠️ **两者测的不是同一件事，W62 如实登记（W61 外审 P2 疑难，不合并成「已解决」）**：
+ *
+ * | 场景 | `nanoTime`（wall） | 上述注入源（frozen） | 结果 |
+ * | --- | --- | --- | --- |
+ * | 系统 suspend（深度睡眠） | **停走**（MONOTONIC 不含 suspend） | 增长 | 双重扣减，active 偏小（方向安全，但语义重复） |
+ * | 进程 cgroup 冻结（系统未 suspend） | 照走 | **不变**（两源都照走） | 扣不到，防护对本场景**无效** |
+ *
+ * 也就是说：当前注入源测的是「系统 suspend」，而 suspend 下 `nanoTime` 本就不走 ⇒
+ * 这条链在真机上退化为 no-op（`frozenMs=0` 与之一致）。**cgroup 冻结没有公开时钟
+ * 可观测量**，本类不冒充覆盖它；保留端口是为了将来有可靠源时一行换入，而不是宣称
+ * 已解决。W61 验收物 e1 的「113s 不误熔」是**裸墙钟**（113s ≪ HARD 600s）的结论，
+ * 与 FreezeClock 无关，不作本链证据。
+ *
  * ## 为什么不直接改 [RunState] 的墙钟源
  *
- * `RunState` 是 `400/400` 之外的 `391/400`（余 9 行），`GenerationRound` 才是顶格
- * `400/400` 零余量。本类以**可选注入**的形式接进 `RunState`：
- * `freezeClock: FreezeClock? = null`，null 时 `elapsedMillis()` 保持原单调墙钟口径
- * （既有 904 个用例零改动、行为零漂移）；宿主装配时才传入本实例。这样顶格对象零触碰、
- * 904 冻结不动，又让真机上墙钟 HARD 不再误熔。
+ * 本类以**可选注入**的形式接进 `RunState`：`freezeClock: FreezeClock? = null`，null 时
+ * `elapsedMillis()` 保持原单调墙钟口径（既有 904 个用例零改动、行为零漂移）；
+ * 宿主装配时才传入本实例。这样顶格对象零触碰、904 冻结不动。
  *
  * ## 误用边界
  *

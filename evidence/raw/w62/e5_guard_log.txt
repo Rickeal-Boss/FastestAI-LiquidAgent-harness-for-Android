@@ -1,0 +1,27 @@
+# W62 e5 — 玻璃图层预算守卫触发留痕（真机 logcat，只摘相关行，不回灌整段 logcat）
+# 设备：OPPO PDRM00 / Android 13 / 1080x2400 / Adreno 650 (GLES 3.2)
+# 判据：guard 行出现 = 该节点尺寸超预算、已降级为无图层实底；不出现 = 走原玻璃路径
+# 说明：行首只保留 tag 与正文，设备前缀（时间/pid/tid）已剥离
+
+## A. 修复版：长回答气泡（同一请求，实测三次）
+# 节点尺寸 = 984 px 宽 × 实测高度；全部远超 4096 px 单边上限 ⇒ 全部降级
+D LiquidGlass: glass: layer budget exceeded (984x4222) - backdrop/offscreen layers skipped, drawing flat. Long single-item content (e.g. model bubble) is the expected trigger.
+D LiquidGlass: glass: layer budget exceeded (984x61546) - backdrop/offscreen layers skipped, drawing flat. Long single-item content (e.g. model bubble) is the expected trigger.
+D LiquidGlass: glass: layer budget exceeded (984x63924) - backdrop/offscreen layers skipped, drawing flat. Long single-item content (e.g. model bubble) is the expected trigger.
+
+## B. 对照组：短回答气泡（同版本、同设备、同一会话）
+# 无 guard 行 ⇒ 未触顶，仍走背景录制 + 折射/模糊的原玻璃路径
+# 截图：png_e3_control_short.png（短气泡玻璃质感与文字可读）
+（无 guard 行）
+
+## C. 变异对照（必红）：阈值临时放大为 1_048_576 / Long.MAX_VALUE
+# 同一长回答、同一设备 ⇒ 无 guard 行（守卫关闭）⇒ 气泡渲染为整块纯黑
+# 截图：png_e4_mutation_black.png（黑块 + 下方「复制 / 检查 JSON」与 usage 正常）
+（无 guard 行）
+
+## 结论口径（四态）
+- 修复版长气泡：✅ 文字逐行可读、无黑块（png_e1_after_fix_long.png）
+- 思考块展开：✅ 实底浅色 + 深色可读文字（png_e2_thinking_expanded.png）
+- 短气泡对照：✅ 未降级（无 guard 行）
+- 缺陷本体（修复前）：✅ 已复现（png_e0_before_black.png，同一内容整块纯黑）
+- 变异必红：✅ 关掉守卫即复现黑块 ⇒ 守卫是因果项，不是伴随改动

@@ -18,6 +18,7 @@ import androidx.compose.ui.node.requireGraphicsContext
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
+import com.rickeal.liquidharness.core.design.liquid.GlassLayerBudget
 import com.rickeal.liquidharness.core.design.liquid.internal.ShapeProvider
 import com.rickeal.liquidharness.core.design.liquid.internal.blur
 import com.rickeal.liquidharness.core.design.liquid.internal.clipOutline
@@ -88,6 +89,11 @@ internal class HighlightNode(
     override fun ContentDrawScope.draw() {
         val highlight = highlight()
         if (highlight == null || highlight.width.value <= 0f) {
+            return drawContent()
+        }
+        // 超预算节点不建高光图层（按全高申请纹理，超长气泡会失败 ⇒ 真机整块纯黑，
+        // 见 GlassLayerBudget）。只画内容，不画描边高光。
+        if (!GlassLayerBudget.allows(size.width, size.height)) {
             return drawContent()
         }
 

@@ -1,0 +1,14 @@
+# W62 闸 6 — 台账状态列实跑 + 反引号测试符号自检
+
+# 口径：行匹配 ^\| W\d+-\d+ （共 216 行，其中 W6-08 一行的注记含 9 个半角竖线，
+#      故「按 7 列拆分」会漏 1 行；状态列取 split('|')[4]，与本仓 M4 口径一致。）
+
+CLOSED = 39
+OPEN = 166
+CARRIED = 11
+总数核对 = 39 + 166 + 11 = 216 == 216
+段数（### W*）= 36
+
+## w46-ledger-symbol-check.sh（rc=0）
+w46-ledger-symbol-check: test-class refs=21 test-method refs=65 kt-files=328
+OK all backticked test symbols (with test context) resolvable in *.kt

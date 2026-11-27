@@ -1,0 +1,26 @@
+# W62 证据（玻璃图层预算守卫：长文本黑块修复 + W61 外审 P1/P2 收口）
+# 脱敏声明：端点标识一律脱敏为「端点 A」或上缘打码；runId 为内核随机 hex 非账号；
+#             无凭据 / URL / 账号 / 设备序列号 / 本机路径 / 无线网络标识 / 网卡地址；不回灌整段 logcat。
+# 四态纪律：未触发 ≠ 通过；条件未满足如实标 ⚠️ / ⛔vacuous，不冒充。
+
+清单：15 件制品 + 1 MANIFEST + 1 manifest_check = 17 文件。
+写域声明：仅 evidence/raw/w62/；未触碰其它 evidence 目录。
+核对口径：sha256 = 本目录入仓文件字节（git blob；*.txt 已统一 LF，工作树字节 = 入仓 blob 字节），外审 checkout 后逐件可复核。
+
+序号 | 文件名 | sha256 | 内容摘要 | 来源 | 四态判据
+---- | ------ | ------ | -------- | ---- | --------
+01 | e5_guard_log.txt | 39b8d579d28b7b8dd36089efc0613e4d07cea461cd1e739a2ba1066f12eb67b2 | 玻璃图层预算守卫触发留痕（guard 行 / 对照组无 guard / 变异无关守） | 主理人真机 | ✅ 触发留痕
+02 | e6_journal_cancel.txt | 9392df7b0d73be5618270328ca46ec6bee5f2efc08b0318decf30e57c81984e8 | run journal 末 6 行：取消落盘 cancelled=true + 取消后新 run 被接受（mutex 已释放） | 主理人真机 | ✅ 取消路径
+03 | g1_build_w62.txt | d6c193d24950dd236862f06424b26979668d5ad97a8707ae073b333009a1521b | 本地 assembleDebug RC=0（本机路径已占位） | 本地闸 1 | ✅ RC=0
+04 | g2_arch_guard_w62.txt | 905ed62804da6c6b7d2e0c9e71f106b6cf7010b002ef2f13e0917a81b71da0f9 | arch-guard PASS 27 OK / 1 VACUOUS(G19) / 0 violation / 0 fault | 本地闸 2 | ✅ PASS
+05 | g3_selftest_w62.txt | 158df6f8e711384c4b3196dc7c31e3241f922fb556e15dd902fa94b18a87b39a | arch-guard 变异自测 30/30 PASS | 本地闸 3 | ✅ 30/30
+06 | g4_fulltest_w62.txt | 9f926fb50ee034ea74db3a68afdccde0dee0bab543cb2c7f22ffec34e5bd83f0 | fulltest tests=904 failures=0 errors=0 skipped=0（14 模块） | 本地闸 4 | ✅ 904
+07 | g5_probe_w62.txt | feea0385a05086b212f6ebc8e67bd9648f9ed10bfa89c07b75c4b087e694b128 | 生产写点形态自检：14 锚点 / 15 认领 / 11 反哨兵 rc=0 | 本地闸 5 | ✅ rc=0
+08 | g6_ledger_w62.txt | cfd6f9c43af9f9d8c41312ce3297eca93d9543b1b42eec8188dcfc6c1dafb075 | 台账状态列实跑 216/39/166/11 + 段数 36 + 反引号符号自检 rc=0 | 本地闸 6 | ✅ 零漂移
+09 | g7_secretgate_w62.txt | 284da8d544311deb5eec4d88e30c3fc4acf56d2d6886cb0cb8bf788e6047f252 | 提交前隐私门禁三路全 0 + 补扫六类（序列号/本机路径/网络标识/网卡地址/凭据/端点 URL） | 本地闸 7 | ✅ rc=0
+10 | png_check_w62.txt | 42d842bf8344139f45509d3cebfba3fcad558df6cb6bf6c139df2e8cbb5680a0 | 5 张 PNG：签名 + IEND + verify + load + 1080x2400 + 打码带单色 | 本地闸 8 | ✅
+11 | png_e0_before_black.png | bd66553f02e212c9193b2646fbe056381d67fb47eb9c07095a126f0f44bea41c | 修复前缺陷复现：长回答气泡整块纯黑（上缘打码端点标识） | 主理人真机 | ✅ 已复现
+12 | png_e1_after_fix_long.png | ba04c2df6bb45014d31747a88b6657504d80af08ca417bead26ce822efac6983 | 修复后同一请求：984x61546 px 气泡正文逐行可读 | 主理人真机 | ✅
+13 | png_e2_thinking_expanded.png | b62772745f83c827273a7b0095888774c59b7e8fed733d9a4e4730e15a0c22a4 | 思考块展开：实底浅色 + 深色可读文字，无黑块 | 主理人真机 | ✅
+14 | png_e3_control_short.png | 3104b0f246be7670d1d3fa7bc09153af70f06f9b3c0015c98950d84e8e8a89e5 | 对照组短气泡：无 guard 行、玻璃质感与文字正常 | 主理人真机 | ✅ 未降级
+15 | png_e4_mutation_black.png | 3e48b27ac917ee307b7001340fe6f6b88f719ec56b4239b02f12319cd6b76a76 | 变异必红：守卫阈值放大后同一内容复现黑块 | 主理人真机 | ✅ 必红

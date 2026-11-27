@@ -17,6 +17,7 @@ import androidx.compose.ui.node.requireGraphicsContext
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
+import com.rickeal.liquidharness.core.design.liquid.GlassLayerBudget
 import com.rickeal.liquidharness.core.design.liquid.internal.ShapeProvider
 import com.rickeal.liquidharness.core.design.liquid.internal.blur
 import kotlin.math.ceil
@@ -72,6 +73,9 @@ internal class ShadowNode(
 
     override fun ContentDrawScope.draw() {
         val shadow = shadow() ?: return drawContent()
+        // 超预算节点不建阴影图层：尺寸 = 节点 + radius×4，超长气泡会按全高申请纹理
+        // 并失败（真机整块纯黑，见 GlassLayerBudget）。
+        if (!GlassLayerBudget.allows(size.width, size.height)) return drawContent()
 
         val shadowLayer = shadowLayer
         if (shadowLayer != null) {

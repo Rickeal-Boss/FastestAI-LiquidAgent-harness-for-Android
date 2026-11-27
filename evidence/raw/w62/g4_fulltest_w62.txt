@@ -1,0 +1,23 @@
+# W62 闸 4 — fulltest 全量单测（真实用例数口径）
+
+[fulltest] launcher=./gradlew  task=test  （固定带 --continue，禁用 fail-fast 残缺口径）
+[fulltest] 期望模块数（settings include 条目）= 14
+[fulltest] 汇总 92 个 TEST-*.xml（真实用例数口径，非 gradle 的「N tests completed」）：
+[fulltest] tests=904 failures=0 errors=0 skipped=0
+[fulltest]   - app: tests=19 failures=0 errors=0
+[fulltest]   - core-agent: tests=270 failures=0 errors=0
+[fulltest]   - core-context: tests=61 failures=0 errors=0
+[fulltest]   - core-data: tests=79 failures=0 errors=0
+[fulltest]   - core-design: tests=33 failures=0 errors=0
+[fulltest]   - core-engine: tests=89 failures=0 errors=0
+[fulltest]   - core-kernel: tests=6 failures=0 errors=0
+[fulltest]   - core-mcp: tests=35 failures=0 errors=0
+[fulltest]   - core-model: tests=100 failures=0 errors=0
+[fulltest]   - core-net: tests=39 failures=0 errors=0
+[fulltest]   - core-skills: tests=31 failures=0 errors=0
+[fulltest]   - feature-chat: tests=105 failures=0 errors=0
+[fulltest]   - feature-settings: tests=29 failures=0 errors=0
+[fulltest]   - feature-tools: tests=8 failures=0 errors=0
+[fulltest] TEST-*.xml mtime 范围：最早 2026-11-27 23:00:35  最晚 2026-11-27 23:00:40
+[fulltest] 覆盖模块数：14（settings include 条目 = 14）
+[fulltest] 通过：tests=904 failures=0 errors=0 skipped=0（全部用例绿）

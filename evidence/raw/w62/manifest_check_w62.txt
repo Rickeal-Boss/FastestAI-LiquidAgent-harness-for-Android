@@ -1,0 +1,8 @@
+# W62 manifest_check — MANIFEST 逐件复核（工作树字节，*.txt 已归一 LF）
+
+解析行数 = 15
+OK = 15
+BAD = 0
+MISS = 0
+目录内未被 MANIFEST 登记的文件 = 0
+

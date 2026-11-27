@@ -1,0 +1,7 @@
+# W62 闸 8 — PNG 完整性 + 打码带单色复核
+
+png_e0_before_black.png: sig=True iend=True size=1080x2400 band_colors=1 bytes=212615
+png_e1_after_fix_long.png: sig=True iend=True size=1080x2400 band_colors=1 bytes=297854
+png_e2_thinking_expanded.png: sig=True iend=True size=1080x2400 band_colors=1 bytes=375126
+png_e3_control_short.png: sig=True iend=True size=1080x2400 band_colors=1 bytes=340837
+png_e4_mutation_black.png: sig=True iend=True size=1080x2400 band_colors=1 bytes=167185

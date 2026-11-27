@@ -1,5 +1,7 @@
 package com.rickeal.liquidharness.core.agent.journal
 
+import kotlinx.coroutines.CancellationException
+
 /**
  * journal v1（R5 / W61）：一次 run 的**事件溯源最小集**。
  *
@@ -94,6 +96,11 @@ class AgentRunJournal(
         if (sink != null) {
             try {
                 sink(line)
+            } catch (c: CancellationException) {
+                // CE 原样上抛（`AGENTS.md` §五.4）：sink 是**同步阻塞 IO**（:app 侧
+                // FileRunJournalStore.append），取消可能发生在写盘中途；吞掉会让 Job
+                // 从 cancelled 变 completed —— 与 W54 修掉的 10 处 `catch(Throwable)` 同型。
+                throw c
             } catch (_: Throwable) {
                 // 落盘失败不改变主流程（与 AgentLogStore.installFileSink 同契约）。
             }

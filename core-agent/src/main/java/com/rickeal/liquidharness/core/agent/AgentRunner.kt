@@ -38,7 +38,8 @@ import java.util.concurrent.atomic.AtomicReference
  * ① 取消必须在子协程里跑：否则 `cancel()` 取消的是收集方本身，而 `Cancelled` 正要发给它。
  * ② `SafeCollector` 禁止跨协程 emit：子 job 里 emit 会抛 Flow invariant is violated。
  * `channelFlow` 的 `send` 内部是 Channel，天然允许任意子协程发，两条同时满足。
- * NonCancellable 只留给不 emit 的副作用（journal settled 行，W61 接入）。
+ * settled 行是**同步、不 emit** 的副作用，直接在 `finally` 里写（不需要 NonCancellable，
+ * W62 订正：W61 KDoc 曾声称走了 NonCancellable，与实现不符）。
  *
  * ## 为什么需要 runMutex（理由与旧仓不同）
  * 远程无 native 引擎生命周期，旧理由失效；保留它改为防数据竞争：两条 run 并发写
@@ -96,28 +97,35 @@ class AgentRunner(
         }
 
         val state = RunState.forRequest(request, freezeClock = newFreezeClock?.invoke())
-        journal?.runStarted(state.runId, request.userInput.length)
-        val ctx = TurnContext(
-            request = request,
-            policy = policy,
-            engine = engine,
-            tools = tools,
-            state = state,
-            approval = approval,
-            emit = { event -> send(event) },
-            approvalCache = approvalCache,
-        )
-        busyState.value = true
-
-        // LAZY + 先登记再 start：避免「子 job 已经开始跑、cancel() 还看不到它」的竞态。
-        val job = launch(start = CoroutineStart.LAZY) { executeLoop(ctx) }
-        activeRun.set(ActiveRun(state, job))
+        // W62（W61 外审 P1-3）：`try` 必须**从 runStarted 之前**开始。此前 started 落在
+        // try 之外，:100-114（TurnContext 构造 / launch / activeRun.set）任一抛出都会跳过
+        // finally ⇒ `runMutex` 永不 unlock（之后每次 run 都被 GateRejected）+ 留下永久
+        // 未结算 run（每次冷启动误弹恢复卡）。两处都是确定性后果，不是理论窗口。
         try {
+            journal?.runStarted(state.runId, request.userInput.length)
+            val ctx = TurnContext(
+                request = request,
+                policy = policy,
+                engine = engine,
+                tools = tools,
+                state = state,
+                approval = approval,
+                emit = { event -> send(event) },
+                approvalCache = approvalCache,
+            )
+            busyState.value = true
+
+            // LAZY + 先登记再 start：避免「子 job 已经开始跑、cancel() 还看不到它」的竞态。
+            val job = launch(start = CoroutineStart.LAZY) { executeLoop(ctx) }
+            activeRun.set(ActiveRun(state, job))
             job.start()
             job.join()
             // 子 job 已结束且**生产者协程仍活跃**（收集方没走），此处发 Cancelled 合法。
             if (state.cancelled) termination.emitCancelled(ctx)
         } finally {
+            // settled 是同步、不 emit 的副作用，直接写在 finally 里即可 —— 不需要
+            // `withContext(NonCancellable)`（W62 订正：W61 KDoc 曾声称走了 NonCancellable，
+            // 与实现不符；这里按实现改述，不引入无必要的挂起点）。
             journal?.runSettled(state.runId, state.elapsedMillis(), state.executedToolCount, state.cancelled, state.frozenMillis())
             activeRun.set(null)
             busyState.value = false

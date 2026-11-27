@@ -1,0 +1,17 @@
+# W62 闸 1 — 本地 assembleDebug（本机路径已占位）
+
+[localbuild] repo            = <workspace-root>/harness-v2
+[localbuild] JAVA_HOME       = <workspace-root>/_j2env/jdk/jdk-21.0.12.1+1
+[localbuild] ANDROID_HOME    = <workspace-root>/_j2env/sdk
+[localbuild] GRADLE_USER_HOME= <workspace-root>/_j2env/gradle-home
+[localbuild] java -version   = openjdk version "21.0.12.1" 2026-08-18 LTS
+[localbuild] launcher        = ./gradlew  task=:app:assembleDebug
+[localbuild] 开始构建（失败先看输出里的 '^\* What went wrong' 段）
+BUILD SUCCESSFUL in 36s
+270 actionable tasks: 270 up-to-date
+[localbuild] 成功 (rc=0)
+[localbuild] 产物：./app/build/outputs/apk/debug/app-debug.apk
+[localbuild] 真机安装（applicationId = com.rickeal.liquidharness.debug）：
+[localbuild]   MSYS_NO_PATHCONV=1 adb push "./app/build/outputs/apk/debug/app-debug.apk" /data/local/tmp/app.apk
+[localbuild]   MSYS_NO_PATHCONV=1 adb shell pm install -r /data/local/tmp/app.apk
+[localbuild]   MSYS_NO_PATHCONV=1 adb shell monkey -p com.rickeal.liquidharness.debug -c android.intent.category.LAUNCHER 1

@@ -251,6 +251,21 @@ private class DrawBackdropNode(
         compositingStrategy = CompositingStrategy.Offscreen
     }
 
+    /**
+     * 超预算节点的「瘦」内容图层：只保留裁剪与形状，**不带 `Offscreen`**。
+     *
+     * `Offscreen` 会强制离屏缓冲；超长气泡（数万 px 高的单个 LazyColumn item）
+     * 按全高申请纹理必失败，真机表现为整块纯黑（见 [GlassLayerBudget]）。
+     * 去掉它之后内容直接进父显示列表，圆角裁剪仍然生效。
+     */
+    private val layoutLayerBlockLean: GraphicsLayerScope.() -> Unit = {
+        clip = true
+        shape = shapeProvider.shape
+    }
+
+    /** 降级日志只打一次，避免每帧刷屏；回到预算内自动复位。 */
+    private var budgetDegraded = false
+
     private var layoutCoordinates: LayoutCoordinates? by mutableStateOf(null, neverEqualPolicy())
 
     private var padding by mutableFloatStateOf(0f)
@@ -305,28 +320,54 @@ private class DrawBackdropNode(
         constraints: Constraints
     ): MeasureResult {
         val placeable = measurable.measure(constraints)
+        val withinBudget = GlassLayerBudget.allows(
+            placeable.width.toFloat(),
+            placeable.height.toFloat()
+        )
         return layout(placeable.width, placeable.height) {
-            placeable.placeWithLayer(IntOffset.Zero, layerBlock = layoutLayerBlock)
+            placeable.placeWithLayer(
+                IntOffset.Zero,
+                layerBlock = if (withinBudget) layoutLayerBlock else layoutLayerBlockLean
+            )
         }
     }
 
     override fun ContentDrawScope.draw() {
-        if (effectScope.update(this)) {
-            updateEffects()
+        // 超预算节点不建任何离屏层（背景录制 / 内容 Offscreen 都按全高申请纹理，
+        // 真机整块黑）。只画底色 + 内容，观感降级为半透明实底。
+        val withinBudget = GlassLayerBudget.allows(size.width, size.height)
+        if (withinBudget) {
+            budgetDegraded = false
+            if (effectScope.update(this)) {
+                updateEffects()
+            }
+        } else if (!budgetDegraded) {
+            budgetDegraded = true
+            // 诊断只留 debug 包（release 被 R8 删），给真机取证一个锚点。
+            android.util.Log.d(
+                "LiquidGlass",
+                "glass: layer budget exceeded (${size.width.toInt()}x${size.height.toInt()}) - " +
+                    "backdrop/offscreen layers skipped, drawing flat. " +
+                    "Long single-item content (e.g. model bubble) is the expected trigger."
+            )
         }
 
         onDrawBehind?.invoke(this)
-        drawBackdropLayer()
+        if (withinBudget) {
+            drawBackdropLayer()
+        }
         onDrawSurface?.invoke(this)
         drawContent()
         onDrawFront?.invoke(this)
 
-        exportedBackdrop?.graphicsLayer?.let { layer ->
-            recordLayer(density = this@DrawBackdropNode.requireDensity(), layer = layer) {
-                onDrawBehind?.invoke(this)
-                drawBackdropLayer()
-                onDrawSurface?.invoke(this)
-                onDrawFront?.invoke(this)
+        if (withinBudget) {
+            exportedBackdrop?.graphicsLayer?.let { layer ->
+                recordLayer(density = this@DrawBackdropNode.requireDensity(), layer = layer) {
+                    onDrawBehind?.invoke(this)
+                    drawBackdropLayer()
+                    onDrawSurface?.invoke(this)
+                    onDrawFront?.invoke(this)
+                }
             }
         }
     }
