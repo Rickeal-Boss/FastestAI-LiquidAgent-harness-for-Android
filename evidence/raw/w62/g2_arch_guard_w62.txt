@@ -1,6 +1,5 @@
-# W62 闸 2 — arch-guard（仓库根执行）
+# W62 闸 2 — arch-guard（仓库根执行；G20 含本波新增 handoff）
 
--------------------------------------------------------------------
 [G1] 网络栈收口        OK  (命中仅在 core-net/ 与注释内)
 [G1b] 传输层不认识供应商 OK
 [G2] 禁进程执行        OK
@@ -25,10 +24,9 @@
 [G17] 禁密钥字段        OK
 [G18] 引擎调用点收口  OK  (已登记例外 2 条，见 EXCEPTIONS 表)
 [G19] 日志不拼凭据     VACUOUS  (扫描目标集为空；0 个日志调用点，0 处拼接凭据)
-[G20] 挂账不丢失        OK  (142 个 handoff ID 全在台账内，CLOSED 行证据均非空)
+[G20] 挂账不丢失        OK  (143 个 handoff ID 全在台账内，CLOSED 行证据均非空)
 [G21] 空转棘轮           OK  (VACUOUS=1 ≤ 基线 1（G19）)
 [G22] 切换守卫被调用（evaluateSwitch 赋值形态） OK  (feature-settings 内 evaluateSwitch 赋值调用 = 2 处)
 [G23] 会话级自动压缩被调用（唯一调用点 + 事件分流） OK  (.autoCompactOnSettled( = 1 处（唯一）、shouldEvaluate( = 1 处)
--------------------------------------------------------------------
 空转项（VACUOUS，不判红但必须可见）：G19
 [arch-guard] result=PASS ok=27 vacuous=1 violation=0 fault=0

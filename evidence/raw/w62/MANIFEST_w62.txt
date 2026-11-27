@@ -12,11 +12,11 @@
 01 | e5_guard_log.txt | 39b8d579d28b7b8dd36089efc0613e4d07cea461cd1e739a2ba1066f12eb67b2 | 玻璃图层预算守卫触发留痕（guard 行 / 对照组无 guard / 变异无关守） | 主理人真机 | ✅ 触发留痕
 02 | e6_journal_cancel.txt | 9392df7b0d73be5618270328ca46ec6bee5f2efc08b0318decf30e57c81984e8 | run journal 末 6 行：取消落盘 cancelled=true + 取消后新 run 被接受（mutex 已释放） | 主理人真机 | ✅ 取消路径
 03 | g1_build_w62.txt | d6c193d24950dd236862f06424b26979668d5ad97a8707ae073b333009a1521b | 本地 assembleDebug RC=0（本机路径已占位） | 本地闸 1 | ✅ RC=0
-04 | g2_arch_guard_w62.txt | 905ed62804da6c6b7d2e0c9e71f106b6cf7010b002ef2f13e0917a81b71da0f9 | arch-guard PASS 27 OK / 1 VACUOUS(G19) / 0 violation / 0 fault | 本地闸 2 | ✅ PASS
+04 | g2_arch_guard_w62.txt | 7edb3238c44502c930dd7f89d6a2bccf88898bb0c208ed9a5959f9621eab3b93 | arch-guard PASS 27 OK / 1 VACUOUS(G19) / 0 violation / 0 fault；G20 = 143 ID | 本地闸 2 | ✅ PASS
 05 | g3_selftest_w62.txt | 158df6f8e711384c4b3196dc7c31e3241f922fb556e15dd902fa94b18a87b39a | arch-guard 变异自测 30/30 PASS | 本地闸 3 | ✅ 30/30
 06 | g4_fulltest_w62.txt | 9f926fb50ee034ea74db3a68afdccde0dee0bab543cb2c7f22ffec34e5bd83f0 | fulltest tests=904 failures=0 errors=0 skipped=0（14 模块） | 本地闸 4 | ✅ 904
 07 | g5_probe_w62.txt | feea0385a05086b212f6ebc8e67bd9648f9ed10bfa89c07b75c4b087e694b128 | 生产写点形态自检：14 锚点 / 15 认领 / 11 反哨兵 rc=0 | 本地闸 5 | ✅ rc=0
-08 | g6_ledger_w62.txt | cfd6f9c43af9f9d8c41312ce3297eca93d9543b1b42eec8188dcfc6c1dafb075 | 台账状态列实跑 216/39/166/11 + 段数 36 + 反引号符号自检 rc=0 | 本地闸 6 | ✅ 零漂移
+08 | g6_ledger_w62.txt | bbb6e478941a4dbd0118b7f22d7e7e8abf9956a553225267c3e04022de9790bd | 台账状态列实跑 216/39/166/11 + 段数 37（W62 段）+ 两行注记 + 符号自检 rc=0 | 本地闸 6 | ✅ 零漂移
 09 | g7_secretgate_w62.txt | 77296e66db14ffdc9145f98e034ae399d099191a7c50287e59c79f9c0db471d7 | 提交前隐私门禁三路全 0 + 补扫六类（序列号/本机路径/网络标识/网卡地址/凭据/端点 URL） | 本地闸 7 | ✅ rc=0
 10 | png_check_w62.txt | 42d842bf8344139f45509d3cebfba3fcad558df6cb6bf6c139df2e8cbb5680a0 | 5 张 PNG：签名 + IEND + verify + load + 1080x2400 + 打码带单色 | 本地闸 8 | ✅
 11 | png_e0_before_black.png | bd66553f02e212c9193b2646fbe056381d67fb47eb9c07095a126f0f44bea41c | 修复前缺陷复现：长回答气泡整块纯黑（上缘打码端点标识） | 主理人真机 | ✅ 已复现
