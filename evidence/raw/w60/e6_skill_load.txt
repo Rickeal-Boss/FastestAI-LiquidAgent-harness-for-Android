@@ -1,0 +1,28 @@
+# W60 E6 — skill_load（notes-organizer）调用验证（端点 A）
+# 判据来源：设备侧 agent-0.log 固定形态行 + 动态 uiautomator dump 逐字行。
+# 脱敏：端点标识统一写「端点 A–D」，不回灌 URL / 模型 ID / 密钥 / 序列号 / 本机路径。
+
+## 操作
+- 新对话题面（ASCII）：Use skill_load for notes-organizer and summarize it
+- 读数：2.2k in / 359 out (0 cached, 0.0%)；上下文 2.3K / 123.9K。
+
+## 判据一：UI 侧技能正文入会话（✅ 通过）
+- dump 逐字（节选，技能正文整段落入会话气泡）：
+    **Skill: notes-organizer**
+    This skill turns raw, scattered meeting notes into a clean, dated, deduplicated summary.
+    **Procedure:** (1) list the directory before assuming file names; (2) read each file and note its date;
+    ...
+    **Hard rules:** always get approval before writing a file; never overwrite an existing note ...
+- 说明技能正文被装入会话（非空壳调用）。
+
+## 判据二：设备侧上下文注入（✅ 通过）
+- agent-0.log 固定形态行（本轮前后相邻两行）：
+    2026-11-27T07:44:21.336553Z INFO prefix fp=d6f639ce changed=none prompt=1085 cached=n/a-usage
+    2026-11-27T07:44:22.731262Z INFO prefix fp=77377f6e changed=HISTORY prompt=2790 cached=0(cumulative)
+- 解释：题面轮 prompt=1085；技能正文装入后下一轮 prompt=2790（+1705 token 量级），
+  与 W59 同形态（1085→2790），证明 skill_load 真被行使而非仅 UI 文案。
+- 随后 auto_compact=noop reason=below_trigger（技能轮未触发压缩）。
+
+## 判读
+- skill_load：✅ 通过 — UI 技能正文 + 设备日志 prompt 计数跃升双证。
+- 未回灌任何凭据或端点标识；技能正文含「never read credentials」等硬规则但未触及任何实际凭据。

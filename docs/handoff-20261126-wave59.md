@@ -75,7 +75,7 @@ W58 把 W57 证据补入仓，但外审按 `MANIFEST.txt` 逐件复核时 7/25 �
 | 本波范围 | W59 第 0 车不变（MANIFEST 第一优先级，已按此执行） |
 | 第 7 项 5 组冻结硬骨头（逐组写下，避免「零解禁」与 R1–R4 生效冲突） | ① 内核行数 = **保留**（R1 只授缩域，不解除顶格三对象；W62 生效）｜② 同尺化余项 = **保留至 W63**，到点按 R2 以 B 类即派执行（执行 ≠ 写成「已修」）｜③ 安全波整包 = 拆两半：a **保留至 W63** 按 R3-a 进 B 类执行，b 明文闸门**维持否决**（G15b）｜④ 1M 满窗真压 = **保留**，按 R4 永久不得写成通过｜⑤ journal = **解除**（R5，W60 生效、W61 独立波号） |
 | 不新增 | 不新增 `WONT_DO` / `DEFERRED` / `BLOCKED`、G 编号、CI job、schema、判据、挂账号 |
-| 守恒 | 新开 0 / 销账 0、状态列零变化、不回改 W54–W58 历史四态、**不为补链新建提交**（用户原口径「第 3 提交」按本波实态顺延为第 4；③ 为裁决登记内容提交、非补链） |
+| 守恒 | 新开 0 / 销账 0、状态列零变化、不回改 W54–W58 历史四态、**不为补链新建提交**（回归用户「不为补链新建第 3 提交」原口径；③ 为裁决登记内容提交、非补链） |
 
 **本波已做 / 未做**：已做 = journal 两条老号的字面裁决登记（做 + 代数收口）+ 本节对外审登记 + W57/W58 派单卡加「W59 订正」注记（只加注、不改历史正文）；未做 = W60 段与《W60 派单卡》抬头（用户指定 W60 波内落笔）。
 
@@ -139,18 +139,18 @@ W58 把 W57 证据补入仓，但外审按 `MANIFEST.txt` 逐件复核时 7/25 �
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote URL 保持干净、无凭据落盘。
 
-**本波计数（自洽口径）**：W59 全波 **3 提交 / 4 条 run**（① 代码/证据/文档主体 `95ed5f9` 双 run 全绿 + ② 回填提交 Secret run + ③ 审查消歧补注提交 Secret run）。① 含判据加固 + MANIFEST 修复 + w59 证据 + 三份核心文档 + 台账订正，双 run 全绿 ⇒ **交付判据恒锚此提交**；②③ 为纯文档（② 回填、③ 用户裁决逐条登记 + W57/W58 派单卡订正注记），Build 按 `docs/**` 未触发。**最终 tip 以 atom 实取为准**；本文档不硬写终态 tip，②③ 不计判据、计入提交实态，不为补链新建第 4 提交。
+**本波计数（自洽口径）**：W59 全波 **3 提交 / 4 条 run**（① 代码/证据/文档主体 `95ed5f9` 双 run 全绿 + ② 回填提交 Secret run + ③ 审查消歧补注提交 Secret run）。① 含判据加固 + MANIFEST 修复 + w59 证据 + 三份核心文档 + 台账订正，双 run 全绿 ⇒ **交付判据恒锚此提交**；②③ 为纯文档（② 回填、③ 用户裁决逐条登记 + W57/W58 派单卡订正注记），Build 按 `docs/**` 未触发。**最终 tip 以 atom 实取为准**；本文档不硬写终态 tip，②③ 不计判据、计入提交实态，遵守用户「不为补链新建第 3 提交」原口径。
 
 | 提交 | run | workflow | status | conclusion | updated_at |
 |---|---|---|---|---|---|
 | ① `95ed5f9` | `45859584380` | Build | completed | **success** | 2026-11-26T16:32:49Z |
 | ① `95ed5f9` | `45859584293` | Secret scan | completed | **success** | 2026-11-26T16:32:09Z |
 | ② 回填 | — | Build | 未触发（`docs/**` paths-ignore） | — | — |
-| ② 回填 | 由外审按 head_sha 实取 | Secret scan | 事实记录 | — | — |
+| ② 回填 | `45860214554` | Secret scan | completed | **success** | 由 Actions 公开 API 按 `head_sha` 实取 |
 | ③ 补注（裁决登记） | — | Build | 未触发（`docs/**` paths-ignore） | — | — |
-| ③ 补注（裁决登记） | 由外审按 head_sha 实取 | Secret scan | 事实记录 | — | — |
+| ③ 补注（裁决登记） | `45864358171` | Secret scan | completed | **success** | 由 Actions 公开 API 按 `head_sha` 实取 |
 
-> ②③ 的 Secret run 号按「不为补链新建提交」口径不回填进文档，由 Actions 公开 API 按各自 `head_sha` 实取（② = 回填提交、③ = 裁决登记补注提交）；回填 / 补注均不计交付判据。W58 的同型缺口（`45820023681`）已在 W59 三处补齐。
+> **W60 订正注记**：②③ 的 Secret run 号已按用户「不为补链新建第 3 提交」原口径回填进文档（回填不构成新建提交），不再写「由外审按 `head_sha` 实取」；②③ 均不计交付判据。W58 的同型缺口（`45820023681`）已在 W59 三处补齐。MANIFEST 根因措辞在 W60 段降级为「最可能解释、原始字节不可由仓内复核」，本波不回改 W59 四态；老号注记实跑 7 行（历史文档写 6 属漏计）；G20 141→142 的增量为引用既有老号、非新开。
 
 **交付判据 = ① 主体提交 `95ed5f9` 双 run 全绿**：`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45859584380`（Build success）、`https://github.com/Rickeal-Boss/FastestAI-LiquidAgent-harness-for-Android/actions/runs/45859584293`（Secret success），两 run 均 event=push、`head_sha=95ed5f9…`。`head_sha` 过滤对新 push 偶有 0 结果延迟、WebFetch 15 分钟缓存会返回旧快照，四字段以 curl 直连实时数据为准。本地四闸门不代替 CI。
 

@@ -1,0 +1,56 @@
+# W60 设备侧日志关键行（判据相关，逐字）
+# 来源说明（如实）：设备落盘 logcat /data/local/tmp/w60_verify.log 共 78610 行，全为系统噪声
+#   （SurfaceAnimationRunner / VRI / WindowManager / Quality / netd 等），LiquidAgentDiag / DiagnosticLogSink
+#   形态行计数 = 0。故判据行取自己的 DiagnosticLogSink 权威文件（应用内 files/harness/logs/agent-0.log），
+#   仅取 W60 时段（2026-11-27 UTC）固定形态行 40 行，不回灌整段 logcat。
+# 脱敏自检：以下行均为固定形态（prefix fp / auto_compact / manual_compress / run failed: timeout），
+#   不含 credential / URL / 账号 / 端点标识 / 序列号 / 本机路径；fp 为短哈希指纹非标识。
+# 时间窗：2026-11-27T07:03:31Z – 07:48:07Z（= W60 本波真机矩阵）。
+# ---- 逐字原始行（40 行）----
+2026-11-27T07:03:31.999371Z INFO prefix fp=a1b34e8c changed=none prompt=1081 cached=n/a-usage
+2026-11-27T07:03:33.428355Z INFO auto_compact=noop reason=below_trigger
+2026-11-27T07:03:33.428272Z WARN auto_compact=noop reason=below_trigger
+2026-11-27T07:06:04.864269Z INFO prefix fp=a80c5d7b changed=none prompt=1103 cached=n/a-usage
+2026-11-27T07:06:05.876350Z INFO auto_compact=noop reason=below_trigger
+2026-11-27T07:06:05.876294Z WARN auto_compact=noop reason=below_trigger
+2026-11-27T07:12:01.393041Z INFO prefix fp=1087907c changed=none prompt=1126 cached=n/a-usage
+2026-11-27T07:12:02.636059Z INFO auto_compact=noop reason=below_trigger
+2026-11-27T07:12:02.637117Z WARN auto_compact=noop reason=below_trigger
+2026-11-27T07:20:35.019173Z INFO prefix fp=1087907c changed=none prompt=1148 cached=n/a-usage
+2026-11-27T07:22:36.063640Z ERROR run failed: timeout: no response from provider within 120000ms [engine:watchdog]
+2026-11-27T07:25:05.190295Z INFO prefix fp=1087907c changed=none prompt=1157 cached=n/a-usage
+2026-11-27T07:27:06.596106Z ERROR run failed: timeout: no response from provider within 120000ms [engine:watchdog]
+2026-11-27T07:29:15.587329Z INFO prefix fp=1087907c changed=none prompt=1165 cached=n/a-usage
+2026-11-27T07:29:17.108849Z WARN auto_compact=noop reason=below_trigger
+2026-11-27T07:29:17.110450Z INFO auto_compact=noop reason=below_trigger
+2026-11-27T07:30:11.144050Z INFO prefix fp=36e9a167 changed=none prompt=1080 cached=n/a-usage
+2026-11-27T07:30:12.529761Z WARN auto_compact=noop reason=below_trigger
+2026-11-27T07:30:12.529761Z INFO auto_compact=noop reason=below_trigger
+2026-11-27T07:39:23.999160Z INFO prefix fp=b171d6cc changed=none prompt=2132 cached=n/a-usage
+2026-11-27T07:39:25.717505Z INFO auto_compact=noop reason=below_trigger
+2026-11-27T07:39:25.718280Z WARN auto_compact=noop reason=below_trigger
+2026-11-27T07:42:05.513108Z INFO prefix fp=c6c9a494 changed=none prompt=2111 cached=n/a-usage
+2026-11-27T07:42:07.424069Z INFO auto_compact=noop reason=below_trigger
+2026-11-27T07:42:07.424724Z WARN auto_compact=noop reason=below_trigger
+2026-11-27T07:43:01.606495Z INFO prefix fp=6386c2f4 changed=none prompt=1090 cached=n/a-usage
+2026-11-27T07:43:27.006900Z INFO prefix fp=93e410fa changed=HISTORY prompt=2414 cached=0(cumulative)
+2026-11-27T07:43:28.496072Z INFO prefix fp=6680e4f2 changed=HISTORY prompt=2473 cached=0(cumulative)
+2026-11-27T07:43:29.645563Z WARN auto_compact=noop reason=below_trigger
+2026-11-27T07:43:29.645646Z INFO auto_compact=noop reason=below_trigger
+2026-11-27T07:44:21.336553Z INFO prefix fp=d6f639ce changed=none prompt=1085 cached=n/a-usage
+2026-11-27T07:44:22.731262Z INFO prefix fp=77377f6e changed=HISTORY prompt=2790 cached=0(cumulative)
+2026-11-27T07:44:26.345566Z WARN auto_compact=noop reason=below_trigger
+2026-11-27T07:44:26.345564Z INFO auto_compact=noop reason=below_trigger
+2026-11-27T07:47:42.096281Z WARN manual_compress=noop reason=manual compress: nothing to drop
+2026-11-27T07:48:05.806334Z INFO prefix fp=dec163a4 changed=none prompt=1838 cached=n/a-usage
+2026-11-27T07:48:07.282776Z INFO auto_compact=noop reason=below_trigger
+2026-11-27T07:48:07.283266Z WARN auto_compact=noop reason=below_trigger
+# ---- 判读（四态）----
+# 端点 B 超时：两条 ERROR run failed: timeout ... [engine:watchdog]（07:22:36 / 07:27:06），双次实证。
+# 回声类：各轮 prefix 行 prompt 1080–1165，均 below_trigger，工具/技能轮 changed=HISTORY prompt 跃升。
+# skill_load：07:44:21 prompt=1085 → 07:44:22 prompt=2790（+1705），技能正文入上下文实证。
+# file_write/read：07:43:27 prompt=2414 → 07:43:28 prompt=2473，工具往返实证。
+# 手动压缩：07:47:42 manual_compress=noop reason=manual compress: nothing to drop（⚠️）。
+# 自动压缩：各轮 auto_compact=noop reason=below_trigger，未越线（⚠️）。
+# 内核每轮压缩：本波未出现「context compressed before round」新行，属未触发。
+# SELF-AUDIT: 40 行逐字取自设备 DiagnosticLogSink；形态外 0；无凭据/端点 URL/账号/序列号/本机路径。

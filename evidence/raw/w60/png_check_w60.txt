@@ -1,0 +1,13 @@
+# W60 截图打码与完整性校验（png_*.png）
+# 口径：上缘端点名带 y205..285 全宽涂纯色块 RGB(128,128,128)；逐张校验 PNG 签名/IEND/PIL verify()+load()/尺寸 1080x2400。
+# 打码带「无可读文字」判据：带内每个像素 RGB 均等于 MASK（单色 ⇒ 无任何文字笔画），逐张统计不同色数=1。
+
+png_e1_endpoint_b.png | src=chatB_timeout.png | sig=True IEND=True verify=OK load=OK size=(1080, 2400) sizeok=True band_colors=1 uniform=True RESULT=PASS | sha256=e7d1a23f366c629da52b5f6740d6222c48d359f79326488204bb8c4accfdcfec
+png_e2_endpoint_c.png | src=chatC_clean.png | sig=True IEND=True verify=OK load=OK size=(1080, 2400) sizeok=True band_colors=1 uniform=True RESULT=PASS | sha256=f3abe7e3a948cbc86dbe29af84b489a7180044cb5e23cd4232bc30e6e30101eb
+png_e3_n1_key.png | src=epN1_reopen2.png | sig=True IEND=True verify=OK load=OK size=(1080, 2400) sizeok=True band_colors=1 uniform=True RESULT=PASS | sha256=d77cc77b296f69069fb0edaf7443f64c3a663a0ca2fdbd5ce48cbb898a133ca6
+png_e4_multimodal.png | src=mm_A_reply.png | sig=True IEND=True verify=OK load=OK size=(1080, 2400) sizeok=True band_colors=1 uniform=True RESULT=PASS | sha256=d7453f18ef22656ce87d59caa31f87fb0b16ebb470f71ed4357f12a853a7b67a
+png_e5_approval.png | src=file_approval.png | sig=True IEND=True verify=OK load=OK size=(1080, 2400) sizeok=True band_colors=1 uniform=True RESULT=PASS | sha256=6f963411cc0cea477b33a51d3d6621b3677232c3080d07dfedf7f3e048a44d14
+png_e7_mcp.png | src=mcp_page.png | sig=True IEND=True verify=OK load=OK size=(1080, 2400) sizeok=True band_colors=1 uniform=True RESULT=PASS | sha256=ea8243529fc15ab9f5b5e64cd2d87d24f614afd8c687def713dc3ebadf939217
+
+RESULT: 6/6 PASS
+SELF-AUDIT: 打码带单色=无残字；无端点标识/URL/密钥/序列号/本机路径写入本文件。

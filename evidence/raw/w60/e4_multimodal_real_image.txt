@@ -1,0 +1,27 @@
+# W60 E4 — 多模态真图识别（端点 A）
+# 判据来源：动态 uiautomator dump 逐字行；截图仅版面留证。
+# 脱敏：端点标识统一写「端点 A–D」，不回灌 URL / 模型 ID / 密钥 / 序列号 / 本机路径。
+
+## 输入图片（程序化生成，无个人信息）
+- 本地 Python/PIL 生成 480×240 RGB PNG：白底；左红方块 (220,30,30)，右蓝圆 (30,60,220)。
+- PIL verify()+load() 通过，size=(480,240)，非 1×1；抽样像素：左 (100,140)=(220,30,30)，
+  右 (360,140)=(30,60,220)。
+- adb push 到设备 /sdcard/Download/w60_shapes.png（1594 bytes），设备 ls -l 实读确认。
+- 通过对话页「添加图片」进入系统选择器；动态 dump 以 content-desc
+  「预览“w60_shapes.png”文件」定位本文件，随后点其**缩略图区域**选入（未点预览按钮）。
+  对话输入区出现该图缩略图（红方块在左、蓝圆在右）截图留证。
+
+## 问答（✅ 通过）
+- 题面（ASCII）：What shapes and colors are in the image, and where are they?
+- 模型最终答复 dump 逐字：
+    There are two main shapes in the image, set against a light background:
+    - Red square – located on the left side.
+    - Blue circle – located on the right side.
+    Both shapes appear to be roughly centered vertically and are positioned side by side with some space between them.
+- 逐字回读命中：红方块在左（Red square ... left side）、蓝圆在右（Blue circle ... right side）。
+- 读数：2.1k in / 160 out (0 cached, 0.0%)；上下文 2.2K / 123.9K。
+
+## 附注（不作为判据）
+- 先用端点 C 在含历史轮次的会话里问同题，答复为 "This is the final answer"（未识别图形，
+  1.6k in / 6 out）；判为小参数端点未命中，故改端点 A 新会话重测，以上述干净轮为准。
+- 未回灌任何凭据或端点标识。

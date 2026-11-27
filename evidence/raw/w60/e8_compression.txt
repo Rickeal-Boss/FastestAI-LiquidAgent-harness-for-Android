@@ -1,0 +1,37 @@
+# W60 E8 — 手动 / 自动压缩触发与判读（端点 A）
+# 判据来源：动态 uiautomator dump 逐字行 + 设备侧 agent-0.log 固定形态行。
+# 脱敏：端点标识统一写「端点 A–D」，不回灌 URL / 模型 ID / 密钥 / 序列号 / 本机路径。
+# 纪律：nothing_to_drop / below_trigger 一律如实判 ⚠️，不冒充 applied。
+
+## 手动压缩（⚠️ 部分：判据被行使，未产生 applied）
+- 对话页「更多操作」→ 菜单逐字：压缩上下文。
+- 点「压缩上下文」→ 确认卡逐字：
+    压缩这段对话的上下文？
+    压缩后本会话的提示缓存会从头重建，下一次请求缓存命中为 0、费用更高。
+    较早的消息不再发给模型（模型会忘掉它们），但仍留在本页可展开回看。撤销能把历史还原，已经发生的请求费用不会退。
+    取消 / 压缩
+- 点「压缩」后 UI 提示逐字：
+    没有可压缩的内容：历史本来就装得下，或找不到安全的截断点。
+- 设备侧日志对应新行：
+    2026-11-27T07:47:42.096281Z WARN manual_compress=noop reason=manual compress: nothing to drop
+- 判读：⚠️ — 手动压缩入口与确认链被行使，但本会话历史短/无安全截断点，
+  nothing to drop，未产生 dropped/applied 形态。不冒充压缩成功。
+
+## 自动压缩（⚠️ 部分：评估被行使，未越线）
+- 触发方式：在对话页发 ASCII 题面 Reply exactly: W60AUTO，读数 2.5k in / 27 out，
+  上下文 2.6K / 123.9K（短历史）。
+- 设备侧日志新增相邻两行：
+    2026-11-27T07:48:07.282776Z INFO auto_compact=noop reason=below_trigger
+    2026-11-27T07:48:07.283266Z WARN auto_compact=noop reason=below_trigger
+- 判读：⚠️ — 自动压缩机制在每轮被评估并留痕，但历史远低于触发线（below_trigger），
+  未出现 applied / dropped 形态；如实标注，不冒充「自动压缩生效」。
+  本波未构建超长历史，故未取得 nothing_to_drop 形态的 auto 样本；此项按 below_trigger 判 ⚠️。
+
+## 内核每轮压缩（context compressed before round）
+- 本波日志中该形态最新一条为历史行 2026-11-26T06:45:37.959358Z（501→277 messages），
+  非本波新产生；本波未越线，属未触发（不作通过/失败判据）。
+
+## 判读汇总
+- 手动压缩：⚠️（nothing to drop，UI + 日志双证）
+- 自动压缩：⚠️（below_trigger，日志双形态行）
+- 均未回灌整段 logcat，仅摘判据相关行；未回灌任何凭据或端点标识。

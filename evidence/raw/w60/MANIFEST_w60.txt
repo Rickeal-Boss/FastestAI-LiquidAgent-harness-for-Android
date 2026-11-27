@@ -1,0 +1,40 @@
+W60 证据入仓 MANIFEST（仓内 evidence/raw/w60/；入仓字节现场实算）
+核对口径：sha256 = 本目录入仓文件字节（git blob；*.txt 已统一 LF 行尾，工作树字节 = 入仓 blob 字节），外审 checkout 后逐件可复核。
+清单：25 件制品 + 1 MANIFEST + 1 manifest_check = 27 文件。
+写域声明：仅 evidence/raw/w60/；未触碰源码/文档/脚本/台账/handoff/派单卡/其它 evidence 目录。
+脱敏声明：端点标识一律脱敏为「端点 A–D」；密钥/凭据/URL/账号/序列号/本机路径未回灌；截图上缘 y205..285 已纯色块打码。
+
+序号 | 文件名 | sha256 | 内容摘要 | 来源 | 四态判据
+---- | ------ | ------ | -------- | ---- | --------
+01 | e0_endpoint_a_1m.txt | e578c3f44c2190604ba78e4fe924d606f61c25d30cea59441c387233eec7d8bd | 端点 A × 1M 档回声与 995.9K 窗读数 | 主理人真机 | ✅（非满窗真压）
+02 | deviceLogTail_w60.txt | 287f11a73cb7524e037a05bedb68b121c77f57b6bee8650b1f1b61757e6d2cfb | W60 时段 DiagnosticLogSink 判据行 40 条（logcat 无 app 形态行，如实标注来源） | 真机矩阵 | ✅/⚠️ 多格
+03 | e1_endpoint_b_128k.txt | d019e49f6128e1ecc008c71b582ed3efef9c1941d0f9120e7f3ea1d64d346deb | 端点 B + 128K 切换守卫与回声（双次 120s 超时） | 真机 cell-1 | ✅ 切换 / ⚠️ 回声
+04 | e2_endpoint_c_echo.txt | 1aa12ebe47cdbf0ff44d024a5011d3c84d202c1e4e660bdf7d6828150629c8ad | 端点 C 新会话逐字回声 + 读数 | 真机 cell-2 | ✅
+05 | e3_n1_disputed_key.txt | d6987baa5d789ce77a6f7e654486a3bc5f1ed97c2203f2c318cb5b55a7207687 | N-1 争议键写入/保存/重开保留 + 已恢复原状 | 真机 cell-3 | ✅
+06 | e4_multimodal_real_image.txt | d45f10def9d64bfa9405f25e49895c45ee25b7893f4341fa0e3f0bf05d655ae2 | 480x240 真图红方块左蓝圆右逐字回读 | 真机 cell-4 | ✅
+07 | e5_workspace_file_rw_approval.txt | 532e78be7d54b78496380f120fe2cb6fc55aebf6f8a34e7a01376fd95c9b6462 | file_write 审批一次 + file_read + 设备侧落盘实读 | 真机 cell-5 | ✅
+08 | e6_skill_load.txt | 216addc8abb4a8ce222aa7bab5e3c97e9639fb8940ae68c4a07edde34fa06e5f | notes-organizer skill 正文入会话 + prompt 1085->2790 | 真机 cell-6 | ✅
+09 | e7_mcp_empty.txt | 5aad5eff1e047d1ee310fe5c6fdd0665df0cbbb9561262e381f905d08b8510a8 | MCP 服务器页 0 服务器空态 | 真机 cell-7 | ⛔ vacuous
+10 | e8_compression.txt | 0e5d91cfb6db5bfa721679e471e19327855f79087b8a81d65842806ff0505fc1 | 手动 nothing_to_drop + 自动 below_trigger | 真机 cell-8 | ⚠️ 两格
+11 | g1_build_w60.txt | e83c10921ed9fcc7d4128a7cf1b8a6225e3f4199d3ed189b902d86f1cf7d0670 | 本地 assembleDebug 构建输出 | 本地闸 1 | ✅ RC=0
+12 | g2_arch_guard_w60.txt | 39a2752f8c66604288704dec3383bcf5b9f460481bd7686b58296821593ac793 | 架构守卫 28 条 | 本地闸 2 | ✅ PASS 27/1 vacuous/0 violation
+13 | g3_selftest_w60.txt | 532aafa8ada0b3aafb71d859f8928bbda85f8fe04b2bb2e74b0231dbc4ad1db0 | 守卫自测 30/30 | 本地闸 3 | ✅ 30/30
+14 | g4_fulltest_w60.txt | 8f5bebdb251a2ac874b4d7a11907c0c6c40ef262c0b3cc12fe65a820f9be622a | 全量单测 14 模块 | 本地闸 4 | ✅ tests=904 failures=0
+15 | g5_manifest_w59_refresh.txt | 3c4ea83f39bbb9d3b80acdcb8564c88fa5f43275c3245affeb372a237f5b9b9f | W57 MANIFEST 当前入仓字节复算 25/25 | W60 第0车 | ✅ 25/25 EQ
+16 | g5_probe_w60.txt | 64409474213572cef0b17b11cc8a877764d1d841199a3117a111bc1443b71795 | PROBE_FORMS 形态/脱敏探针 | 本地闸 5 | ✅ RC=0
+17 | g6_ledger_w60.txt | 33c13db60a247fb9eabb68cd8264edb7be97f183e96bcf9497ff3bbbd2bb186f | 账本符号可解析性检查 | 本地闸 6 | ✅ RC=0
+18 | g7_secretgate_w60.txt | 8367211bef79cc4cf0ed3c3df2664355f5ce33eb1b00bd2bb0b34e03d44c2405 | 全树隐私门禁 RUN1 rc=1（临时原始日志）→清理→RUN2 rc=0 | 本地闸 7 | ✅ 复跑通过
+19 | png_check_w60.txt | a6c0bed2a2058cc69a5a91b212ce8b55719d2b498beb5e9cc82f71ab2a137fc9 | 6 张截图打码带单色校验 + PNG 完整性 | 截图闸 | ✅ 6/6 PASS
+20 | png_e1_endpoint_b.png | e7d1a23f366c629da52b5f6740d6222c48d359f79326488204bb8c4accfdcfec | 端点 B 超时 + 128K 读数（上缘已打码） | 真机 cell-1 | ⚠️
+21 | png_e2_endpoint_c.png | f3abe7e3a948cbc86dbe29af84b489a7180044cb5e23cd4232bc30e6e30101eb | 端点 C 逐字回声（上缘已打码） | 真机 cell-2 | ✅
+22 | png_e3_n1_key.png | d77cc77b296f69069fb0edaf7443f64c3a663a0ca2fdbd5ce48cbb898a133ca6 | 争议键值重开保留（上缘已打码） | 真机 cell-3 | ✅
+23 | png_e4_multimodal.png | d7453f18ef22656ce87d59caa31f87fb0b16ebb470f71ed4357f12a853a7b67a | 端点 A 真图答复（上缘已打码） | 真机 cell-4 | ✅
+24 | png_e5_approval.png | 6f963411cc0cea477b33a51d3d6621b3677232c3080d07dfedf7f3e048a44d14 | file_write 审批卡（上缘已打码） | 真机 cell-5 | ✅
+25 | png_e7_mcp.png | ea8243529fc15ab9f5b5e64cd2d87d24f614afd8c687def713dc3ebadf939217 | MCP 0 服务器空态（上缘已打码） | 真机 cell-7 | ⛔ vacuous
+
+备注1：端点标识统一脱敏为「端点 A–D」；密钥未回灌；截图上缘 y205..285 灰块覆盖，像素复扫该带单色=无残字（见 png_check_w60.txt）。
+备注2：deviceLogTail 来源如实标注——设备落盘 logcat 中 DiagnosticLogSink 形态行=0，判据行取应用内 agent-0.log 的 W60 时段 40 行。
+备注3：压缩两格只到 noop（manual nothing_to_drop / auto below_trigger），未产生 applied 形态，不冒充。
+备注4：g7_secretgate_w60.txt RUN1 rc=1 指向当时尚未清除的 _tmp 原始抓包/UI dump；该目录已删除，RUN2 rc=0，无未跟踪原始文件入仓。
+备注5：端点 B 回声双次 provider 120s 超时如实记 ⚠️，未改源码、未伪造回声。
+备注6：e0_endpoint_a_1m.txt 由主理人在真机席派单前实跑补齐，证据链为动态 dump 逐字行；不写成满窗真压。
