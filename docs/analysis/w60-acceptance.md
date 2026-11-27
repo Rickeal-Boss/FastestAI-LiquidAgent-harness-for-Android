@@ -83,7 +83,16 @@
 
 提交身份 `Rickeal-Boss / 263587600+Rickeal-Boss@users.noreply.github.com`；PAT 仅 URL inline 一次性使用，remote 保持干净、无凭据落盘。
 
-待本波推送后按 atom 实取回填提交数 / run 数 / 四字段 / 交付判据锚点。
+**本波计数（自洽口径）**：W60 全波 **2 提交 / 3 条 run**（① 主体 `90b27b0` 双 run 全绿 + ② 回填提交 Secret run）。① 含裁决落笔、裁决原文入档、证据时点订正、闸门证据、真机矩阵与三份核心文档，双 run 全绿 ⇒ **交付判据恒锚此提交**；② 为纯文档回填（CI 四字段），Build 按 `docs/**` paths-ignore 未触发。最终 tip 与 ② Secret run 按降级规则不作 P0，但如实声明；不为补链新建第 3 提交。
+
+| 提交 | run | workflow | status | conclusion | updated_at |
+|---|---|---|---|---|---|
+| ① `90b27b0` | `45961778806` | Build | completed | **success** | 2026-11-27T07:56:20Z |
+| ① `90b27b0` | `45961778798` | Secret scan | completed | **success** | 2026-11-27T07:55:30Z |
+| ② 回填 | — | Build | 未触发（`docs/**` paths-ignore） | — | — |
+| ② 回填 | 由外审按 `head_sha` 实取 | Secret scan | 事实记录 | — | — |
+
+**交付判据 = ① 主体提交双 run 全绿**；run 号由公开 API 实时直取，`head_sha` 与提交一致。② 的 Secret run 号与最终 tip 按 atom 实取，按降级规则不回填进文档、不计判据、不构成新建补链提交。
 
 ## 明确未做（逐条带中文段位）
 
