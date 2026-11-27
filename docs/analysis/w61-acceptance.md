@@ -51,7 +51,7 @@
 
 ## 步 7：CI（公开 API 四字段，curl 直连实时数据）
 
-本波计数：**N 提交 / M 条 run**（主体 + 回填，逐号待推送后实取回填）。交付判据恒锚**唯一代码提交双 run 全绿**；回填提交按 `docs/**` paths-ignore 只触发 Secret、按降级规则不作 P0。最终 tip 交 atom 实取，不硬写 sha。
+主体提交 `43d1b6c3` 双 run 全绿（curl 直连实取）：Secret `46006512283` success + Build `46006512287` success，head_sha 均为 `43d1b6c3`。本波计数：**2 提交 / 3 条 run**（① 主体双 run 为交付判据；② 回填提交纯文档触发 Secret，按降级规则不作 P0）。最终 tip 交 atom 实取，不硬写 sha。
 
 ## 步 8：明确未做 / 条件触发
 
