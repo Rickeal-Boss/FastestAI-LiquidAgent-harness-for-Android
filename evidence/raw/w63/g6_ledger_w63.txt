@@ -40,3 +40,8 @@ STATUS_COUNTS_AFTER_DOCS rows=216 closed=39 open=166 carried=11 sections=38
 ⇒ 台账③ 与代码**一致**，无需改代码或改台账；审查席所引 :137-143 落在 :127-140 KDoc 内，属行号错配。
 真实残留（覆盖缺口，非缺陷）：core-agent/src/test 下无 journal 测试目录，两测试源集 grep
   `wellFormed|run_started|runId=` 零命中，@Test 维持 904（零新增）⇒ 该加固无 JVM 回归，建议 W64 补 3 用例。
+# 口径补注（14:22，复核主理人 13:5x 追加的 STATUS_COUNTS_AFTER_DOCS）：三组计数不矛盾，是台账在长：
+#   快照 A/B（13:20/13:28，W63 段尚未落笔）    → sections=37
+#   W63 段落笔后（主理人追加，13:5x）          → sections=38   ← 当前实态（`grep -cE '^### W[0-9]+'` = 38）
+#   行/状态列三组全部一致：rows=216 closed=39 open=166 carried=11（W63 段新增 0 行销账，故行数不变）
+# 引用建议：凡引用「段数」请用 **38**（当前实态）；引用「台账符号/行数」用 216/39/166/11（全程未变）。
