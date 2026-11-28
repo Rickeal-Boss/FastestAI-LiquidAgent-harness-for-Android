@@ -9,12 +9,12 @@
 
 序号 | 文件名 | sha256 | 内容摘要 | 来源 | 四态判据
 ---- | ------ | ------ | -------- | ---- | --------
-01 | g1_build_w63.txt | 1a4e33f62d3ded9afd87359aaeedf08c7f4ede68307cfdee95ed5c4fbed3c2b1 | 闸 1：`:app:assembleDebug` 全量编译输出（BUILD 行 + RC；含两轮确定性出包与 RC 判读订正） | CI 席实跑 | ✅ RC=0
+01 | g1_build_w63.txt | 11f8c24eb53475f3b410608ee7f0219e764dfbf18802f9338a49f52a5af431a3 | 闸 1：`:app:assembleDebug` 全量编译输出（BUILD 行 + RC；含两轮确定性出包与 RC 判读订正） | CI 席实跑 | ✅ RC=0
 02 | g2_arch_guard_w63.txt | db3dc3394031bf8423f02e59ab51c52514a7604619e16b89726e7e2859c5e117 | 闸 2：`arch-guard.sh --verbose` 全文（含 G10 各行与 result 行） | CI 席实跑 | ✅ PASS 27/1/0/0
 03 | g3_selftest_w63.txt | e52211704e34167a088a350c599f6f200c1a3dc0543866eb86ec5c4445e0816e | 闸 3：`arch-guard-selftest.sh` 全文（30 条判据） | CI 席实跑 | ✅ 30/30
 04 | g4_fulltest_w63.txt | 0e74f0ee4d4382ed1bc0400c96f26b92e93ce7960ee8311e818bcf065a1f45e0 | 闸 4：`fulltest.sh` 全文（14 模块 tests/failures/errors/skipped） | CI 席实跑 | ✅ 904/0/0/0
 05 | g5_probe_w63.txt | 30ce7453354de07e616b1daec75cae2b443b13f89a6a99f8c0dcad21adcee451 | 探针形态自检：14 锚点 / 15 认领 / 11 反哨兵 | CI 席实跑 | ✅ rc=0
-06 | g6_ledger_w63.txt | 6d5562cb52a290284ad6b6d36f50b4086f06a148e48df2d79b6e2eb74045f3e1 | 台账符号自检（328 kt / 21 类 / 65 方法）+ 状态列计数（文档落笔前后两快照）+ 段数 | CI 席实跑 + 主理人复跑 | ✅ rc=0
+06 | g6_ledger_w63.txt | d5ea50bdfdaa8fcdd98cebe68f83c4b87bf01cbfdcb39e251f2519185e49cedb | 台账符号自检（328 kt / 21 类 / 65 方法）+ 状态列计数（文档落笔前后两快照）+ 段数 | CI 席实跑 + 主理人复跑 | ✅ rc=0
 07 | g7_secretgate_w63.txt | 00b0ac6a0a34a0d894e880eccc44138aa13eb2afcab680a4bc222d7a61c08a2e | 隐私门禁三路 + 补扫六类（只记计数，不记命中内容） | CI 席实跑 | ✅ CI 语义 0 命中
 08 | e1_compact_trigger_32k.txt | 3df0f9d675f1e69339537b5ce663e5960368da56ce986536bc40e00eb6fff11a | G0/G1：32K 档同一 47 145 字符历史，修复前 below_trigger / 修复后 applied（含最终包复跑） | 主理人真机 | ✅ 对照成立
 09 | e2_compact_trigger_128k.txt | 96e18f4e553935d98f1cad5947079f8777e9fc9065dd35d03f2ffb50f80fb172 | G2：128K 档同一内容 ⇒ below_trigger（触发线随档位） | 主理人真机 | ✅ 对照组

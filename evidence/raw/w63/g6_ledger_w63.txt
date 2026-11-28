@@ -37,7 +37,9 @@ STATUS_COUNTS_AFTER_DOCS rows=216 closed=39 open=166 carried=11 sections=38
   :146-149  lastIndexOf(" at=") / tail 全数字                ← 结尾 at=<纯数字> ✅
   :114-124  field()：按 key= 起、遇空格止、值含空白返回 null（合流形态被拦）
 调用面（两侧共用）：AgentRunJournal.kt:66,71 + RunRecoveryStore.kt:22,27
-⇒ 台账③ 与代码**一致**，无需改代码或改台账；审查席所引 :137-143 落在 :127-140 KDoc 内，属行号错配。
+⇒ 台账③ 与**现役**代码一致，无需改代码或改台账。
+审查席所读版本为 145 行（`wellFormed` 仅 6 行、无 hex 校验）；该文件于 13:22:53 被改为 152 行（hex 校验落在 :144-145）
+⇒ 两边观测各自在其时点内成立，属**时点错配**（非 KDoc 误读）。
 真实残留（覆盖缺口，非缺陷）：core-agent/src/test 下无 journal 测试目录，两测试源集 grep
   `wellFormed|run_started|runId=` 零命中，@Test 维持 904（零新增）⇒ 该加固无 JVM 回归，建议 W64 补 3 用例。
 # 口径补注（14:22，复核主理人 13:5x 追加的 STATUS_COUNTS_AFTER_DOCS）：三组计数不矛盾，是台账在长：
