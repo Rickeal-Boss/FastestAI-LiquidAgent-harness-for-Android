@@ -918,5 +918,5 @@
 > **代码三件**：`AgentRunJournal.wellFormed` 加「` at=` 恰好一次」约束拦合流形态（W63 外审 P1-1；KDoc 限定改为「后一条 settled 会丢、方向 fail-safe」）；`AgentRunner.run` 把 `RunState.forRequest` 移进 `try`（W63 P3-2 残余窗口；state 可空、finally 判空补 settled）；`AgentRunnerTest` 新增一个测试方法承载四态断言（合流必红 / `at=17` 宽容 / 截断拒绝 / 完整行正控），`EXPECTED_TESTS` 904→905 受控破例、同提交对账。变异自证：删 ` at=` 计数约束 ⇒ 唯一 1 failed，还原后 sha256 逐字节一致。
 > **N-1 裁决**：外审「换键重跑保存链」处方**改判据对象**——历次主张不是保存链误拒（W54 定谳用例 + 现役白名单已证），而是 W60 步 8「运行时请求实证」未行使；本波真机锚请求体 `parallel_tool_calls:false` 序列化证据，不锚保存链（重测即空转）。
 > **本波边界**：journal 半写行合流形态以 Python 逐字等价复刻 + JVM 四态断言双证（真机无法模拟分两次写同一物理行，维持 ⚠️ 不写成已真机行使）；MCP 内网设备关闭、端到端 `tools/list` ⚠️ 未行使；R4/1M 真压不写通过；前台服务未做（R5 仍 3/4）；`GlassLayerBudget` 设备探针未做；三顶格对象零触碰、`LINE_CAPS` 未调。
-> **本波计数**：交 atom 实取（代码提交双 run 锚 + 文档提交按降级规则声明）。
+> **本波计数（三处相等）**：**1 提交 / 2 条 run** —— 主体 `5090512` 双 run 全绿（Secret `46132161797` / Build `46132161838`）；本回填纯 `docs/**` 按降级规则只声明、不作 P0。
 > 段头所列六行已销；新开 = 0 行。
