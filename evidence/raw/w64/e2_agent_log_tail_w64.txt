@@ -1,0 +1,15 @@
+=== W64 真机应用诊断日志尾部（agent-0.log 判据行）===
+仅保留 请求起点 / 压缩评估 / 取消 三类 token；不含请求体、不含用户正文、不含端点标识。
+
+2026-11-28T05:35:09.081580Z INFO prefix fp=22be1a5e changed=none prompt=8944 cached=n/a-usage
+2026-11-28T05:35:12.308993Z INFO run cancelled: chars=850 rounds=1
+2026-11-28T05:35:31.818295Z INFO prefix fp=22be1a5e changed=none prompt=9166 cached=n/a-usage
+2026-11-28T05:35:33.231717Z INFO context compressed: 72 -> 46 messages (chars=27439, dropped=26, char_budget=27236, char_target=27236, budget=20184, target=12110 tokens)
+2026-11-28T05:35:33.234131Z INFO auto_compact=noop reason=already_compressed
+2026-11-28T05:35:33.235099Z WARN auto_compact=noop reason=already_compressed
+2026-11-28T09:13:10.917982Z INFO prefix fp=e3a53aca changed=none prompt=1074 cached=n/a-usage
+2026-11-28T09:13:15.400874Z WARN auto_compact=noop reason=below_trigger
+2026-11-28T09:13:15.401557Z INFO auto_compact=noop reason=below_trigger
+2026-11-28T09:23:15.380545Z INFO prefix fp=f207f9f6 changed=none prompt=1073 cached=n/a-usage
+2026-11-28T09:23:16.617580Z WARN auto_compact=noop reason=below_trigger
+2026-11-28T09:23:16.618340Z INFO auto_compact=noop reason=below_trigger

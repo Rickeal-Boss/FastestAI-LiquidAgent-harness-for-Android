@@ -1,6 +1,7 @@
 package com.rickeal.liquidharness.core.agent
 
 import com.rickeal.liquidharness.core.agent.engine.LlmEngine
+import com.rickeal.liquidharness.core.agent.journal.AgentRunJournal
 import com.rickeal.liquidharness.core.agent.loop.FakeEngine
 import com.rickeal.liquidharness.core.agent.loop.TRUNCATED_KIND
 import com.rickeal.liquidharness.core.agent.loop.testRequest
@@ -134,5 +135,53 @@ class AgentRunnerTest {
         val lines = java.io.File("src/main/java/com/rickeal/liquidharness/core/agent/AgentRunner.kt")
             .readLines().size
         assertTrue(lines <= 200, "AgentRunner.kt must stay <= 200 lines, was $lines")
+    }
+
+    /**
+     * W64（W63 外审 P1-1 合流形态判据缺口）：`wellFormed` 四态断言，挂在本类
+     * 既有测试文件内的**新增断言方法**——`EXPECTED_TESTS` 同波对账 904→905
+     * （`build.yml` 增量注释同提交），四条样本全部在同一个测试方法体内断言。
+     *
+     * 1. 完整行合格（正控）；2. `at=17` 时间戳截断仍合格（限定 1）；3. 截断
+     * payload（缺 ` at=` 尾巴）不合格；4. **合流行**（前一条完整只缺 `\n`、后一条
+     * 整行接在 `at=<digits>` 之后）不合格——W63 旧判据会把它误判为合格
+     * `run_started`（field 读第一个 runId、lastIndexOf 取后一条尾巴），后一条
+     * `run_settled` 因此丢失 ⇒ 下次启动多弹一次恢复卡。W64 加「` at=` 恰好
+     * 一次」约束后必须判 False。注入「删掉 ` at=` 计数约束」⇒ 第 4 条 RED。
+     */
+    @Test
+    fun wellFormedRejectsConflatedAndTruncatedJournalLines() {
+        val runId = "110eda9612345678abcdef9012345678" // 32 位小写 hex 形态
+        val started = "run_started runId=$runId inputChars=12 at=1795783954214"
+        val settled = "run_settled runId=$runId activeMs=103 cancelled=false at=1795783999000"
+
+        // 1. 完整行合格（正控：判据必须先在已知样本上响过）。
+        assertTrue(AgentRunJournal.wellFormed(started, "run_started"), "完整 run_started 必须合格")
+        assertTrue(AgentRunJournal.wellFormed(settled, "run_settled"), "完整 run_settled 必须合格")
+
+        // 2. `at=17` 时间戳数字被截断 ⇒ 仍合格（runId 已完整，行为正确）。
+        assertTrue(
+            AgentRunJournal.wellFormed("run_started runId=$runId inputChars=12 at=17", "run_started"),
+            "at=17 截断尾巴仍按限定 1 宽容",
+        )
+
+        // 3. 缺 ` at=` 尾巴的半写行 ⇒ 不合格（W63 既有判据，回归面）。
+        assertFalse(
+            AgentRunJournal.wellFormed("run_settled runId=$runId activeMs=103 cancelled=", "run_settled"),
+            "缺 at= 尾巴必须判不合格",
+        )
+
+        // 4. 合流行：前一条完整只缺 \n、后一条整行接在 at=<digits> 之后。
+        //    W63 旧判据误判 True（外审逐字复刻实证）；W64 ` at=` 计数约束 ⇒ 必须 False。
+        val conflated = "run_started runId=$runId inputChars=12 at=1795783954214" +
+            "run_settled runId=ffffffffffffffffffffffffffffffff activeMs=99 at=1795783999000"
+        assertFalse(
+            AgentRunJournal.wellFormed(conflated, "run_started"),
+            "合流行必须被 at= 计数约束拦下（W63 旧判据误判 True ⇒ 多弹恢复卡）",
+        )
+        assertFalse(
+            AgentRunJournal.wellFormed(conflated, "run_settled"),
+            "合流行对 settled 侧同样不合格",
+        )
     }
 }

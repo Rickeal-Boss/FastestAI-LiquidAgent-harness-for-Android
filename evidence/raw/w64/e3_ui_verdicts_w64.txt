@@ -1,0 +1,20 @@
+=== W64 真机 UI 判据（uiautomator dump 文本判读，非整段 dump）===
+
+[G1] 恢复卡正控 —— 注入完整未结算 run_started（新 hex runId）后冷启动：
+     dump 命中 text="上次运行被中断" + "继续" + "丢弃" ⇒ 弹卡 ✅
+     点「继续」后 run-as 读 journal：该 runId 追加 run_settled activeMs=0 ⇒ 补 settled ✅
+
+[G2] 合流形态（W63 外审 P1-1）—— 注入「前一条完整缺 \n、后一条整行接在 at=<digits> 之后」：
+     落盘 tail 显示两记录在同一物理行（含两个 " at="）；
+     冷启动 dump 只有「开始一段对话 / 对话 / 设置」，无「上次运行被中断」⇒ 不弹卡 ✅
+     （与 Python 逐字复刻 S6/S7 W64判据=False 一致；真机坐实合流形态不再误判为合格 started）
+
+[G3] N-1 争议键保存链 —— Lightning 端点开自定义协议、extraBody 写 parallel_tool_calls=false：
+     保存→重开→再展开，输入框逐字保留 parallel_tool_calls=false ✅
+     设为当前后发 'ping'：服务端逐字回声 "Pong!"（1.8k in / 30 out），run 正常结算 ✅
+     注意：请求体序列化明文不落设备日志（隐私纪律），本格只证「保存链往返 + 请求未受阻」，
+     **不写成「wire 上已逐字验证 parallel_tool_calls:false」** ⇒ ⚠️ 部分（按派单卡裁 1 降级路径）
+
+[G4] 端点环境恢复 —— 测试后关闭自定义协议、清空 extraBody、切回原当前端点 ✅
+
+[G5] 恢复卡判据空命中语义 —— G1 正控先行证明「弹卡」判据会响；G2 才采信「不弹卡」非假绿。

@@ -1,0 +1,31 @@
+# W64 证据（外审 6 行条件销账 / journal 合流判据 / N-1 请求体定谳 / forRequest 残余窗口）
+
+# 脱敏声明：端点标识一律「<endpoint-model> / <endpoint-url>」占位；无凭据 / 无真实 URL /
+#             无账号 / 无设备序列号 / 无本机路径（一律 <workspace-root> / <user-home>）；
+#             不回灌整段 logcat（只取判据 token 行）。
+# 四态纪律：未触发 ≠ 通过；条件未满足如实标 ⚠️ / ⛔vacuous，不冒充。
+# 904→905 受控破例：合流判据一个 JVM 方法，build.yml 同提交对账（增量注释写明边界区分）。
+
+清单：18 件制品 + 1 MANIFEST = 19 文件。
+核对口径：sha256 = 本目录入仓文件字节（*.txt / *.py 已统一 LF ⇒ 工作树字节 = 入仓 blob 字节）。
+
+序号 | 文件名 | sha256 | 内容摘要 | 来源 | 四态判据
+---- | ------ | ------ | -------- | ---- | --------
+01 | g1_build_w64.txt | 60367d7e7d499b3ee58166e79ddda495268c0c1d8267a73a43ce4f2fd726d114 | 闸 1：`:app:assembleDebug` 两轮独立实跑（删 APK 重编）sha256 同为 `91d73d87…`，BUILD SUCCESSFUL | CI 席实跑 | ✅ 确定性出包
+02 | g2_arch_guard_w64.txt | 782190a42606af34be18d633b3e976d3397b6c2d1982b700f2fc2fc357433e8f | 闸 2：`arch-guard.sh` 全文（G1–G23 + G10 行数闸门 + result 行） | CI 席实跑 | ✅ PASS 27/1/0/0
+03 | g3_selftest_w64.txt | b0a6ec88d057ad74b07a3d8782fc2c3842d22d3c6d536bced1aaaa9b4a188d39 | 闸 3：`arch-guard-selftest.sh` 全文（30 条变异自证 + 汇总） | CI 席实跑 | ✅ 30/30 PASS
+04 | g4_fulltest_w64.txt | 04d38b171fbd3b9b2465fb2499c2076f469583a9a6c247dca78c0c51de7f806a | 闸 4：`fulltest.sh` 全文（14 模块 tests/failures/errors/skipped） | CI 席实跑 | ✅ 905/0/0/0
+05 | g5_probe_w64.txt | 19f22f3a1010e7baa5ae00c353d8d571eb29989a06ff88748733d6c25cd7d10c | 探针形态自检：14 锚点 / 15 认领 / 11 反哨兵 | CI 席实跑 | ✅ rc=0
+06 | g6_symbol_w64.txt | a09b159c0746298da6d2f8ece622a03c5b0ef5b4e1a2b1190f5054446a25d8ac | 台账符号自检（328 kt / 22 类 / 66 方法；W63 为 21/65，+1 = 新增方法） | CI 席实跑 | ✅ rc=0
+07 | g7_secretgate_w64.txt | b76b5cd1de7c8096946de21d1f26cecdfd59d8bbaa3be231dfa770502d8a1474 | 隐私门禁三路（`--ci-semantics`）全 0；route2 曾命中本波脚本内本机绝对路径（已改写为相对路径） | CI 席实跑 | ✅ 三路 0 命中
+08 | g8_k6_k7_mustred_w64.txt | 76a8d7d6f27a7b1303c405062131b7d3e28715b02ff55e033cb12732308899d0 | 判据 6 三制品正常态 OK + 十一类必红逐类 RED（11/11）；判据 7 正常态 OK（declared=6）+ 删指路必红双分支 RED；状态列 216/45/160/11 | 主理人实跑 | ✅ 全类会响
+09 | g10_gate_exact.txt | 836a2a83d217717d8cc523181afd1e601345e6ca6581a327b02aeb6fee8e6e84 | 外审 6 行出口判据逐项静态复核（130 命中 / 断言 4=4 / §2.5a 16 处分类 / W9-01 五 token / 8 行 W34 命中 8/8） | 主理人实跑 | ✅ 逐项可指认
+10 | e1_journal_lifecycle_w64.txt | 1037121285d962595205195b58b43e2d97ba3bc63d8fea393060c74877e35251 | 真机 journal 尾部（run-as 读 files/harness/run-journal.jsonl）：hello / ping / 长请求三对 started→settled 完整配对 | 主理人真机 | ✅ 生命周期完整
+11 | e2_agent_log_tail_w64.txt | 21961f650221d6f6ea0064c3ae61e1a989442dc6e4496e3c251587ba5b9efaa7 | 真机应用诊断日志尾部判据行（prefix fp / auto_compact / run cancelled），无请求体 | 主理人真机 | ✅ 请求起点真跑
+12 | e3_ui_verdicts_w64.txt | f7a111b4f69d6a85ee9dab8d14a0a730bf5b5948164ee7c7f841431e77735a99 | G1 恢复卡正控 / G2 合流行不弹卡 / G3 N-1 保存链 / G4 环境恢复 / G5 空命中语义 四态判读 | 主理人真机 | ✅×4 + ⚠️×1（G3 wire 未验）
+13 | e4_cancel_regression_w64.txt | 733799a1c61bfccd59ffbca0140c49a885d181a6a03dcfe907eef7ffaf141dfe | 取消链分层：本波 run 生命周期 ✅ / 历史取消样本（非本波触发）/ JVM 6 用例 ✅ / 异常注入 ⚠️ 推演级 | 主理人真机 + JVM | ⚠️ 部分（诚实分层）
+14 | e5_wellformed_python.txt | 6dfe0bdbf7badf61242ee2cbe77016b6b474fb08f764902d4d3b960819241512 | wellFormed 逐字等价 Python 复刻：8 样本 W64 判据自洽 OK；合流两形态 W63 旧判据 True / W64 False | 主理人实跑 | ✅ 必红正控会响
+15 | png_e1_chat_w64.png | 0c00efa10aaa2854202237988ee8d980cb4c1a70a9bc401ef2fc4f52d8f9d3a9 | 对话页（ping→Pong 后），上缘端点标识带打码；签名/IEND/verify/load/尺寸/单色带全过 | 主理人真机 | ✅
+16 | png_e2_recovery_w64.png | 545a00220b92f5d85a1a94a041d8ce1659bd591259ff240621a93c45503dfa7a | 恢复卡弹窗（完整 hex runId 正控），上缘打码；PNG 完整性全过 | 主理人真机 | ✅
+17 | src_ledger_checks.py | 5eb7e4bcd659fde55062de96c5c47029f90267881996f1073fbd9074da6e2c64 | 外审 6 行出口判据复核脚本（可复算；输出路径走环境变量，不落本机绝对路径） | 主理人编写 | ✅ 可复跑
+18 | src_wellformed_replay.py | e8899f15d6d9fc5a8d0a660111707df7f6eea0896e9994fc4a8df5df215d58f6 | wellFormed Python 逐字等价复刻脚本（含 W63 旧判据对照） | 主理人编写 | ✅ 可复跑

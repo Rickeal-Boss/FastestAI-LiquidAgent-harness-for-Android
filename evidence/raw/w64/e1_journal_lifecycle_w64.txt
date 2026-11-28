@@ -1,0 +1,9 @@
+=== W64 真机 journal 生命周期（run-as 读 files/harness/run-journal.jsonl 尾部）===
+端口路径为 app 沙箱内固定文件名；runId 为随机 hex（非凭据/非账号）；无用户正文。
+
+run_started runId=cafebabecafebabecafebabecafebabe inputChars=2 at=1795844200000
+run_settled runId=cafebabecafebabecafebabecafebabe activeMs=0 frozenMs=0 tools=0 cancelled=false at=1795844212630
+run_started runId=bc78efece93f48c9ae6b3b59062cf595 inputChars=5 at=1795857190907
+run_settled runId=bc78efece93f48c9ae6b3b59062cf595 activeMs=4385 frozenMs=0 tools=0 cancelled=false at=1795857195292
+run_started runId=a0e4837584e34c2899af7ed7d7f89d5f inputChars=4 at=1795857795368
+run_settled runId=a0e4837584e34c2899af7ed7d7f89d5f activeMs=1204 frozenMs=0 tools=0 cancelled=false at=1795857796572

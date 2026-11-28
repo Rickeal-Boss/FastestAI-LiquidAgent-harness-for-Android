@@ -96,10 +96,14 @@ class AgentRunner(
             return@channelFlow
         }
 
-        val state = RunState.forRequest(request, freezeClock = newFreezeClock?.invoke())
+        // W64（W63 外审 P3-2）：`RunState.forRequest` 移进 try —— `newFreezeClock?.invoke()`
+        // 是装配期常量调用，异常概率极低，但一旦抛出会漏 finally ⇒ `runMutex` 永锁（与
+        // W62 修的 runStarted 同型）。state 提为可空 var，finally 侧仅构造成功后补 settled。
+        var state: RunState? = null
         // W62（W61 外审 P1-3）：`try` 必须从 runStarted **之前**开始 —— 下文任一构造 / launch
         // 抛出都要经过 finally，否则 `runMutex` 永锁 + 留下永久未结算 run（W63 在 finally 内兜底）。
         try {
+            state = RunState.forRequest(request, freezeClock = newFreezeClock?.invoke())
             journal?.runStarted(state.runId, request.userInput.length)
             val ctx = TurnContext(
                 request = request,
@@ -125,8 +129,12 @@ class AgentRunner(
             // 反序会让另一协程在两步之间拿锁并登记新 activeRun，随后被本 run 的清尾抹成 null
             // （丢取消句柄 + 忙碌态误报）；锁持有窗口 = runSettled 同步写盘时长（与 W62 同量级）。
             // 而 unlock 必达仍由内层 finally 保证：sink 抛 CE（按纪律上抛）也不会复活「mutex 永锁」。
+            // W64：state 可空化后，forRequest 抛异常 ⇒ state==null ⇒ 跳过 runSettled（无 run 可结算），
+            // 清理与 unlock 仍必达。
             try {
-                journal?.runSettled(state.runId, state.elapsedMillis(), state.executedToolCount, state.cancelled, state.frozenMillis())
+                state?.let { s ->
+                    journal?.runSettled(s.runId, s.elapsedMillis(), s.executedToolCount, s.cancelled, s.frozenMillis())
+                }
             } finally {
                 activeRun.set(null)
                 busyState.value = false

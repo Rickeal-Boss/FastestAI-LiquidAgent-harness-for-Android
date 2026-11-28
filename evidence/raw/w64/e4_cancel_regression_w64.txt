@@ -1,0 +1,20 @@
+=== W64 取消链回归（AgentRunner.forRequest 移 try 内后）===
+
+[G6] 取消链判据分层（诚实标注，不把历史样本冒充本波行使）：
+
+1. **本波真机已行使**：`forRequest` 移进 try 后，真机 journal 尾部连续两对 run
+   （hello / ping / 长请求）均为 `run_started → run_settled(cancelled=false)` 完整配对，
+   activeMs 正常、无 GateRejected、无未结算残留 ⇒ runMutex 未永锁（本次改动最直接风险面已排除）。
+
+2. **取消-恢复样本**：本波真机读取的 journal 尾部包含 W63/W62 留下的
+   `run_settled … cancelled=true activeMs=10303` 与其后新 run 正常结算的历史样本
+   —— 该样本证明「取消后互斥释放」的机制在树上仍成立，但**取消动作不是本波新触发**，
+   不写成「本波真机重新行使了取消」。
+
+3. **JVM 用例**：`AgentRunnerTest.cancelEmitsCancelledWithPartialText` 等 6 个用例本波
+   fulltest 全绿（905/0/0/0，含真跑协程取消路径）。
+
+4. **异常注入路径 ⚠️ 推演级**：`newFreezeClock?.invoke()` 抛异常 ⇒ state 为 null ⇒
+   finally 跳过 runSettled 但仍清理 + unlock。该异常路径无法真机注入（装配期常量），
+   无行为级用例（新增命中 904→905 已用于合流判据，本条不重复破例）。
+   判据 = 纸面控制流走查（try/finally 嵌套结构）+ 上述 1/2/3 三面，不标 ✅ 行为级。

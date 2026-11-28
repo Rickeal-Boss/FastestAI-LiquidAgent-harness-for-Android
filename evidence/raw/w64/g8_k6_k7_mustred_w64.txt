@@ -1,0 +1,29 @@
+=== W64 判据 6 十一类必红逐类复跑（现役树，判据源=w29-closeout-checklist.md 判据6 heredoc）===
+[正常态 正控先行]
+normal ARTIFACT=evidence/w32-matrix-summary.json => OK feature/evidence invariants [rc=0]
+normal ARTIFACT=evidence/w33-matrix-summary.json => OK feature/evidence invariants [rc=0]
+normal ARTIFACT=evidence/w34-matrix-summary.json => OK feature/evidence invariants [rc=0]
+[必红十一类]
+w32-matrix-summary.json.k6_count.json => RED assertion/mutation count mismatch [rc=0]
+w32-matrix-summary.json.k6_covpop.json => RED state sum; attempt keys; coverage cells != cells_total [rc=0]
+w32-matrix-summary.json.k6_fail.json => RED zero-value keys: ['FAIL']; state domain [rc=0]
+w32-matrix-summary.json.k6_iter.json => RED iterations_total != len [rc=0]
+w32-matrix-summary.json.k6_noassert.json => RED assertions missing [rc=0]
+w32-matrix-summary.json.k6_nocell.json => RED mcp claims cell F4_mcp but cells[] lacks it; no mcp cell without declaration; state sum; attempt keys; coverage cells != cells_total [rc=0]
+w32-matrix-summary.json.k6_nomcp.json => RED mcp field missing [rc=0]
+w32-matrix-summary.json.k6_nomut.json => RED mutation_cases missing [rc=0]
+w32-matrix-summary.json.k6_noptr.json => RED selftest note lacks in-repo pointer [rc=0]
+w32-matrix-summary.json.k6_privkey.json => RED privacy: key-like token [rc=0]
+w32-matrix-summary.json.k6_ref.json => RED missing ref evidence/raw/__missing__.json [rc=0]
+k6 必红：RED=11 / 总类=11
+OK closed rows carry runnable pointers (W30+)
+OK closed rows carry current-wave pointers (W64, declared=0)
+=== 判据 7（销账后补跑，declared=6）===
+[正常态]
+OK closed rows carry runnable pointers (W30+)
+OK closed rows carry current-wave pointers (W64, declared=6)
+[必红 B 型：6 行锚点删空]
+RED closed without runnable pointer: W34-01, W34-03, W35-03
+RED closed without current-wave pointer: W34-01, W34-02, W34-03, W35-01, W35-02, W35-03
+[状态列]
+表格行=216 CLOSED=45 OPEN=160 CARRIED=11

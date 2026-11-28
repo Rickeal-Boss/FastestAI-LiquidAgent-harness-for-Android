@@ -1,0 +1,13 @@
+=== W64 wellFormed Python 逐字等价复刻 ===
+样本 | W63旧判据 | W64现役判据 | 期望(W64)
+S1 完整 run_started（正控） | True | True | True | OK
+S2 完整 run_settled（正控） | True | True | True | OK
+S3 at=17 截断（限定 1 宽容） | True | True | True | OK
+S4 runId 截断成 8 hex | False | False | False | OK
+S5 尾部 payload 截断（缺 at=） | False | False | False | OK
+S6 合流：前完整缺 \n 后整行接 at= 尾 | True | False | False | OK
+S7 合流：同上但 at= 后有空格 | True | False | False | OK
+S8 合流行对 settled 侧 | False | False | False | OK
+
+W64 判据自洽: OK
+必红正控 S6/S7 在 W63 旧判据下 = True/True (必须 True，证明 W64 约束真正改变判定)

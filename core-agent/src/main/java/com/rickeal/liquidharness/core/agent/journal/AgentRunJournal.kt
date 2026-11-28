@@ -124,25 +124,38 @@ class AgentRunJournal(
         }
 
         /**
-         * 行形态完整判定：kind 前缀 + **runId 形态**（32 位小写 hex）+ 结尾 `at=<纯数字>`。
+         * 行形态完整判定：kind 前缀 + **runId 形态**（32 位小写 hex）+ 结尾 `at=<纯数字>`
+         * + **单 ` at=` 尾巴**（W64 合流形态约束）。
          *
          * 内存 buffer 的行恒为完整行，判据真正的用武之地是**落盘**侧（`RunRecoveryStore`）：
          * 非原子的 `appendText` 会在文件尾留截断行，旧写法只判 `startsWith` ⇒ 截断 runId
          * 直接进恢复卡（P2-2）。落盘侧与 `findUnsettled` 共用本函数 = 消掉双侧判据漂移（P3-1）。
          *
-         * 三条限定（写实，防下一波误当缺陷）：
+         * 四条限定（写实，防下一波误当缺陷）：
          * 1. `at=17`（时间戳数字被截断）仍算合格 —— 此时 runId 已完整，行为正确；
-         * 2. **合流形态**（截断行吃掉 `\n`、下一次 append 接在同一物理行）由 runId 形态校验拦下：
-         *    `field("runId")` 会把后一条记录的开头併进值里 ⇒ 非 32 位 hex ⇒ 判不合格，后一条
-         *    `run_settled` 不会因此被整条吞掉；
+         * 2. **合流形态**（截断行吃掉 `\n`、下一次 append 接在同一物理行）：W63 旧判据
+         *    `field("runId")` 读第一个 `runId=`（前一条完整 32 hex）、`lastIndexOf(" at=")`
+         *    取**后一条**的纯数字尾巴 ⇒ 整行被误判为合格 `run_started`，且该行不以
+         *    `run_settled ` 开头 ⇒ **后一条 `run_settled` 彻底丢失** ⇒ 下次启动多弹一次
+         *    恢复卡（外审 W63 P1-1 逐字复刻实证）。W64 加「` at=` 只出现一次」约束：
+         *    合流行的第二个 ` at=` 使计数为 2 ⇒ 判不合格。**后果仍是 fail-safe 方向**
+         *    （宁可多弹一次卡，不会少弹），但丢失原因由「runId 形态校验拦截」订正为
+         *    「尾巴计数拦截」——被并进同一物理行的记录不可逆丢失是结构性后果，KDoc
+         *    不得写成「后一条不会被吞掉」；
          * 3. 截断落在 `cancelled=` 等尾部字段时，该条 `run_settled` 被丢弃 ⇒ 方向 fail-safe：
-         *    宁可多弹一次恢复卡，不会少弹（少弹 = 用户丢现场且无提示）。
+         *    宁可多弹一次恢复卡，不会少弹（少弹 = 用户丢现场且无提示）；
+         * 4. 截断落在 `runId=` 字段内部（旧限定 2 的形态）：併进值里 ⇒ 非 32 位 hex ⇒
+         *    判不合格（与合流形态走不同分支，两者都被拦）。
          */
         fun wellFormed(line: String, kind: String): Boolean {
             if (!line.startsWith("$kind ")) return false
             // runId 由 `RunState.runId → Ids.newId()` 生成 = UUID 去横线 ⇒ 恒 32 位小写 hex。
             val id = field(line, "runId") ?: return false
             if (id.length != 32 || id.any { it !in '0'..'9' && it !in 'a'..'f' }) return false
+            // W64：` at=` 必须恰好一次。合流行（前一条完整只缺 \n、后一条整行接在
+            // at=<digits> 之后）会出现第二个 ` at=` ⇒ 拦下；单行截断（`at=17`）不引入
+            // 第二个 ` at=` ⇒ 仍按限定 1 宽容。
+            if (line.split(" at=").size - 1 != 1) return false
             val at = line.lastIndexOf(" at=")
             if (at < 0) return false
             val tail = line.substring(at + 4)
