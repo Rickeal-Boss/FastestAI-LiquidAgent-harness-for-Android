@@ -66,6 +66,11 @@ data class McpRow(
     val status: String,
     val toolCount: Int,
     val cachedAtMillis: Long = 0L,
+    /**
+     * 必须随列表带出：编辑表单要靠它回填开关。此前不回填 ⇒ 二次编辑保存时
+     * `McpDraft` 默认 false 覆盖持久化的 true，用户「开了又变关」（W63 · P2-1）。
+     */
+    val allowPrivateNetwork: Boolean = false,
 )
 
 /**

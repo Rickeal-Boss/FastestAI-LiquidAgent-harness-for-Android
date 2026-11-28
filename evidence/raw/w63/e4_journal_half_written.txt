@@ -1,0 +1,32 @@
+# G6 / G7 / G12 — journal 半写行容错（落盘配对只采信「kind 前缀 + runId 32 位 hex + 结尾 at=<纯数字>」）
+# 手法：force-stop 后向 files/harness/run-journal.jsonl 追加行（run-as），冷启动看恢复卡。
+# 原文件末行为已结算 run，故「不弹卡」是默认态，判据必须靠 G7 正控证明检测器仍然工作。
+
+## G6 半写行（行尾被截断，缺 ` at=`）+ 合法 32 位 hex runId
+追加：`run_started runId=deadbeefdeadbeefdeadbeefdeadbeef inputChars=2`
+冷启动 dump：无「继续 / 丢弃」按钮
+判读：✅ 不采信半写行 ⇒ 不弹卡、不把截断 runId 带进恢复卡。
+
+## G7 正控：完整行（同一路径、同一检测链）+ 合法 hex runId
+追加：`run_started runId=feedfacefeedfacefeedfacefeedface inputChars=2 at=1795844000000`
+冷启动 dump：弹卡，正文「检测到上一次运行没有正常结束。会话正文尚未持久化…」，按钮「丢弃 / 继续」
+（截图：png_e2_recovery_card.png）
+点「继续」后落盘补 settled：
+`run_settled runId=feedfacefeedfacefeedfacefeedface activeMs=0 frozenMs=0 tools=0 cancelled=false at=…`
+
+判读：✅ G7 正控成立 ⇒ G6 的「不弹卡」不是空转（读盘配对链对完整行仍生效，runId 形态校验未过度拒绝）。
+
+## G12 合流形态（审查席 P2-2 的加固点）
+形态：某次写入在 runId 中间被截断且吃掉 `\n`，下一次 append 接在同一物理行 ⇒ 该行 `startsWith("run_started ")`
+成立、尾部 ` at=<digits>` 来自**后一条记录** ⇒ 修复前会判合格，`field("runId")` 取到截断值，
+后一条 `run_settled` 被整条吞掉。
+加固：`wellFormed` 增「runId = 32 位小写 hex」校验。合流行里 `field("runId")` 取到的是拼接值
+（`<截断前缀><下一条 kind>`），长度/字符集不合法 ⇒ 拒绝。
+四态：✅ 判据在代码路径上成立；**真机上未单独构造合流样本**（构造需精确控制两次写入的截断点，
+run-as 注入无法模拟分两次写同一物理行）⇒ 该形态属代码级判定，标 ⚠️ 未真机行使，不写成已验证。
+
+## 已知限定（写实，不写成「半写行一律不采信」）
+- `at=17`（数字被截断）仍判合格 —— runId 完整时行为正确。
+- 截断落在 `cancelled=` 等尾部字段 ⇒ 该条 settled 被丢弃 ⇒ 多弹一次卡（方向 fail-safe，不会少弹）。
+- 本文件 §G6 的初测（APK 12:58）用的是非 hex runId（`w63trunc0inputchars02`），只验了 `at=` 校验；
+  加入 runId 形态校验后，该样本会先被形态校验拒掉 ⇒ 故在最终包（`7de9eaa3…`）上用合法 hex runId 重做了 G6/G7。

@@ -1,6 +1,6 @@
 package com.rickeal.liquidharness.feature.chat
 
-import com.rickeal.liquidharness.core.agent.context.COMPACT_TRIGGER_CHARS
+import com.rickeal.liquidharness.core.agent.context.compactTriggerChars
 import com.rickeal.liquidharness.core.agent.context.compressTargets
 import com.rickeal.liquidharness.core.agent.context.contextLimitOf
 import com.rickeal.liquidharness.core.agent.context.shouldApply
@@ -144,32 +144,31 @@ internal class ConversationOps(
      * 会话级自动压缩（W7，用户裁决 (a)：正常结束只是**评估时点**，真压由体积 + 收益阈值定）。
      *
      * **唯一调用点**：`ChatViewModel.runOnce` 的 `collect` 内按 `shouldEvaluate(event)` 分流 —
-     * 绝不挂 `finally`（它无条件置 `isStreaming=false`），也不能只看 streaming 归零：
-     * `Finished` 与 `Cancelled` 共用 `finish(...)`，只有 `Finished(ModelStopped)` 才是正常结束。
-     * CI 席 G23 钉 `.autoCompactOnSettled(` 恰好一处 + selftest 变异自证（删调用 ⇒ 判红）。
+     * 绝不挂 `finally`（无条件置 `isStreaming=false`），也不能只看 streaming 归零：`Finished`
+     * 与 `Cancelled` 共用 `finish(...)`，只有 `Finished(ModelStopped)` 才是正常结束。CI 席 G23
+     * 钉 `.autoCompactOnSettled(` 恰好一处 + selftest 变异自证（删调用 ⇒ 判红）。
      *
      * **每次评估必落可见账**（noop 也写 reason，含 `nothing_to_drop`）：否则「评估了但没压」
-     * 与「根本没接上」在日志上无法区分（W6 教训）。手动压缩的三条前置拒绝才静默 return。
-     * 开关 `settings.compressContext` 关 ⇒ 本策略直接 return，**手动压缩仍可用**。
+     * 与「根本没接上」在日志上无法区分（W6 教训）。开关关 ⇒ 直接 return，手动压缩仍可用。
      *
-     * **量纲分工**：[shouldApply] 用**字符**（`COMPACT_TRIGGER_CHARS` / `MIN_SAVINGS_CHARS`），
-     * 压缩目标 `compressBubbles(budgetTokens)` 仍走**token 软预算**（与手动同源）——
-     * 前者不依赖估算器正确性，后者保证压完不会立刻再触发内核自动压缩。
+     * **量纲分工**：触发线 `compactTriggerChars` 与 `MIN_SAVINGS_CHARS` 都用**字符**（按档位，
+     * 不依赖估算器正确性）；压缩目标 `compressBubbles(budgetTokens)` 走**token 软预算**
+     * （与手动同源），保证压完不会立刻再触发内核自动压缩。
      */
     fun autoCompactOnSettled() {
         val snapshot = state.value
-        // ⚠️ 不判 `isStreaming`：本方法在 `collect` 收到终态事件时被调用，此时 streaming
-        // 是否清理取决于调用点顺序（W40 起 onEvent 先落终态气泡，再评估压缩）；
-        // `EventReducer.finish` 把 `isStreaming` 置 false，清缓冲则由 `runOnce` 的 finally
-        // 在 collect 完成后做——所以**不能**拿 `isStreaming` 当「气泡已落库」的代理。
-        // W7 真机实摔：判了它，自动压缩被静默早退，连 noop 账都不落。
+        // ⚠️ 不判 `isStreaming`：`EventReducer.finish` 已置 false，清缓冲在 runOnce 的 finally
+        // 里做 ⇒ 它不能当「气泡已落库」的代理（W7 真机实摔：判了它，自动压缩被静默早退）。
         if (snapshot.bubbles.isEmpty()) return
         scope.launch {
             if (!container.settings.compressContext.first()) return@launch
             val endpoint = container.activeEndpoint() ?: return@launch
             val windowCap = contextWindowCap(container)
+            val policy = AgentPolicy(maxContextTokens = windowCap)
             // W54 · P0-2：token 软预算 + 字符硬上限同车给（与内核 PreStepBudget 同尺）。
-            val (budget, charCap) = compressTargets(endpoint, AgentPolicy(maxContextTokens = windowCap))
+            val (budget, charCap) = compressTargets(endpoint, policy)
+            // W63：触发线按档位给（同一 policy，严格低于 L3 cap）。
+            val triggerChars = compactTriggerChars(endpoint, policy)
             // 试算：compressBubbles 是纯 suspend 函数，不改 state；只有 shouldApply 判
             // applied=true 才把产物落到 compression（未压轮次保留严格前缀 ⇒ 缓存可能命中）。
             val outcome = compressBubbles(snapshot.bubbles, budget, charBudget = charCap)
@@ -177,7 +176,7 @@ internal class ConversationOps(
             // 空转（越线且试算没压动任何东西）单独归因：`insufficient_savings` 只留给
             // 「已产出压缩区但净收益不足」；未越线仍由 shouldApply 给 below_trigger，
             // 已压缩态仍由 already_compressed 负责——三者不互相抢语义。
-            if (committedChars > COMPACT_TRIGGER_CHARS &&
+            if (committedChars > triggerChars &&
                 snapshot.compression == null && !outcome.applied
             ) {
                 val line = "auto_compact=noop reason=nothing_to_drop"
@@ -191,6 +190,7 @@ internal class ConversationOps(
                 savingChars,
                 AUTO_COMPACT_COST_CHARS,
                 snapshot.compression != null,
+                triggerChars = triggerChars,
             )
             if (!decision.applied) {
                 val line = "auto_compact=noop reason=" + decision.reason

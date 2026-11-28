@@ -66,6 +66,8 @@ class ExtrasViewModel(private val container: AppContainer) : ViewModel() {
                 },
                 toolCount = countTools(config.lastToolsJson),
                 cachedAtMillis = config.lastSyncedAtMillis,
+                // W63 · P2-1：缺这一行 ⇒ 编辑表单的开关恒回填 false，保存即抹掉持久化的 true。
+                allowPrivateNetwork = config.allowPrivateNetwork,
             )
         }
         _state.update { it.copy(mcp = rows, mcpLoading = false, error = null) }

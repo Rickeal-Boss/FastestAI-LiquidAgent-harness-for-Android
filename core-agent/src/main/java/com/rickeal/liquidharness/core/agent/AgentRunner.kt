@@ -97,10 +97,8 @@ class AgentRunner(
         }
 
         val state = RunState.forRequest(request, freezeClock = newFreezeClock?.invoke())
-        // W62（W61 外审 P1-3）：`try` 必须**从 runStarted 之前**开始。此前 started 落在
-        // try 之外，:100-114（TurnContext 构造 / launch / activeRun.set）任一抛出都会跳过
-        // finally ⇒ `runMutex` 永不 unlock（之后每次 run 都被 GateRejected）+ 留下永久
-        // 未结算 run（每次冷启动误弹恢复卡）。两处都是确定性后果，不是理论窗口。
+        // W62（W61 外审 P1-3）：`try` 必须从 runStarted **之前**开始 —— 下文任一构造 / launch
+        // 抛出都要经过 finally，否则 `runMutex` 永锁 + 留下永久未结算 run（W63 在 finally 内兜底）。
         try {
             journal?.runStarted(state.runId, request.userInput.length)
             val ctx = TurnContext(
@@ -123,13 +121,17 @@ class AgentRunner(
             // 子 job 已结束且**生产者协程仍活跃**（收集方没走），此处发 Cancelled 合法。
             if (state.cancelled) termination.emitCancelled(ctx)
         } finally {
-            // settled 是同步、不 emit 的副作用，直接写在 finally 里即可 —— 不需要
-            // `withContext(NonCancellable)`（W62 订正：W61 KDoc 曾声称走了 NonCancellable，
-            // 与实现不符；这里按实现改述，不引入无必要的挂起点）。
-            journal?.runSettled(state.runId, state.elapsedMillis(), state.executedToolCount, state.cancelled, state.frozenMillis())
-            activeRun.set(null)
-            busyState.value = false
-            runMutex.unlock()
+            // 顺序与 W62 相同（已是清理先于 unlock）；W63 只补内层 finally 使 CE 也必达清理：
+            // 反序会让另一协程在两步之间拿锁并登记新 activeRun，随后被本 run 的清尾抹成 null
+            // （丢取消句柄 + 忙碌态误报）；锁持有窗口 = runSettled 同步写盘时长（与 W62 同量级）。
+            // 而 unlock 必达仍由内层 finally 保证：sink 抛 CE（按纪律上抛）也不会复活「mutex 永锁」。
+            try {
+                journal?.runSettled(state.runId, state.elapsedMillis(), state.executedToolCount, state.cancelled, state.frozenMillis())
+            } finally {
+                activeRun.set(null)
+                busyState.value = false
+                runMutex.unlock()
+            }
         }
     }.buffer(Channel.BUFFERED)
 

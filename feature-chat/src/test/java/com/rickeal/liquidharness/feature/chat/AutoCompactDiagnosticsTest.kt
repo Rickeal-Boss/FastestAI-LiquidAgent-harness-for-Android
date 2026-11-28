@@ -1,6 +1,9 @@
 package com.rickeal.liquidharness.feature.chat
 
+import com.rickeal.liquidharness.core.agent.context.compactTriggerChars
 import com.rickeal.liquidharness.core.agent.context.shouldApply
+import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
+import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.model.Role
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
@@ -42,7 +45,19 @@ class AutoCompactDiagnosticsTest {
      */
     private val autoCompactCostChars = 256
 
-    /** 20 条大体积气泡：字符总量远高于 `COMPACT_TRIGGER_CHARS`（50 227）。 */
+    /**
+     * 与生产同源的触发线：32K 档 `compactTriggerChars` = 37 670。
+     *
+     * 不用 `COMPACT_TRIGGER_CHARS`（50 227 = cap 本身 / 单测基线）：生产
+     * `ConversationOps` 传的是按档位算的触发线，用例再吃基线值就等于「用另一条尺子自证」
+     * （W63 · P3-3：此前 50 227 让「越线」前提与线上判据不同源）。
+     */
+    private val trigger32K = compactTriggerChars(
+        RemoteEndpoint(contextLength = 32_000, maxOutputTokens = 4_096),
+        AgentPolicy(),
+    )
+
+    /** 20 条大体积气泡：字符总量远高于 32K 档触发线（37 670）。 */
     private fun bulkyBubbles(count: Int = 20, textLength: Int = 3_000): List<ChatBubble> =
         (0 until count).map { index ->
             ChatBubble(
@@ -66,7 +81,7 @@ class AutoCompactDiagnosticsTest {
         val committedChars = committedCharsOf(bubbles, compression = null)
         // 前提自证：确实越过了触发线，否则 shouldApply 会先返回 below_trigger，
         // 下面的「旧路径会误报」就退化成 ⛔vacuous。
-        assertTrue("committed=$committedChars", committedChars > 50_227)
+        assertTrue("committed=$committedChars trigger=$trigger32K", committedChars > trigger32K)
 
         val outcome = runBlocking { compressBubbles(bubbles, budgetTokens = 200) }
 
@@ -78,7 +93,13 @@ class AutoCompactDiagnosticsTest {
         // 旧路径的复现：savingChars 由「未压动」=> 恒 0，净收益 = -256。
         val legacySavingChars = committedChars - committedCharsOf(bubbles, outcome.compression)
         assertEquals(0, legacySavingChars)
-        val legacy = shouldApply(committedChars, legacySavingChars, autoCompactCostChars, false)
+        val legacy = shouldApply(
+            committedChars,
+            legacySavingChars,
+            autoCompactCostChars,
+            false,
+            triggerChars = trigger32K,
+        )
         assertFalse(legacy.applied)
         // 灵敏度自证：旧路径确实会误报 insufficient_savings —— 所以 ConversationOps 的
         // 前置判（!outcome.applied ⇒ nothing_to_drop）不是「多写一行」。
@@ -101,7 +122,13 @@ class AutoCompactDiagnosticsTest {
         val tight = runBlocking { compressBubbles(bubbles, budgetTokens = 200) }
         val tightCommitted = committedCharsOf(bubbles, compression = null)
         val tightSaving = tightCommitted - committedCharsOf(bubbles, tight.compression)
-        val tightAuto = shouldApply(tightCommitted, tightSaving, autoCompactCostChars, false)
+        val tightAuto = shouldApply(
+            tightCommitted,
+            tightSaving,
+            autoCompactCostChars,
+            false,
+            triggerChars = trigger32K,
+        )
         assertEquals(tight.applied, tightAuto.applied)
         assertTrue(tight.applied)
         assertTrue(tightAuto.applied)
@@ -109,12 +136,24 @@ class AutoCompactDiagnosticsTest {
         val loose = runBlocking { compressBubbles(bubbles, budgetTokens = 1_000_000) }
         val looseCommitted = committedCharsOf(bubbles, compression = null)
         val looseSaving = looseCommitted - committedCharsOf(bubbles, loose.compression)
-        val looseAuto = shouldApply(looseCommitted, looseSaving, autoCompactCostChars, false)
+        val looseAuto = shouldApply(
+            looseCommitted,
+            looseSaving,
+            autoCompactCostChars,
+            false,
+            triggerChars = trigger32K,
+        )
         assertEquals(loose.applied, looseAuto.applied)
         assertFalse(loose.applied)
 
         // 已压缩态不参与自动评估（重复压缩没有语义），与手动路径的「再压先撤销」同向。
-        val already = shouldApply(tightCommitted, tightSaving, autoCompactCostChars, true)
+        val already = shouldApply(
+            tightCommitted,
+            tightSaving,
+            autoCompactCostChars,
+            true,
+            triggerChars = trigger32K,
+        )
         assertFalse(already.applied)
         assertEquals("already_compressed", already.reason)
     }

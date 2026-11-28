@@ -17,12 +17,14 @@ class RunRecoveryStore(
         val lines = files.readAll()
         val settled = HashSet<String>()
         for (line in lines) {
-            if (line.startsWith("run_settled ")) {
+            // W63 · P2-2：与内核同一行形态判据（runId 32 位小写 hex + `at=<纯数字>` 收尾）；
+            // 尾部不成形 / runId 被截断或与下一条合流的行不采信（方向 fail-safe：宁多弹不少弹）。
+            if (AgentRunJournal.wellFormed(line, "run_settled")) {
                 AgentRunJournal.field(line, "runId")?.let { settled.add(it) }
             }
         }
         for (line in lines.asReversed()) {
-            if (line.startsWith("run_started ")) {
+            if (AgentRunJournal.wellFormed(line, "run_started")) {
                 val id = AgentRunJournal.field(line, "runId") ?: continue
                 if (id !in settled) return id
             }

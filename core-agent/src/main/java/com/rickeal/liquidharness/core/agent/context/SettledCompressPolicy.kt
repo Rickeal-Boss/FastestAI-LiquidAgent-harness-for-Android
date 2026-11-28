@@ -40,7 +40,10 @@ import com.rickeal.liquidharness.core.model.TerminationReason
  * 全部用**字符**，与 W6 的 L3 字符硬预算同源。不引入 `TokenEstimator.estimateMessages`
  * —— 它对代码 / JSON 乐观、对散文保守，拿它自证等于没量（W5-01）。
  * - [COMPACT_TRIGGER_CHARS] = `50 227` = 32K 档 floor 字符 cap `(32 000 − 4 096) × 1.8`，
- *   与 `BudgetFormulaTest.kt:52` 的 `50 227` 同值 —— 触发线贴着现役硬预算，不拍脑袋。
+ *   与 `BudgetFormulaTest.kt:52` 的 `50 227` 同值。W63 起它的角色是**32K 档基线与单测基线**：
+ *   生产触发线由 `BudgetFormula.compactTriggerChars` 按档位给出
+ *   （`hardCharCap × compressThreshold`，严格低于 cap ⇒ 触发先于 L3 熔断）。**保留不删** ——
+ *   既有单测按它取边界，且它是单测侧的唯一基线（生产走 `compactTriggerChars` 按档位）。
  * - [MIN_SAVINGS_CHARS] = `460` = 草稿的 256 token × `hardCharsPerToken` floor 1.8，
  *   与字符 cap 用同一个换算因子。省不够就不动历史，避免小收益造前缀断点。
  */
@@ -72,6 +75,9 @@ fun shouldEvaluate(event: AgentEvent): Boolean =
  * @param savingChars 压缩预计能省下的字符数。
  * @param compactCostChars 压缩本身的代价（切点计算 / 摘要 / 落账等字符当量）。
  * @param alreadyCompressed `ChatUiState.compression != null`。
+ * @param triggerChars 触发线（字符），生产传 `BudgetFormula.compactTriggerChars(endpoint, policy)`，
+ *   单测传 [COMPACT_TRIGGER_CHARS]（32K 档基线）。**必填、无缺省**：缺省会让单测全吃基线值
+ *   而生产走另一条线 —— 「用有偏的尺子量自己」的同型失真（W5-01），R2 的「对照组会响」也就响不了。
  * ⚠️ `insufficient_savings` 只表示「**已产出压缩区**但净收益不足」；试算没压动任何东西
  * （`compression == null`）的空转由调用方 `ConversationOps` 前置判为 `nothing_to_drop`，
  * 不进本函数 —— 否则 `savingChars == 0` 会伪装成净收益不足（W9-01 的语义错配）。
@@ -81,9 +87,10 @@ fun shouldApply(
     savingChars: Int,
     compactCostChars: Int,
     alreadyCompressed: Boolean,
+    triggerChars: Int,
 ): CompactDecision {
     if (alreadyCompressed) return CompactDecision(false, "already_compressed")
-    if (committedChars <= COMPACT_TRIGGER_CHARS) return CompactDecision(false, "below_trigger")
+    if (committedChars <= triggerChars) return CompactDecision(false, "below_trigger")
     val net = savingChars - compactCostChars
     if (net < MIN_SAVINGS_CHARS) {
         return CompactDecision(false, "insufficient_savings:net=$net")

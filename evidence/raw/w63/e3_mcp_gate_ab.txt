@@ -1,0 +1,50 @@
+# G4 / G5 — MCP 内网开关：配置 → 两道闸的正向透传 + 策略拒绝可辨识
+# 判据形态：设置页「测试连接」的结果行（`error: <原因码>`），不依赖截图 OCR。
+# 目标：私有网段字面量 + https（非 loopback）—— loopback 会被 UrlGuard 无条件放行，用它做判据是假绿。
+
+## 修复前（W62 构建）：开关对线上无影响，且拒绝原因被折叠
+允许本地/内网地址 = 关  → error: transport_error
+允许本地/内网地址 = 开  → error: transport_error
+落盘确认：mcp-servers.json 的 `allowPrivateNetwork` 已为 true（开关状态确实持久化了）
+
+判读：两态在 UI 上完全不可区分。根因两层：① `McpServerConfig.allowPrivateNetwork` 只落盘、未透传到
+`HttpTransport.post`；② `McpClient.invoke` 把 `blocked_unsafe_url:<REASON>` 折成 `transport_error`
+（用户看到的永远是「网络不好」，分不清是配置问题还是网络问题）。
+
+## 修复后（W63 构建）
+
+开关【关】：
+error: blocked_unsafe_url:PRIVATE_NETWORK
+（截图：png_e3_mcp_blocked.png，URL 行与顶部端点带均已打码）
+
+开关【开】：
+error: transport_error
+（同一 URL、无服务监听 ⇒ 过闸后连接失败；关键点是**不再**是 blocked_unsafe_url）
+
+判读：G4 / G5 通过 —— 开关为真时穿过 `UrlGuard.check`（首闸），关时为策略拒绝且原因码可辨识；
+两态由同一个结果行区分，判据非空转。
+
+## 四态
+- 「开关关 ⇒ blocked_unsafe_url:PRIVATE_NETWORK」：✅
+- 「开关开 ⇒ 非 blocked（过首闸）」：✅
+- 「开关开 ⇒ 成功拉到 tools/list」：⚠️ **未行使** —— 需要一个真实的私网 https MCP server，本波无此环境，
+  不以「过了首闸」冒充「端到端连通」。`GuardedDns` 第二道闸（DNS rebinding）本波同样未行使。
+- 云元数据地址（`169.254.169.254`）无条件拒绝：本波未重测，沿用既有单测结论，不写成新证据。
+
+## 最终包复跑（APK sha256 `7de9eaa3…`，2026-11-28 13:27）
+
+开关【开】→ error: transport_error
+开关【关】→ error: blocked_unsafe_url:PRIVATE_NETWORK
+（截图 png_e3_mcp_blocked.png 已按最终包重拍：顶部端点带 + URL 行均打码）
+
+## G11 — 开关「保存 → 重开 → 再保存」往返（审查席 P2-1 回归）
+
+修复前链路：`McpRow` 不含 `allowPrivateNetwork`、`loadMcp()` 不映射、`SettingsRoute` 硬写 `false`
+⇒ 编辑已有 server 再保存，持久化的 `true` 被静默抹掉（真机实测：存 true 后重开表单，开关显示为关）。
+
+最终包实测：
+1. 落盘 `true` → 打开编辑页 → 开关显示为**开**（回显正确）；
+2. 关闭开关 → 保存 → 落盘 `false` → 重开表单 → 开关显示为**关**；
+3. 打开开关 → 保存 → 落盘 `true` → 重开表单 → 开关仍为**开**（原缺陷不复现）。
+
+四态：✅（往返两向均通过）

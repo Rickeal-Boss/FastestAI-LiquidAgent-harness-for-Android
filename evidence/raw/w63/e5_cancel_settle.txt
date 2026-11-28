@@ -1,0 +1,32 @@
+# G8 — AgentRunner 收尾序回归（取消路径 settled + 互斥必释放）
+
+## 步骤
+1. 聊天输入一段要求长输出的请求并发送（run 进入流式）。
+2. 点「停止」（发送位置变为「停止」）。
+3. 读落盘 journal；随后立即再发一条短请求，确认新 run 被接受。
+
+## 实测（设备落盘 files/harness/run-journal.jsonl）
+run_started runId=94c539f86ddf482bb736f71356797c63 inputChars=74 at=1795842609994
+run_settled runId=94c539f86ddf482bb736f71356797c63 activeMs=13246 frozenMs=0 tools=0 cancelled=true at=1795842623241
+run_started runId=9152f3577e9e4476b6f27c80dfa57458 inputChars=2 at=1795842631662
+run_settled runId=9152f3577e9e4476b6f27c80dfa57458 activeMs=28007 frozenMs=0 tools=0 cancelled=false at=1795842659669
+
+判读：✅ 取消路径落 `cancelled=true` 的 settled；紧随其后的新 run 被接受（无 GateRejected / 无 400ms 忙态卡死），
+且正常结算（28 s）。`AgentRunner.finally` 改为「清理 → unlock 同处嵌套 finally」后，两条后果均未复发。
+
+## 四态
+- 「取消 ⇒ settled(cancelled=true)」：✅
+- 「取消后新 run 被接受且正常结算」：✅
+- 「sink 抛 CE 时 unlock 必达」：⛔vacuous（生产 sink 是同步阻塞 IO，按 `AGENTS.md §五.4` 不会抛 CE；
+  该分支是防御性死代码，真机不可触发 —— 不写成已验证）
+
+## 最终包复跑（APK sha256 `7de9eaa3…`，2026-11-28 13:27）
+
+run_started runId=4ad03a1d9fa9418b99be6ec499a14c15 inputChars=22 at=1795844109076
+run_settled runId=4ad03a1d9fa9418b99be6ec499a14c15 activeMs=3231 frozenMs=0 tools=0 cancelled=true at=1795844112307
+run_started runId=248fc88d701d43909fa6a63c515a728e inputChars=2 at=1795844131813
+run_settled runId=248fc88d701d43909fa6a63c515a728e activeMs=1356 frozenMs=0 tools=0 cancelled=false at=1795844133170
+
+`grep -c GateRejected` over `files/harness/logs/agent-0.log` = 0
+
+判读：✅ 最终包上结论同向 —— 取消落 `cancelled=true` settled，下一 run 立即被接受并正常结算，无 GateRejected。

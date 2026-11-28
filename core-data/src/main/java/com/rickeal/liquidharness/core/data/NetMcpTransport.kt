@@ -37,9 +37,10 @@ class NetMcpTransport(
         headers: Map<String, String>,
         body: String,
         sessionId: String?,
+        allowPrivateNetwork: Boolean,
     ): TransportResponse = withContext(Dispatchers.IO) {
         try {
-            val stream = http.post(url, mergedHeaders(headers, sessionId), body)
+            val stream = http.post(url, mergedHeaders(headers, sessionId), body, allowPrivateNetwork)
             stream.use {
                 TransportResponse(
                     status = it.statusCode,

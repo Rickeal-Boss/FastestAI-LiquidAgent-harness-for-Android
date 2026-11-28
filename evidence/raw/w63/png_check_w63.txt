@@ -1,0 +1,7 @@
+# W63 png_check — 逐张 PNG 复核（签名 / IEND / verify / load / 尺寸 / 打码带单色）
+
+png_e1_chat_after_cancel.png | sig=True | iend=True | size=(1080, 2400) | band_colors=1 | bytes=369955 | sha256=2d096acc86bcaafdc9ac6f12cc0cb74cc9c246ba39767a03bf813cc5c5e80522 | OK
+png_e2_recovery_card.png | sig=True | iend=True | size=(1080, 2400) | band_colors=1 | bytes=192005 | sha256=3b2bbc966cbb858d89914049add372323ad579f3cf813528aea1a09b6c6b50e4 | OK
+png_e3_mcp_blocked.png | sig=True | iend=True | size=(1080, 2400) | band_colors=1 | bytes=219031 | sha256=1642cfb6513c1fee59b01b10d41887e00519e84ae4740ae9ac3fc21c9f8581b6 | OK
+
+汇总：3/3 OK（判定口径：签名 + IEND + verify() + load + 1080x2400 + y=205..295 打码带单色）

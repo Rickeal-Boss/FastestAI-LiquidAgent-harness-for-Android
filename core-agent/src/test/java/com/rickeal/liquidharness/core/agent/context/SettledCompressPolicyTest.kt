@@ -1,6 +1,8 @@
 package com.rickeal.liquidharness.core.agent.context
 
+import com.rickeal.liquidharness.core.agent.policy.AgentPolicy
 import com.rickeal.liquidharness.core.model.AgentEvent
+import com.rickeal.liquidharness.core.model.RemoteEndpoint
 import com.rickeal.liquidharness.core.model.TerminationReason
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,6 +18,8 @@ import kotlin.test.assertTrue
  * ⚠️ 两个源码文件被并行写入反复覆盖，故本类只钉**行为**（applied / 触发布尔 /
  * 数值边界用常量引用），不钉 reason 串格式 —— 依 AGENTS.md §七「只钉结构不钉措辞」。
  * 唯一例外 `already_compressed`：主理人点名「不静默」，必须留住这个语义。
+ * W63 起再加两个例外：`below_trigger` 与 `applied:` —— R2 的出口判据要求能指认
+ * 「是触发线拦下的」而不是收益线拦下的，否则双档位对照组无法自证。
  *
  * ## 为什么是「评估一次」而不是「每轮都压」
  *
@@ -106,35 +110,105 @@ class SettledCompressPolicyTest {
 
     @Test
     fun insufficientNetSavingsDoesNotApply() {
-        val decision = shouldApply(COMPACT_TRIGGER_CHARS + 1, MIN_SAVINGS_CHARS - 1, 0, alreadyCompressed = false)
+        val decision = shouldApply(
+            COMPACT_TRIGGER_CHARS + 1,
+            MIN_SAVINGS_CHARS - 1,
+            0,
+            alreadyCompressed = false,
+            triggerChars = COMPACT_TRIGGER_CHARS,
+        )
         assertEquals(false, decision.applied)
         assertTrue(decision.reason.isNotBlank())
     }
 
+    /**
+     * **双档位对照组**（W63 · R2 的出口判据）：触发线随档位走，且严格低于 L3 字符 cap。
+     *
+     * 四个断言缺一不可 —— 只钉单值常量会让「按档位」退化回单值而全绿：
+     * 1. 32K 档触发线 = 37 670 = 50 227 × 0.75（与 token 侧软预算同一水位线）；
+     * 2. 恰好等于触发线 ⇒ `below_trigger`（边界含等号：不压）；
+     * 3. 越线 1 字符 ⇒ `applied`（**修前 32K 档结构不可达**：线 = cap，越过时已被 L3 熔断）；
+     * 4. 同一个 37 671 在 128K 档 ⇒ `below_trigger`（修前高档位用同一常数、过早触发）。
+     *
+     * 32K 档 128K 档的锚点值：`(32 000 − 4 096) × 1.8 × 0.75 = 37 670`；
+     * `(128 000 − 1 024) × 1.8 × 0.75 = 171 417`（policy.maxContextTokens 必须放大到与端点同档，
+     * 否则默认 32 000 会把 128K 端点先压回 32K）。
+     */
     @Test
     fun belowTriggerDoesNotApply() {
-        val decision = shouldApply(COMPACT_TRIGGER_CHARS, MIN_SAVINGS_CHARS * 10, 0, alreadyCompressed = false)
-        assertEquals(false, decision.applied)
-        assertTrue(decision.reason.isNotBlank())
+        val endpoint32K = RemoteEndpoint(contextLength = 32_000, maxOutputTokens = 4_096)
+        val trigger32K = compactTriggerChars(endpoint32K, AgentPolicy())
+        assertEquals(37_670, trigger32K)
+
+        val atLine = shouldApply(
+            trigger32K,
+            MIN_SAVINGS_CHARS * 10,
+            0,
+            alreadyCompressed = false,
+            triggerChars = trigger32K,
+        )
+        assertEquals(false, atLine.applied)
+        assertEquals("below_trigger", atLine.reason)
+
+        val overLine = shouldApply(
+            trigger32K + 1,
+            MIN_SAVINGS_CHARS * 10,
+            0,
+            alreadyCompressed = false,
+            triggerChars = trigger32K,
+        )
+        assertEquals(true, overLine.applied)
+        assertTrue(overLine.reason.startsWith("applied"))
+
+        val endpoint128K = RemoteEndpoint(contextLength = 128_000, maxOutputTokens = 1_024)
+        val trigger128K = compactTriggerChars(endpoint128K, AgentPolicy(maxContextTokens = 128_000))
+        assertEquals(171_417, trigger128K)
+        val sameSizeHighTier = shouldApply(
+            trigger32K + 1,
+            MIN_SAVINGS_CHARS * 10,
+            0,
+            alreadyCompressed = false,
+            triggerChars = trigger128K,
+        )
+        assertEquals(false, sameSizeHighTier.applied)
+        assertEquals("below_trigger", sameSizeHighTier.reason)
     }
 
     @Test
     fun alreadyCompressedIsNotSilent() {
-        val decision = shouldApply(COMPACT_TRIGGER_CHARS + 1, MIN_SAVINGS_CHARS * 10, 0, alreadyCompressed = true)
+        val decision = shouldApply(
+            COMPACT_TRIGGER_CHARS + 1,
+            MIN_SAVINGS_CHARS * 10,
+            0,
+            alreadyCompressed = true,
+            triggerChars = COMPACT_TRIGGER_CHARS,
+        )
         assertEquals(false, decision.applied)
         assertEquals("already_compressed", decision.reason)
     }
 
     @Test
     fun netSavingsExactlyAtMinApplies() {
-        val decision = shouldApply(COMPACT_TRIGGER_CHARS + 1, MIN_SAVINGS_CHARS, 0, alreadyCompressed = false)
+        val decision = shouldApply(
+            COMPACT_TRIGGER_CHARS + 1,
+            MIN_SAVINGS_CHARS,
+            0,
+            alreadyCompressed = false,
+            triggerChars = COMPACT_TRIGGER_CHARS,
+        )
         assertEquals(true, decision.applied)
         assertTrue(decision.reason.isNotBlank())
     }
 
     @Test
     fun appliesWhenSavingsMeetThreshold() {
-        val decision = shouldApply(COMPACT_TRIGGER_CHARS + 1, MIN_SAVINGS_CHARS * 10, 0, alreadyCompressed = false)
+        val decision = shouldApply(
+            COMPACT_TRIGGER_CHARS + 1,
+            MIN_SAVINGS_CHARS * 10,
+            0,
+            alreadyCompressed = false,
+            triggerChars = COMPACT_TRIGGER_CHARS,
+        )
         assertEquals(true, decision.applied)
         assertTrue(decision.reason.startsWith("applied"))
     }

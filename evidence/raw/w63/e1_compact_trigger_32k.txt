@@ -1,0 +1,40 @@
+# G1 / G2 — 会话级自动压缩触发线按档位（32K 档，同一 47 145 字符历史）
+# 设备：OPPO PDRM00 / Android 13 / 1080x2400；端点统一记作「端点 A」；时间为设备本地时间（UTC+8）。
+# 口径：只取设备侧落盘日志（files/harness/logs/agent-0.log）的判据行，不回灌整段 logcat。
+
+## 修复前（W62 构建 2026-11-27 22:50，同一内容、同一档位）
+
+2026-11-28 12:33:38  INFO  context compressed: 68 -> 44 messages (chars=27829, dropped=24, char_budget=27236, char_target=27236, budget=20184, target=12110 tokens)
+2026-11-28 12:33:38  INFO  auto_compact=noop reason=below_trigger
+2026-11-28 12:33:38  WARN  auto_compact=noop reason=below_trigger
+界面：11.6k in / 103 out；上下文 11.6K / 27.9K
+
+判读：`committedChars`（≈47 000）已越「同尺水位」（`hardCharCap × compressThreshold`），但旧常数
+`COMPACT_TRIGGER_CHARS = 50 227` 恰等于 32K 档的 L3 硬 cap，故判 `below_trigger` —— 32K 档自动压缩
+在结构上不可达（越线时已被熔断）。本段即 G2 的必红基线。
+
+## 修复后（W63 构建 2026-11-28 12:58，同一内容、同一档位）
+
+2026-11-28 13:00:17  INFO  context compressed: 68 -> 42 messages (chars=26795, dropped=26, char_budget=27236, char_target=27236, budget=20184, target=12110 tokens)
+2026-11-28 13:00:17  INFO  auto_compact dropped=26 kept=47 cache_invalidated=false
+2026-11-28 13:00:17  INFO  auto_compact dropped=26 kept=47 cache_invalidated=false
+界面：11.6k in / 288 out (8672 cached, 74.8%)；上下文 11.6K / 27.9K
+
+判读：G1 通过 —— 触发线由 `50 227` 降到 `37 670`（= 50 227 × 0.75），越线后真的压了（dropped=26 kept=47）。
+与上段构成同内容 / 同档位 / 同端点的 A-B 对照，唯一变量是构建。
+
+## 附：账行里两个预算数为何小于理论 cap（已回源，非缺陷）
+
+实测 `char_budget=27236` / `budget=20184`，而 32K 档理论值为 `(32 000 − 4 096) × 1.8 × 0.6 = 30 136` /
+`(32 000 − 4 096) × 0.75 = 20 928`。差值来自 `compressBubbles` 在落刀前先扣**头锚**与**摘要预留**：
+`ManualCompress.kt:151`（`historyBudget = budgetTokens − systemTokens`）与 `:157-159`
+（`candidatesCharBudget = charBudget − headChars − summaryChars`）。故账行记的是**候选段**预算，
+不是 cap 本身；触发线（`compactTriggerChars`）与账行预算是两件事，不互相矛盾。
+
+## 最终包复跑（APK sha256 `7de9eaa3…`，2026-11-28 13:27；同内容同档位）
+
+2026-11-28 13:34:37  INFO  prefix fp=22be1a5e changed=none prompt=12973 cached=n/a-usage
+2026-11-28 13:34:38  INFO  context compressed: 68 -> 44 messages (chars=27789, dropped=24, char_budget=27236, char_target=27236, budget=20184, target=12110 tokens)
+2026-11-28 13:34:38  INFO  auto_compact dropped=24 kept=49 cache_invalidated=false
+
+判读：与 13:00 那一轮同向（dropped 24~26 / kept 47~49 由试算边界决定），证明结论在最终包上可复现。

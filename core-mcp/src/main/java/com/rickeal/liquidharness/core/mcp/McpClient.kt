@@ -123,6 +123,7 @@ class McpClient(
                         config.headers,
                         notificationFrame("notifications/initialized"),
                         sessionId,
+                        allowPrivateNetwork = config.allowPrivateNetwork,
                     )
                 } catch (c: CancellationException) {
                     throw c
@@ -227,6 +228,13 @@ class McpClient(
      * Streamable HTTP 的响应可能是 JSON 单对象，也可能是 SSE 多帧（中间夹心跳或通知），
      * 所以这里**逐帧比对 id**：拿到匹配的那一帧才结束。只看第一帧会在
      * 「server 先发一条 log 通知」时误判成空响应。
+     *
+     * ## `status == 0` 必须保留原因码
+     *
+     * 没有 HTTP 响应时有三类语义：`timeout` / `transport_error` /
+     * `blocked_unsafe_url:<REASON>`。最后一种是**策略拒绝**（`:core-net` 的字面量闸判的），
+     * 不是传输故障 —— 折成 `transport_error` 会让「该去改配置」与「该去查网络」在 UI 上
+     * 长成同一句话（W54 · P1-1 的存在意义就是这两者可区分）。
      */
     private suspend fun invoke(method: String, paramsJson: String?): Call {
         val id = requestId.incrementAndGet()
@@ -238,6 +246,7 @@ class McpClient(
                 config.headers,
                 requestFrame(id, method, paramsJson),
                 sessionId,
+                allowPrivateNetwork = config.allowPrivateNetwork,
             )
         } catch (c: CancellationException) {
             throw c
@@ -248,7 +257,13 @@ class McpClient(
         if (!nextSession.isNullOrBlank()) sessionId = nextSession
 
         if (response.status == 0) {
-            return Call.Bad(if (response.body == "timeout") "timeout" else "transport_error")
+            return Call.Bad(
+                when {
+                    response.body == "timeout" -> "timeout"
+                    response.body.startsWith("blocked_unsafe_url:") -> response.body
+                    else -> "transport_error"
+                },
+            )
         }
         if (response.status !in 200..299) return Call.Http(response.status)
 

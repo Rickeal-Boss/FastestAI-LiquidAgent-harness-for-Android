@@ -63,12 +63,12 @@ class AgentRunJournal(
     fun findUnsettled(): String? = synchronized(lock) {
         val settled = HashSet<String>()
         for (line in buffer) {
-            if (line.startsWith("run_settled ")) {
+            if (wellFormed(line, "run_settled")) {
                 field(line, "runId")?.let { settled.add(it) }
             }
         }
         for (line in buffer.asReversed()) {
-            if (line.startsWith("run_started ")) {
+            if (wellFormed(line, "run_started")) {
                 val id = field(line, "runId") ?: continue
                 if (id !in settled) return id
             }
@@ -121,6 +121,32 @@ class AgentRunJournal(
             if (end == start) return null
             val value = line.substring(start, end)
             return if (value.any { it.isWhitespace() }) null else value
+        }
+
+        /**
+         * 行形态完整判定：kind 前缀 + **runId 形态**（32 位小写 hex）+ 结尾 `at=<纯数字>`。
+         *
+         * 内存 buffer 的行恒为完整行，判据真正的用武之地是**落盘**侧（`RunRecoveryStore`）：
+         * 非原子的 `appendText` 会在文件尾留截断行，旧写法只判 `startsWith` ⇒ 截断 runId
+         * 直接进恢复卡（P2-2）。落盘侧与 `findUnsettled` 共用本函数 = 消掉双侧判据漂移（P3-1）。
+         *
+         * 三条限定（写实，防下一波误当缺陷）：
+         * 1. `at=17`（时间戳数字被截断）仍算合格 —— 此时 runId 已完整，行为正确；
+         * 2. **合流形态**（截断行吃掉 `\n`、下一次 append 接在同一物理行）由 runId 形态校验拦下：
+         *    `field("runId")` 会把后一条记录的开头併进值里 ⇒ 非 32 位 hex ⇒ 判不合格，后一条
+         *    `run_settled` 不会因此被整条吞掉；
+         * 3. 截断落在 `cancelled=` 等尾部字段时，该条 `run_settled` 被丢弃 ⇒ 方向 fail-safe：
+         *    宁可多弹一次恢复卡，不会少弹（少弹 = 用户丢现场且无提示）。
+         */
+        fun wellFormed(line: String, kind: String): Boolean {
+            if (!line.startsWith("$kind ")) return false
+            // runId 由 `RunState.runId → Ids.newId()` 生成 = UUID 去横线 ⇒ 恒 32 位小写 hex。
+            val id = field(line, "runId") ?: return false
+            if (id.length != 32 || id.any { it !in '0'..'9' && it !in 'a'..'f' }) return false
+            val at = line.lastIndexOf(" at=")
+            if (at < 0) return false
+            val tail = line.substring(at + 4)
+            return tail.isNotEmpty() && tail.all { it in '0'..'9' }
         }
     }
 }

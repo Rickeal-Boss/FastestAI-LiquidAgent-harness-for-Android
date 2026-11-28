@@ -23,11 +23,18 @@ data class TransportResponse(
  * 单测也不该起真实网络。
  */
 interface McpTransport {
+    /**
+     * @param allowPrivateNetwork 来源是 [McpServerConfig.allowPrivateNetwork]：用户在配置里
+     *   **显式**打开的内网 server。端口层只透传、不裁决 —— 真正的两道闸（`UrlGuard.check`
+     *   与 `GuardedDns`）在 `:core-net` 的 `HttpTransport.post`。默认 `false` = fail-closed：
+     *   任何新实现漏传该参都退回「拒绝私网」，不会静默放行。
+     */
     suspend fun post(
         url: String,
         headers: Map<String, String>,
         body: String,
         sessionId: String?,
+        allowPrivateNetwork: Boolean = false,
     ): TransportResponse
 }
 

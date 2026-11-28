@@ -12,7 +12,9 @@ import kotlinx.serialization.Serializable
  * - `2025-11-25`：跳过探测直接 `initialize`。
  *
  * [allowPrivateNetwork] 是用户显式承担的信任扩张（内网 MCP server），默认 fail-closed。
- * 传输层目前不实现 DNS 闸（本模块不依赖 :core-net），该字段只作为策略标记落盘。
+ * 该字段已透传到 `HttpTransport.post` 的两道闸（`UrlGuard.check` + `GuardedDns`），
+ * 因此内网 MCP server 打开开关即生效（不再是「UI 有开关、线上无效」）；但**不覆盖**
+ * `169.254.169.254` 等云元数据地址 —— 那类无条件拒绝，任何开关都不解锁。
  */
 @Serializable
 data class McpServerConfig(

@@ -1,0 +1,13 @@
+# W63 证据（已脱敏：本机路径 → <workspace>/<user-home>/<temp-root>）
+# 项：辅助 探针形态自检
+# 命令：bash scripts/w55-probe-form-sync.sh
+# 采集：2026-11-28（Git Bash on Windows）
+#-------------------------------------------------------------------------
+[w59-sync] PROBE_FORMS 区域提取 18 条 raw 整行形态（已字符串感知跳注释） + 3 条命名常量形态，MAX_DIGEST_CHARS=160
+[w59-sync] OK 14 条锚点现场渲染样本命中，15 条全库认领写点命中，11 条反向哨兵全拦下，A2 脱敏形态 equals(Cookie)/equals(X-Auth-Token) 两类齐备 + 控制流为最后返回表达式
+G5_RC=0
+#-------------------------------------------------------------------------
+=== 快照 B · G5 重跑（13:28，树冻结后） ===
+[w59-sync] PROBE_FORMS 区域提取 18 条 raw 整行形态（已字符串感知跳注释） + 3 条命名常量形态，MAX_DIGEST_CHARS=160
+[w59-sync] OK 14 条锚点现场渲染样本命中，15 条全库认领写点命中，11 条反向哨兵全拦下，A2 脱敏形态 equals(Cookie)/equals(X-Auth-Token) 两类齐备 + 控制流为最后返回表达式
+G5B_RC=0

@@ -136,3 +136,39 @@ fun promptCharCap(endpoint: RemoteEndpoint, policy: AgentPolicy, measured: Float
 fun compressTargets(endpoint: RemoteEndpoint, policy: AgentPolicy): Pair<Int, Int> =
     contextBudgetTokens(endpoint, policy) to
         (hardCharCap(endpoint, policy) * DEFAULT_COMPRESS_TARGET_RATIO).toInt().coerceAtLeast(1)
+
+/**
+ * 会话级自动压缩的**触发线**（字符，按档位）：[hardCharCap] × `policy.compressThreshold`，
+ * 并**夹在 `1 .. cap-1`**。
+ *
+ * ## 三条定尺理由
+ * 1. **与 token 侧软预算同尺**：[contextBudgetTokens] 也是
+ *    `hardContextBudgetTokens × compressThreshold` —— 同一条水位线，只是换了量纲
+ *    （token / 字符），所以「内核开始丢最老历史」与「会话级自动压缩评估通过」落在同一水位。
+ * 2. **cap ≥ 2 时严格低于 [hardCharCap]**（由夹上限保证）：同因子 < 1 ⇒ 触发**先于** L3
+ *    字符熔断。W63 修的真实缺陷是旧常数 `50 227`（= 32K 档的 cap 本身）⇒ 32K 档
+ *    `committedChars > 50 227` 只在**已超 cap** 时成立，而那一步先被熔断 ⇒ 自动压缩
+ *    结构上不可达。`cap = 1` 时不存在「严格低于 cap」的正整数取值，取 `1`
+ *    （恒越线，唯一合理行为）。
+ *    夹上限是为**将来开放** `policy.compressThreshold` 写点防退化：该字段目前全仓
+ *    **无生产写点**（只有默认值与测试覆写，`AgentPolicy.kt:154`）；一旦有人把它设成 1.0，
+ *    触发线会等于 cap，缺陷原样复活。
+ * 3. **随档位放大**：128K / 1M 档的触发线按同一比例升高 ⇒ 不会再在 ~50k 字符就压
+ *    （旧常数在高档位触发过早，白付前缀缓存断点）。
+ *
+ * ## 两个边界（写实，防下一波当缺陷重开）
+ * - **可达性不等式（充分条件，保守）**：L3 闸比的是 `systemChars + promptChars(body)`
+ *   （`core-agent/.../loop/PreStepBudget.kt:97/:110`），本触发线比的是**不含 system** 的
+ *   `committedChars` ⇒ `systemChars < hardCharCap − trigger = 12 557` 是 32K 档可达的
+ *   **充分条件**（不是充要）：它还没扣下一次请求的新输入 `inputChars`，实际余量更小。
+ *   system 段变长（或工具声明并入 system）会让 32K 档重新退化为「结构不可达」，
+ *   届时应重新评估触发线，而不是宣告已修。
+ * - **散文会话偏早**：UI 侧只能用 floor 1.8（拿不到内核 `measured`，与 [compressTargets]
+ *   的字符侧同源），散文实测 chars/token ≈ 5.75 ⇒ 触发相对偏早，方向保守，不是缺陷。
+ */
+fun compactTriggerChars(endpoint: RemoteEndpoint, policy: AgentPolicy): Int {
+    val cap = hardCharCap(endpoint, policy)
+    val trigger = (cap * policy.compressThreshold).toInt()
+    // cap 最小为 1 ⇒ `cap - 1` 可能为 0，`coerceIn(1, 0)` 会抛 IllegalArgumentException。
+    return trigger.coerceIn(1, (cap - 1).coerceAtLeast(1))
+}

@@ -1,0 +1,17 @@
+# G3 — 128K 档对照组：同一 47 145 字符历史，触发线应随档位升高而不触发
+# 设备同上；时间设备本地时间（UTC+8）。
+
+## 前置（首次尝试踩到的坑，如实留痕）
+13:02:20  INFO  prefix fp=22be1a5e changed=none prompt=8681 cached=n/a-usage
+13:02:21  INFO  auto_compact=noop reason=already_compressed
+判读：上一轮（32K）已把 `compression` 落到 UI 状态，档位切换不清它 ⇒ 自动评估走 `already_compressed`
+分支（正确行为）。故本对照组必须先「新对话」清空气泡与压缩区，再重新导入同一内容。
+
+## 正式对照（新对话 + 重新导入 47 145 字符 + 128K 档 + 短请求）
+13:03:22  INFO  prefix fp=22be1a5e changed=none prompt=12973 cached=n/a-usage
+13:03:25  INFO  auto_compact=noop reason=below_trigger
+13:03:25  WARN  auto_compact=noop reason=below_trigger
+（无 `context compressed` 行 —— 128K 预算装得下，内核未压）
+
+判读：G3 通过。同一 `committedChars`（≈47 000）在 128K 档判 `below_trigger`（触发线 ≈171 417），
+在 32K 档判越线并 applied（触发线 37 670）⇒ 触发线确实按档位走，不是把常量整体下调。

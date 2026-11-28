@@ -1,0 +1,28 @@
+# W63 证据（R2 压缩触发线按档位 / R3-a MCP 内网透传 / journal 半写行 / AgentRunner 收尾序）
+# 脱敏声明：端点标识一律「端点 A」或上缘打码；无凭据 / 无真实 URL / 无账号 / 无设备序列号 /
+#             无无线网络标识与网卡地址 / 无本机路径（占位符 <workspace> / <private-temp> / <user-home>）；不回灌整段 logcat。
+# 四态纪律：未触发 ≠ 通过；条件未满足如实标 ⚠️ / ⛔vacuous，不冒充。
+
+清单：17 件制品 + 1 MANIFEST + 1 manifest_check = 19 文件。
+写域声明：仅 evidence/raw/w63/；另有一处 evidence/raw/w51/g3_selftest.txt 的行尾归一（见交接 §2.4）。
+核对口径：sha256 = 本目录入仓文件字节（*.txt 已统一 LF ⇒ 工作树字节 = 入仓 blob 字节）。
+
+序号 | 文件名 | sha256 | 内容摘要 | 来源 | 四态判据
+---- | ------ | ------ | -------- | ---- | --------
+01 | g1_build_w63.txt | 1a4e33f62d3ded9afd87359aaeedf08c7f4ede68307cfdee95ed5c4fbed3c2b1 | 闸 1：`:app:assembleDebug` 全量编译输出（BUILD 行 + RC；含两轮确定性出包与 RC 判读订正） | CI 席实跑 | ✅ RC=0
+02 | g2_arch_guard_w63.txt | db3dc3394031bf8423f02e59ab51c52514a7604619e16b89726e7e2859c5e117 | 闸 2：`arch-guard.sh --verbose` 全文（含 G10 各行与 result 行） | CI 席实跑 | ✅ PASS 27/1/0/0
+03 | g3_selftest_w63.txt | e52211704e34167a088a350c599f6f200c1a3dc0543866eb86ec5c4445e0816e | 闸 3：`arch-guard-selftest.sh` 全文（30 条判据） | CI 席实跑 | ✅ 30/30
+04 | g4_fulltest_w63.txt | 0e74f0ee4d4382ed1bc0400c96f26b92e93ce7960ee8311e818bcf065a1f45e0 | 闸 4：`fulltest.sh` 全文（14 模块 tests/failures/errors/skipped） | CI 席实跑 | ✅ 904/0/0/0
+05 | g5_probe_w63.txt | 30ce7453354de07e616b1daec75cae2b443b13f89a6a99f8c0dcad21adcee451 | 探针形态自检：14 锚点 / 15 认领 / 11 反哨兵 | CI 席实跑 | ✅ rc=0
+06 | g6_ledger_w63.txt | eea7a3d04517b2d333d4db890a2a9d2b06f4437e20110c1c69d5e636c2ebdd95 | 台账符号自检（328 kt / 21 类 / 65 方法）+ 状态列计数（文档落笔前后两快照）+ 段数 | CI 席实跑 + 主理人复跑 | ✅ rc=0
+07 | g7_secretgate_w63.txt | b6ce52b66b99974f2380a7ad4944f49b095d2d732b0ea01bbfbd0f5d20304e1d | 隐私门禁三路 + 补扫六类（只记计数，不记命中内容） | CI 席实跑 | ✅ CI 语义 0 命中
+08 | e1_compact_trigger_32k.txt | 3df0f9d675f1e69339537b5ce663e5960368da56ce986536bc40e00eb6fff11a | G0/G1：32K 档同一 47 145 字符历史，修复前 below_trigger / 修复后 applied（含最终包复跑） | 主理人真机 | ✅ 对照成立
+09 | e2_compact_trigger_128k.txt | 96e18f4e553935d98f1cad5947079f8777e9fc9065dd35d03f2ffb50f80fb172 | G2：128K 档同一内容 ⇒ below_trigger（触发线随档位） | 主理人真机 | ✅ 对照组
+10 | e3_mcp_gate_ab.txt | 2b4b252faf2b81a961612fd7e4317d3fbd7d611aa57ca1ed44cd325e4ef40f73 | G4/G5/G11：MCP 内网开关 A/B（原因码差异）+ 保存/重开往返 | 主理人真机 | ✅（端到端 ⚠️ 未行使）
+11 | e4_journal_half_written.txt | 6dd60940a7fa255380da28fdc978b0749f0328c2865bd5942fa6e61ebb851bef | G6/G7/G12：半写行不弹卡 + 完整 hex 行弹卡正控 + 合流形态（runId 形态校验） | 主理人真机 | ✅（合流形态 ⚠️ 代码级）
+12 | e5_cancel_settle.txt | cd4619f80b8e6cc57061e0a0661cb038d8b579e75103017fa7fd72e5b780772d | G8：取消落 cancelled=true settled，下一 run 被接受并结算（含最终包复跑） | 主理人真机 | ✅
+13 | e6_mutation_trigger.txt | acaa4a1825c35095bb193691937b57124d38090979954c8f212715018f1c8833 | G3：双档位 JVM 对照 + 两次必红变异（原始输出，已脱敏路径） | 开发席实跑 | ✅ 必红 + RESTORED_IDENTICAL
+14 | png_check_w63.txt | 1c47225430e52f10d6eb09d6deb3c76a6795fe4d9f6bcc023e29a1f40d19edcb | 三张 PNG 的签名/IEND/verify/load/尺寸/打码带单色逐张复核 | 本目录生成 | ✅ 3/3 OK
+15 | png_e1_chat_after_cancel.png | 2d096acc86bcaafdc9ac6f12cc0cb74cc9c246ba39767a03bf813cc5c5e80522 | 长回答正文可读、无黑块（渲染回归复核；上缘打码端点标识） | 主理人真机 | ✅
+16 | png_e2_recovery_card.png | 3b2bbc966cbb858d89914049add372323ad579f3cf813528aea1a09b6c6b50e4 | 恢复卡弹窗（完整 hex runId 正控；上缘打码） | 主理人真机 | ✅
+17 | png_e3_mcp_blocked.png | 1642cfb6513c1fee59b01b10d41887e00519e84ae4740ae9ac3fc21c9f8581b6 | MCP 开关关 ⇒ `error: blocked_unsafe_url:PRIVATE_NETWORK`（顶部端点带 + URL 行打码） | 主理人真机 | ✅

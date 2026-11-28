@@ -412,6 +412,7 @@ class McpClientTest {
             headers: Map<String, String>,
             body: String,
             sessionId: String?,
+            allowPrivateNetwork: Boolean,
         ): TransportResponse {
             bodies += body
             return responder(body)

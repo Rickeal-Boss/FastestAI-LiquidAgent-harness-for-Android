@@ -1,0 +1,7 @@
+# W63 manifest_check — MANIFEST 逐件复核（工作树字节，*.txt 已归一 LF）
+
+解析行数 = 17
+OK = 17
+BAD = 0
+MISS = 0
+

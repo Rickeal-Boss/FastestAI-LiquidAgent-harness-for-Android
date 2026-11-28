@@ -1,0 +1,49 @@
+# W63 mutation evidence（原始输出，已脱敏：本机路径 → <workspace> / <private-temp>）
+# repo    : <workspace>/harness-v2
+# HEAD    : 6873fc8d947bd0bca88c56e7b2e2bf3dab555b62
+# worktree: 13 个改动文件
+# 备份基线: <private-temp>/w63_BudgetFormula.pristine.bytes (10544 bytes)
+# 命令统一: bash scripts/localbuild.sh :core-agent:testDebugUnitTest --tests com.rickeal.liquidharness.core.agent.context.SettledCompressPolicyTest
+
+==================== [0] BASELINE（未变异） ====================
+$ bash scripts/localbuild.sh :core-agent:testDebugUnitTest --tests com.rickeal.liquidharness.core.agent.context.SettledCompressPolicyTest
+RC=0
+BUILD SUCCESSFUL in 43s
+
+==================== [1] MUTANT A: 函数体换回常量 50_227 ====================
+$ python bytes-replace: '    val trigger = (cap * policy.compressThreshold).toInt()' -> '    val trigger = 50_227'
+$ bash scripts/localbuild.sh :core-agent:testDebugUnitTest --tests com.rickeal.liquidharness.core.agent.context.SettledCompressPolicyTest
+RC=1
+SettledCompressPolicyTest > belowTriggerDoesNotApply FAILED
+    java.lang.AssertionError at SettledCompressPolicyTest.kt:141
+12 tests completed, 1 failed
+BUILD FAILED in 20s
+$ 还原 + 自证
+RESTORED_IDENTICAL (diff -q pristine vs working == 0)
+
+==================== [2] MUTANT B: compressThreshold -> 1.0f（夹上限场景） ====================
+$ python bytes-replace: '    val trigger = (cap * policy.compressThreshold).toInt()' -> '    val trigger = (cap * 1.0f).toInt()'
+$ bash scripts/localbuild.sh :core-agent:testDebugUnitTest --tests com.rickeal.liquidharness.core.agent.context.SettledCompressPolicyTest
+RC=1
+SettledCompressPolicyTest > belowTriggerDoesNotApply FAILED
+    java.lang.AssertionError at SettledCompressPolicyTest.kt:141
+12 tests completed, 1 failed
+BUILD FAILED in 41s
+$ 还原 + 自证
+RESTORED_IDENTICAL (diff -q pristine vs working == 0)
+
+==================== [3] RESTORED FINAL（还原后跑对照） ====================
+$ diff -q <private-temp>/w63_BudgetFormula.pristine.bytes core-context/src/main/java/com/rickeal/liquidharness/core/agent/context/BudgetFormula.kt
+RESTORED_IDENTICAL
+$ bash scripts/localbuild.sh :app:assembleDebug :core-agent:testDebugUnitTest --tests com.rickeal.liquidharness.core.agent.context.SettledCompressPolicyTest
+RC=0
+BUILD SUCCESSFUL in 23s
+
+# APK
+-rw-r--r-- 1 16896 197609 69761284 2026-11-28 12:58:15.031126800 +0800 app/build/outputs/apk/debug/app-debug.apk
+51cc9a7c2a700b43623f84a9117faf73bb8e642918265f7577607dac76093ddd *app/build/outputs/apk/debug/app-debug.apk
+
+==================== [4] 绿基线 XML 原文（对应 [3] 的 BUILD SUCCESSFUL） ====================
+$ grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' harness-v2/core-agent/build/test-results/testDebugUnitTest/TEST-com.rickeal.liquidharness.core.agent.context.SettledCompressPolicyTest.xml
+tests="12" skipped="0" failures="0" errors="0"
+# 注：Gradle 对全绿用例不打印 "N tests completed"，故绿侧以 XML 计数为准；红侧 Gradle 会打印 "12 tests completed, 1 failed"。

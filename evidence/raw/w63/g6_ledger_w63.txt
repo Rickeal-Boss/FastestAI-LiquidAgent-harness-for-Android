@@ -1,0 +1,42 @@
+# W63 证据（已脱敏：本机路径 → <workspace>/<user-home>/<temp-root>）
+# 项：辅助 台账符号自检
+# 命令：bash scripts/w46-ledger-symbol-check.sh
+# 采集：2026-11-28（Git Bash on Windows）
+#-------------------------------------------------------------------------
+w46-ledger-symbol-check: test-class refs=21 test-method refs=65 kt-files=328
+OK all backticked test symbols (with test context) resolvable in *.kt
+G6_RC=0
+
+#-------------------------------------------------------------------------
+=== W63 台账状态列实跑（只读；采集者追加） ===
+命令：python3 逐行 regex（行首 `| W<数字>-<数字>` + 第 4 个 pipe 分段 = 状态列，去反引号；行内 `\|` 不当作分隔符）
+台账：docs/06-deferred-ledger.md
+STATUS_COUNTS rows=216 closed=39 open=166 carried=11 sections=37
+STATUS_DETAIL(escape-aware) OPEN=166; CLOSED=39; CARRIED=11
+交叉核验：awk -F'|' 同口径 → OPEN 166 / CLOSED 39 / CARRIED 11（与上一致）
+段数口径：行首 `### W<数字>` 计数 = 37 段（末段 W62）
+#-------------------------------------------------------------------------
+=== 快照 B · G6 重跑（13:28，树冻结后） ===
+w46-ledger-symbol-check: test-class refs=21 test-method refs=65 kt-files=328
+OK all backticked test symbols (with test context) resolvable in *.kt
+G6B_RC=0
+=== 快照 B · 台账状态列重算（台账 13:21:12 被改后复核） ===
+STATUS_COUNTS_B rows=216 closed=39 open=166 carried=11 sections=37
+结论：与快照 A 完全一致（13:21 的台账改动未触及表格行/段标题）。
+
+# 文档落笔后复跑（主理人，2026-11-28 13:5x；台账已含 W63 段与三行注记）
+STATUS_COUNTS_AFTER_DOCS rows=216 closed=39 open=166 carried=11 sections=38
+#-------------------------------------------------------------------------
+=== 附：台账 :906 第③项 vs 代码 逐条核对（14:20，只读；回应审查席「不一致」质询） ===
+台账原文（三段）：`AgentRunJournal.wellFormed`（kind 前缀 + runId 32 位 hex + 结尾 `at=<纯数字>`）两侧共用
+代码实测 core-agent/src/main/java/com/rickeal/liquidharness/core/agent/journal/AgentRunJournal.kt：
+  :141  fun wellFormed(line, kind)
+  :142  if (!line.startsWith("$kind ")) return false        ← kind 前缀 ✅
+  :144  val id = field(line, "runId") ?: return false
+  :145  if (id.length != 32 || id.any { it !in '0'..'9' && it !in 'a'..'f' }) return false   ← 32 位 hex ✅
+  :146-149  lastIndexOf(" at=") / tail 全数字                ← 结尾 at=<纯数字> ✅
+  :114-124  field()：按 key= 起、遇空格止、值含空白返回 null（合流形态被拦）
+调用面（两侧共用）：AgentRunJournal.kt:66,71 + RunRecoveryStore.kt:22,27
+⇒ 台账③ 与代码**一致**，无需改代码或改台账；审查席所引 :137-143 落在 :127-140 KDoc 内，属行号错配。
+真实残留（覆盖缺口，非缺陷）：core-agent/src/test 下无 journal 测试目录，两测试源集 grep
+  `wellFormed|run_started|runId=` 零命中，@Test 维持 904（零新增）⇒ 该加固无 JVM 回归，建议 W64 补 3 用例。

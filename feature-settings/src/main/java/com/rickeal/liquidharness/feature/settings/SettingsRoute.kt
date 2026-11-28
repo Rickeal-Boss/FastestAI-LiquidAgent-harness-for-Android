@@ -279,7 +279,7 @@ private fun NavGraphBuilder.extrasGraph(
                     url = row.url,
                     // token 不回填（与端点编辑同一条纪律）。
                     token = "",
-                    allowPrivateNetwork = false,
+                    allowPrivateNetwork = row.allowPrivateNetwork,
                     enabled = row.enabled,
                 )
             }
