@@ -48,7 +48,7 @@
 
 ## 四、账实与守恒
 
-- 改动面：12 个 `.kt`（9 主 + 3 测试）+ 1 个证据行尾修正；零 docs 改动在本提交（文档另提交）。
+- 改动面（`b526255` 实测）：**16 个 `.kt`（13 主 + 3 测试）** + `evidence/raw/w63/`（19 文件）+ `evidence/raw/w51/g3_selftest.txt` 行尾归一；文档在 `63a23f6` 另提交。
 - `@Test` 增量 = 0（`git diff | grep -c '^+.*@Test'` = 0）；`EXPECTED_TESTS` 维持 904；`EXPECTED_CLAIMS` 15 未变。
 - 三顶格对象零触碰：`core-kernel 449/450`、`GenerationRound 400/400`、`feature-chat 3999/4000`；`LINE_CAPS` 未调。
 - 台账状态列：**216 行 / 39 CLOSED / 166 OPEN / 11 CARRIED**，段数 37 → 38；本波销账 0 行、新开 0 行。
